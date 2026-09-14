@@ -47,7 +47,6 @@ import {
 } from "lucide-react";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import type { DateRange } from "react-day-picker";
-import { toast } from "sonner";
 
 import { DocumentThumbnail } from "@/components/documents/document-thumbnail";
 import { ShareDocumentDialog } from "@/components/documents/share-document-dialog";
@@ -77,6 +76,7 @@ import {
   type DocumentWorkflowStatus,
 } from "@/lib/document-status";
 import { pageSEO } from "@/lib/seo";
+import { toast } from "@/lib/toast";
 
 export const Route = createFileRoute("/_authenticated/$slug/documents/")({
   component: DocumentsPage,

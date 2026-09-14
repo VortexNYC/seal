@@ -6,7 +6,6 @@ import { AlertDialog } from "@cloudflare/kumo/primitives/alert-dialog";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Activity, Clock, Link2, Unplug } from "lucide-react";
-import { toast } from "sonner";
 
 import { FormSkeleton } from "@/components/skeletons";
 import {
@@ -16,6 +15,7 @@ import {
   type ApiConnectedApp,
   type ApiIntegrationActivityLog,
 } from "@/lib/api-client";
+import { toast } from "@/lib/toast";
 
 export const Route = createFileRoute(
   "/_authenticated/$slug/settings/profile/integrations"

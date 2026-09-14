@@ -16,7 +16,6 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Bell, Save, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
@@ -24,6 +23,7 @@ import {
   getNotificationSettings,
   updateNotificationSettings,
 } from "@/lib/api-client";
+import { toast } from "@/lib/toast";
 
 export const Route = createFileRoute(
   "/_authenticated/$slug/settings/notifications"

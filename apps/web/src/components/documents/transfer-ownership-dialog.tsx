@@ -4,10 +4,10 @@ import { Select } from "@cloudflare/kumo/components/select";
 import { useMutation } from "@tanstack/react-query";
 import { AlertTriangleIcon, ArrowRightLeftIcon } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 
 import { useOrganizationMembers } from "@/hooks/use-organization-members";
 import { transferDocument } from "@/lib/api-client";
+import { toast } from "@/lib/toast";
 
 interface TransferOwnershipDialogProps {
   open: boolean;

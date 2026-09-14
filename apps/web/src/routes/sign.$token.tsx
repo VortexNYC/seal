@@ -51,7 +51,6 @@ import {
   type ReactElement,
 } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
-import { toast } from "sonner";
 
 import { EsignConsentDialog } from "@/components/documents/esign-consent-dialog";
 import { FieldInputManager } from "@/components/documents/field-input-manager";
@@ -76,6 +75,7 @@ import {
 } from "@/lib/api-client";
 import { formatMoney, money } from "@/lib/money";
 import { pageSEO } from "@/lib/seo";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 function sealAssertPresent<T>(
   value: T | null | undefined,

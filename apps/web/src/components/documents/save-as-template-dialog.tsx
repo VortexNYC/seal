@@ -15,9 +15,9 @@ import { Text } from "@cloudflare/kumo/components/text";
 import { FileText, FloppyDisk } from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import { toast } from "sonner";
 
 import { saveAsTemplate } from "@/lib/api-client";
+import { toast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
 
 interface SaveAsTemplateDialogProps {

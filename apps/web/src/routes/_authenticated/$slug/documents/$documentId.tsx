@@ -22,7 +22,6 @@ import "react-pdf/dist/Page/TextLayer.css";
 import { Document } from "react-pdf";
 import { pdfjs } from "react-pdf";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
-import { toast } from "sonner";
 
 import { FIELD_TYPES } from "@/components/documents/field-toolbar";
 import { NotFoundPage } from "@/components/not-found-page";
@@ -43,6 +42,7 @@ import { buildActivityEvents } from "@/lib/document-activity";
 import { isWorkflowStatus } from "@/lib/document-status";
 import { parseSelectValue } from "@/lib/select-values";
 import { countSignatureFields } from "@/lib/signature-fields";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 import { AddMyselfDialog } from "../../../../components/documents/add-myself-dialog";

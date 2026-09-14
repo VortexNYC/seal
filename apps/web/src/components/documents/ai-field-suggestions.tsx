@@ -16,7 +16,6 @@ import {
 } from "@phosphor-icons/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
 
 import {
   applyFieldSuggestions as applyFieldSuggestionsApi,
@@ -25,6 +24,7 @@ import {
   type ApiFieldSuggestions,
 } from "@/lib/api-client";
 import { parseSelectValue } from "@/lib/select-values";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 import { FIELD_TYPES, type FieldType } from "./field-toolbar";

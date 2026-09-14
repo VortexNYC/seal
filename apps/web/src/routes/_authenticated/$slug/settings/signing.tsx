@@ -16,11 +16,11 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { PenTool, Save } from "lucide-react";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
 import { getSigningSettings, updateSigningSettings } from "@/lib/api-client";
+import { toast } from "@/lib/toast";
 
 type SignatureTypeOption = "draw" | "type" | "upload";
 

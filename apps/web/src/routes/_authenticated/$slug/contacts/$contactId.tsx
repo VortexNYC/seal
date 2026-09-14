@@ -26,7 +26,6 @@ import {
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { Suspense, useState } from "react";
-import { toast } from "sonner";
 
 import { ContactStatusBadge } from "@/components/contacts/contact-status-badge";
 import { EditContactDialog } from "@/components/contacts/edit-contact-dialog";
@@ -40,6 +39,7 @@ import {
 } from "@/lib/api-client";
 import { toWorkflowStatus } from "@/lib/document-status";
 import { formatDate } from "@/lib/formatting";
+import { toast } from "@/lib/toast";
 
 export const Route = createFileRoute(
   "/_authenticated/$slug/contacts/$contactId"

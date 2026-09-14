@@ -13,7 +13,6 @@ import { Select } from "@cloudflare/kumo/components/select";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { toast } from "sonner";
 import { z } from "zod";
 
 import {
@@ -21,6 +20,7 @@ import {
   getContactByEmail,
   type ApiContact,
 } from "@/lib/api-client";
+import { toast } from "@/lib/toast";
 
 interface CreateContactDialogProps {
   open: boolean;

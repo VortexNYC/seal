@@ -25,10 +25,10 @@ import {
   XIcon,
 } from "lucide-react";
 import { useEffect, useState, type ChangeEvent } from "react";
-import { toast } from "sonner";
 
 import { updateSignatureField } from "@/lib/api-client";
 import { type Id } from "@/lib/ids";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 import type { FieldType } from "./field-toolbar";

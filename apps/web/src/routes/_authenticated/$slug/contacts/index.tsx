@@ -26,7 +26,6 @@ import {
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { Suspense, useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
 
 import { ContactStatusBadge } from "@/components/contacts/contact-status-badge";
 import { CreateContactDialog } from "@/components/contacts/create-contact-dialog";
@@ -41,6 +40,7 @@ import {
 } from "@/lib/api-client";
 import type { ContactStatus } from "@/lib/contact-status";
 import { pageSEO } from "@/lib/seo";
+import { toast } from "@/lib/toast";
 
 export const Route = createFileRoute("/_authenticated/$slug/contacts/")({
   component: ContactsPage,

@@ -39,7 +39,6 @@ import {
   TrashIcon,
 } from "lucide-react";
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
 
 import { CreateFolderDialog } from "@/components/folders/create-folder-dialog";
 import { FolderBreadcrumbs } from "@/components/folders/folder-breadcrumbs";
@@ -58,6 +57,7 @@ import {
   type ApiTemplateListItem,
 } from "@/lib/api-client";
 import { pageSEO } from "@/lib/seo";
+import { toast } from "@/lib/toast";
 
 export const Route = createFileRoute("/_authenticated/$slug/templates")({
   component: TemplatesPage,

@@ -10,7 +10,7 @@ vi.mock("@/lib/api-client", () => ({
   updateContact: mockUpdateContact,
 }));
 
-vi.mock("sonner", () => ({
+vi.mock("@/lib/toast", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
@@ -202,7 +202,7 @@ describe("EditContactDialog", () => {
 
     test("shows success toast on update", async () => {
       const user = userEvent.setup();
-      const { toast } = await import("sonner");
+      const { toast } = await import("@/lib/toast");
       const contact = makeContact();
       mockUpdateContact.mockResolvedValue(contact);
 
@@ -218,7 +218,7 @@ describe("EditContactDialog", () => {
 
     test("shows error toast when mutation fails", async () => {
       const user = userEvent.setup();
-      const { toast } = await import("sonner");
+      const { toast } = await import("@/lib/toast");
       mockUpdateContact.mockRejectedValue(new Error("Network error"));
 
       renderDialog();

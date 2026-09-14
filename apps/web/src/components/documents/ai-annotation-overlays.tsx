@@ -10,12 +10,12 @@ import {
 } from "@phosphor-icons/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
 
 import {
   dismissDocumentAnnotations,
   getDocumentAnnotations,
 } from "@/lib/api-client";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------

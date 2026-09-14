@@ -11,9 +11,9 @@ import { Input } from "@cloudflare/kumo/components/input";
 import { FolderPlus, X } from "@phosphor-icons/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 
 import { createFolder } from "@/lib/api-client";
+import { toast } from "@/lib/toast";
 
 interface CreateFolderDialogProps {
   type: "document" | "template";

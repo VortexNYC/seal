@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 
 import { downloadDocument } from "@/lib/api-client";
+import { toast } from "@/lib/toast";
 
 /**
  * Manages PDF viewer state: loading the PDF URL, responsive width, page navigation,

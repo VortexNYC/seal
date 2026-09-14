@@ -15,7 +15,6 @@ import {
   XIcon,
 } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 
 import { useOrganizationMembers } from "@/hooks/use-organization-members";
 import {
@@ -25,6 +24,7 @@ import {
   updateDocumentPermission,
   updateDocumentSharing,
 } from "@/lib/api-client";
+import { toast } from "@/lib/toast";
 import { cn, getErrorMessage } from "@/lib/utils";
 
 import { parseSelectValue } from "../../lib/select-values";

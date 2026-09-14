@@ -2,9 +2,9 @@ import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
 import { parseId } from "@/lib/ids";
+import { toast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
 
 import {

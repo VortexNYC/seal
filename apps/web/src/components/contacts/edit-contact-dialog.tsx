@@ -11,11 +11,11 @@ import { Input } from "@cloudflare/kumo/components/input";
 import { Textarea } from "@cloudflare/kumo/components/input";
 import { Select } from "@cloudflare/kumo/components/select";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
 import { updateContact, type ApiContact } from "@/lib/api-client";
 import type { ContactStatus } from "@/lib/contact-status";
 import { parseSelectValue } from "@/lib/select-values";
+import { toast } from "@/lib/toast";
 
 const CONTACT_STATUSES = [
   "active",

@@ -4,9 +4,9 @@ import { Input } from "@cloudflare/kumo/components/input";
 import { Label } from "@cloudflare/kumo/components/label";
 import { UserPlus } from "@phosphor-icons/react";
 import { useState } from "react";
-import { toast } from "sonner";
 
 import { dictatePublicSigningNextSigner } from "@/lib/api-client";
+import { toast } from "@/lib/toast";
 
 interface DictateNextSignerDialogProps {
   open: boolean;

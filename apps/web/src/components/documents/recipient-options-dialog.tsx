@@ -2,9 +2,9 @@ import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Text } from "@cloudflare/kumo/components/text";
 import { EnvelopeSimple, Link, Trash, X } from "@phosphor-icons/react";
-import { toast } from "sonner";
 
 import { type Id } from "@/lib/ids";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 type RecipientStatus =

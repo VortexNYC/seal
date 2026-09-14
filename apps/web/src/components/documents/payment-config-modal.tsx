@@ -19,7 +19,6 @@ import {
   TrashIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
 
 import type { ApiPaymentConfigDetail } from "@/lib/api-client";
 import { getPaymentConfig, upsertPaymentConfig } from "@/lib/api-client";
@@ -32,6 +31,7 @@ import {
   toMajorNumber,
 } from "@/lib/money";
 import { parseSelectValue } from "@/lib/select-values";
+import { toast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
 
 import { InputCurrency, parseCurrencyToMinorUnits } from "../ui/input-currency";

@@ -33,7 +33,6 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import SignatureCanvas from "react-signature-canvas";
-import { toast } from "sonner";
 
 import {
   createSavedSignature,
@@ -44,6 +43,7 @@ import {
   type ApiSavedSignature,
 } from "@/lib/api-client";
 import { parseSelectValue } from "@/lib/select-values";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 type SignatureType = "drawn" | "typed" | "uploaded";

@@ -18,13 +18,13 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AuthProvider, useAuth } from "@vortex-api/better-auth-ui";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
 import { useOrganization } from "@/hooks/use-organization";
 import { getSecuritySettings, updateSecuritySettings } from "@/lib/api-client";
 import { betterAuthClient } from "@/lib/better-auth";
+import { toast } from "@/lib/toast";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/security")(
   {

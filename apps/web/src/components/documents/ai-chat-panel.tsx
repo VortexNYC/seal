@@ -12,8 +12,8 @@ import {
   XIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 import { parseTextWithCitations } from "./citation-chip";
