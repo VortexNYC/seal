@@ -28,6 +28,7 @@
   "devDependencies": {
     "@seal/tsconfig": "workspace:*",
     "@secretlint/secretlint-rule-preset-recommend": "^13.0.5",
+    "@shadcn/lint": "^0.1.0",
     "knip": "^6.3.0",
     "secretlint": "^13.0.5",
     "simple-git-hooks": "^2.14.0",
