@@ -1,16 +1,17 @@
 "use client";
 
+import { Sidebar } from "@cloudflare/kumo/components/sidebar";
+import {
+  Code,
+  CreditCard,
+  Gear,
+  Moon,
+  SquaresFour,
+  Sun,
+  type Icon,
+} from "@phosphor-icons/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import {
-  Code2,
-  CreditCard,
-  LayoutTemplate,
-  type LucideIcon,
-  Moon,
-  Settings,
-  Sun,
-} from "lucide-react";
 import * as React from "react";
 
 import { NavMain } from "@/components/nav-main";
@@ -19,16 +20,6 @@ import { NotificationsPopover } from "@/components/notifications/notifications-p
 import { SealLogoBadgeFixed } from "@/components/seal-logo-fixed";
 import { TeamSwitcher } from "@/components/team-switcher";
 import { useTheme } from "@/components/theme-provider";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarRail,
-} from "@/components/ui/sidebar";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
@@ -62,7 +53,7 @@ type PermissionSet = {
 type NavMainItem = {
   title: string;
   url: string;
-  icon: LucideIcon;
+  icon: Icon;
   isActive: boolean;
   items: {
     title: string;
@@ -72,7 +63,7 @@ type NavMainItem = {
   }[];
 };
 
-type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
+type AppSidebarProps = Omit<React.ComponentProps<typeof Sidebar>, "children"> & {
   slug: string;
   organization: SidebarOrganization;
   permissions: PermissionSet | undefined;
@@ -93,18 +84,14 @@ function isPathActive(
   targetPath: string,
   exactMatch = false
 ) {
-  // Exact match - this is the primary check
   if (currentPath === targetPath) {
     return true;
   }
 
-  // If exactMatch is required, don't check for child routes
   if (exactMatch) {
     return false;
   }
 
-  // Check if the current path is a child route of the target path
-  // For example: /org/settings/team/123 should match /org/settings/team
   return currentPath.startsWith(`${targetPath}/`);
 }
 
@@ -197,7 +184,7 @@ function buildNavSections({
       title: "General",
       url: buildOrganizationPath(slug, "/settings"),
       visible: canView(permissionFlags?.canViewSettings),
-      exactMatch: true, // General should only match /settings, not child routes
+      exactMatch: true,
     },
     {
       title: "Team",
@@ -207,7 +194,7 @@ function buildNavSections({
     {
       title: "Profile",
       url: buildOrganizationPath(slug, "/settings/profile"),
-      visible: true, // Profile settings are always visible to the user
+      visible: true,
     },
     {
       title: "AI",
@@ -279,7 +266,7 @@ function buildNavSections({
   const sections = [
     {
       title: "Workspace",
-      icon: LayoutTemplate,
+      icon: SquaresFour,
       items: workspaceItems,
     },
     {
@@ -289,12 +276,12 @@ function buildNavSections({
     },
     {
       title: "Settings",
-      icon: Settings,
+      icon: Gear,
       items: settingsItems,
     },
     {
       title: "Developer",
-      icon: Code2,
+      icon: Code,
       items: developerItems,
     },
   ];
@@ -414,7 +401,6 @@ export function AppSidebar({
   });
   const { isPro } = useSubscriptionLimits();
 
-  // Wrapper to reset PostHog identity before signing out
   const handleSignOut = React.useCallback(async () => {
     resetAnalytics();
     if (betterAuthClient === null) {
@@ -510,12 +496,12 @@ export function AppSidebar({
   }
 
   return (
-    <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
+    <Sidebar {...props}>
+      <Sidebar.Header>
         <Link
           to="/$slug/home"
           params={{ slug: activeTeamSlug }}
-          className="flex items-center justify-center py-2 group-data-[collapsible=icon]:hidden"
+          className="flex items-center justify-center py-2"
         >
           <SealLogoBadgeFixed size={64} withText />
         </Link>
@@ -526,16 +512,16 @@ export function AppSidebar({
             onTeamSelect={handleTeamSelect}
           />
         )}
-      </SidebarHeader>
-      <SidebarContent>
+      </Sidebar.Header>
+      <Sidebar.Content>
         <NavMain items={navItems} />
-      </SidebarContent>
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
+      </Sidebar.Content>
+      <Sidebar.Footer>
+        <Sidebar.Menu>
+          <Sidebar.MenuItem>
             <div className="flex items-center justify-between px-2">
               <NotificationsPopover slug={slug} organizationSlug={slug} />
-              <SidebarMenuButton
+              <Sidebar.MenuButton
                 className="ml-2 flex-1 justify-between"
                 onClick={handleThemeToggle}
                 aria-pressed={isDark}
@@ -546,35 +532,33 @@ export function AppSidebar({
                   ) : (
                     <Sun className="size-4" />
                   )}
-                  <span className="group-data-[collapsible=icon]:hidden">
-                    Dark mode
-                  </span>
+                  <span>Dark mode</span>
                 </div>
                 <span
                   aria-hidden="true"
                   className={cn(
-                    "inline-flex h-5 w-9 shrink-0 items-center rounded-full border transition-colors group-data-[collapsible=icon]:hidden",
+                    "inline-flex h-5 w-9 shrink-0 items-center rounded-full border transition-colors",
                     isDark
-                      ? "bg-primary border-primary justify-end"
-                      : "bg-muted border-border"
+                      ? "bg-kumo-primary border-kumo-primary justify-end"
+                      : "bg-kumo-surface border-kumo-hairline"
                   )}
                 >
                   <span
                     className={cn(
-                      "bg-background block h-4 w-4 rounded-full shadow-sm transition-transform",
+                      "bg-kumo-background block h-4 w-4 rounded-full shadow-sm transition-transform",
                       isDark ? "-translate-x-0.5" : "translate-x-0.5"
                     )}
                   />
                 </span>
-              </SidebarMenuButton>
+              </Sidebar.MenuButton>
             </div>
-          </SidebarMenuItem>
-        </SidebarMenu>
+          </Sidebar.MenuItem>
+        </Sidebar.Menu>
         {currentUser && (
           <NavUser user={currentUser} slug={slug} onSignOut={handleSignOut} />
         )}
-      </SidebarFooter>
-      <SidebarRail />
+      </Sidebar.Footer>
+      <Sidebar.Rail />
     </Sidebar>
   );
 }

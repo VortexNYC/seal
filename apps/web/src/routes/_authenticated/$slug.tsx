@@ -6,6 +6,7 @@
  * Route: /{slug}/*
  */
 
+import { Sidebar } from "@cloudflare/kumo/components/sidebar";
 import {
   type ErrorComponentProps,
   createFileRoute,
@@ -24,7 +25,6 @@ import { PostHogIdentify } from "@/components/posthog-identify";
 import { RouteErrorComponent } from "@/components/route-error-component";
 import { WorkspaceLayoutSkeleton } from "@/components/skeletons/workspace-layout-skeleton";
 import { DotPattern } from "@/components/ui/patterns";
-import { SidebarProvider } from "@/components/ui/sidebar";
 import { useJamMetadata } from "@/hooks/use-jam-metadata";
 import { useSuspenseOrganization } from "@/hooks/use-organization";
 import { betterAuthClient } from "@/lib/better-auth";
@@ -76,7 +76,7 @@ function WorkspaceLayout() {
   };
 
   return (
-    <SidebarProvider>
+    <Sidebar.Provider collapsible="icon">
       <PostHogIdentify organization={orgData} />
       <DotPattern className="fixed inset-0 z-0" />
       <div className="bg-background/80 relative z-10 flex h-dvh w-full overflow-hidden">
@@ -91,6 +91,6 @@ function WorkspaceLayout() {
       </div>
       <CommandPalette open={cmdKOpen} onOpenChange={setCmdKOpen} />
       <FeedbackButton organizationSlug={slug} />
-    </SidebarProvider>
+    </Sidebar.Provider>
   );
 }

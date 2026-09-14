@@ -14,19 +14,19 @@
  * ```
  */
 
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { Sidebar } from "@cloudflare/kumo/components/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function WorkspaceLayoutSkeleton() {
   return (
-    <SidebarProvider>
+    <Sidebar.Provider>
       <div
         className="flex h-dvh w-full overflow-hidden"
         role="status"
         aria-label="Loading workspace"
       >
         {/* Sidebar Skeleton */}
-        <aside className="bg-sidebar flex h-dvh w-[240px] flex-col gap-2 border-r p-2">
+        <aside className="bg-kumo-surface flex h-dvh w-[240px] flex-col gap-2 border-r p-2">
           {/* Logo/Header */}
           <div className="flex items-center gap-2 px-2 py-4">
             <Skeleton className="h-8 w-8 rounded-md" />
@@ -67,6 +67,6 @@ export function WorkspaceLayoutSkeleton() {
           </div>
         </main>
       </div>
-    </SidebarProvider>
+    </Sidebar.Provider>
   );
 }
