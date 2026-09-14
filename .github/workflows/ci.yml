@@ -16,8 +16,8 @@ permissions:
   packages: read
 
 jobs:
-  check:
-    name: check
+  quality:
+    name: quality
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
