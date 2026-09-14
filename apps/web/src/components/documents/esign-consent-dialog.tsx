@@ -11,6 +11,9 @@
  * 3. Declined with alternative options
  */
 
+import { Button } from "@cloudflare/kumo/components/button";
+import { Checkbox } from "@cloudflare/kumo/components/checkbox";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import {
   CheckCircle2Icon,
   DownloadIcon,
@@ -21,10 +24,6 @@ import {
 import { useCallback, useState } from "react";
 
 import { SealLogo } from "@/components/seal-logo";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 
 type ConsentState = "pending" | "accepted" | "declined";
 
@@ -88,8 +87,8 @@ export function EsignConsentDialog({
             </p>
           </div>
 
-          <Card>
-            <CardContent className="space-y-3 p-5">
+          <LayerCard>
+            <LayerCard.Primary className="space-y-3 p-5">
               <p className="text-sm font-medium">Alternative options:</p>
               <div className="space-y-2">
                 {onDownloadPdf && (
@@ -128,8 +127,8 @@ export function EsignConsentDialog({
                   Contact Document Sender
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </LayerCard.Primary>
+          </LayerCard>
 
           <div className="text-center">
             <Button
@@ -176,8 +175,8 @@ export function EsignConsentDialog({
             </p>
           </div>
 
-          <Card className="border-status-completed-border bg-status-completed-surface">
-            <CardContent className="space-y-1 p-5 text-center">
+          <LayerCard className="border-status-completed-border bg-status-completed-surface">
+            <LayerCard.Primary className="space-y-1 p-5 text-center">
               <p className="text-status-completed-text text-sm font-medium">
                 {recipientEmail}
               </p>
@@ -189,8 +188,8 @@ export function EsignConsentDialog({
                   year: "numeric",
                 })}
               </p>
-            </CardContent>
-          </Card>
+            </LayerCard.Primary>
+          </LayerCard>
         </div>
       </div>
     );
@@ -218,8 +217,8 @@ export function EsignConsentDialog({
           <h2 className="mb-3 text-lg font-semibold">
             Electronic Signature Agreement
           </h2>
-          <Card className="border-info-surface bg-info-surface/50">
-            <CardContent className="space-y-4 p-5">
+          <LayerCard className="border-info-surface bg-info-surface/50">
+            <LayerCard.Primary className="space-y-4 p-5">
               <p className="text-muted-foreground text-sm leading-relaxed">
                 {customConsentText ??
                   "By checking the box below, you consent to use electronic signatures for this document and future documents."}
@@ -261,24 +260,16 @@ export function EsignConsentDialog({
                   </li>
                 </ul>
               </div>
-            </CardContent>
-          </Card>
+            </LayerCard.Primary>
+          </LayerCard>
         </div>
 
-        <div className="flex items-start gap-3">
-          <Checkbox
-            id="esign-consent"
-            checked={isChecked}
-            onCheckedChange={(checked) => setIsChecked(checked === true)}
-            className="mt-0.5"
-          />
-          <Label
-            htmlFor="esign-consent"
-            className="cursor-pointer text-sm leading-snug font-medium"
-          >
-            I consent to use electronic signatures as described above
-          </Label>
-        </div>
+        <Checkbox
+          label="I consent to use electronic signatures as described above"
+          checked={isChecked}
+          onCheckedChange={setIsChecked}
+          className="mt-0.5"
+        />
 
         <div className="space-y-3">
           <Button
