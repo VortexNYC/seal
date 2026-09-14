@@ -14,15 +14,15 @@ import { AlertTriangleIcon, ClockIcon, MailXIcon } from "lucide-react";
 import { getDocumentAttention } from "@/lib/api-client";
 
 interface NeedsAttentionProps {
-  slug: string;
+  organizationSlug: string;
 }
 
 export function NeedsAttention({
-  slug,
+  organizationSlug,
 }: NeedsAttentionProps): React.ReactElement | null {
   const { data: attention } = useQuery({
-    queryKey: ["api", "documents", "attention", slug],
-    queryFn: () => getDocumentAttention(slug),
+    queryKey: ["api", "documents", "attention", organizationSlug],
+    queryFn: () => getDocumentAttention(organizationSlug),
   });
 
   if (!attention || attention.totalIssues === 0) return null;
@@ -53,7 +53,7 @@ export function NeedsAttention({
             <Link
               key={`stale-${item.documentId}-${item.recipientEmail}`}
               to="/$slug/documents/$documentId"
-              params={{ slug, documentId: item.documentId }}
+              params={{ slug: organizationSlug, documentId: item.documentId }}
               className="group hover:bg-warning-surface/50 flex items-center gap-3 rounded-lg p-2 transition-colors duration-[var(--duration-fast)]"
             >
               <ClockIcon className="text-warning h-4 w-4 shrink-0" />
@@ -75,7 +75,7 @@ export function NeedsAttention({
             <Link
               key={`deadline-${item.documentId}`}
               to="/$slug/documents/$documentId"
-              params={{ slug, documentId: item.documentId }}
+              params={{ slug: organizationSlug, documentId: item.documentId }}
               className="group hover:bg-warning-surface/50 flex items-center gap-3 rounded-lg p-2 transition-colors duration-[var(--duration-fast)]"
             >
               <AlertTriangleIcon className="text-destructive h-4 w-4 shrink-0" />
@@ -97,7 +97,7 @@ export function NeedsAttention({
             <Link
               key={`bounce-${item.documentId}-${item.recipientEmail}`}
               to="/$slug/documents/$documentId"
-              params={{ slug, documentId: item.documentId }}
+              params={{ slug: organizationSlug, documentId: item.documentId }}
               className="group hover:bg-warning-surface/50 flex items-center gap-3 rounded-lg p-2 transition-colors duration-[var(--duration-fast)]"
             >
               <MailXIcon className="text-destructive h-4 w-4 shrink-0" />

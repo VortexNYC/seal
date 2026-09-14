@@ -197,7 +197,7 @@ function WorkspaceHome(): React.ReactElement | null {
 
         {/* Needs Attention */}
         <Suspense fallback={null}>
-          <NeedsAttention slug={slug} />
+          <NeedsAttention organizationSlug={slug} />
         </Suspense>
 
         {/* Team Overview */}
