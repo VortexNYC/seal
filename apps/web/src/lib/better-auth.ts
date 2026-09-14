@@ -18,5 +18,3 @@ export const betterAuthClient =
         plugins: [organizationClient(), twoFactorClient()],
       })
     : null;
-
-export const authClient = betterAuthClient;

@@ -4,7 +4,6 @@ import { Label } from "@cloudflare/kumo/components/label";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
 import { ArrowsLeftRight, FloppyDisk, Shield } from "@phosphor-icons/react";
-import { AuthProvider, useAuth } from "@vortexnyc/better-auth-ui";
 /**
  * Security Settings Page
  *
@@ -16,14 +15,15 @@ import { AuthProvider, useAuth } from "@vortexnyc/better-auth-ui";
  */
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { AuthProvider, useAuth } from "@vortexnyc/better-auth-ui";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
 import { Textarea } from "@/components/ui/textarea";
-import { getSecuritySettings, updateSecuritySettings } from "@/lib/api-client";
 import { useOrganization } from "@/hooks/use-organization";
+import { getSecuritySettings, updateSecuritySettings } from "@/lib/api-client";
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/security")(
@@ -93,7 +93,10 @@ function SecuritySettingsContent() {
   }, [organization]);
 
   const handleDelegateOwnershipChange = async (checked: boolean) => {
-    if (client.organization?.update === undefined || organization?.id === undefined) {
+    if (
+      client.organization?.update === undefined ||
+      organization?.id === undefined
+    ) {
       toast.error("Organization update is not available.");
       return;
     }

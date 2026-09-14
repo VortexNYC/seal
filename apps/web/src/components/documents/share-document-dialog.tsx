@@ -13,6 +13,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { useOrganizationMembers } from "@/hooks/use-organization-members";
 import {
   getDocumentSharing,
   revokeDocumentAccess,
@@ -20,7 +21,6 @@ import {
   updateDocumentPermission,
   updateDocumentSharing,
 } from "@/lib/api-client";
-import { useOrganizationMembers } from "@/hooks/use-organization-members";
 import { cn, getErrorMessage } from "@/lib/utils";
 
 import { parseSelectValue } from "../../lib/select-values";

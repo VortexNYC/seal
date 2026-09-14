@@ -39,7 +39,7 @@ function toNumber(value: unknown): number {
 
 async function fetchOrganization(
   slug: string,
-  userId: string | undefined,
+  userId: string | undefined
 ): Promise<OrganizationView | null> {
   const client = getBetterAuthUiClient();
   if (client === null) {
@@ -71,10 +71,8 @@ async function fetchOrganization(
   const meta = data.metadata ?? {};
   const status = typeof meta.status === "string" ? meta.status : "active";
   const plan = typeof meta.plan === "string" ? meta.plan : "free";
-  const timezone =
-    typeof meta.timezone === "string" ? meta.timezone : "UTC";
-  const currency =
-    typeof meta.currency === "string" ? meta.currency : "BRL";
+  const timezone = typeof meta.timezone === "string" ? meta.timezone : "UTC";
+  const currency = typeof meta.currency === "string" ? meta.currency : "BRL";
   const currencyKind =
     typeof meta.currencyKind === "string" ? meta.currencyKind : "normal";
   const delegateOwnership = meta.delegateOwnership === true;

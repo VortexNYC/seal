@@ -13,7 +13,6 @@ import {
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
-import { useSuspenseOrganization } from "@/hooks/use-organization";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -85,6 +84,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useAnalytics } from "@/hooks/use-analytics";
+import { useSuspenseOrganization } from "@/hooks/use-organization";
 import {
   deleteTemplate as deleteTemplateApi,
   getFolders,
