@@ -1,3 +1,5 @@
+import { Button } from "@cloudflare/kumo/components/button";
+import { Collapsible } from "@cloudflare/kumo/components/collapsible";
 import {
   CheckCircleIcon,
   ChevronDownIcon,
@@ -7,13 +9,6 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-
-import { Button } from "../ui/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "../ui/collapsible";
 
 type FieldType = string;
 
@@ -104,51 +99,45 @@ export function InAppSigningSection({
   const StatusIcon = statusConfig.icon;
 
   return (
-    <Collapsible
+    <Collapsible.Root
       open={isOpen}
       onOpenChange={onOpenChange}
       className="border-warning/30 bg-warning-surface/50 overflow-hidden rounded-2xl border-2 shadow-sm sm:rounded-xl"
     >
-      <CollapsibleTrigger asChild>
-        <button
-          type="button"
-          aria-expanded={isOpen}
-          className="hover:bg-warning-surface/80 flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5"
-        >
-          <div className="flex items-center gap-3">
-            <div
+      <Collapsible.Trigger className="hover:bg-warning-surface/80 flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
+        <div className="flex items-center gap-3">
+          <div
+            className={cn(
+              "flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg",
+              statusConfig.bgColor,
+              statusConfig.textColor
+            )}
+          >
+            <PenLineIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
+          </div>
+          <div className="text-left">
+            <span className="text-foreground block font-sans text-[0.9375rem] font-semibold sm:text-sm">
+              Your Signature
+            </span>
+            <span
               className={cn(
-                "flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg",
-                statusConfig.bgColor,
+                "flex items-center gap-1 font-sans text-xs",
                 statusConfig.textColor
               )}
             >
-              <PenLineIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
-            </div>
-            <div className="text-left">
-              <span className="text-foreground block font-sans text-[0.9375rem] font-semibold sm:text-sm">
-                Your Signature
-              </span>
-              <span
-                className={cn(
-                  "flex items-center gap-1 font-sans text-xs",
-                  statusConfig.textColor
-                )}
-              >
-                <StatusIcon className="h-3 w-3" />
-                {statusConfig.label}
-              </span>
-            </div>
+              <StatusIcon className="h-3 w-3" />
+              {statusConfig.label}
+            </span>
           </div>
-          <ChevronDownIcon
-            className={cn(
-              "text-muted-foreground h-4 w-4 transition-transform duration-200",
-              isOpen && "rotate-180"
-            )}
-          />
-        </button>
-      </CollapsibleTrigger>
-      <CollapsibleContent
+        </div>
+        <ChevronDownIcon
+          className={cn(
+            "text-muted-foreground h-4 w-4 transition-transform duration-200",
+            isOpen && "rotate-180"
+          )}
+        />
+      </Collapsible.Trigger>
+      <Collapsible.Panel
         id="in-app-signing-content"
         className="border-warning/20 border-t px-5 pb-5 sm:px-4 sm:pb-4"
       >
@@ -218,7 +207,7 @@ export function InAppSigningSection({
             </div>
           </div>
         )}
-      </CollapsibleContent>
-    </Collapsible>
+      </Collapsible.Panel>
+    </Collapsible.Root>
   );
 }
