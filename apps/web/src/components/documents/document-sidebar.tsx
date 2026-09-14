@@ -1,3 +1,7 @@
+import { Button } from "@cloudflare/kumo/components/button";
+import { Collapsible } from "@cloudflare/kumo/components/collapsible";
+import { Input } from "@cloudflare/kumo/components/input";
+import { Label } from "@cloudflare/kumo/components/label";
 import {
   ActivityIcon,
   ChevronDownIcon,
@@ -26,14 +30,6 @@ import {
 import { parseId } from "@/lib/ids";
 import { cn } from "@/lib/utils";
 
-import { Button } from "../ui/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "../ui/collapsible";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
 import { AIInsightsPanel } from "./ai-annotation-overlays";
 import type { useDocumentAnnotations } from "./ai-annotation-overlays";
 import { AIChatPanel } from "./ai-chat-panel";
@@ -270,7 +266,11 @@ function RecipientRow({
       </span>
       <Button
         variant="ghost"
-        size="icon-sm"
+        shape="square"
+        size="sm"
+        className="h-8 w-8"
+        aria-label="Recipient options"
+        title="Recipient options"
         onClick={() =>
           onRecipientOptions({
             ...recipient,
@@ -282,7 +282,6 @@ function RecipientRow({
                 : undefined,
           })
         }
-        title="Recipient options"
       >
         <SettingsIcon className="text-muted-foreground h-4 w-4" />
       </Button>
@@ -310,38 +309,33 @@ function RecipientsSection({
   onRecipientOptions: DocumentSidebarProps["onRecipientOptions"];
 }) {
   return (
-    <Collapsible
+    <Collapsible.Root
       open={open}
       onOpenChange={onOpenChange}
       className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
     >
-      <CollapsibleTrigger asChild>
-        <button
-          type="button"
-          className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5"
-        >
-          <div className="flex items-center gap-3">
-            <div className="bg-info-surface text-info flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
-              <UsersIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
-            </div>
-            <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
-              Recipients
-            </span>
-            {recipients.length > 0 && (
-              <span className="bg-muted text-muted-foreground ml-2 rounded-xl px-2 py-0.5 font-sans text-[0.6875rem] font-semibold">
-                {recipients.length}
-              </span>
-            )}
+      <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
+        <div className="flex items-center gap-3">
+          <div className="bg-info-surface text-info flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
+            <UsersIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
           </div>
-          <ChevronDownIcon
-            className={cn(
-              "text-muted-foreground h-4 w-4 transition-transform",
-              open && "rotate-180"
-            )}
-          />
-        </button>
-      </CollapsibleTrigger>
-      <CollapsibleContent className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
+          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
+            Recipients
+          </span>
+          {recipients.length > 0 && (
+            <span className="bg-muted text-muted-foreground ml-2 rounded-xl px-2 py-0.5 font-sans text-[0.6875rem] font-semibold">
+              {recipients.length}
+            </span>
+          )}
+        </div>
+        <ChevronDownIcon
+          className={cn(
+            "text-muted-foreground h-4 w-4 transition-transform",
+            open && "rotate-180"
+          )}
+        />
+      </Collapsible.Trigger>
+      <Collapsible.Panel className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
         {canEdit && !isUserAlreadyRecipient && (
           <Button
             variant="outline"
@@ -371,17 +365,18 @@ function RecipientsSection({
           />
         )}
         {canEdit && (
-          <button
-            type="button"
-            className="border-border text-muted-foreground hover:border-primary hover:bg-primary/5 hover:text-primary mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border-2 border-dashed bg-transparent p-3 font-sans text-[0.8125rem] font-semibold transition-[color,border-color,background-color] sm:rounded-lg sm:p-2.5 sm:text-xs"
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-border text-muted-foreground hover:border-primary hover:bg-primary/5 hover:text-primary mt-3 flex w-full items-center justify-center gap-2 rounded-[10px] border-2 border-dashed bg-transparent p-3 font-sans text-[0.8125rem] font-semibold transition-[color,border-color,background-color] sm:rounded-lg sm:p-2.5 sm:text-xs"
             onClick={onAddRecipient}
           >
             <PlusIcon className="h-4 w-4" />
             Add Recipient
-          </button>
+          </Button>
         )}
-      </CollapsibleContent>
-    </Collapsible>
+      </Collapsible.Panel>
+    </Collapsible.Root>
   );
 }
 
@@ -403,33 +398,28 @@ function DocumentSettingsSection({
   onSaveRedirectUrl: () => void;
 }) {
   return (
-    <Collapsible
+    <Collapsible.Root
       open={open}
       onOpenChange={onOpenChange}
       className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
     >
-      <CollapsibleTrigger asChild>
-        <button
-          type="button"
-          className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5"
-        >
-          <div className="flex items-center gap-3">
-            <div className="bg-muted text-muted-foreground flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
-              <SettingsIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
-            </div>
-            <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
-              Document Settings
-            </span>
+      <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
+        <div className="flex items-center gap-3">
+          <div className="bg-muted text-muted-foreground flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
+            <SettingsIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
           </div>
-          <ChevronDownIcon
-            className={cn(
-              "text-muted-foreground h-4 w-4 transition-transform",
-              open && "rotate-180"
-            )}
-          />
-        </button>
-      </CollapsibleTrigger>
-      <CollapsibleContent className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
+          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
+            Document Settings
+          </span>
+        </div>
+        <ChevronDownIcon
+          className={cn(
+            "text-muted-foreground h-4 w-4 transition-transform",
+            open && "rotate-180"
+          )}
+        />
+      </Collapsible.Trigger>
+      <Collapsible.Panel className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
         <div className="mt-4 space-y-5">
           <div className="space-y-2">
             <Label className="text-foreground flex items-center gap-1.5 text-xs font-semibold tracking-wider uppercase">
@@ -442,6 +432,7 @@ function DocumentSettingsSection({
             </p>
             <div className="flex gap-2">
               <Input
+                aria-label="Redirect after signing URL"
                 placeholder="https://example.com/thank-you"
                 value={redirectUrlInput}
                 onChange={(event) => onRedirectUrlChange(event.target.value)}
@@ -468,8 +459,8 @@ function DocumentSettingsSection({
             )}
           </div>
         </div>
-      </CollapsibleContent>
-    </Collapsible>
+      </Collapsible.Panel>
+    </Collapsible.Root>
   );
 }
 
@@ -535,36 +526,31 @@ function AIInsightsSection({
   if (!documentAnnotations.annotations) return null;
 
   return (
-    <Collapsible
+    <Collapsible.Root
       open={open}
       onOpenChange={onOpenChange}
       className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
     >
-      <CollapsibleTrigger asChild>
-        <button
-          type="button"
-          className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5"
-        >
-          <div className="flex items-center gap-3">
-            <div className="bg-ai-accent-surface text-ai-accent flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
-              <ScanSearchIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
-            </div>
-            <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
-              Insights
-            </span>
-            <span className="bg-muted text-muted-foreground ml-2 rounded-xl px-2 py-0.5 font-sans text-[0.6875rem] font-semibold">
-              {documentAnnotations.annotations.annotations.length}
-            </span>
+      <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
+        <div className="flex items-center gap-3">
+          <div className="bg-ai-accent-surface text-ai-accent flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
+            <ScanSearchIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
           </div>
-          <ChevronDownIcon
-            className={cn(
-              "text-muted-foreground h-4 w-4 transition-transform duration-200",
-              open && "rotate-180"
-            )}
-          />
-        </button>
-      </CollapsibleTrigger>
-      <CollapsibleContent className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
+          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
+            Insights
+          </span>
+          <span className="bg-muted text-muted-foreground ml-2 rounded-xl px-2 py-0.5 font-sans text-[0.6875rem] font-semibold">
+            {documentAnnotations.annotations.annotations.length}
+          </span>
+        </div>
+        <ChevronDownIcon
+          className={cn(
+            "text-muted-foreground h-4 w-4 transition-transform duration-200",
+            open && "rotate-180"
+          )}
+        />
+      </Collapsible.Trigger>
+      <Collapsible.Panel className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
         <div className="mt-3">
           <AIInsightsPanel
             annotations={documentAnnotations.annotations}
@@ -574,8 +560,8 @@ function AIInsightsSection({
             onPageJump={onPageJump}
           />
         </div>
-      </CollapsibleContent>
-    </Collapsible>
+      </Collapsible.Panel>
+    </Collapsible.Root>
   );
 }
 
@@ -613,38 +599,33 @@ function SignatureFieldsSection({
   if (signatureFields.length === 0 && !canEdit) return null;
 
   return (
-    <Collapsible
+    <Collapsible.Root
       open={open}
       onOpenChange={onOpenChange}
       className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
     >
-      <CollapsibleTrigger asChild>
-        <button
-          type="button"
-          className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5"
-        >
-          <div className="flex items-center gap-3">
-            <div className="bg-ai-accent-surface text-ai-accent flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
-              <FileSignatureIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
-            </div>
-            <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
-              Signature Fields
-            </span>
-            {signatureFields.length > 0 && (
-              <span className="bg-muted text-muted-foreground ml-2 rounded-xl px-2 py-0.5 font-sans text-[0.6875rem] font-semibold">
-                {signatureFields.length}
-              </span>
-            )}
+      <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
+        <div className="flex items-center gap-3">
+          <div className="bg-ai-accent-surface text-ai-accent flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
+            <FileSignatureIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
           </div>
-          <ChevronDownIcon
-            className={cn(
-              "text-muted-foreground h-4 w-4 transition-transform duration-200",
-              open && "rotate-180"
-            )}
-          />
-        </button>
-      </CollapsibleTrigger>
-      <CollapsibleContent className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
+          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
+            Signature Fields
+          </span>
+          {signatureFields.length > 0 && (
+            <span className="bg-muted text-muted-foreground ml-2 rounded-xl px-2 py-0.5 font-sans text-[0.6875rem] font-semibold">
+              {signatureFields.length}
+            </span>
+          )}
+        </div>
+        <ChevronDownIcon
+          className={cn(
+            "text-muted-foreground h-4 w-4 transition-transform duration-200",
+            open && "rotate-180"
+          )}
+        />
+      </Collapsible.Trigger>
+      <Collapsible.Panel className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
         {canEdit && (
           <div className="mt-4 mb-4">
             <FieldToolbar
@@ -673,8 +654,8 @@ function SignatureFieldsSection({
             description="Drag fields from above onto the document to mark where recipients should sign or fill in information."
           />
         )}
-      </CollapsibleContent>
-    </Collapsible>
+      </Collapsible.Panel>
+    </Collapsible.Root>
   );
 }
 
@@ -711,33 +692,28 @@ function DocumentDetailsSection({
   description?: string | null;
 }) {
   return (
-    <Collapsible
+    <Collapsible.Root
       open={open}
       onOpenChange={onOpenChange}
       className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
     >
-      <CollapsibleTrigger asChild>
-        <button
-          type="button"
-          className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5"
-        >
-          <div className="flex items-center gap-3">
-            <div className="bg-info-surface text-info flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
-              <InfoIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
-            </div>
-            <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
-              Details
-            </span>
+      <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
+        <div className="flex items-center gap-3">
+          <div className="bg-info-surface text-info flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
+            <InfoIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
           </div>
-          <ChevronDownIcon
-            className={cn(
-              "text-muted-foreground h-4 w-4 transition-transform",
-              open && "rotate-180"
-            )}
-          />
-        </button>
-      </CollapsibleTrigger>
-      <CollapsibleContent className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
+          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
+            Details
+          </span>
+        </div>
+        <ChevronDownIcon
+          className={cn(
+            "text-muted-foreground h-4 w-4 transition-transform",
+            open && "rotate-180"
+          )}
+        />
+      </Collapsible.Trigger>
+      <Collapsible.Panel className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
         <div className="mt-4 grid grid-cols-2 gap-4 sm:gap-2.5">
           <DetailMetric label="File Size" value={formatFileSize(fileSize)} />
           <DetailMetric label="Pages" value={pageCount || numPages || "—"} />
@@ -754,8 +730,8 @@ function DocumentDetailsSection({
             </div>
           </div>
         )}
-      </CollapsibleContent>
-    </Collapsible>
+      </Collapsible.Panel>
+    </Collapsible.Root>
   );
 }
 
@@ -799,38 +775,33 @@ function ActivitySection({
   activityEvents: ActivityEvent[];
 }) {
   return (
-    <Collapsible
+    <Collapsible.Root
       open={open}
       onOpenChange={onOpenChange}
       className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
     >
-      <CollapsibleTrigger asChild>
-        <button
-          type="button"
-          className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5"
-        >
-          <div className="flex items-center gap-3">
-            <div className="bg-warning-surface text-warning flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
-              <ActivityIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
-            </div>
-            <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
-              Activity
-            </span>
-            {activityEvents.length > 0 && (
-              <span className="bg-muted text-muted-foreground ml-2 rounded-xl px-2 py-0.5 font-sans text-[0.6875rem] font-semibold">
-                {activityEvents.length}
-              </span>
-            )}
+      <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
+        <div className="flex items-center gap-3">
+          <div className="bg-warning-surface text-warning flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
+            <ActivityIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
           </div>
-          <ChevronDownIcon
-            className={cn(
-              "text-muted-foreground h-4 w-4 transition-transform",
-              open && "rotate-180"
-            )}
-          />
-        </button>
-      </CollapsibleTrigger>
-      <CollapsibleContent className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
+          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
+            Activity
+          </span>
+          {activityEvents.length > 0 && (
+            <span className="bg-muted text-muted-foreground ml-2 rounded-xl px-2 py-0.5 font-sans text-[0.6875rem] font-semibold">
+              {activityEvents.length}
+            </span>
+          )}
+        </div>
+        <ChevronDownIcon
+          className={cn(
+            "text-muted-foreground h-4 w-4 transition-transform",
+            open && "rotate-180"
+          )}
+        />
+      </Collapsible.Trigger>
+      <Collapsible.Panel className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
         {activityEvents.length > 0 ? (
           <div className="before:bg-border relative mt-4 before:absolute before:top-2 before:bottom-2 before:left-[15px] before:w-0.5 before:rounded-sm before:content-[''] sm:before:left-[13px]">
             {activityEvents.slice(0, 10).map((event, index) => (
@@ -848,8 +819,8 @@ function ActivitySection({
             description="Activity will appear here as recipients interact with this document."
           />
         )}
-      </CollapsibleContent>
-    </Collapsible>
+      </Collapsible.Panel>
+    </Collapsible.Root>
   );
 }
 
