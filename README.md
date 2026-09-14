@@ -1,4 +1,4 @@
-# Seal by Vortex
+# Seal
 
 An open-source, agent-native e-signature platform. Built and powered by Vortex.
 

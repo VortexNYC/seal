@@ -8,7 +8,7 @@
 
 ## OVERVIEW
 
-Seal by Vortex is a pnpm + Vite+ (VoidZero) monorepo with a React 19 product app, a TanStack Start landing/docs site, a Cloudflare Workers backend, transactional email templates, an embeddable React SDK, and shared design tokens. Auth uses Better-Auth through Vortex Auth (`@vortexnyc/auth`); the product UI uses Tailwind v4 + Shadcn patterns. The legacy Convex backend has been removed; product data lives in the Cloudflare Worker API (`apps/api`).
+Seal is a pnpm + Vite+ (VoidZero) monorepo with a React 19 product app, a TanStack Start landing/docs site, a Cloudflare Workers backend, transactional email templates, an embeddable React SDK, and shared design tokens. Auth uses Better-Auth through Vortex Auth (`@vortexnyc/auth`); the product UI uses Tailwind v4 + Shadcn patterns. The legacy Convex backend has been removed; product data lives in the Cloudflare Worker API (`apps/api`).
 
 ## STRUCTURE
 

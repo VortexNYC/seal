@@ -1,26 +1,13 @@
-import { useEffect, useState } from "react";
+import { Button } from "@cloudflare/kumo/components/button";
+import { Dialog } from "@cloudflare/kumo/components/dialog";
+import { Input } from "@cloudflare/kumo/components/input";
+import { Select } from "@cloudflare/kumo/components/select";
+import { Text } from "@cloudflare/kumo/components/text";
+import { useEffect, useMemo, useState } from "react";
 
 import { type Id, parseId } from "@/lib/ids";
 import { cn } from "@/lib/utils";
 
-import { Button } from "../ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../ui/dialog";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
 import { getRecipientColor } from "./recipient-colors";
 
 type RecipientRole = "signer" | "viewer" | "approver";
@@ -82,93 +69,86 @@ export function RecipientSelectorDialog({
     }
   }, [open, fieldType, pageNumber]);
 
+  const options = useMemo(
+    () =>
+      signers
+        .filter((recipient) => recipient._id)
+        .map((recipient, index) => {
+          const color = getRecipientColor(index);
+          return {
+            value: recipient._id,
+            node: (
+              <div className="flex items-center gap-3">
+                <div
+                  className={cn("h-3 w-3 flex-shrink-0 rounded-full", color.bg)}
+                  aria-hidden="true"
+                />
+                <div className="flex flex-col">
+                  <Text as="span" size="sm" variant="body">
+                    {recipient.name || recipient.email}
+                  </Text>
+                  {recipient.name && (
+                    <Text as="span" size="xs" variant="secondary">
+                      {recipient.email}
+                    </Text>
+                  )}
+                </div>
+              </div>
+            ),
+          };
+        }),
+    [signers]
+  );
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Assign Field to Recipient</DialogTitle>
-          <DialogDescription>
-            Choose which recipient should fill this {fieldType} field.
-          </DialogDescription>
-        </DialogHeader>
+    <Dialog.Root open={open} onOpenChange={(next) => onOpenChange(next)}>
+      <Dialog>
+        <Dialog.Title>Assign Field to Recipient</Dialog.Title>
+        <Dialog.Description>
+          Choose which recipient should fill this {fieldType} field.
+        </Dialog.Description>
 
         <div className="space-y-4 py-4">
           {/* Field Name Input */}
-          <div className="space-y-2">
-            <Label htmlFor="fieldName">Field Name</Label>
-            <Input
-              id="fieldName"
-              value={fieldName}
-              onChange={(e) => setFieldName(e.target.value)}
-              placeholder="Enter field name..."
-            />
-            <p className="text-muted-foreground text-xs">
-              A descriptive name to identify this field.
-            </p>
-          </div>
+          <Input
+            id="fieldName"
+            label="Field Name"
+            value={fieldName}
+            onChange={(e) => setFieldName(e.target.value)}
+            placeholder="Enter field name..."
+            description="A descriptive name to identify this field."
+          />
 
           {/* Recipient Selector */}
           <div className="space-y-2">
-            <Label htmlFor="recipient">Recipient</Label>
             {signers.length > 0 ? (
-              <>
-                <Select
-                  value={selectedRecipientId ?? ""}
-                  onValueChange={(value) => {
-                    if (value) {
-                      onRecipientSelect(parseId("document_recipients", value));
-                    }
-                  }}
-                >
-                  <SelectTrigger id="recipient">
-                    <SelectValue placeholder="Select a signer..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {signers
-                      .filter((recipient) => recipient._id)
-                      .map((recipient, index) => {
-                        const color = getRecipientColor(index);
-                        return (
-                          <SelectItem key={recipient._id} value={recipient._id}>
-                            <div className="flex items-center gap-3">
-                              <div
-                                className={cn(
-                                  "h-3 w-3 flex-shrink-0 rounded-full",
-                                  color.bg
-                                )}
-                                aria-hidden="true"
-                              />
-                              <div className="flex flex-col">
-                                <span className="font-medium">
-                                  {recipient.name || recipient.email}
-                                </span>
-                                {recipient.name && (
-                                  <span className="text-muted-foreground text-xs">
-                                    {recipient.email}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </SelectItem>
-                        );
-                      })}
-                  </SelectContent>
-                </Select>
-                <p className="text-muted-foreground text-xs">
-                  This recipient will see and fill this field on the signing
-                  page.
-                </p>
-              </>
+              <Select
+                value={selectedRecipientId ?? ""}
+                onValueChange={(value) => {
+                  if (value) {
+                    onRecipientSelect(parseId("document_recipients", value));
+                  }
+                }}
+                label="Recipient"
+                placeholder="Select a signer..."
+                description="This recipient will see and fill this field on the signing page."
+              >
+                {options.map((option) => (
+                  <Select.Option key={option.value} value={option.value}>
+                    {option.node}
+                  </Select.Option>
+                ))}
+              </Select>
             ) : (
-              <p className="text-muted-foreground py-2 text-sm">
+              <Text as="p" size="sm" variant="secondary">
                 No signers available. Only recipients with the "Signer" role can
                 have fields assigned to them.
-              </p>
+              </Text>
             )}
           </div>
         </div>
 
-        <DialogFooter>
+        <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
@@ -178,8 +158,8 @@ export function RecipientSelectorDialog({
           >
             Place Field
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </Dialog>
+    </Dialog.Root>
   );
 }

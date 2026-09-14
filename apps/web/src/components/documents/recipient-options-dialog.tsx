@@ -1,12 +1,11 @@
-import { LinkIcon, MailIcon, TrashIcon, XIcon } from "lucide-react";
-import { toast } from "sonner";
+import { Button } from "@cloudflare/kumo/components/button";
+import { Dialog } from "@cloudflare/kumo/components/dialog";
+import { Text } from "@cloudflare/kumo/components/text";
+import { EnvelopeSimple, Link, Trash, X } from "@phosphor-icons/react";
 
 import { type Id } from "@/lib/ids";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-
-import { Button } from "../ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
-import { Separator } from "../ui/separator";
 
 type RecipientStatus =
   | "pending"
@@ -112,80 +111,95 @@ export function RecipientOptionsDialog({
 
   const hasSigningLink = !!recipient.signingToken;
 
+  const statusColorClasses = (status: RecipientStatus) =>
+    cn(
+      "font-medium",
+      status === "pending" || status === "expired"
+        ? "text-kumo-secondary"
+        : status === "viewed"
+          ? "text-kumo-info"
+          : status === "signed" || status === "approved"
+            ? "text-kumo-success"
+            : status === "declined"
+              ? "text-kumo-danger"
+              : "text-kumo-secondary"
+    );
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm gap-0 overflow-hidden p-0 [&>button]:hidden">
-        <DialogHeader className="sr-only">
-          <DialogTitle>Recipient Options</DialogTitle>
-        </DialogHeader>
+    <Dialog.Root open={open} onOpenChange={(next) => onOpenChange(next)}>
+      <Dialog size="sm" className="gap-0 overflow-hidden p-0">
+        <Dialog.Title className="sr-only">Recipient Options</Dialog.Title>
 
         {/* Header */}
-        <div className="flex items-center justify-between border-b p-4">
+        <div className="border-kumo-hairline flex items-center justify-between border-b p-4">
           <div className="flex items-center gap-3">
             <div
               className={cn(
                 "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-sans text-sm font-semibold",
-                recipient.status === "pending"
-                  ? "bg-muted text-muted-foreground"
+                recipient.status === "pending" || recipient.status === "expired"
+                  ? "bg-kumo-elevated text-kumo-secondary"
                   : recipient.status === "viewed"
-                    ? "bg-info-surface text-info"
+                    ? "bg-kumo-info-tint text-kumo-info"
                     : recipient.status === "signed" ||
                         recipient.status === "approved"
-                      ? "bg-success-surface text-success"
+                      ? "bg-kumo-success-tint text-kumo-success"
                       : recipient.status === "declined"
-                        ? "bg-destructive/10 text-destructive"
-                        : "bg-muted text-muted-foreground"
+                        ? "bg-kumo-danger/10 text-kumo-danger"
+                        : "bg-kumo-elevated text-kumo-secondary"
               )}
             >
               {getInitials(recipient.name, recipient.email)}
             </div>
             <div className="min-w-0">
               {recipient.name && (
-                <div className="truncate text-sm font-medium">
+                <Text
+                  as="p"
+                  size="sm"
+                  variant="body"
+                  DANGEROUS_className="truncate"
+                >
                   {recipient.name}
-                </div>
+                </Text>
               )}
               <div
                 className={cn(
-                  "truncate text-xs",
-                  recipient.name
-                    ? "text-muted-foreground"
-                    : "text-sm font-medium"
+                  "truncate",
+                  recipient.name ? "text-xs" : "text-sm font-medium"
                 )}
               >
-                {recipient.email}
+                <Text
+                  as="p"
+                  size={recipient.name ? "xs" : "sm"}
+                  variant="secondary"
+                  DANGEROUS_className="truncate"
+                >
+                  {recipient.email}
+                </Text>
               </div>
-              <div className="text-muted-foreground mt-0.5 text-xs">
-                {getRoleLabel(recipient.role)} &middot;{" "}
-                <span
-                  className={cn(
-                    "font-medium",
-                    recipient.status === "pending"
-                      ? "text-muted-foreground"
-                      : recipient.status === "viewed"
-                        ? "text-info"
-                        : recipient.status === "signed" ||
-                            recipient.status === "approved"
-                          ? "text-success"
-                          : recipient.status === "declined"
-                            ? "text-destructive"
-                            : "text-muted-foreground"
-                  )}
+              <div className="mt-0.5 flex items-center gap-1 text-xs">
+                <Text as="span" size="xs" variant="secondary">
+                  {getRoleLabel(recipient.role)} &middot;{" "}
+                </Text>
+                <Text
+                  as="span"
+                  size="xs"
+                  variant="secondary"
+                  DANGEROUS_className={statusColorClasses(recipient.status)}
                 >
                   {recipient.status.charAt(0).toUpperCase() +
                     recipient.status.slice(1)}
-                </span>
+                </Text>
               </div>
             </div>
           </div>
           <Button
             variant="ghost"
-            size="icon"
+            size="sm"
+            shape="square"
+            icon={X}
             aria-label="Close recipient options"
             onClick={() => onOpenChange(false)}
-          >
-            <XIcon className="h-4 w-4" />
-          </Button>
+          />
         </div>
 
         {/* Options */}
@@ -194,16 +208,18 @@ export function RecipientOptionsDialog({
             <button
               type="button"
               onClick={handleCopySigningLink}
-              className="hover:bg-muted flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors"
+              className="hover:bg-kumo-elevated flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors"
             >
-              <div className="bg-info-surface text-info flex h-8 w-8 items-center justify-center rounded-md">
-                <LinkIcon className="h-4 w-4" />
+              <div className="bg-kumo-info-tint text-kumo-info flex h-8 w-8 items-center justify-center rounded-md">
+                <Link className="size-4" />
               </div>
               <div>
-                <div className="text-sm font-medium">Copy signing link</div>
-                <div className="text-muted-foreground text-xs">
+                <Text as="p" size="sm" variant="body">
+                  Copy signing link
+                </Text>
+                <Text as="p" size="xs" variant="secondary">
                   Share this link with the recipient
-                </div>
+                </Text>
               </div>
             </button>
           )}
@@ -212,50 +228,61 @@ export function RecipientOptionsDialog({
             <button
               type="button"
               onClick={handleResendEmail}
-              className="hover:bg-muted flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors"
+              className="hover:bg-kumo-elevated flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors"
             >
-              <div className="bg-success-surface text-success flex h-8 w-8 items-center justify-center rounded-md">
-                <MailIcon className="h-4 w-4" />
+              <div className="bg-kumo-success-tint text-kumo-success flex h-8 w-8 items-center justify-center rounded-md">
+                <EnvelopeSimple className="size-4" />
               </div>
               <div>
-                <div className="text-sm font-medium">Resend email</div>
-                <div className="text-muted-foreground text-xs">
+                <Text as="p" size="sm" variant="body">
+                  Resend email
+                </Text>
+                <Text as="p" size="xs" variant="secondary">
                   Send another notification email
-                </div>
+                </Text>
               </div>
             </button>
           )}
 
           {canEdit && onRemove && (
             <>
-              {(hasSigningLink || canResend) && <Separator className="my-2" />}
+              {(hasSigningLink || canResend) && (
+                <div className="border-kumo-hairline my-2 border-t" />
+              )}
               <button
                 type="button"
                 onClick={handleRemove}
-                className="hover:bg-destructive/10 flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors"
+                className="hover:bg-kumo-danger/10 flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors"
               >
-                <div className="bg-destructive/10 text-destructive flex h-8 w-8 items-center justify-center rounded-md">
-                  <TrashIcon className="h-4 w-4" />
+                <div className="bg-kumo-danger/10 text-kumo-danger flex h-8 w-8 items-center justify-center rounded-md">
+                  <Trash className="size-4" />
                 </div>
                 <div>
-                  <div className="text-destructive text-sm font-medium">
+                  <Text
+                    as="p"
+                    size="sm"
+                    variant="body"
+                    DANGEROUS_className="text-kumo-danger"
+                  >
                     Remove recipient
-                  </div>
-                  <div className="text-muted-foreground text-xs">
+                  </Text>
+                  <Text as="p" size="xs" variant="secondary">
                     Remove from this document
-                  </div>
+                  </Text>
                 </div>
               </button>
             </>
           )}
 
           {!hasSigningLink && !canResend && !canEdit && (
-            <div className="text-muted-foreground p-4 text-center text-sm">
-              No actions available
+            <div className="p-4 text-center">
+              <Text as="p" size="sm" variant="secondary">
+                No actions available
+              </Text>
             </div>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+      </Dialog>
+    </Dialog.Root>
   );
 }

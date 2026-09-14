@@ -12,7 +12,6 @@ import { Bell, Clock, Desktop, EnvelopeSimple } from "@phosphor-icons/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
 import { FormSkeleton } from "@/components/skeletons";
 import {
@@ -20,6 +19,7 @@ import {
   updateUserNotificationPreferences,
 } from "@/lib/api-client";
 import { parseSelectValue } from "@/lib/select-values";
+import { toast } from "@/lib/toast";
 
 export const Route = createFileRoute(
   "/_authenticated/$slug/settings/profile/notifications"

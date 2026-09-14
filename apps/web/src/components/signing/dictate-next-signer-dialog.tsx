@@ -1,19 +1,12 @@
-import { UserPlusIcon } from "lucide-react";
+import { Button } from "@cloudflare/kumo/components/button";
+import { Dialog } from "@cloudflare/kumo/components/dialog";
+import { Input } from "@cloudflare/kumo/components/input";
+import { Label } from "@cloudflare/kumo/components/label";
+import { UserPlus } from "@phosphor-icons/react";
 import { useState } from "react";
-import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { dictatePublicSigningNextSigner } from "@/lib/api-client";
+import { toast } from "@/lib/toast";
 
 interface DictateNextSignerDialogProps {
   open: boolean;
@@ -53,23 +46,23 @@ export function DictateNextSignerDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onDefer()}>
-      <DialogContent
-        className="sm:max-w-md"
-        onInteractOutside={(e) => e.preventDefault()}
-      >
-        <DialogHeader>
-          <div className="bg-info-surface mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full">
-            <UserPlusIcon className="text-info h-6 w-6" />
+    <Dialog.Root
+      open={open}
+      onOpenChange={(nextOpen) => !nextOpen && onDefer()}
+    >
+      <Dialog size="sm" className="p-6">
+        <div className="flex flex-col items-center">
+          <div className="bg-kumo-info-tint mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full">
+            <UserPlus className="text-kumo-info h-6 w-6" />
           </div>
-          <DialogTitle className="text-center">
+          <Dialog.Title className="text-center">
             Who should sign next?
-          </DialogTitle>
-          <DialogDescription className="text-center">
+          </Dialog.Title>
+          <Dialog.Description className="text-center">
             Please designate the next signer. They&apos;ll receive a signing
             invitation immediately.
-          </DialogDescription>
-        </DialogHeader>
+          </Dialog.Description>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -79,6 +72,7 @@ export function DictateNextSignerDialog({
               placeholder="Jane Smith"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              aria-label="Full name"
               required
             />
           </div>
@@ -90,30 +84,31 @@ export function DictateNextSignerDialog({
               placeholder="jane@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              aria-label="Email address"
               required
             />
           </div>
 
-          <DialogFooter className="flex-col gap-2 sm:flex-row">
-            <button
+          <div className="mt-4 flex flex-col-reverse justify-end gap-2 sm:flex-row">
+            <Button
               type="button"
+              variant="ghost"
               onClick={onDefer}
-              className="text-muted-foreground hover:text-foreground text-sm underline underline-offset-4 transition-colors hover:no-underline"
-              aria-label="Skip designating the next signer for now"
+              disabled={isSubmitting}
             >
               I&apos;ll do this later
-            </button>
+            </Button>
             <Button
               type="submit"
+              variant="primary"
               disabled={!name.trim() || !email.trim() || isSubmitting}
               className="sm:ml-auto"
-              aria-label="Send next signer invitation"
             >
               {isSubmitting ? "Sending..." : "Send Invitation"}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </Dialog>
+    </Dialog.Root>
   );
 }

@@ -1,6 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
 
 import { type FieldProperties } from "@/data/document-detail";
 import {
@@ -9,6 +8,7 @@ import {
   repositionSignatureField as repositionSignatureFieldApi,
 } from "@/lib/api-client";
 import { type Id, parseId } from "@/lib/ids";
+import { toast } from "@/lib/toast";
 
 import { parseSelectValue } from "../../../lib/select-values";
 import { FIELD_DIMENSIONS, type PlacedField } from "../draggable-field";

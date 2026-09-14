@@ -5,19 +5,13 @@
  * and relative timestamps. Uses proper Link elements for accessibility.
  */
 
+import { Button } from "@cloudflare/kumo/components/button";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useRouter } from "@tanstack/react-router";
 import { ArrowRightIcon, FileTextIcon } from "lucide-react";
 
 import { WorkflowStatusBadge } from "@/components/documents/workflow-status-badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { getRecentDocuments } from "@/lib/api-client";
 import { formatRelativeTime } from "@/lib/format-relative-time";
 
@@ -38,34 +32,38 @@ export function RecentDocuments({
   });
 
   return (
-    <Card
+    <LayerCard
       style={{
         animation: "fadeInUp var(--duration-slow) var(--ease-enter) both",
         animationDelay: "300ms",
       }}
     >
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle>Recent Documents</CardTitle>
-          <CardDescription>Your latest documents</CardDescription>
+      <LayerCard.Secondary>
+        <div className="flex flex-row items-center justify-between">
+          <div>
+            <h3 className="text-base font-semibold">Recent Documents</h3>
+            <p className="text-muted-foreground text-sm">
+              Your latest documents
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-foreground gap-1.5 transition-colors"
+            onClick={() =>
+              router.navigate({
+                to: "/$slug/documents",
+                params: { slug },
+                search: { folderId: undefined },
+              })
+            }
+          >
+            View all
+            <ArrowRightIcon className="h-3.5 w-3.5" />
+          </Button>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground hover:text-foreground gap-1.5 transition-colors"
-          onClick={() =>
-            router.navigate({
-              to: "/$slug/documents",
-              params: { slug },
-              search: { folderId: undefined },
-            })
-          }
-        >
-          View all
-          <ArrowRightIcon className="h-3.5 w-3.5" />
-        </Button>
-      </CardHeader>
-      <CardContent>
+      </LayerCard.Secondary>
+      <LayerCard.Primary>
         {recentDocs.length === 0 ? (
           <div className="text-muted-foreground flex h-32 flex-col items-center justify-center gap-2 text-sm">
             <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-full">
@@ -109,7 +107,7 @@ export function RecentDocuments({
             ))}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </LayerCard.Primary>
+    </LayerCard>
   );
 }

@@ -5,8 +5,14 @@
  * Route: /{slug}/settings/profile/usage
  */
 
+import { Badge } from "@cloudflare/kumo/components/badge";
+import { Button } from "@cloudflare/kumo/components/button";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Text } from "@cloudflare/kumo/components/text";
+import { Progress } from "@cloudflare/kumo/primitives/progress";
+import { Separator } from "@cloudflare/kumo/primitives/separator";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -19,17 +25,6 @@ import {
 } from "lucide-react";
 
 import { FormSkeleton } from "@/components/skeletons";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
 import { getUserUsageStatistics } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
@@ -50,6 +45,7 @@ function formatBytes(bytes: number): string {
 
 function UsageSettings() {
   const { slug } = Route.useParams();
+  const navigate = useNavigate();
   const { data: stats } = useQuery({
     queryKey: ["api", "users", "me", "usage"],
     queryFn: getUserUsageStatistics,
@@ -69,98 +65,122 @@ function UsageSettings() {
     <div className="space-y-6">
       {/* Upgrade prompt */}
       {showUpgradePrompt && (
-        <Card className="border-warning/30 bg-warning-surface">
-          <CardContent className="flex items-center justify-between py-4">
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="text-warning h-5 w-5" />
-              <div>
-                <p className="text-warning font-medium">
-                  Approaching usage limits
-                </p>
-                <p className="text-warning text-sm">
-                  Upgrade to Professional for higher limits and more features
-                </p>
+        <LayerCard className="border-warning/30 bg-warning-surface">
+          <LayerCard.Primary>
+            <div className="flex items-center justify-between py-4">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="text-warning h-5 w-5" />
+                <div>
+                  <p className="text-warning font-medium">
+                    Approaching usage limits
+                  </p>
+                  <p className="text-warning text-sm">
+                    Upgrade to Professional for higher limits and more features
+                  </p>
+                </div>
               </div>
-            </div>
-            <Button asChild size="sm">
-              <Link to="/$slug/settings" params={{ slug }}>
+              <Button
+                size="sm"
+                onClick={() =>
+                  navigate({ to: "/$slug/settings", params: { slug } })
+                }
+              >
                 Upgrade <ArrowUpRight className="ml-1 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+              </Button>
+            </div>
+          </LayerCard.Primary>
+        </LayerCard>
       )}
 
       {/* Plan Overview */}
-      <Card>
-        <CardHeader>
+      <LayerCard>
+        <LayerCard.Secondary>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
-              <CardTitle>Plan Overview</CardTitle>
+              <Text as="h2" variant="heading">
+                Plan Overview
+              </Text>
             </div>
-            <Badge variant={stats.plan === "pro" ? "default" : "secondary"}>
+            <Badge variant={stats.plan === "pro" ? "primary" : "secondary"}>
               {stats.plan === "pro" ? "Pro Plan" : "Free Plan"}
             </Badge>
           </div>
-          <CardDescription>
+          <Text variant="secondary">
             Your current subscription and usage limits
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Documents this month */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">
-                Documents this month
-              </span>
-              <span className="font-medium">
-                {stats.documentsThisMonth} / {stats.documentsLimit}
-              </span>
+          </Text>
+        </LayerCard.Secondary>
+        <LayerCard.Primary>
+          <div className="space-y-6">
+            {/* Documents this month */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  Documents this month
+                </span>
+                <span className="font-medium">
+                  {stats.documentsThisMonth} / {stats.documentsLimit}
+                </span>
+              </div>
+              <Progress.Root value={stats.documentsPercentUsed}>
+                <Progress.Track className="bg-muted h-2 rounded-full">
+                  <Progress.Indicator
+                    className={cn(
+                      "h-2 rounded-full",
+                      isApproachingDocumentLimit ? "bg-warning" : "bg-primary"
+                    )}
+                  />
+                </Progress.Track>
+              </Progress.Root>
+              {isApproachingDocumentLimit && (
+                <p className="text-warning text-xs">
+                  {Math.round(stats.documentsPercentUsed)}% of monthly limit
+                  used
+                </p>
+              )}
             </div>
-            <Progress
-              value={stats.documentsPercentUsed}
-              className={cn(isApproachingDocumentLimit && "[&>div]:bg-warning")}
-            />
-            {isApproachingDocumentLimit && (
-              <p className="text-warning text-xs">
-                {Math.round(stats.documentsPercentUsed)}% of monthly limit used
-              </p>
-            )}
-          </div>
 
-          {/* Storage */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Storage used</span>
-              <span className="font-medium">
-                {formatBytes(stats.storageUsedBytes)} /{" "}
-                {formatBytes(stats.storageLimitBytes)}
-              </span>
+            {/* Storage */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Storage used</span>
+                <span className="font-medium">
+                  {formatBytes(stats.storageUsedBytes)} /{" "}
+                  {formatBytes(stats.storageLimitBytes)}
+                </span>
+              </div>
+              <Progress.Root value={stats.storagePercentUsed}>
+                <Progress.Track className="bg-muted h-2 rounded-full">
+                  <Progress.Indicator
+                    className={cn(
+                      "h-2 rounded-full",
+                      isApproachingStorageLimit ? "bg-warning" : "bg-primary"
+                    )}
+                  />
+                </Progress.Track>
+              </Progress.Root>
+              {isApproachingStorageLimit && (
+                <p className="text-warning text-xs">
+                  {Math.round(stats.storagePercentUsed)}% of storage limit used
+                </p>
+              )}
             </div>
-            <Progress
-              value={stats.storagePercentUsed}
-              className={cn(isApproachingStorageLimit && "[&>div]:bg-warning")}
-            />
-            {isApproachingStorageLimit && (
-              <p className="text-warning text-xs">
-                {Math.round(stats.storagePercentUsed)}% of storage limit used
-              </p>
-            )}
           </div>
-        </CardContent>
-      </Card>
+        </LayerCard.Primary>
+      </LayerCard>
 
       {/* Document Statistics */}
-      <Card>
-        <CardHeader>
+      <LayerCard>
+        <LayerCard.Secondary>
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            <CardTitle>Document Statistics</CardTitle>
+            <Text as="h2" variant="heading">
+              Document Statistics
+            </Text>
           </div>
-          <CardDescription>Overview of your document activity</CardDescription>
-        </CardHeader>
-        <CardContent>
+          <Text variant="secondary">Overview of your document activity</Text>
+        </LayerCard.Secondary>
+        <LayerCard.Primary>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
               icon={FileText}
@@ -187,18 +207,20 @@ function UsageSettings() {
               className="text-warning"
             />
           </div>
-        </CardContent>
-      </Card>
+        </LayerCard.Primary>
+      </LayerCard>
 
       {/* Workflow Breakdown */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Document Status Breakdown</CardTitle>
-          <CardDescription>
+      <LayerCard>
+        <LayerCard.Secondary>
+          <Text as="h2" variant="heading">
+            Document Status Breakdown
+          </Text>
+          <Text variant="secondary">
             Documents grouped by their current workflow status
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          </Text>
+        </LayerCard.Secondary>
+        <LayerCard.Primary>
           <div className="space-y-3">
             <StatusRow
               label="Draft"
@@ -237,18 +259,20 @@ function UsageSettings() {
               color="bg-destructive"
             />
           </div>
-        </CardContent>
-      </Card>
+        </LayerCard.Primary>
+      </LayerCard>
 
       {/* Completion Rate */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Completion Rate</CardTitle>
-          <CardDescription>
+      <LayerCard>
+        <LayerCard.Secondary>
+          <Text as="h2" variant="heading">
+            Completion Rate
+          </Text>
+          <Text variant="secondary">
             Percentage of sent documents that were completed this month
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          </Text>
+        </LayerCard.Secondary>
+        <LayerCard.Primary>
           <div className="flex items-center gap-4">
             <div className="bg-muted flex h-20 w-20 items-center justify-center rounded-full">
               <span className="text-2xl font-bold">
@@ -270,45 +294,51 @@ function UsageSettings() {
               )}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </LayerCard.Primary>
+      </LayerCard>
 
       {/* Storage Details */}
-      <Card>
-        <CardHeader>
+      <LayerCard>
+        <LayerCard.Secondary>
           <div className="flex items-center gap-2">
             <HardDrive className="h-5 w-5" />
-            <CardTitle>Storage Details</CardTitle>
+            <Text as="h2" variant="heading">
+              Storage Details
+            </Text>
           </div>
-          <CardDescription>
+          <Text variant="secondary">
             Breakdown of your document storage usage
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground text-sm">Used Storage</span>
-            <span className="font-medium">
-              {formatBytes(stats.storageUsedBytes)}
-            </span>
+          </Text>
+        </LayerCard.Secondary>
+        <LayerCard.Primary>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground text-sm">
+                Used Storage
+              </span>
+              <span className="font-medium">
+                {formatBytes(stats.storageUsedBytes)}
+              </span>
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground text-sm">
+                Available Storage
+              </span>
+              <span className="font-medium">
+                {formatBytes(stats.storageLimitBytes - stats.storageUsedBytes)}
+              </span>
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground text-sm">Total Limit</span>
+              <span className="font-medium">
+                {formatBytes(stats.storageLimitBytes)}
+              </span>
+            </div>
           </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground text-sm">
-              Available Storage
-            </span>
-            <span className="font-medium">
-              {formatBytes(stats.storageLimitBytes - stats.storageUsedBytes)}
-            </span>
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground text-sm">Total Limit</span>
-            <span className="font-medium">
-              {formatBytes(stats.storageLimitBytes)}
-            </span>
-          </div>
-        </CardContent>
-      </Card>
+        </LayerCard.Primary>
+      </LayerCard>
     </div>
   );
 }
@@ -325,7 +355,9 @@ function StatCard({ icon: Icon, label, value, className }: StatCardProps) {
     <div className="rounded-lg border p-4">
       <div className="flex items-center gap-2">
         <Icon className={cn("text-muted-foreground h-4 w-4", className)} />
-        <span className="text-muted-foreground text-sm">{label}</span>
+        <Text as="span" variant="secondary">
+          {label}
+        </Text>
       </div>
       <p className={cn("mt-2 text-2xl font-bold", className)}>{value}</p>
     </div>

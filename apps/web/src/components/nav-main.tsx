@@ -1,20 +1,6 @@
-import { Link } from "@tanstack/react-router";
-import { ChevronRight, LockIcon, type LucideIcon } from "lucide-react";
-
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import {
-  SidebarGroup,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
-} from "@/components/ui/sidebar";
+import { Sidebar } from "@cloudflare/kumo/components/sidebar";
+import { Lock, type Icon } from "@phosphor-icons/react";
+import { useNavigate } from "@tanstack/react-router";
 
 export function NavMain({
   items,
@@ -22,7 +8,7 @@ export function NavMain({
   items: {
     title: string;
     url: string;
-    icon?: LucideIcon;
+    icon?: Icon;
     isActive?: boolean;
     items?: {
       title: string;
@@ -32,47 +18,47 @@ export function NavMain({
     }[];
   }[];
 }) {
+  const navigate = useNavigate();
+
   return (
-    <SidebarGroup>
-      <SidebarMenu>
+    <Sidebar.Group>
+      <Sidebar.Menu>
         {items.map((item) => (
-          <Collapsible
-            key={item.title}
-            asChild
-            defaultOpen={item.isActive}
-            className="group/collapsible"
-          >
-            <SidebarMenuItem>
-              <CollapsibleTrigger asChild>
-                <SidebarMenuButton
-                  tooltip={item.title}
-                  isActive={item.isActive}
-                >
-                  {item.icon && <item.icon />}
-                  <span>{item.title}</span>
-                  <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                </SidebarMenuButton>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <SidebarMenuSub>
+          <Sidebar.MenuItem key={item.title}>
+            <Sidebar.Collapsible defaultOpen={item.isActive}>
+              <Sidebar.CollapsibleTrigger
+                render={
+                  <Sidebar.MenuButton
+                    tooltip={item.title}
+                    active={item.isActive}
+                    icon={item.icon}
+                  >
+                    {item.title}
+                    <Sidebar.MenuChevron />
+                  </Sidebar.MenuButton>
+                }
+              />
+              <Sidebar.CollapsibleContent>
+                <Sidebar.MenuSub>
                   {item.items?.map((subItem) => (
-                    <SidebarMenuSubItem key={subItem.title}>
-                      <SidebarMenuSubButton asChild isActive={subItem.isActive}>
-                        <Link to={subItem.url}>
-                          <span>{subItem.title}</span>
-                          {subItem.locked && (
-                            <LockIcon className="text-muted-foreground ml-auto h-3 w-3" />
-                          )}
-                        </Link>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
+                    <Sidebar.MenuSubItem key={subItem.title}>
+                      <Sidebar.MenuSubButton
+                        active={subItem.isActive}
+                        onClick={() => navigate({ to: subItem.url })}
+                      >
+                        <span className="flex-1 truncate">{subItem.title}</span>
+                        {subItem.locked && (
+                          <Lock className="text-kumo-secondary ml-auto h-3 w-3" />
+                        )}
+                      </Sidebar.MenuSubButton>
+                    </Sidebar.MenuSubItem>
                   ))}
-                </SidebarMenuSub>
-              </CollapsibleContent>
-            </SidebarMenuItem>
-          </Collapsible>
+                </Sidebar.MenuSub>
+              </Sidebar.CollapsibleContent>
+            </Sidebar.Collapsible>
+          </Sidebar.MenuItem>
         ))}
-      </SidebarMenu>
-    </SidebarGroup>
+      </Sidebar.Menu>
+    </Sidebar.Group>
   );
 }

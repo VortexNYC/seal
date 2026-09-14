@@ -5,16 +5,11 @@
  * Route: /{slug}/settings/payments
  */
 
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Text } from "@cloudflare/kumo/components/text";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { PageWrapper } from "@/components/page-wrapper";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/payments")(
   {
@@ -28,21 +23,23 @@ function PaymentsSettingsPage() {
       title="Vortex Connect"
       description="Configure the merchant account that accepts document payments."
     >
-      <Card>
-        <CardHeader>
-          <CardTitle>Vortex Connect</CardTitle>
-          <CardDescription>
+      <LayerCard>
+        <LayerCard.Secondary>
+          <Text as="h2" variant="heading">
+            Vortex Connect
+          </Text>
+          <Text variant="secondary">
             Merchant onboarding, account status, and fee policies are managed in
             Vortex Payments. This surface will be rewired to Seal's Cloudflare
             Worker backend once the payments data layer is ready.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm">
+          </Text>
+        </LayerCard.Secondary>
+        <LayerCard.Primary>
+          <Text variant="secondary" as="p">
             No merchant account to display.
-          </p>
-        </CardContent>
-      </Card>
+          </Text>
+        </LayerCard.Primary>
+      </LayerCard>
     </PageWrapper>
   );
 }

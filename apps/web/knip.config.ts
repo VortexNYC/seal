@@ -3,12 +3,7 @@ import type { KnipConfig } from "knip";
 const config: KnipConfig = {
   entry: ["src/routes/**/*.{ts,tsx}"],
   project: ["src/**/*.{ts,tsx}"],
-  ignore: [
-    // shadcn/ui components (often used but not directly imported)
-    "src/components/ui/**",
-    // CSS entry files (compiled imports are not followed)
-    "**/*.css",
-  ],
+  ignore: [],
   ignoreDependencies: [
     // Tailwind CSS (used by Vite plugin)
     "tailwindcss",

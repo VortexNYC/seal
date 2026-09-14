@@ -6,9 +6,7 @@
 @source "../../../node_modules/fumadocs-ui/dist/**/*.js";
 @source "../../../node_modules/@fumadocs/ui/dist/**/*.js";
 
-/* Core UI: scan @vortexnyc/ui so its component-only utilities are generated.
-   One level up from src (apps/web/node_modules): pnpm links workspace deps per-package, not at the root. */
-@source "../node_modules/@vortexnyc/ui/dist/**/*.js";
+/* Kumo components ship their own styles; no extra Tailwind source needed. */
 
 /* Fumadocs: layout variant used by docs components */
 @variant layout {

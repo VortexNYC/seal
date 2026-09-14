@@ -1,34 +1,5 @@
-/**
- * CardSkeleton Component
- *
- * Loading skeleton for card-based content like dashboard stats,
- * info cards, and summary cards.
- *
- * @example
- * ```tsx
- * // Simple card skeleton
- * <CardSkeleton />
- *
- * // Card skeleton without description
- * <CardSkeleton showDescription={false} />
- *
- * // Multiple cards
- * <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
- *   <CardSkeleton />
- *   <CardSkeleton />
- *   <CardSkeleton />
- * </div>
- * ```
- */
-
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { SkeletonLine } from "@cloudflare/kumo/components/loader";
 
 interface CardSkeletonProps {
   /** Whether to show description skeleton (default: true) */
@@ -42,42 +13,38 @@ export function CardSkeleton({
   showFooter = false,
 }: CardSkeletonProps) {
   return (
-    <Card role="status" aria-label="Loading card content">
-      <CardHeader>
-        <CardTitle>
-          <Skeleton className="h-5 w-[200px]" />
-        </CardTitle>
-        {showDescription && (
-          <CardDescription>
-            <Skeleton className="h-4 w-[250px]" />
-          </CardDescription>
-        )}
-      </CardHeader>
-      <CardContent>
+    <LayerCard role="status" aria-label="Loading card content">
+      <LayerCard.Secondary>
+        <div className="space-y-2">
+          <SkeletonLine className="h-5 w-[200px]" />
+          {showDescription && <SkeletonLine className="h-4 w-[250px]" />}
+        </div>
+      </LayerCard.Secondary>
+      <LayerCard.Primary>
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-5 w-20" />
+            <SkeletonLine className="h-4 w-16" />
+            <SkeletonLine className="h-5 w-20" />
           </div>
           <div className="flex items-center justify-between text-sm">
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-4 w-24" />
+            <SkeletonLine className="h-4 w-16" />
+            <SkeletonLine className="h-4 w-24" />
           </div>
           <div className="flex items-center justify-between text-sm">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-4 w-32" />
+            <SkeletonLine className="h-4 w-20" />
+            <SkeletonLine className="h-4 w-32" />
           </div>
           <div className="flex items-center justify-between text-sm">
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-5 w-20" />
+            <SkeletonLine className="h-4 w-16" />
+            <SkeletonLine className="h-5 w-20" />
           </div>
         </div>
-      </CardContent>
+      </LayerCard.Primary>
       {showFooter && (
-        <div className="px-6 pb-6">
-          <Skeleton className="h-9 w-full" />
-        </div>
+        <LayerCard.Primary>
+          <SkeletonLine className="h-9 w-full" />
+        </LayerCard.Primary>
       )}
-    </Card>
+    </LayerCard>
   );
 }

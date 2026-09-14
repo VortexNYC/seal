@@ -7,19 +7,12 @@
  * exclude itself and its descendants).
  */
 
+import { Button } from "@cloudflare/kumo/components/button";
+import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, FolderIcon, Home } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { getAllFolders, type ApiFolder } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
@@ -181,15 +174,13 @@ export function MoveToFolderDialog({
   );
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Move to Folder</DialogTitle>
-          <DialogDescription>
-            Select a destination folder, or choose root to remove from all
-            folders.
-          </DialogDescription>
-        </DialogHeader>
+    <Dialog.Root open={open} onOpenChange={handleOpenChange}>
+      <Dialog size="sm" className="p-6">
+        <Dialog.Title>Move to Folder</Dialog.Title>
+        <Dialog.Description>
+          Select a destination folder, or choose root to remove from all
+          folders.
+        </Dialog.Description>
 
         <div className="max-h-64 overflow-y-auto rounded-md border p-1">
           {/* Root option */}
@@ -198,8 +189,8 @@ export function MoveToFolderDialog({
             className={cn(
               "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm",
               selectedFolderId === undefined
-                ? "bg-accent text-accent-foreground"
-                : "hover:bg-accent/50"
+                ? "bg-kumo-tint text-kumo-link"
+                : "hover:bg-kumo-elevated/50"
             )}
             onClick={() => setSelectedFolderId(undefined)}
           >
@@ -209,11 +200,11 @@ export function MoveToFolderDialog({
 
           {/* Folder tree */}
           {apiFolders === undefined ? (
-            <div className="text-muted-foreground px-2 py-4 text-center text-sm">
+            <div className="text-kumo-secondary px-2 py-4 text-center text-sm">
               Loading...
             </div>
           ) : tree.length === 0 ? (
-            <div className="text-muted-foreground px-2 py-4 text-center text-sm">
+            <div className="text-kumo-secondary px-2 py-4 text-center text-sm">
               No folders available
             </div>
           ) : (
@@ -231,14 +222,14 @@ export function MoveToFolderDialog({
           )}
         </div>
 
-        <DialogFooter>
+        <div className="mt-4 flex justify-end gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button onClick={handleConfirm}>Move</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </Dialog>
+    </Dialog.Root>
   );
 }
 
@@ -268,7 +259,9 @@ function TreeNodeItem({
       <div
         className={cn(
           "flex w-full items-center gap-1 rounded-sm px-2 py-1.5 text-sm",
-          isSelected ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
+          isSelected
+            ? "bg-kumo-tint text-kumo-link"
+            : "hover:bg-kumo-elevated/50"
         )}
         style={{ paddingLeft: `${(depth + 1) * 12 + 8}px` }}
       >
@@ -276,7 +269,7 @@ function TreeNodeItem({
         {hasChildren ? (
           <button
             type="button"
-            className="hover:bg-accent shrink-0 rounded-sm p-0.5"
+            className="hover:bg-kumo-elevated shrink-0 rounded-sm p-0.5"
             onClick={(e) => {
               e.stopPropagation();
               onToggleExpand(node.folder._id);

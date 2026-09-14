@@ -1,15 +1,11 @@
+import { Button } from "@cloudflare/kumo/components/button";
+import { DatePicker } from "@cloudflare/kumo/components/date-picker";
+import { Label } from "@cloudflare/kumo/components/label";
+import { Popover } from "@cloudflare/kumo/components/popover";
+import { CalendarBlank } from "@phosphor-icons/react";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 interface DateFieldInputProps {
@@ -56,35 +52,36 @@ export function DateFieldInput({
     <div className="space-y-2">
       <Label>
         {label}
-        {isRequired && <span className="text-destructive ml-1">*</span>}
+        {isRequired && <span className="text-kumo-danger ml-1">*</span>}
       </Label>
       <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            className={cn(
-              "w-full justify-start text-left font-normal",
-              !date && "text-muted-foreground",
-              error && "border-destructive"
-            )}
-          >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {date ? format(date, "PPP") : <span>Pick a date</span>}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
+        <Popover.Trigger
+          render={
+            <Button
+              variant="outline"
+              className={cn(
+                "w-full justify-start text-left font-normal",
+                !date && "text-kumo-secondary",
+                error && "border-kumo-danger"
+              )}
+            >
+              <CalendarBlank className="mr-2 h-4 w-4" />
+              {date ? format(date, "PPP") : <span>Pick a date</span>}
+            </Button>
+          }
+        />
+        <Popover.Content className="w-auto p-0" align="start">
+          <DatePicker
             mode="single"
             selected={date}
-            onSelect={handleDateChange}
-            initialFocus
+            onChange={handleDateChange}
           />
-        </PopoverContent>
+        </Popover.Content>
       </Popover>
       {helpText && !error && (
-        <p className="text-muted-foreground text-xs">{helpText}</p>
+        <p className="text-kumo-secondary text-xs">{helpText}</p>
       )}
-      {error && <p className="text-destructive text-xs">{error}</p>}
+      {error && <p className="text-kumo-danger text-xs">{error}</p>}
     </div>
   );
 }

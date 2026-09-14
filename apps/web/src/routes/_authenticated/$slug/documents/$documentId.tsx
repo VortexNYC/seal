@@ -1,3 +1,4 @@
+import { Button } from "@cloudflare/kumo/components/button";
 import { useQuery } from "@tanstack/react-query";
 import {
   type ErrorComponentProps,
@@ -15,23 +16,17 @@ import {
 } from "lucide-react";
 import PdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Document } from "react-pdf";
-import { pdfjs } from "react-pdf";
 
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+import { Document } from "react-pdf";
+import { pdfjs } from "react-pdf";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
-import { toast } from "sonner";
 
 import { FIELD_TYPES } from "@/components/documents/field-toolbar";
 import { NotFoundPage } from "@/components/not-found-page";
 import { PageWrapper } from "@/components/page-wrapper";
 import { RouteErrorComponent } from "@/components/route-error-component";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useDocumentDetail } from "@/data/document-detail";
 import { useCurrentUser as useUser } from "@/hooks/use-current-user";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
@@ -47,6 +42,7 @@ import { buildActivityEvents } from "@/lib/document-activity";
 import { isWorkflowStatus } from "@/lib/document-status";
 import { parseSelectValue } from "@/lib/select-values";
 import { countSignatureFields } from "@/lib/signature-fields";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 import { AddMyselfDialog } from "../../../../components/documents/add-myself-dialog";
@@ -81,7 +77,6 @@ import { RecipientSelectorDialog } from "../../../../components/documents/recipi
 import { RemoveRecipientDialog } from "../../../../components/documents/remove-recipient-dialog";
 import { SaveAsTemplateDialog } from "../../../../components/documents/save-as-template-dialog";
 import { SendDocumentDialog } from "../../../../components/documents/send-document-dialog";
-import { Button } from "../../../../components/ui/button";
 
 pdfjs.GlobalWorkerOptions.workerSrc = PdfWorker;
 
@@ -542,53 +537,43 @@ function DocumentDetailPage() {
 
   const saveAsTemplateButton =
     canEdit && signatureFields.length > 0 ? (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span
-            className="flex-1 sm:flex-none"
-            tabIndex={!canCreateTemplates ? 0 : undefined}
-          >
-            <Button
-              key="save-template"
-              onClick={() => docState.setSaveAsTemplateOpen(true)}
-              size="sm"
-              variant="outline"
-              className="w-full"
-              disabled={!canCreateTemplates}
-            >
-              <SaveIcon className="mr-2 h-4 w-4" />
-              <span className="truncate">Save as Template</span>
-            </Button>
-          </span>
-        </TooltipTrigger>
-        {!canCreateTemplates && (
-          <TooltipContent>Templates require a Professional plan</TooltipContent>
-        )}
-      </Tooltip>
+      <div key="save-template" className="flex-1 sm:flex-none">
+        <Button
+          onClick={() => docState.setSaveAsTemplateOpen(true)}
+          size="sm"
+          variant="outline"
+          className="w-full"
+          disabled={!canCreateTemplates}
+          title={
+            !canCreateTemplates
+              ? "Templates require a Professional plan"
+              : undefined
+          }
+        >
+          <SaveIcon className="mr-2 h-4 w-4" />
+          <span className="truncate">Save as Template</span>
+        </Button>
+      </div>
     ) : null;
 
-  const sendDocumentButton = sendDocumentValidation.canSend ? (
-    <Button
-      key="send-document"
-      onClick={() => docState.setSendDocumentOpen(true)}
-      size="sm"
-      className="flex-1 sm:flex-none"
-    >
-      <SendIcon className="mr-2 h-4 w-4" />
-      <span className="truncate">{sendButtonLabel}</span>
-    </Button>
-  ) : (
-    <Tooltip key="send-document">
-      <TooltipTrigger asChild>
-        <Button disabled size="sm" className="flex-1 sm:flex-none">
-          <SendIcon className="mr-2 h-4 w-4" />
-          <span className="truncate">{sendButtonLabel}</span>
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>
-        <p>{sendDocumentValidation.tooltip}</p>
-      </TooltipContent>
-    </Tooltip>
+  const sendDocumentButton = (
+    <div key="send-document" className="flex-1 sm:flex-none">
+      <Button
+        onClick={() => docState.setSendDocumentOpen(true)}
+        size="sm"
+        variant="primary"
+        className="w-full"
+        disabled={!sendDocumentValidation.canSend}
+        title={
+          !sendDocumentValidation.canSend
+            ? sendDocumentValidation.tooltip
+            : undefined
+        }
+      >
+        <SendIcon className="mr-2 h-4 w-4" />
+        <span className="truncate">{sendButtonLabel}</span>
+      </Button>
+    </div>
   );
 
   // ── Render ───────────────────────────────────────────────────────────────

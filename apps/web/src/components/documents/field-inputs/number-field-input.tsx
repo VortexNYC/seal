@@ -1,7 +1,5 @@
+import { Input } from "@cloudflare/kumo/components/input";
 import { useState } from "react";
-
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 interface NumberFieldInputProps {
   label: string;
@@ -64,26 +62,22 @@ export function NumberFieldInput({
   };
 
   return (
-    <div className="space-y-2">
-      <Label htmlFor="number-field">
-        {label}
-        {isRequired && <span className="text-destructive ml-1">*</span>}
-      </Label>
-      <Input
-        id="number-field"
-        type="number"
-        value={localValue}
-        onChange={(e) => handleChange(e.target.value)}
-        placeholder={placeholder}
-        min={min}
-        max={max}
-        step="any"
-        className={error ? "border-destructive" : ""}
-      />
-      {helpText && !error && (
-        <p className="text-muted-foreground text-xs">{helpText}</p>
-      )}
-      {error && <p className="text-destructive text-xs">{error}</p>}
-    </div>
+    <Input
+      type="number"
+      value={localValue}
+      onChange={(e) => handleChange(e.target.value)}
+      placeholder={placeholder}
+      min={min}
+      max={max}
+      step="any"
+      error={error}
+      description={helpText && !error ? helpText : undefined}
+      label={
+        <>
+          {label}
+          {isRequired && <span className="text-kumo-danger ml-1">*</span>}
+        </>
+      }
+    />
   );
 }

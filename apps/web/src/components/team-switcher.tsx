@@ -1,21 +1,9 @@
 "use client";
 
-import { Building2, Check, ChevronDown, Plus } from "lucide-react";
+import { DropdownMenu } from "@cloudflare/kumo/components/dropdown";
+import { Sidebar } from "@cloudflare/kumo/components/sidebar";
+import { Buildings, CaretDown, Plus } from "@phosphor-icons/react";
 import * as React from "react";
-
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar";
 
 type Team = {
   id?: string;
@@ -41,83 +29,71 @@ export function TeamSwitcher({
     [teams, activeSlug]
   );
 
-  const ActiveLogo = active?.logo ?? Building2;
+  const ActiveLogo = active?.logo ?? Buildings;
 
   if (teams.length === 0) {
     return null;
   }
 
   return (
-    <SidebarMenu>
-      <SidebarMenuItem>
+    <Sidebar.Menu>
+      <Sidebar.MenuItem>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-              size="lg"
-            >
-              <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+          <DropdownMenu.Trigger>
+            <Sidebar.MenuButton size="base" className="group">
+              <div className="bg-kumo-elevated text-kumo-primary flex aspect-square size-8 items-center justify-center rounded-lg">
                 <ActiveLogo className="size-4" />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">
                   {active?.name ?? "Workspace"}
                 </span>
-                <span className="text-muted-foreground truncate text-xs">
+                <span className="text-kumo-secondary truncate text-xs">
                   {active?.plan ?? ""}
                 </span>
               </div>
-              <ChevronDown className="ml-auto size-4" />
-            </SidebarMenuButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
+              <CaretDown className="ml-auto size-4" />
+            </Sidebar.MenuButton>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content
             align="start"
             className="w-[--radix-dropdown-menu-trigger-width] min-w-56"
             side="bottom"
             sideOffset={4}
           >
-            <DropdownMenuLabel>Workspaces</DropdownMenuLabel>
+            <DropdownMenu.Label>Workspaces</DropdownMenu.Label>
             {teams.map((team) => {
               const Logo = team.logo;
               const isActive = team.slug === active?.slug;
               return (
-                <DropdownMenuItem
+                <DropdownMenu.Item
                   key={team.slug}
-                  className="gap-2 p-2"
-                  onSelect={() => onTeamSelect?.(team.slug)}
+                  icon={<Logo className="size-3.5" />}
+                  selected={isActive}
+                  onClick={() => onTeamSelect?.(team.slug)}
                 >
-                  <div className="bg-muted flex size-6 items-center justify-center rounded-md">
-                    <Logo className="size-3.5" />
-                  </div>
                   <div className="grid flex-1 leading-tight">
                     <span className="truncate text-sm font-medium">
                       {team.name}
                     </span>
-                    <span className="text-muted-foreground text-xs">
+                    <span className="text-kumo-secondary text-xs">
                       {team.plan}
                     </span>
                   </div>
-                  {isActive && <Check className="ml-auto size-4" />}
-                </DropdownMenuItem>
+                </DropdownMenu.Item>
               );
             })}
             {onCreateOrganization && (
               <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="gap-2 p-2"
-                  onSelect={onCreateOrganization}
-                >
-                  <div className="bg-muted flex size-6 items-center justify-center rounded-md">
-                    <Plus className="size-3.5" />
-                  </div>
+                <DropdownMenu.Separator />
+                <DropdownMenu.Item icon={Plus} onClick={onCreateOrganization}>
                   Create workspace
-                </DropdownMenuItem>
+                </DropdownMenu.Item>
               </>
             )}
-          </DropdownMenuContent>
+          </DropdownMenu.Content>
         </DropdownMenu>
-      </SidebarMenuItem>
-    </SidebarMenu>
+      </Sidebar.MenuItem>
+    </Sidebar.Menu>
   );
 }

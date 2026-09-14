@@ -1,19 +1,12 @@
+import { Button } from "@cloudflare/kumo/components/button";
+import { Dialog } from "@cloudflare/kumo/components/dialog";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
 import { parseId } from "@/lib/ids";
+import { toast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
 
-import { Button } from "../ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../ui/dialog";
 import {
   AttachmentFieldInput,
   CheckboxFieldInput,
@@ -232,23 +225,27 @@ function FieldInputFooter({
   if (fieldType === "signature") return null;
   if (fieldType === "payment") {
     return (
-      <DialogFooter>
+      <div className="mt-4 flex flex-col-reverse justify-end gap-2 sm:flex-row">
         <Button variant="outline" onClick={onClose}>
           Close
         </Button>
-      </DialogFooter>
+      </div>
     );
   }
 
   return (
-    <DialogFooter>
+    <div className="mt-4 flex flex-col-reverse justify-end gap-2 sm:flex-row">
       <Button variant="outline" onClick={onCancel} disabled={isSaving}>
         Cancel
       </Button>
-      <Button onClick={onSave} disabled={isSaving || (!isValid && isRequired)}>
+      <Button
+        variant="primary"
+        onClick={onSave}
+        disabled={isSaving || (!isValid && isRequired)}
+      >
         {isSaving ? "Saving..." : "Save Field"}
       </Button>
-    </DialogFooter>
+    </div>
   );
 }
 
@@ -375,12 +372,10 @@ export function FieldInputManager({
   });
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={getDialogClassName(fieldType)}>
-        <DialogHeader>
-          <DialogTitle>{dialogText.title}</DialogTitle>
-          <DialogDescription>{dialogText.description}</DialogDescription>
-        </DialogHeader>
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog className={getDialogClassName(fieldType)}>
+        <Dialog.Title>{dialogText.title}</Dialog.Title>
+        <Dialog.Description>{dialogText.description}</Dialog.Description>
 
         <div className="py-4">
           <FieldInputContent
@@ -409,7 +404,7 @@ export function FieldInputManager({
           onSave={fieldState.handleSave}
           onClose={() => onOpenChange(false)}
         />
-      </DialogContent>
-    </Dialog>
+      </Dialog>
+    </Dialog.Root>
   );
 }

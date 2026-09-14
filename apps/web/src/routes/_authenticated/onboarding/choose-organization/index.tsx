@@ -1,13 +1,13 @@
+import { Button } from "@cloudflare/kumo/components/button";
+import { Input } from "@cloudflare/kumo/components/input";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Text } from "@cloudflare/kumo/components/text";
+import { Building } from "@phosphor-icons/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Building2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import Loader from "@/components/loader";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { betterAuthClient } from "@/lib/better-auth";
 import { buildOrganizationPath } from "@/lib/organization-path";
 
@@ -69,11 +69,13 @@ function RouteComponent() {
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-6 p-4">
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="text-center">Choose a workspace</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      <LayerCard className="w-full">
+        <LayerCard.Primary className="text-center">
+          <Text as="h2" size="lg" variant="heading">
+            Choose a workspace
+          </Text>
+        </LayerCard.Primary>
+        <LayerCard.Primary className="space-y-3">
           {sorted.map((org) => (
             <OrganizationOption
               key={org.slug}
@@ -87,14 +89,14 @@ function RouteComponent() {
               }}
             />
           ))}
-        </CardContent>
-      </Card>
+        </LayerCard.Primary>
+      </LayerCard>
       <Button
         onClick={() => {
           setShowCreate(true);
         }}
         type="button"
-        variant="link"
+        variant="ghost"
       >
         Create a new workspace
       </Button>
@@ -136,12 +138,12 @@ function OrganizationOption({
       type="button"
       variant="outline"
     >
-      <div className="bg-muted flex size-8 items-center justify-center rounded-md">
-        <Building2 className="size-4" />
+      <div className="bg-kumo-elevated flex size-8 items-center justify-center rounded-md">
+        <Building className="size-4" />
       </div>
       <div className="text-left">
         <p className="text-sm font-medium">{name}</p>
-        <p className="text-muted-foreground text-xs">{slug}</p>
+        <p className="text-kumo-secondary text-xs">{slug}</p>
       </div>
     </Button>
   );
@@ -199,32 +201,34 @@ function CreateOrganizationCard({
   const canCreate = name.trim().length > 0 && slug.trim().length > 0;
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="text-center">Create workspace</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="org-name">Name</Label>
-          <Input
-            id="org-name"
-            onChange={(event) => {
-              setName(event.target.value);
-            }}
-            value={name}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="org-slug">Slug</Label>
-          <Input
-            id="org-slug"
-            onChange={(event) => {
-              setSlug(event.target.value);
-            }}
-            value={slug}
-          />
-        </div>
-        {error && <p className="text-destructive text-sm">{error}</p>}
+    <LayerCard className="w-full">
+      <LayerCard.Primary className="text-center">
+        <Text as="h2" size="lg" variant="heading">
+          Create workspace
+        </Text>
+      </LayerCard.Primary>
+      <LayerCard.Primary className="space-y-4">
+        <Input
+          id="org-name"
+          label="Name"
+          onChange={(event) => {
+            setName(event.target.value);
+          }}
+          value={name}
+        />
+        <Input
+          id="org-slug"
+          label="Slug"
+          onChange={(event) => {
+            setSlug(event.target.value);
+          }}
+          value={slug}
+        />
+        {error && (
+          <Text as="p" size="sm" variant="error">
+            {error}
+          </Text>
+        )}
         <div className="flex gap-2">
           {hasOrganizations && onCancel && (
             <Button onClick={onCancel} type="button" variant="outline">
@@ -235,11 +239,12 @@ function CreateOrganizationCard({
             disabled={!canCreate || create.isPending}
             onClick={handleCreate}
             type="button"
+            variant="primary"
           >
             {create.isPending ? "Creating..." : "Create workspace"}
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </LayerCard.Primary>
+    </LayerCard>
   );
 }

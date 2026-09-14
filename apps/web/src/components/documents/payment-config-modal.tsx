@@ -1,3 +1,14 @@
+import { Badge } from "@cloudflare/kumo/components/badge";
+import { Button } from "@cloudflare/kumo/components/button";
+import { Checkbox } from "@cloudflare/kumo/components/checkbox";
+import { DatePicker } from "@cloudflare/kumo/components/date-picker";
+import { Dialog } from "@cloudflare/kumo/components/dialog";
+import { Input } from "@cloudflare/kumo/components/input";
+import { Label } from "@cloudflare/kumo/components/label";
+import { Popover } from "@cloudflare/kumo/components/popover";
+import { Select } from "@cloudflare/kumo/components/select";
+import { Switch } from "@cloudflare/kumo/components/switch";
+import { Tabs } from "@cloudflare/kumo/components/tabs";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { format, parse } from "date-fns";
 import {
@@ -8,7 +19,6 @@ import {
   TrashIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
 
 import type { ApiPaymentConfigDetail } from "@/lib/api-client";
 import { getPaymentConfig, upsertPaymentConfig } from "@/lib/api-client";
@@ -21,33 +31,10 @@ import {
   toMajorNumber,
 } from "@/lib/money";
 import { parseSelectValue } from "@/lib/select-values";
+import { toast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
 
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
-import { Calendar } from "../ui/calendar";
-import { Checkbox } from "../ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../ui/dialog";
-import { Input } from "../ui/input";
 import { InputCurrency, parseCurrencyToMinorUnits } from "../ui/input-currency";
-import { Label } from "../ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import { Switch } from "../ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 
 const MONEY_ROUNDING = "half-up" as const;
 const DRAFT_CURRENCY = "USD";
@@ -368,13 +355,13 @@ function PaymentConfigLoadingDialog({
   readonly onOpenChange: (open: boolean) => void;
 }) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog className="max-w-2xl">
         <div className="flex items-center justify-center py-12">
           <Loader2Icon className="text-muted-foreground h-6 w-6 animate-spin" />
         </div>
-      </DialogContent>
-    </Dialog>
+      </Dialog>
+    </Dialog.Root>
   );
 }
 
@@ -394,8 +381,8 @@ function PaymentConfigDialog({
   readonly onSave: () => void;
 }) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog className="max-h-[85vh] max-w-2xl overflow-y-auto">
         <PaymentConfigHeader />
         <PaymentConfigTabs form={form} total={total} />
         <PaymentConfigFooter
@@ -404,23 +391,23 @@ function PaymentConfigDialog({
           onCancel={() => onOpenChange(false)}
           onSave={onSave}
         />
-      </DialogContent>
-    </Dialog>
+      </Dialog>
+    </Dialog.Root>
   );
 }
 
 function PaymentConfigHeader() {
   return (
-    <DialogHeader>
-      <DialogTitle className="flex items-center gap-2">
+    <>
+      <Dialog.Title className="flex items-center gap-2">
         <CreditCardIcon className="text-field-payment h-5 w-5" />
         Configure Payment
-      </DialogTitle>
-      <DialogDescription>
+      </Dialog.Title>
+      <Dialog.Description>
         Set up line items, payment terms, and accepted methods for this payment
         field.
-      </DialogDescription>
-    </DialogHeader>
+      </Dialog.Description>
+    </>
   );
 }
 
@@ -431,21 +418,35 @@ function PaymentConfigTabs({
   readonly form: PaymentConfigForm;
   readonly total: number;
 }) {
+  const [activeTab, setActiveTab] = useState("items");
+
   return (
-    <Tabs defaultValue="items" className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
-        <TabsTrigger value="items">Invoice Items</TabsTrigger>
-        <TabsTrigger value="terms">Payment Terms</TabsTrigger>
-        <TabsTrigger value="methods">Methods & Tax</TabsTrigger>
-      </TabsList>
-      <InvoiceItemsTab form={form} total={total} />
-      <PaymentTermsTab
-        draft={form.draft}
-        setDraftField={form.setDraftField}
-        total={total}
+    <>
+      <Tabs
+        tabs={[
+          { value: "items", label: "Invoice Items" },
+          { value: "terms", label: "Payment Terms" },
+          { value: "methods", label: "Methods & Tax" },
+        ]}
+        value={activeTab}
+        onValueChange={(v) =>
+          setActiveTab(
+            parseSelectValue(v, ["items", "terms", "methods"]) ?? activeTab
+          )
+        }
+        className="w-full"
+        listClassName="grid w-full grid-cols-3"
       />
-      <MethodsAndTaxTab form={form} />
-    </Tabs>
+      {activeTab === "items" && <InvoiceItemsTab form={form} total={total} />}
+      {activeTab === "terms" && (
+        <PaymentTermsTab
+          draft={form.draft}
+          setDraftField={form.setDraftField}
+          total={total}
+        />
+      )}
+      {activeTab === "methods" && <MethodsAndTaxTab form={form} />}
+    </>
   );
 }
 
@@ -457,13 +458,13 @@ function InvoiceItemsTab({
   readonly total: number;
 }) {
   return (
-    <TabsContent value="items" className="space-y-4 pt-4">
+    <div className="space-y-4 pt-4">
       <div className="space-y-3">
         {form.draft.items.map((item) => (
           <InvoiceItemRow key={item.id} form={form} item={item} />
         ))}
       </div>
-      <Button variant="outline" size="sm" onClick={form.addItem}>
+      <Button variant="outline" onClick={form.addItem}>
         <PlusIcon className="mr-1 h-4 w-4" />
         Add Item
       </Button>
@@ -471,7 +472,7 @@ function InvoiceItemsTab({
         <span className="text-sm font-medium">Subtotal</span>
         <span className="text-sm font-bold">{formatCents(total)}</span>
       </div>
-    </TabsContent>
+    </div>
   );
 }
 
@@ -486,6 +487,7 @@ function InvoiceItemRow({
     <div className="flex items-start gap-2">
       <div className="flex-1 space-y-1">
         <Input
+          aria-label="Item description"
           placeholder="Description"
           value={item.description}
           onChange={(event) =>
@@ -495,6 +497,7 @@ function InvoiceItemRow({
       </div>
       <div className="w-20">
         <Input
+          aria-label="Quantity"
           type="number"
           min={1}
           placeholder="Qty"
@@ -510,6 +513,7 @@ function InvoiceItemRow({
       </div>
       <div className="w-32">
         <InputCurrency
+          aria-label="Unit price"
           value={
             item.unitPrice > 0
               ? toMajorNumber(money(item.unitPrice, "USD")).toFixed(2)
@@ -527,8 +531,7 @@ function InvoiceItemRow({
       </div>
       <Button
         variant="ghost"
-        size="icon"
-        className="shrink-0"
+        className="h-8 w-8 shrink-0"
         aria-label="Remove invoice item"
         onClick={() => form.removeItem(item.id)}
         disabled={form.draft.items.length <= 1}
@@ -549,7 +552,7 @@ function PaymentTermsTab({
   readonly total: number;
 }) {
   return (
-    <TabsContent value="terms" className="space-y-5 pt-4">
+    <div className="space-y-5 pt-4">
       <PaymentTypeSection draft={draft} setDraftField={setDraftField} />
       {draft.paymentType === "one_time" && (
         <DueDateSection draft={draft} setDraftField={setDraftField} />
@@ -576,7 +579,7 @@ function PaymentTermsTab({
         feeHandling={draft.feeHandling}
         setDraftField={setDraftField}
       />
-    </TabsContent>
+    </div>
   );
 }
 
@@ -592,22 +595,26 @@ function PaymentTypeSection({
       <Label>Payment Type</Label>
       <Select
         value={draft.paymentType}
-        onValueChange={(value) =>
+        onValueChange={(value) => {
+          if (!value) return;
           setDraftField(
             "paymentType",
             parseSelectValue(value, PAYMENT_TYPES) ?? draft.paymentType
-          )
+          );
+        }}
+        renderValue={(value) =>
+          ({
+            one_time: "One-time Payment",
+            recurring: "Recurring",
+            installments: "Installments",
+            deposit_balance: "Deposit + Balance",
+          })[value as PaymentType] ?? value
         }
       >
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="one_time">One-time Payment</SelectItem>
-          <SelectItem value="recurring">Recurring</SelectItem>
-          <SelectItem value="installments">Installments</SelectItem>
-          <SelectItem value="deposit_balance">Deposit + Balance</SelectItem>
-        </SelectContent>
+        <Select.Option value="one_time">One-time Payment</Select.Option>
+        <Select.Option value="recurring">Recurring</Select.Option>
+        <Select.Option value="installments">Installments</Select.Option>
+        <Select.Option value="deposit_balance">Deposit + Balance</Select.Option>
       </Select>
     </div>
   );
@@ -625,23 +632,28 @@ function DueDateSection({
       <Label>Due Date</Label>
       <Select
         value={draft.dueDateTerms}
-        onValueChange={(value) =>
+        onValueChange={(value) => {
+          if (!value) return;
           setDraftField(
             "dueDateTerms",
             parseSelectValue(value, DUE_DATE_TERMS) ?? draft.dueDateTerms
-          )
+          );
+        }}
+        renderValue={(value) =>
+          ({
+            on_receipt: "Due on receipt",
+            net_15: "Net 15",
+            net_30: "Net 30",
+            net_60: "Net 60",
+            custom: "Custom",
+          })[value as DueDateTerms] ?? value
         }
       >
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="on_receipt">Due on receipt</SelectItem>
-          <SelectItem value="net_15">Net 15</SelectItem>
-          <SelectItem value="net_30">Net 30</SelectItem>
-          <SelectItem value="net_60">Net 60</SelectItem>
-          <SelectItem value="custom">Custom</SelectItem>
-        </SelectContent>
+        <Select.Option value="on_receipt">Due on receipt</Select.Option>
+        <Select.Option value="net_15">Net 15</Select.Option>
+        <Select.Option value="net_30">Net 30</Select.Option>
+        <Select.Option value="net_60">Net 60</Select.Option>
+        <Select.Option value="custom">Custom</Select.Option>
       </Select>
       {draft.dueDateTerms === "custom" && (
         <CustomDueDateControls draft={draft} setDraftField={setDraftField} />
@@ -662,16 +674,14 @@ function CustomDueDateControls({
       <div className="flex gap-1.5">
         <Button
           type="button"
-          size="sm"
-          variant={draft.customDueDateMode === "days" ? "default" : "outline"}
+          variant={draft.customDueDateMode === "days" ? "primary" : "outline"}
           onClick={() => setDraftField("customDueDateMode", "days")}
         >
           Days from signing
         </Button>
         <Button
           type="button"
-          size="sm"
-          variant={draft.customDueDateMode === "date" ? "default" : "outline"}
+          variant={draft.customDueDateMode === "date" ? "primary" : "outline"}
           onClick={() => setDraftField("customDueDateMode", "date")}
         >
           Specific date
@@ -696,6 +706,7 @@ function CustomDueDaysInput({
   return (
     <div className="flex items-center gap-2">
       <Input
+        aria-label="Days until due"
         type="number"
         min={1}
         className="w-24"
@@ -718,7 +729,7 @@ function CustomDueDatePicker({
 }) {
   return (
     <Popover>
-      <PopoverTrigger asChild>
+      <Popover.Trigger asChild>
         <Button
           type="button"
           variant="outline"
@@ -729,14 +740,14 @@ function CustomDueDatePicker({
             ? format(draft.customDueDate, "PPP")
             : "Pick a date"}
         </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
-        <Calendar
+      </Popover.Trigger>
+      <Popover.Content className="w-auto p-0" align="start">
+        <DatePicker
           mode="single"
           selected={draft.customDueDate}
-          onSelect={(date) => setDraftField("customDueDate", date)}
+          onChange={(date) => setDraftField("customDueDate", date)}
         />
-      </PopoverContent>
+      </Popover.Content>
     </Popover>
   );
 }
@@ -754,6 +765,7 @@ function RecurringScheduleSection({
       <div className="flex items-center gap-2">
         <span className="text-sm">Every</span>
         <Input
+          aria-label="Recurring interval count"
           type="number"
           min={1}
           className="w-20"
@@ -767,22 +779,26 @@ function RecurringScheduleSection({
         />
         <Select
           value={draft.recurringInterval}
-          onValueChange={(value) =>
+          onValueChange={(value) => {
+            if (!value) return;
             setDraftField(
               "recurringInterval",
               parseSelectValue(value, RECURRING_INTERVALS) ??
                 draft.recurringInterval
-            )
+            );
+          }}
+          className="w-32"
+          renderValue={(value) =>
+            ({
+              week: "Week(s)",
+              month: "Month(s)",
+              year: "Year(s)",
+            })[value as RecurringInterval] ?? value
           }
         >
-          <SelectTrigger className="w-32">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="week">Week(s)</SelectItem>
-            <SelectItem value="month">Month(s)</SelectItem>
-            <SelectItem value="year">Year(s)</SelectItem>
-          </SelectContent>
+          <Select.Option value="week">Week(s)</Select.Option>
+          <Select.Option value="month">Month(s)</Select.Option>
+          <Select.Option value="year">Year(s)</Select.Option>
         </Select>
       </div>
       <RecurringEndConditionSection
@@ -805,26 +821,30 @@ function RecurringEndConditionSection({
       <Label>End Condition</Label>
       <Select
         value={draft.recurringEndCondition}
-        onValueChange={(value) =>
+        onValueChange={(value) => {
+          if (!value) return;
           setDraftField(
             "recurringEndCondition",
             parseSelectValue(value, RECURRING_END_CONDITIONS) ??
               draft.recurringEndCondition
-          )
+          );
+        }}
+        renderValue={(value) =>
+          ({
+            never: "Never (until cancelled)",
+            after_count: "After # payments",
+            on_date: "On specific date",
+          })[value as RecurringEndCondition] ?? value
         }
       >
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="never">Never (until cancelled)</SelectItem>
-          <SelectItem value="after_count">After # payments</SelectItem>
-          <SelectItem value="on_date">On specific date</SelectItem>
-        </SelectContent>
+        <Select.Option value="never">Never (until cancelled)</Select.Option>
+        <Select.Option value="after_count">After # payments</Select.Option>
+        <Select.Option value="on_date">On specific date</Select.Option>
       </Select>
       {draft.recurringEndCondition === "after_count" && (
         <div className="flex items-center gap-2">
           <Input
+            aria-label="Recurring payment count"
             type="number"
             min={1}
             className="w-24"
@@ -859,6 +879,7 @@ function InstallmentPlanSection({
         <div className="space-y-2">
           <Label>Number of Payments</Label>
           <Input
+            aria-label="Number of payments"
             type="number"
             min={2}
             value={draft.installmentsCount}
@@ -904,21 +925,23 @@ function InstallmentIntervalSelect({
       <Label>Interval</Label>
       <Select
         value={draft.installmentsInterval}
-        onValueChange={(value) =>
+        onValueChange={(value) => {
+          if (!value) return;
           setDraftField(
             "installmentsInterval",
             parseSelectValue(value, INSTALLMENT_INTERVALS) ??
               draft.installmentsInterval
-          )
+          );
+        }}
+        renderValue={(value) =>
+          ({
+            week: "Weekly",
+            month: "Monthly",
+          })[value as InstallmentInterval] ?? value
         }
       >
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="week">Weekly</SelectItem>
-          <SelectItem value="month">Monthly</SelectItem>
-        </SelectContent>
+        <Select.Option value="week">Weekly</Select.Option>
+        <Select.Option value="month">Monthly</Select.Option>
       </Select>
     </div>
   );
@@ -979,6 +1002,7 @@ function DepositPercentInput({
     <div className="space-y-2">
       <Label>Deposit (%)</Label>
       <Input
+        aria-label="Deposit percentage"
         type="number"
         min={1}
         max={99}
@@ -1005,6 +1029,7 @@ function BalanceDueDaysInput({
     <div className="space-y-2">
       <Label>Balance Due (days)</Label>
       <Input
+        aria-label="Balance due in days"
         type="number"
         min={1}
         value={draft.balanceDueDays}
@@ -1062,26 +1087,29 @@ function LateFeeInputs({
         <Label className="text-xs">Type</Label>
         <Select
           value={draft.lateFeeType}
-          onValueChange={(value) =>
+          onValueChange={(value) => {
+            if (!value) return;
             setDraftField(
               "lateFeeType",
               parseSelectValue(value, LATE_FEE_TYPES) ?? draft.lateFeeType
-            )
+            );
+          }}
+          renderValue={(value) =>
+            ({
+              percentage: "Percentage",
+              fixed: "Fixed Amount",
+            })[value as LateFeeType] ?? value
           }
         >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="percentage">Percentage</SelectItem>
-            <SelectItem value="fixed">Fixed Amount</SelectItem>
-          </SelectContent>
+          <Select.Option value="percentage">Percentage</Select.Option>
+          <Select.Option value="fixed">Fixed Amount</Select.Option>
         </Select>
       </div>
       <LateFeeAmountInput draft={draft} setDraftField={setDraftField} />
       <div className="space-y-1">
         <Label className="text-xs">Grace (days)</Label>
         <Input
+          aria-label="Late fee grace days"
           type="number"
           min={0}
           value={draft.lateFeeGraceDays}
@@ -1107,6 +1135,11 @@ function LateFeeAmountInput({
         {draft.lateFeeType === "percentage" ? "Rate (%)" : "Amount"}
       </Label>
       <Input
+        aria-label={
+          draft.lateFeeType === "percentage"
+            ? "Late fee rate"
+            : "Late fee amount"
+        }
         type="number"
         min={0}
         step={draft.lateFeeType === "percentage" ? 0.5 : 1}
@@ -1131,22 +1164,26 @@ function FeeHandlingSection({
       <Label>Platform Fee Handling</Label>
       <Select
         value={feeHandling}
-        onValueChange={(value) =>
+        onValueChange={(value) => {
+          if (!value) return;
           setDraftField(
             "feeHandling",
             parseSelectValue(value, FEE_HANDLING) ?? feeHandling
-          )
+          );
+        }}
+        renderValue={(value) =>
+          ({
+            absorb: "Absorb (you pay Seal's fee)",
+            pass_to_recipient: "Pass to recipient (added to invoice)",
+          })[value as FeeHandling] ?? value
         }
       >
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="absorb">Absorb (you pay Seal's fee)</SelectItem>
-          <SelectItem value="pass_to_recipient">
-            Pass to recipient (added to invoice)
-          </SelectItem>
-        </SelectContent>
+        <Select.Option value="absorb">
+          Absorb (you pay Seal's fee)
+        </Select.Option>
+        <Select.Option value="pass_to_recipient">
+          Pass to recipient (added to invoice)
+        </Select.Option>
       </Select>
     </div>
   );
@@ -1154,10 +1191,10 @@ function FeeHandlingSection({
 
 function MethodsAndTaxTab({ form }: { readonly form: PaymentConfigForm }) {
   return (
-    <TabsContent value="methods" className="space-y-5 pt-4">
+    <div className="space-y-5 pt-4">
       <PaymentMethodsSection form={form} />
       <TaxSection draft={form.draft} setDraftField={form.setDraftField} />
-    </TabsContent>
+    </div>
   );
 }
 
@@ -1236,22 +1273,26 @@ function TaxBehaviorSelect({
       <Label className="text-xs">Tax Behavior</Label>
       <Select
         value={draft.taxBehavior}
-        onValueChange={(value) =>
+        onValueChange={(value) => {
+          if (!value) return;
           setDraftField(
             "taxBehavior",
             parseSelectValue(value, TAX_BEHAVIORS) ?? draft.taxBehavior
-          )
+          );
+        }}
+        renderValue={(value) =>
+          ({
+            exclusive: "Exclusive (added on top)",
+            inclusive: "Inclusive (included in price)",
+          })[value as TaxBehavior] ?? value
         }
       >
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="exclusive">Exclusive (added on top)</SelectItem>
-          <SelectItem value="inclusive">
-            Inclusive (included in price)
-          </SelectItem>
-        </SelectContent>
+        <Select.Option value="exclusive">
+          Exclusive (added on top)
+        </Select.Option>
+        <Select.Option value="inclusive">
+          Inclusive (included in price)
+        </Select.Option>
       </Select>
     </div>
   );
@@ -1269,29 +1310,31 @@ function PaymentConfigFooter({
   readonly onSave: () => void;
 }) {
   return (
-    <DialogFooter className="gap-2 border-t pt-4">
+    <div className="mt-4 flex items-center justify-between gap-2 border-t pt-4">
       <div className="flex flex-1 items-center gap-2">
         <Badge
-          variant="outline"
+          variant="neutral"
           className="border-field-payment-border text-field-payment"
         >
           Total: {formatCents(total)}
         </Badge>
       </div>
-      <Button variant="outline" onClick={onCancel} disabled={isSaving}>
-        Cancel
-      </Button>
-      <Button onClick={onSave} disabled={isSaving}>
-        {isSaving ? (
-          <>
-            <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-            Saving...
-          </>
-        ) : (
-          "Save Payment Config"
-        )}
-      </Button>
-    </DialogFooter>
+      <div className="flex items-center gap-2">
+        <Button variant="outline" onClick={onCancel} disabled={isSaving}>
+          Cancel
+        </Button>
+        <Button onClick={onSave} disabled={isSaving}>
+          {isSaving ? (
+            <>
+              <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            "Save Payment Config"
+          )}
+        </Button>
+      </div>
+    </div>
   );
 }
 

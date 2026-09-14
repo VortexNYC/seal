@@ -5,6 +5,7 @@
  * and relative timestamps. Includes skeleton loading state.
  */
 
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { useQuery } from "@tanstack/react-query";
 import {
   ActivityIcon,
@@ -20,13 +21,6 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { getRecentActivity } from "@/lib/api-client";
 import { formatRelativeTime } from "@/lib/format-relative-time";
 import { cn } from "@/lib/utils";
@@ -123,17 +117,19 @@ export function RecentActivity({
   // Loading skeleton
   if (isPending || activities === undefined) {
     return (
-      <Card
+      <LayerCard
         style={{
           animation: "fadeInUp var(--duration-slow) var(--ease-enter) both",
           animationDelay: "400ms",
         }}
       >
-        <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>Latest actions in your workspace</CardDescription>
-        </CardHeader>
-        <CardContent>
+        <LayerCard.Secondary>
+          <h3 className="text-base font-semibold">Recent Activity</h3>
+          <p className="text-muted-foreground text-sm">
+            Latest actions in your workspace
+          </p>
+        </LayerCard.Secondary>
+        <LayerCard.Primary>
           <div
             className="space-y-3"
             role="status"
@@ -149,23 +145,25 @@ export function RecentActivity({
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </LayerCard.Primary>
+      </LayerCard>
     );
   }
 
   return (
-    <Card
+    <LayerCard
       style={{
         animation: "fadeInUp var(--duration-slow) var(--ease-enter) both",
         animationDelay: "400ms",
       }}
     >
-      <CardHeader>
-        <CardTitle>Recent Activity</CardTitle>
-        <CardDescription>Latest actions in your workspace</CardDescription>
-      </CardHeader>
-      <CardContent>
+      <LayerCard.Secondary>
+        <h3 className="text-base font-semibold">Recent Activity</h3>
+        <p className="text-muted-foreground text-sm">
+          Latest actions in your workspace
+        </p>
+      </LayerCard.Secondary>
+      <LayerCard.Primary>
         {activities.length === 0 ? (
           <div className="text-muted-foreground flex h-32 flex-col items-center justify-center gap-2 text-sm">
             <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-full">
@@ -213,7 +211,7 @@ export function RecentActivity({
             })}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </LayerCard.Primary>
+    </LayerCard>
   );
 }

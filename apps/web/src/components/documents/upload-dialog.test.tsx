@@ -4,7 +4,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { UploadDialog } from "./upload-dialog";
 
-vi.mock("sonner", () => ({
+vi.mock("@/lib/toast", () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
 

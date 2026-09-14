@@ -12,7 +12,7 @@ vi.mock("@/lib/api-client", () => ({
   getContactByEmail: mockGetContactByEmail,
 }));
 
-vi.mock("sonner", () => ({
+vi.mock("@/lib/toast", () => ({
   toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
 }));
 
@@ -208,7 +208,7 @@ describe("CreateContactDialog", () => {
 
     test("shows success toast on successful creation", async () => {
       const user = userEvent.setup();
-      const { toast } = await import("sonner");
+      const { toast } = await import("@/lib/toast");
       mockCreateContact.mockResolvedValue(makeApiContact());
 
       renderDialog();
@@ -223,7 +223,7 @@ describe("CreateContactDialog", () => {
 
     test("shows warning toast when duplicate is created", async () => {
       const user = userEvent.setup();
-      const { toast } = await import("sonner");
+      const { toast } = await import("@/lib/toast");
       mockGetContactByEmail.mockResolvedValue(makeApiContact());
       mockCreateContact.mockResolvedValue(makeApiContact());
 
@@ -249,7 +249,7 @@ describe("CreateContactDialog", () => {
 
     test("shows error toast when creation fails", async () => {
       const user = userEvent.setup();
-      const { toast } = await import("sonner");
+      const { toast } = await import("@/lib/toast");
       mockCreateContact.mockRejectedValue(new Error("Network error"));
 
       renderDialog();

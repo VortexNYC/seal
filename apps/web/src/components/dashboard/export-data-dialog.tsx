@@ -2,40 +2,31 @@
  * Dashboard Export Dialog Component
  */
 
-import { DownloadIcon } from "lucide-react";
+import { Button } from "@cloudflare/kumo/components/button";
+import { Dialog } from "@cloudflare/kumo/components/dialog";
+import { DownloadSimple } from "@phosphor-icons/react";
 import { useState } from "react";
-
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 
 export function ExportDataDialog() {
   const [open, setOpen] = useState(false);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <DownloadIcon className="mr-2 h-4 w-4" />
-          Export
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[400px]">
-        <DialogHeader>
-          <DialogTitle>Export Documents Data</DialogTitle>
-          <DialogDescription>
-            Document exports are being migrated to the Cloudflare Worker data
-            layer. Exporting will be available once the dashboard data endpoints
-            are ready.
-          </DialogDescription>
-        </DialogHeader>
-      </DialogContent>
-    </Dialog>
+    <Dialog.Root open={open} onOpenChange={(nextOpen) => setOpen(nextOpen)}>
+      <Dialog.Trigger
+        render={
+          <Button variant="outline" size="sm" icon={DownloadSimple}>
+            Export
+          </Button>
+        }
+      />
+      <Dialog size="sm" className="p-6">
+        <Dialog.Title>Export Documents Data</Dialog.Title>
+        <Dialog.Description>
+          Document exports are being migrated to the Cloudflare Worker data
+          layer. Exporting will be available once the dashboard data endpoints
+          are ready.
+        </Dialog.Description>
+      </Dialog>
+    </Dialog.Root>
   );
 }

@@ -1,36 +1,20 @@
-/**
- * Folder Breadcrumbs
- *
- * Renders a clickable breadcrumb trail for folder navigation.
- * Root segment displays "All Documents" or "All Templates" based on type.
- * Intermediate folders are clickable; the last segment is the current page.
- */
-
+import { Breadcrumbs } from "@cloudflare/kumo/components/breadcrumbs";
+import { House } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
-import { Home } from "lucide-react";
-import { useLayoutEffect, useRef, useState } from "react";
+import { Fragment, useLayoutEffect, useRef, useState } from "react";
 
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { getFolderBreadcrumbs } from "@/lib/api-client";
+import { buildOrganizationPath } from "@/lib/organization-path";
 
 interface FolderBreadcrumbsProps {
   folderId?: string;
   type: "document" | "template";
-  onNavigate: (folderId?: string) => void;
   organizationSlug: string;
 }
 
 export function FolderBreadcrumbs({
   folderId,
   type,
-  onNavigate,
   organizationSlug,
 }: FolderBreadcrumbsProps) {
   const { data: breadcrumbs } = useQuery({
@@ -96,54 +80,55 @@ export function FolderBreadcrumbs({
     };
   }, [breadcrumbItems.length, breadcrumbSignature]);
 
-  return (
-    <Breadcrumb className="max-w-full min-w-0 overflow-hidden">
-      <BreadcrumbList
-        className="max-w-full flex-nowrap justify-center whitespace-nowrap motion-safe:transition-transform motion-safe:duration-250 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]"
-        style={{
-          transform:
-            motionOffset === "from-right"
-              ? "translateX(12px)"
-              : motionOffset === "from-left"
-                ? "translateX(-12px)"
-                : "translateX(0)",
-        }}
-      >
-        {/* Root segment */}
-        <BreadcrumbItem>
-          <BreadcrumbLink
-            className="text-foreground/80 hover:text-foreground flex shrink-0 cursor-pointer items-center gap-1.5 font-medium"
-            onClick={() => onNavigate(undefined)}
-          >
-            <Home className="size-3.5 shrink-0" />
-            {rootLabel}
-          </BreadcrumbLink>
-        </BreadcrumbItem>
+  const rootHref = buildOrganizationPath(
+    organizationSlug,
+    type === "document" ? "documents" : "templates"
+  );
 
+  const getFolderHref = (targetFolderId: string) =>
+    buildOrganizationPath(
+      organizationSlug,
+      `${type === "document" ? "documents" : "templates"}?folderId=${targetFolderId}`
+    );
+
+  return (
+    <div
+      className="max-w-full min-w-0 overflow-hidden"
+      style={{
+        transform:
+          motionOffset === "from-right"
+            ? "translateX(12px)"
+            : motionOffset === "from-left"
+              ? "translateX(-12px)"
+              : "translateX(0)",
+      }}
+    >
+      <Breadcrumbs className="max-w-full">
+        <Breadcrumbs.Link
+          href={rootHref}
+          icon={<House className="h-3.5 w-3.5" />}
+        >
+          {rootLabel}
+        </Breadcrumbs.Link>
         {breadcrumbItems.map((crumb, index) => {
           const isLast = index === breadcrumbItems.length - 1;
 
           return (
-            <span key={crumb.id} className="contents">
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                {isLast ? (
-                  <BreadcrumbPage className="max-w-40 truncate sm:max-w-56">
+            <Fragment key={crumb.id}>
+              <Breadcrumbs.Separator />
+              {isLast ? (
+                <Breadcrumbs.Current>{crumb.name}</Breadcrumbs.Current>
+              ) : (
+                <Breadcrumbs.Link href={getFolderHref(crumb.id)}>
+                  <span className="max-w-32 truncate sm:max-w-48">
                     {crumb.name}
-                  </BreadcrumbPage>
-                ) : (
-                  <BreadcrumbLink
-                    className="max-w-32 cursor-pointer truncate sm:max-w-48"
-                    onClick={() => onNavigate(crumb.id)}
-                  >
-                    {crumb.name}
-                  </BreadcrumbLink>
-                )}
-              </BreadcrumbItem>
-            </span>
+                  </span>
+                </Breadcrumbs.Link>
+              )}
+            </Fragment>
           );
         })}
-      </BreadcrumbList>
-    </Breadcrumb>
+      </Breadcrumbs>
+    </div>
   );
 }

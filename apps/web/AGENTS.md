@@ -36,21 +36,13 @@ apps/web/
 - Use `buildOrganizationPath()` from `apps/web/src/lib/organization-path.ts` for org URLs.
 - Prefer `data-testid` for E2E selectors; use POM pattern in `apps/web/e2e/pages/`.
 
-### UI primitives (`@vortexnyc/ui` vs local shadcn) — SEA-592
+### UI primitives — Cloudflare Kumo
 
-Incremental CORE-FIRST cutover. Do **not** big-bang replace `components/ui/*`.
+All `apps/web` UI primitives are Cloudflare Kumo (`@cloudflare/kumo`).
 
-| Surface                                                                   | Prefer              | Notes                                                            |
-| ------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------- |
-| New / touched **platform & auth settings**                                | `@vortexnyc/ui`     | Button, Card, Input, Label, Switch, Select, Separator, Dialog, … |
-| **Product signing canvas** / document editor                              | `@/components/ui/*` | Seal-specific density & chrome stay local                        |
-| Primitive Core does not ship (e.g. `Textarea`, `Progress`, `AlertDialog`) | `@/components/ui/*` | Until Core adds it — then migrate on touch                       |
-
-Rules:
-
-1. When editing a settings/auth route, switch imports for Core-available primitives to `@vortexnyc/ui`.
-2. Do **not** import `@vortexnyc/ui/styles.css` — Seal already owns design tokens; Core primitives use token **names** only.
-3. Do not grow new local shadcn clones of Core-shipped primitives for platform surfaces.
+- Import directly from `@cloudflare/kumo/components/*`.
+- Do not create new local shadcn-style wrappers.
+- `components/ui/input-currency.tsx` is the only remaining local file; it is a Kumo-based wrapper around `@react-input/number-format` for currency inputs.
 
 ### Branding / tenant identity (SEA-603)
 
@@ -126,7 +118,7 @@ forgot link under the Core sign-in page.
 - Use CSS classes in E2E selectors.
 - Bypass `AuthAuthenticatedRouteGate` / workspace slug guard for authenticated routes.
 - Import backend functions or generated types directly into product code.
-- Add a new local Button/Card/Input for settings when `@vortexnyc/ui` already exports it.
+- Add a new local Button/Card/Input for settings when `@cloudflare/kumo/components/*` already exports it.
 
 ## Quick Links
 

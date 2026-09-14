@@ -10,50 +10,30 @@
  * SEA-104/105/106/107: Signature Capture Interface
  */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@cloudflare/kumo/components/button";
+import { Checkbox } from "@cloudflare/kumo/components/checkbox";
+import { Dialog } from "@cloudflare/kumo/components/dialog";
+import { Input } from "@cloudflare/kumo/components/input";
+import { Label } from "@cloudflare/kumo/components/label";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Select } from "@cloudflare/kumo/components/select";
+import { Tabs } from "@cloudflare/kumo/components/tabs";
 import {
-  BookmarkIcon,
-  CheckIcon,
-  ImageIcon,
-  PencilIcon,
-  PlusIcon,
-  RotateCcwIcon,
-  StarIcon,
-  TrashIcon,
-  TypeIcon,
-  XIcon,
-} from "lucide-react";
+  ArrowCounterClockwise,
+  Bookmark,
+  Check,
+  Image,
+  Pencil,
+  Plus,
+  Star,
+  TextT,
+  Trash,
+  X,
+} from "@phosphor-icons/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import SignatureCanvas from "react-signature-canvas";
-import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   createSavedSignature,
   deleteSavedSignature,
@@ -63,6 +43,7 @@ import {
   type ApiSavedSignature,
 } from "@/lib/api-client";
 import { parseSelectValue } from "@/lib/select-values";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 type SignatureType = "drawn" | "typed" | "uploaded";
@@ -452,337 +433,347 @@ export function SignatureCapture({
 
   if (!hasAvailableMethods) {
     return (
-      <Card className="mx-auto w-full max-w-2xl">
-        <CardHeader>
-          <CardTitle>Sign Document</CardTitle>
-          <CardDescription>
+      <LayerCard className="mx-auto w-full max-w-2xl">
+        <LayerCard.Primary>
+          <h3 className="text-base font-semibold">Sign Document</h3>
+          <p className="text-kumo-secondary text-sm">
             No signature methods are currently available.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="text-muted-foreground pt-0 text-sm">
+          </p>
+        </LayerCard.Primary>
+        <div className="text-kumo-secondary p-6 pt-0 text-sm">
           Contact your organization administrator to re-enable signing methods.
           <div className="mt-4">
             <Button variant="outline" onClick={onCancel}>
               Close
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </LayerCard>
     );
   }
 
+  const tabs = [
+    ...(showLibrary
+      ? [
+          {
+            value: "saved",
+            label: (
+              <span className="flex min-h-[44px] items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3">
+                <Bookmark className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Saved</span>
+              </span>
+            ),
+          },
+        ]
+      : []),
+    ...(allowedTabs.includes("drawn")
+      ? [
+          {
+            value: "drawn",
+            label: (
+              <span className="flex min-h-[44px] items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3">
+                <Pencil className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Draw</span>
+              </span>
+            ),
+          },
+        ]
+      : []),
+    ...(allowedTabs.includes("typed")
+      ? [
+          {
+            value: "typed",
+            label: (
+              <span className="flex min-h-[44px] items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3">
+                <TextT className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Type</span>
+              </span>
+            ),
+          },
+        ]
+      : []),
+    ...(allowedTabs.includes("uploaded")
+      ? [
+          {
+            value: "uploaded",
+            label: (
+              <span className="flex min-h-[44px] items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3">
+                <Image className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Upload</span>
+              </span>
+            ),
+          },
+        ]
+      : []),
+  ];
+
   return (
-    <Card className="mx-auto w-full max-w-2xl">
-      <CardHeader>
-        <CardTitle>Sign Document</CardTitle>
-        <CardDescription>
+    <LayerCard className="mx-auto w-full max-w-2xl">
+      <LayerCard.Primary>
+        <h3 className="text-base font-semibold">Sign Document</h3>
+        <p className="text-kumo-secondary text-sm">
           Choose your preferred method to sign this document
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+        </p>
+      </LayerCard.Primary>
+      <div className="p-6 pt-0">
         <Tabs
+          tabs={tabs}
           value={activeTab}
           onValueChange={(v) =>
             setActiveTab(parseSelectValue(v, TAB_TYPES) ?? activeTab)
           }
-        >
-          {/* SEA-116: Mobile-optimized tabs with icon-only on small screens */}
-          <TabsList
-            className="grid h-auto w-full"
-            style={{
-              gridTemplateColumns: `repeat(${allowedTabs.length + (showLibrary ? 1 : 0)}, minmax(0, 1fr))`,
-            }}
-          >
-            {showLibrary && (
-              <TabsTrigger
-                value="saved"
-                className="flex min-h-[44px] items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3"
-              >
-                <BookmarkIcon className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">Saved</span>
-              </TabsTrigger>
-            )}
-            {allowedTabs.includes("drawn") && (
-              <TabsTrigger
-                value="drawn"
-                className="flex min-h-[44px] items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3"
-              >
-                <PencilIcon className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">Draw</span>
-              </TabsTrigger>
-            )}
-            {allowedTabs.includes("typed") && (
-              <TabsTrigger
-                value="typed"
-                className="flex min-h-[44px] items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3"
-              >
-                <TypeIcon className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">Type</span>
-              </TabsTrigger>
-            )}
-            {allowedTabs.includes("uploaded") && (
-              <TabsTrigger
-                value="uploaded"
-                className="flex min-h-[44px] items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3"
-              >
-                <ImageIcon className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">Upload</span>
-              </TabsTrigger>
-            )}
-          </TabsList>
+        />
 
-          {/* Saved Tab (only shown if showLibrary is true) */}
-          {showLibrary && (
-            <TabsContent value="saved" className="space-y-4">
-              {savedSignatures.length === 0 ? (
-                <div className="text-muted-foreground py-8 text-center">
-                  <BookmarkIcon className="mx-auto mb-4 h-12 w-12 opacity-50" />
-                  <p className="text-sm">No saved signatures yet</p>
-                  <p className="mt-1 text-xs">
-                    Create a signature using Draw, Type, or Upload and save it
-                    for quick reuse
-                  </p>
-                </div>
-              ) : (
-                <div
-                  className="grid gap-3"
-                  role="listbox"
-                  aria-label="Saved signatures"
-                >
-                  {savedSignatures.map((sig: ApiSavedSignature) => (
-                    <div
-                      key={sig.id}
-                      role="option"
-                      aria-selected={selectedSavedSignature === sig.id}
-                      tabIndex={0}
-                      className={cn(
-                        "relative cursor-pointer rounded-lg border-2 p-3 transition-colors",
-                        selectedSavedSignature === sig.id
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-border"
-                      )}
-                      onClick={() => setSelectedSavedSignature(sig.id)}
-                      onKeyDown={(event) => {
-                        if (event.target !== event.currentTarget) return;
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          setSelectedSavedSignature(sig.id);
-                        }
-                      }}
-                      aria-label={`Select ${sig.name} signature`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="truncate text-sm font-medium">
-                              {sig.name}
-                            </span>
-                            {sig.isDefault && (
-                              <StarIcon className="fill-warning text-warning h-3 w-3 flex-shrink-0" />
-                            )}
-                          </div>
-                          <div className="text-muted-foreground mt-1 text-xs">
-                            {sig.signatureType} · Used {sig.usageCount} times
-                          </div>
-                        </div>
-                        <img
-                          src={sig.signatureImageUrl}
-                          alt={sig.name}
-                          // vortex-allow-color: signature thumbnails represent white paper in both themes
-                          className="h-12 w-24 rounded border bg-white object-contain"
-                        />
-                        <div className="flex flex-col gap-1">
-                          {!sig.isDefault && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              aria-label={`Set ${sig.name} as default signature`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                void handleSetDefault(sig.id);
-                              }}
-                              title="Set as default"
-                            >
-                              <StarIcon className="h-3.5 w-3.5" />
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-destructive hover:text-destructive h-7 w-7"
-                            aria-label={`Delete saved signature ${sig.name}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              void handleDeleteSavedSignature(sig.id);
-                            }}
-                            title="Delete signature"
-                          >
-                            <TrashIcon className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <p className="text-muted-foreground text-xs">
-                {savedSignatures.length}/10 signatures saved
-              </p>
-            </TabsContent>
-          )}
-
-          {/* Draw Tab */}
-          {allowedTabs.includes("drawn") && (
-            <TabsContent value="drawn" className="space-y-4">
-              <div className="space-y-2">
-                <Label>Draw your signature</Label>
-                {/* SEA-116: Responsive container for signature canvas */}
-                <div
-                  ref={canvasContainerRef}
-                  // vortex-allow-color: signature capture pad represents white paper in both themes
-                  className="border-border overflow-hidden rounded-lg border-2 border-dashed bg-white"
-                >
-                  {/* vortex-allow-color: SignatureCanvas forwards colors to canvas and cannot resolve CSS tokens. */}
-                  <SignatureCanvas
-                    ref={signaturePadRef}
-                    canvasProps={{
-                      width: canvasWidth,
-                      height: 200,
-                      className:
-                        "w-full h-[200px] cursor-crosshair touch-none select-none",
-                      style: { touchAction: "none" },
-                    }}
-                    // vortex-allow-color: signature capture pad represents white paper in both themes
-                    backgroundColor="rgb(255, 255, 255)"
-                    // vortex-allow-color: signature capture ink must stay physically black on white paper
-                    penColor="rgb(0, 0, 0)"
-                  />
-                </div>
-                {/* SEA-116: Larger touch targets for mobile */}
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="default"
-                    onClick={handleUndoDrawn}
-                    className="h-11 min-h-[44px] flex-1"
-                    disabled={signatureHistory.length === 0}
-                  >
-                    <RotateCcwIcon className="mr-2 h-4 w-4" />
-                    Undo
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="default"
-                    onClick={handleClearDrawn}
-                    className="h-11 min-h-[44px] flex-1"
-                  >
-                    <XIcon className="mr-2 h-4 w-4" />
-                    Clear
-                  </Button>
-                </div>
-                <p className="text-muted-foreground text-xs">
-                  Use your mouse or finger to draw your signature above
+        {/* Saved Tab (only shown if showLibrary is true) */}
+        {showLibrary && activeTab === "saved" && (
+          <div className="space-y-4">
+            {savedSignatures.length === 0 ? (
+              <div className="text-kumo-secondary py-8 text-center">
+                <Bookmark className="mx-auto mb-4 h-12 w-12 opacity-50" />
+                <p className="text-sm">No saved signatures yet</p>
+                <p className="mt-1 text-xs">
+                  Create a signature using Draw, Type, or Upload and save it for
+                  quick reuse
                 </p>
               </div>
-            </TabsContent>
-          )}
-
-          {/* Type Tab */}
-          {allowedTabs.includes("typed") && (
-            <TabsContent value="typed" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="typed-name">Type your full name</Label>
-                {/* SEA-116: Larger input for mobile with proper virtual keyboard handling */}
-                <Input
-                  id="typed-name"
-                  value={typedName}
-                  onChange={(e) => setTypedName(e.target.value)}
-                  placeholder="John Doe"
-                  className="h-12 text-lg sm:h-10"
-                  autoComplete="name"
-                  autoCapitalize="words"
-                  enterKeyHint="done"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="font-select">Select signature style</Label>
-                <Select
-                  value={selectedFont}
-                  onValueChange={(v) =>
-                    setSelectedFont(
-                      parseSelectValue(v, SIGNATURE_FONT_VALUES) ?? selectedFont
-                    )
-                  }
-                >
-                  <SelectTrigger id="font-select" className="h-11 sm:h-10">
-                    <SelectValue placeholder="Select a font" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SIGNATURE_FONTS.map((font) => (
-                      <SelectItem key={font.value} value={font.value}>
-                        <span style={{ fontFamily: font.cssFamily }}>
-                          {font.name}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {typedName && (
-                <div
-                  // vortex-allow-color: signature preview represents white paper in both themes
-                  className="border-border overflow-hidden rounded-lg border-2 bg-white p-4 sm:p-8"
-                >
-                  {/* SEA-116: Responsive font size for mobile */}
-                  <p
-                    className="truncate text-center text-3xl sm:text-5xl"
-                    style={{ fontFamily: currentFontFamily }}
+            ) : (
+              <div
+                className="grid gap-3"
+                role="listbox"
+                aria-label="Saved signatures"
+              >
+                {savedSignatures.map((sig: ApiSavedSignature) => (
+                  <div
+                    key={sig.id}
+                    role="option"
+                    aria-selected={selectedSavedSignature === sig.id}
+                    tabIndex={0}
+                    className={cn(
+                      "relative cursor-pointer rounded-lg border-2 p-3 transition-colors",
+                      selectedSavedSignature === sig.id
+                        ? "border-kumo-brand bg-kumo-brand/5"
+                        : "border-kumo-hairline hover:border-kumo-hairline"
+                    )}
+                    onClick={() => setSelectedSavedSignature(sig.id)}
+                    onKeyDown={(event) => {
+                      if (event.target !== event.currentTarget) return;
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setSelectedSavedSignature(sig.id);
+                      }
+                    }}
+                    aria-label={`Select ${sig.name} signature`}
                   >
-                    {typedName}
-                  </p>
-                </div>
-              )}
-              <p className="text-muted-foreground text-sm">
-                Your typed name will be converted to a signature style using the
-                selected font
-              </p>
-            </TabsContent>
-          )}
+                    <div className="flex items-center gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate text-sm font-medium">
+                            {sig.name}
+                          </span>
+                          {sig.isDefault && (
+                            <Star className="fill-kumo-warning text-kumo-warning h-3 w-3 flex-shrink-0" />
+                          )}
+                        </div>
+                        <div className="text-kumo-secondary mt-1 text-xs">
+                          {sig.signatureType} · Used {sig.usageCount} times
+                        </div>
+                      </div>
+                      <img
+                        src={sig.signatureImageUrl}
+                        alt={sig.name}
+                        // vortex-allow-color: signature thumbnails represent white paper in both themes
+                        className="h-12 w-24 rounded border bg-white object-contain"
+                      />
+                      <div className="flex flex-col gap-1">
+                        {!sig.isDefault && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7"
+                            aria-label={`Set ${sig.name} as default signature`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void handleSetDefault(sig.id);
+                            }}
+                            title="Set as default"
+                          >
+                            <Star className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive h-7 w-7"
+                          aria-label={`Delete saved signature ${sig.name}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void handleDeleteSavedSignature(sig.id);
+                          }}
+                          title="Delete signature"
+                        >
+                          <Trash className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-kumo-secondary text-xs">
+              {savedSignatures.length}/10 signatures saved
+            </p>
+          </div>
+        )}
 
-          {/* Upload Tab */}
-          {allowedTabs.includes("uploaded") && (
-            <TabsContent value="uploaded" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="signature-upload">
-                  Upload your signature image
-                </Label>
-                <Input
-                  id="signature-upload"
-                  type="file"
-                  accept=".png,.jpg,.jpeg"
-                  onChange={handleFileUpload}
+        {/* Draw Tab */}
+        {allowedTabs.includes("drawn") && activeTab === "drawn" && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Draw your signature</Label>
+              {/* SEA-116: Responsive container for signature canvas */}
+              <div
+                ref={canvasContainerRef}
+                // vortex-allow-color: signature capture pad represents white paper in both themes
+                className="border-kumo-hairline overflow-hidden rounded-lg border-2 border-dashed bg-white"
+              >
+                {/* vortex-allow-color: SignatureCanvas forwards colors to canvas and cannot resolve CSS tokens. */}
+                <SignatureCanvas
+                  ref={signaturePadRef}
+                  canvasProps={{
+                    width: canvasWidth,
+                    height: 200,
+                    className:
+                      "w-full h-[200px] cursor-crosshair touch-none select-none",
+                    style: { touchAction: "none" },
+                  }}
+                  // vortex-allow-color: signature capture pad represents white paper in both themes
+                  backgroundColor="rgb(255, 255, 255)"
+                  // vortex-allow-color: signature capture ink must stay physically black on white paper
+                  penColor="rgb(0, 0, 0)"
                 />
               </div>
-              {uploadedImage && (
-                <div
-                  // vortex-allow-color: uploaded signature preview represents white paper in both themes
-                  className="border-border rounded-lg border-2 bg-white p-4"
+              {/* SEA-116: Larger touch targets for mobile */}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="base"
+                  onClick={handleUndoDrawn}
+                  className="h-11 min-h-[44px] flex-1"
+                  disabled={signatureHistory.length === 0}
                 >
-                  <img
-                    src={uploadedImage}
-                    alt="Uploaded signature"
-                    className="mx-auto max-h-[200px]"
-                  />
-                </div>
-              )}
-              <p className="text-muted-foreground text-sm">
-                Upload a PNG or JPG image file (max 5MB)
+                  <ArrowCounterClockwise className="mr-2 h-4 w-4" />
+                  Undo
+                </Button>
+                <Button
+                  variant="outline"
+                  size="base"
+                  onClick={handleClearDrawn}
+                  className="h-11 min-h-[44px] flex-1"
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Clear
+                </Button>
+              </div>
+              <p className="text-kumo-secondary text-xs">
+                Use your mouse or finger to draw your signature above
               </p>
-            </TabsContent>
-          )}
-        </Tabs>
+            </div>
+          </div>
+        )}
 
+        {/* Type Tab */}
+        {allowedTabs.includes("typed") && activeTab === "typed" && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="typed-name">Type your full name</Label>
+              {/* SEA-116: Larger input for mobile with proper virtual keyboard handling */}
+              <Input
+                id="typed-name"
+                value={typedName}
+                onChange={(e) => setTypedName(e.target.value)}
+                placeholder="John Doe"
+                className="h-12 text-lg sm:h-10"
+                autoComplete="name"
+                autoCapitalize="words"
+                enterKeyHint="done"
+                aria-label="Type your full name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="font-select">Select signature style</Label>
+              <Select
+                id="font-select"
+                value={selectedFont}
+                onValueChange={(v) =>
+                  setSelectedFont(
+                    parseSelectValue(v ?? "", SIGNATURE_FONT_VALUES) ??
+                      selectedFont
+                  )
+                }
+                placeholder="Select a font"
+              >
+                {SIGNATURE_FONTS.map((font) => (
+                  <Select.Option key={font.value} value={font.value}>
+                    <span style={{ fontFamily: font.cssFamily }}>
+                      {font.name}
+                    </span>
+                  </Select.Option>
+                ))}
+              </Select>
+            </div>
+            {typedName && (
+              <div
+                // vortex-allow-color: signature preview represents white paper in both themes
+                className="border-kumo-hairline overflow-hidden rounded-lg border-2 bg-white p-4 sm:p-8"
+              >
+                {/* SEA-116: Responsive font size for mobile */}
+                <p
+                  className="truncate text-center text-3xl sm:text-5xl"
+                  style={{ fontFamily: currentFontFamily }}
+                >
+                  {typedName}
+                </p>
+              </div>
+            )}
+            <p className="text-kumo-secondary text-sm">
+              Your typed name will be converted to a signature style using the
+              selected font
+            </p>
+          </div>
+        )}
+
+        {/* Upload Tab */}
+        {allowedTabs.includes("uploaded") && activeTab === "uploaded" && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="signature-upload">
+                Upload your signature image
+              </Label>
+              <input
+                id="signature-upload"
+                type="file"
+                accept=".png,.jpg,.jpeg"
+                onChange={handleFileUpload}
+                className="file:text-kumo-primary text-kumo-secondary border-kumo-hairline w-full rounded border bg-transparent p-2 text-sm"
+              />
+            </div>
+            {uploadedImage && (
+              <div
+                // vortex-allow-color: uploaded signature preview represents white paper in both themes
+                className="border-kumo-hairline rounded-lg border-2 bg-white p-4"
+              >
+                <img
+                  src={uploadedImage}
+                  alt="Uploaded signature"
+                  className="mx-auto max-h-[200px]"
+                />
+              </div>
+            )}
+            <p className="text-kumo-secondary text-sm">
+              Upload a PNG or JPG image file (max 5MB)
+            </p>
+          </div>
+        )}
         {/* SEA-116: Mobile-optimized action buttons with proper touch targets */}
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:gap-4">
           <Button
@@ -801,33 +792,31 @@ export function SignatureCapture({
             }}
             className="h-12 min-h-[44px] flex-1 sm:h-11"
           >
-            <CheckIcon className="mr-2 h-4 w-4" />
+            <Check className="mr-2 h-4 w-4" />
             Accept & Sign
           </Button>
         </div>
 
         {/* Legal Text */}
-        <p className="text-muted-foreground mt-4 text-center text-xs">
+        <p className="text-kumo-secondary mt-4 text-center text-xs">
           By clicking "Accept & Sign", you agree that this is a legal
           representation of your signature.
         </p>
-      </CardContent>
+      </div>
 
       {/* Save to Library Dialog */}
-      <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Save to Signature Library?</DialogTitle>
-            <DialogDescription>
-              Would you like to save this signature for quick reuse in future
-              documents?
-            </DialogDescription>
-          </DialogHeader>
+      <Dialog.Root open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+        <Dialog>
+          <Dialog.Title>Save to Signature Library?</Dialog.Title>
+          <Dialog.Description>
+            Would you like to save this signature for quick reuse in future
+            documents?
+          </Dialog.Description>
           <div className="space-y-4 py-4">
             {pendingSignatureData && (
               <div
                 // vortex-allow-color: signature library preview represents white paper in both themes
-                className="rounded-lg border bg-white p-4"
+                className="border-kumo-hairline rounded-lg border bg-white p-4"
               >
                 <img
                   src={pendingSignatureData.data}
@@ -843,22 +832,16 @@ export function SignatureCapture({
                 value={saveSignatureName}
                 onChange={(e) => setSaveSignatureName(e.target.value)}
                 placeholder="e.g., My Personal Signature"
+                aria-label="Signature name"
               />
             </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="set-default"
-                checked={saveAsDefault}
-                onCheckedChange={(checked) =>
-                  setSaveAsDefault(checked === true)
-                }
-              />
-              <Label htmlFor="set-default" className="text-sm font-normal">
-                Set as my default signature
-              </Label>
-            </div>
+            <Checkbox
+              checked={saveAsDefault}
+              onCheckedChange={(checked) => setSaveAsDefault(checked)}
+              label="Set as my default signature"
+            />
           </div>
-          <DialogFooter className="flex-col gap-2 sm:flex-row">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <Button
               variant="outline"
               onClick={handleSubmitWithoutSaving}
@@ -871,12 +854,12 @@ export function SignatureCapture({
               disabled={!saveSignatureName.trim()}
               className="flex-1"
             >
-              <PlusIcon className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 h-4 w-4" />
               Save & Sign
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </Card>
+          </div>
+        </Dialog>
+      </Dialog.Root>
+    </LayerCard>
   );
 }

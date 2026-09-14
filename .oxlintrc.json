@@ -1,0 +1,4 @@
+{
+  "jsPlugins": ["@shadcn/lint"],
+  "ignores": ["**/.blume/**", "**/node_modules/**"]
+}

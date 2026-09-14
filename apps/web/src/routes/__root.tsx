@@ -1,3 +1,4 @@
+import { Toasty } from "@cloudflare/kumo/components/toast";
 import type { QueryClient } from "@tanstack/react-query";
 import {
   createRootRouteWithContext,
@@ -10,7 +11,7 @@ import { useEffect } from "react";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { NotFoundPage } from "@/components/not-found-page";
 import { RouteErrorComponent } from "@/components/route-error-component";
-import { Toaster } from "@/components/ui/sonner";
+import { toastManager } from "@/lib/toast";
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
@@ -46,11 +47,10 @@ function RootComponent() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <>
+    <Toasty toastManager={toastManager}>
       <HeadContent />
       <div className="h-svh">{children}</div>
-      <Toaster richColors />
       <TanStackRouterDevtools position="bottom-right" />
-    </>
+    </Toasty>
   );
 }

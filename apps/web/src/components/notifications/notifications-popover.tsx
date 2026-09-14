@@ -1,18 +1,23 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Badge } from "@cloudflare/kumo/components/badge";
+import { Button } from "@cloudflare/kumo/components/button";
+import { Empty } from "@cloudflare/kumo/components/empty";
+import { Popover } from "@cloudflare/kumo/components/popover";
+import { Text } from "@cloudflare/kumo/components/text";
 import {
-  AlertCircleIcon,
-  BellIcon,
-  CheckCircleIcon,
-  CheckIcon,
-  ClockIcon,
-  FileTextIcon,
-  KeyIcon,
-  MailIcon,
-  Share2Icon,
-  ShieldAlertIcon,
-  UserIcon,
-} from "lucide-react";
+  Bell,
+  Check,
+  CheckCircle,
+  Clock,
+  EnvelopeSimple,
+  FileText,
+  Key,
+  ShareNetwork,
+  ShieldWarning,
+  User,
+  Warning,
+} from "@phosphor-icons/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 
 import type {
   ApiNotification,
@@ -26,11 +31,6 @@ import {
   markNotificationAsRead,
 } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
-
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { Skeleton } from "../ui/skeleton";
 
 type Notification = ApiNotification;
 
@@ -56,22 +56,22 @@ function formatRelativeTime(timestamp: number): string {
 function getNotificationIcon(type: ApiNotificationType) {
   switch (type) {
     case "document_shared":
-      return <Share2Icon className="text-info h-4 w-4" />;
+      return <ShareNetwork className="text-kumo-info size-4" />;
     case "access_revoked":
     case "bulk_access_revoked":
-      return <ShieldAlertIcon className="text-destructive h-4 w-4" />;
+      return <ShieldWarning className="text-kumo-danger size-4" />;
     case "access_updated":
-      return <KeyIcon className="text-warning h-4 w-4" />;
+      return <Key className="text-kumo-warning size-4" />;
     case "ownership_transferred":
-      return <UserIcon className="text-ai-accent h-4 w-4" />;
+      return <User className="text-ai-accent size-4" />;
     case "document_signed":
     case "document_completed":
     case "signature_requested":
-      return <FileTextIcon className="text-success h-4 w-4" />;
+      return <FileText className="text-kumo-success size-4" />;
     case "sharing_disabled":
-      return <ShieldAlertIcon className="text-warning h-4 w-4" />;
+      return <ShieldWarning className="text-kumo-warning size-4" />;
     default:
-      return <BellIcon className="text-muted-foreground h-4 w-4" />;
+      return <Bell className="text-kumo-secondary size-4" />;
   }
 }
 
@@ -189,30 +189,30 @@ function EmailStatusIndicator({
     case "pending":
       return (
         <span
-          className="text-warning inline-flex items-center gap-1 text-[10px]"
+          className="text-kumo-warning inline-flex items-center gap-1 text-[10px]"
           title="Email sending..."
         >
-          <ClockIcon className="h-3 w-3" />
+          <Clock className="size-3" />
         </span>
       );
     case "sent":
       return (
         <span
-          className="text-success inline-flex items-center gap-1 text-[10px]"
+          className="text-kumo-success inline-flex items-center gap-1 text-[10px]"
           title="Email sent"
         >
-          <MailIcon className="h-3 w-3" />
-          <CheckCircleIcon className="h-2.5 w-2.5" />
+          <EnvelopeSimple className="size-3" />
+          <CheckCircle className="size-2.5" />
         </span>
       );
     case "failed":
       return (
         <span
-          className="text-destructive inline-flex items-center gap-1 text-[10px]"
+          className="text-kumo-danger inline-flex items-center gap-1 text-[10px]"
           title={lastError ?? "Email failed to send"}
         >
-          <MailIcon className="h-3 w-3" />
-          <AlertCircleIcon className="h-2.5 w-2.5" />
+          <EnvelopeSimple className="size-3" />
+          <Warning className="size-2.5" />
         </span>
       );
     default:
@@ -246,8 +246,8 @@ function NotificationItem({
       className={cn(
         "flex cursor-pointer items-start gap-3 rounded-lg p-3 transition-colors",
         notification.read
-          ? "hover:bg-muted bg-transparent"
-          : "bg-info-surface/50 hover:bg-info-surface"
+          ? "hover:bg-kumo-elevated bg-transparent"
+          : "bg-kumo-info-tint/50 hover:bg-kumo-info-tint"
       )}
       onClick={handleClick}
       onKeyDown={(e) => e.key === "Enter" && handleClick()}
@@ -256,20 +256,23 @@ function NotificationItem({
         {getNotificationIcon(notification.type)}
       </div>
       <div className="min-w-0 flex-1">
-        <p
-          className={cn(
-            "text-sm leading-tight",
+        <Text
+          as="p"
+          size="sm"
+          variant="body"
+          DANGEROUS_className={cn(
+            "leading-tight",
             notification.read
-              ? "text-muted-foreground"
-              : "text-foreground font-medium"
+              ? "text-kumo-secondary"
+              : "text-kumo-primary font-medium"
           )}
         >
           {getNotificationMessage(notification)}
-        </p>
+        </Text>
         <div className="mt-1 flex items-center gap-2">
-          <span className="text-muted-foreground text-xs">
+          <Text as="span" size="xs" variant="secondary">
             {formatRelativeTime(notification.createdAt)}
-          </span>
+          </Text>
           <EmailStatusIndicator
             status={notification.emailStatus}
             lastError={notification.lastEmailError}
@@ -278,7 +281,7 @@ function NotificationItem({
       </div>
       {!notification.read && (
         <div className="flex-shrink-0">
-          <div className="bg-info h-2 w-2 rounded-full" />
+          <div className="bg-kumo-info h-2 w-2 rounded-full" />
         </div>
       )}
     </div>
@@ -304,27 +307,13 @@ function NotificationsSkeleton() {
     <div className="space-y-2 p-2">
       {Array.from({ length: 3 }).map((_, i) => (
         <div key={i} className="flex items-start gap-3 p-3">
-          <Skeleton className="h-4 w-4 rounded" />
+          <div className="bg-kumo-elevated h-4 w-4 animate-pulse rounded" />
           <div className="flex-1 space-y-2">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-3 w-16" />
+            <div className="bg-kumo-elevated h-4 w-full animate-pulse rounded" />
+            <div className="bg-kumo-elevated h-3 w-16 animate-pulse rounded" />
           </div>
         </div>
       ))}
-    </div>
-  );
-}
-
-function EmptyState() {
-  return (
-    <div className="flex flex-col items-center justify-center px-4 py-8 text-center">
-      <div className="bg-muted mb-3 flex h-12 w-12 items-center justify-center rounded-full">
-        <BellIcon className="text-muted-foreground h-6 w-6" />
-      </div>
-      <p className="text-foreground text-sm font-medium">No notifications</p>
-      <p className="text-muted-foreground mt-1 text-xs">
-        You're all caught up!
-      </p>
     </div>
   );
 }
@@ -372,35 +361,45 @@ export function NotificationsPopover({
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative h-8 w-8"
-          aria-label="Notifications"
-        >
-          <BellIcon className="h-4 w-4" />
-          {hasUnread && (
-            <Badge
-              variant="destructive"
-              className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center px-1 text-[10px]"
-            >
-              {unreadCount && unreadCount > 99 ? "99+" : unreadCount}
-            </Badge>
-          )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[380px] p-0" align="end" sideOffset={8}>
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <h3 className="text-sm font-medium">Notifications</h3>
+      <Popover.Trigger
+        render={
+          <Button
+            variant="ghost"
+            size="sm"
+            shape="square"
+            className="relative size-8"
+            aria-label="Notifications"
+            icon={Bell}
+          >
+            {hasUnread && (
+              <Badge
+                variant="error"
+                className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center px-1 text-[10px]"
+              >
+                {unreadCount && unreadCount > 99 ? "99+" : unreadCount}
+              </Badge>
+            )}
+          </Button>
+        }
+      />
+      <Popover.Content
+        side="bottom"
+        align="end"
+        sideOffset={8}
+        className="w-[380px] p-0"
+      >
+        <div className="border-kumo-hairline flex items-center justify-between border-b px-4 py-3">
+          <Text as="h3" size="lg" variant="heading">
+            Notifications
+          </Text>
           {hasUnread && (
             <Button
               variant="ghost"
               size="sm"
-              className="text-info hover:bg-info-surface hover:text-info h-7 text-xs"
+              className="text-kumo-info hover:bg-kumo-info-tint hover:text-kumo-info h-7 text-xs"
               onClick={handleMarkAllAsRead}
+              icon={Check}
             >
-              <CheckIcon className="mr-1 h-3 w-3" />
               Mark all read
             </Button>
           )}
@@ -410,7 +409,12 @@ export function NotificationsPopover({
           {isLoading ? (
             <NotificationsSkeleton />
           ) : !hasNotifications ? (
-            <EmptyState />
+            <Empty
+              size="base"
+              icon={<Bell className="size-6" />}
+              title="No notifications"
+              description="You're all caught up!"
+            />
           ) : (
             <div className="space-y-1 p-2">
               {notifications?.map((notification) => (
@@ -424,7 +428,7 @@ export function NotificationsPopover({
             </div>
           )}
         </div>
-      </PopoverContent>
+      </Popover.Content>
     </Popover>
   );
 }

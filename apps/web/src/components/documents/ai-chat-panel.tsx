@@ -1,4 +1,5 @@
 import { useAgentChat } from "@cloudflare/ai-chat/react";
+import { Button } from "@cloudflare/kumo/components/button";
 import { useAgent } from "agents/react";
 import type { UIMessage } from "ai";
 import {
@@ -11,11 +12,10 @@ import {
   XIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
-import { Button } from "../ui/button";
 import { parseTextWithCitations } from "./citation-chip";
 import { useAIProgress } from "./hooks/use-ai-progress";
 

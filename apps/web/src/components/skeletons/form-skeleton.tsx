@@ -17,7 +17,7 @@
  * ```
  */
 
-import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonLine } from "@cloudflare/kumo/components/loader";
 
 interface FormSkeletonProps {
   /** Number of form fields to show (default: 3) */
@@ -34,15 +34,15 @@ export function FormSkeleton({
     <div className="space-y-6" role="status" aria-label="Loading form">
       {Array.from({ length: fields }).map((_, i) => (
         <div key={i} className="space-y-2">
-          <Skeleton className="h-4 w-[120px]" />
-          <Skeleton className="h-10 w-full" />
+          <SkeletonLine className="h-4 w-[120px]" />
+          <SkeletonLine className="h-10 w-full" />
         </div>
       ))}
 
       {showSubmitButton && (
         <div className="flex gap-2 pt-4">
-          <Skeleton className="h-10 w-[100px]" />
-          <Skeleton className="h-10 w-[100px]" />
+          <SkeletonLine className="h-10 w-[100px]" />
+          <SkeletonLine className="h-10 w-[100px]" />
         </div>
       )}
     </div>

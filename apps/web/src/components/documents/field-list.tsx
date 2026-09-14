@@ -1,22 +1,26 @@
-import { useVirtualizer } from "@tanstack/react-virtual";
+import { Badge } from "@cloudflare/kumo/components/badge";
+import { Button } from "@cloudflare/kumo/components/button";
+import { Text } from "@cloudflare/kumo/components/text";
 import {
-  CalendarIcon,
-  CheckSquareIcon,
-  CreditCardIcon,
-  HashIcon,
-  PenToolIcon,
-  SettingsIcon,
-  TrashIcon,
-  TypeIcon,
-} from "lucide-react";
+  CalendarBlank,
+  CaretDown,
+  CheckSquare,
+  CreditCard,
+  Gear,
+  Hash,
+  Pencil,
+  Paperclip,
+  RadioButton,
+  TextT,
+  Trash,
+} from "@phosphor-icons/react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { useRef } from "react";
 
 import { type Id } from "@/lib/ids";
 import { formatMoney, money } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
 import type { FieldType } from "./field-toolbar";
 
 interface FieldListItem {
@@ -54,15 +58,15 @@ interface FieldListProps {
 }
 
 const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
-  signature: <PenToolIcon className="h-4 w-4" />,
-  text: <TypeIcon className="h-4 w-4" />,
-  number: <HashIcon className="h-4 w-4" />,
-  date: <CalendarIcon className="h-4 w-4" />,
-  checkbox: <CheckSquareIcon className="h-4 w-4" />,
-  dropdown: <TypeIcon className="h-4 w-4" />,
-  radio: <CheckSquareIcon className="h-4 w-4" />,
-  attachment: <TypeIcon className="h-4 w-4" />,
-  payment: <CreditCardIcon className="h-4 w-4" />,
+  signature: <Pencil className="size-4" />,
+  text: <TextT className="size-4" />,
+  number: <Hash className="size-4" />,
+  date: <CalendarBlank className="size-4" />,
+  checkbox: <CheckSquare className="size-4" />,
+  dropdown: <CaretDown className="size-4" />,
+  radio: <RadioButton className="size-4" />,
+  attachment: <Paperclip className="size-4" />,
+  payment: <CreditCard className="size-4" />,
 };
 
 const FIELD_COLORS: Record<FieldType, string> = {
@@ -136,8 +140,8 @@ function FieldRow({
       className={cn(
         "w-full cursor-pointer rounded-lg border-2 p-3 transition-colors",
         isSelected
-          ? "border-primary bg-primary/5"
-          : "border-border bg-background hover:border-primary/50 hover:bg-muted/50"
+          ? "border-kumo-primary bg-kumo-primary/5"
+          : "border-kumo-hairline bg-kumo-surface hover:border-kumo-primary/50 hover:bg-kumo-elevated/50"
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -152,46 +156,80 @@ function FieldRow({
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-medium">
+              <Text
+                as="span"
+                size="sm"
+                variant="body"
+                DANGEROUS_className="font-medium"
+              >
                 {field.label || FIELD_LABELS[field.fieldType]}
-              </span>
+              </Text>
               <Badge variant="outline" className="text-xs">
                 Page {field.page}
               </Badge>
             </div>
             {recipient ? (
-              <div className="text-muted-foreground mt-1 text-xs">
+              <div className="mt-1 space-y-0.5 text-xs">
                 {recipient.name && (
-                  <p className="text-foreground/80 truncate font-medium">
+                  <Text
+                    as="p"
+                    size="xs"
+                    variant="body"
+                    DANGEROUS_className="truncate font-medium text-kumo-primary/80"
+                  >
                     {recipient.name}
-                  </p>
+                  </Text>
                 )}
-                <p className="truncate">{recipient.email}</p>
+                <Text
+                  as="p"
+                  size="xs"
+                  variant="secondary"
+                  DANGEROUS_className="truncate"
+                >
+                  {recipient.email}
+                </Text>
               </div>
             ) : (
-              <p className="text-muted-foreground mt-1 text-xs italic">
+              <Text
+                as="p"
+                size="xs"
+                variant="secondary"
+                DANGEROUS_className="mt-1 italic"
+              >
                 Unassigned
-              </p>
+              </Text>
             )}
             {field.fieldType === "payment" && field.paymentConfig && (
               <div className="mt-1 flex items-center gap-1.5 text-xs">
-                <span className="text-field-payment font-semibold">
+                <Text
+                  as="span"
+                  size="xs"
+                  variant="body"
+                  DANGEROUS_className="font-semibold text-field-payment"
+                >
                   {formatCents(
                     field.paymentConfig.totalAmountCents,
                     field.paymentConfig.currency
                   )}
-                </span>
-                <span className="text-muted-foreground">•</span>
-                <span className="text-muted-foreground">
+                </Text>
+                <Text as="span" size="xs" variant="secondary">
+                  •
+                </Text>
+                <Text as="span" size="xs" variant="secondary">
                   {PAYMENT_TYPE_LABELS[field.paymentConfig.paymentType] ??
                     field.paymentConfig.paymentType}
-                </span>
+                </Text>
               </div>
             )}
             {field.fieldType === "payment" && !field.paymentConfig && (
-              <p className="text-muted-foreground mt-1 text-xs italic">
+              <Text
+                as="p"
+                size="xs"
+                variant="secondary"
+                DANGEROUS_className="mt-1 italic"
+              >
                 Not configured
-              </p>
+              </Text>
             )}
           </div>
         </div>
@@ -199,21 +237,22 @@ function FieldRow({
           <div className="flex shrink-0 items-center gap-1">
             <Button
               variant="ghost"
-              size="icon"
-              className="h-8 w-8"
+              size="sm"
+              shape="square"
+              className="size-8"
               aria-label="Open field properties"
               title="Field properties"
               onClick={(e) => {
                 e.stopPropagation();
                 onFieldProperties?.(field._id);
               }}
-            >
-              <SettingsIcon className="text-muted-foreground h-4 w-4" />
-            </Button>
+              icon={<Gear className="text-kumo-secondary size-4" />}
+            />
             <Button
               variant="ghost"
-              size="icon"
-              className="h-8 w-8"
+              size="sm"
+              shape="square"
+              className="size-8"
               aria-label="Delete this field"
               title="Delete field"
               onClick={(e) => {
@@ -223,9 +262,8 @@ function FieldRow({
                   onFieldDelete?.(field._id);
                 }, 0);
               }}
-            >
-              <TrashIcon className="text-destructive h-4 w-4" />
-            </Button>
+              icon={<Trash className="text-kumo-danger size-4" />}
+            />
           </div>
         )}
       </div>
@@ -316,11 +354,13 @@ export function FieldList({
 
   if (fields.length === 0) {
     return (
-      <div className="text-muted-foreground py-8 text-center">
-        <p className="text-sm">No fields added yet</p>
-        <p className="mt-1 text-xs">
+      <div className="py-8 text-center">
+        <Text as="p" size="sm" variant="secondary">
+          No fields added yet
+        </Text>
+        <Text as="p" size="xs" variant="secondary">
           Drag fields from the toolbar onto the document
-        </p>
+        </Text>
       </div>
     );
   }

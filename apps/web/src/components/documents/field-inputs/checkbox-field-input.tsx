@@ -1,7 +1,5 @@
+import { Checkbox } from "@cloudflare/kumo/components/checkbox";
 import { useCallback, useState } from "react";
-
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 
 interface CheckboxFieldInputProps {
   label: string;
@@ -80,10 +78,10 @@ export function CheckboxFieldInput({
     onValidationChange(validation.isValid, validation.error);
   };
 
-  const handleOptionToggleWithError = (option: string) => {
-    const newSelected = selectedOptions.includes(option)
-      ? selectedOptions.filter((o) => o !== option)
-      : [...selectedOptions, option];
+  const handleOptionChange = (option: string, newChecked: boolean) => {
+    const newSelected = newChecked
+      ? [...selectedOptions, option]
+      : selectedOptions.filter((o) => o !== option);
     setSelectedOptions(newSelected);
     onChange(JSON.stringify(newSelected));
     const validation = validateMulti(newSelected);
@@ -91,60 +89,53 @@ export function CheckboxFieldInput({
     onValidationChange(validation.isValid, validation.error);
   };
 
+  const requiredMarker = isRequired ? (
+    <span className="text-kumo-danger ml-1">*</span>
+  ) : null;
+
   if (isMultiOption) {
     return (
       <div className="space-y-2">
         <p className="text-sm font-medium">
           {label}
-          {isRequired && <span className="text-destructive ml-1">*</span>}
+          {requiredMarker}
         </p>
         <div className="space-y-2">
-          {options.map((option, index) => (
-            <div key={option} className="flex items-center space-x-2">
-              <Checkbox
-                id={`checkbox-option-${index}`}
-                checked={selectedOptions.includes(option)}
-                onCheckedChange={() => handleOptionToggleWithError(option)}
-                className={error ? "border-destructive" : ""}
-              />
-              <Label
-                htmlFor={`checkbox-option-${index}`}
-                className="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                {option}
-              </Label>
-            </div>
+          {options.map((option) => (
+            <Checkbox
+              key={option}
+              label={option}
+              checked={selectedOptions.includes(option)}
+              onCheckedChange={(newChecked) =>
+                handleOptionChange(option, newChecked as boolean)
+              }
+            />
           ))}
         </div>
         {helpText && !error && (
-          <p className="text-muted-foreground text-xs">{helpText}</p>
+          <p className="text-kumo-secondary text-xs">{helpText}</p>
         )}
-        {error && <p className="text-destructive text-xs">{error}</p>}
+        {error && <p className="text-kumo-danger text-xs">{error}</p>}
       </div>
     );
   }
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="checkbox-field"
-          checked={checked}
-          onCheckedChange={handleSingleChangeWithError}
-          className={error ? "border-destructive" : ""}
-        />
-        <Label
-          htmlFor="checkbox-field"
-          className="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-        >
-          {label}
-          {isRequired && <span className="text-destructive ml-1">*</span>}
-        </Label>
-      </div>
+      <Checkbox
+        label={
+          <>
+            {label}
+            {requiredMarker}
+          </>
+        }
+        checked={checked}
+        onCheckedChange={handleSingleChangeWithError}
+      />
       {helpText && !error && (
-        <p className="text-muted-foreground ml-6 text-xs">{helpText}</p>
+        <p className="text-kumo-secondary ml-6 text-xs">{helpText}</p>
       )}
-      {error && <p className="text-destructive ml-6 text-xs">{error}</p>}
+      {error && <p className="text-kumo-danger ml-6 text-xs">{error}</p>}
     </div>
   );
 }

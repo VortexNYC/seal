@@ -5,6 +5,14 @@
  * Route: /{slug}/analytics
  */
 
+import { Badge } from "@cloudflare/kumo/components/badge";
+import { Button } from "@cloudflare/kumo/components/button";
+import { DatePicker } from "@cloudflare/kumo/components/date-picker";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Meter } from "@cloudflare/kumo/components/meter";
+import { Popover } from "@cloudflare/kumo/components/popover";
+import { Select } from "@cloudflare/kumo/components/select";
+import { Tabs } from "@cloudflare/kumo/components/tabs";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
@@ -48,31 +56,6 @@ import {
   AnalyticsSkeleton,
   AnalyticsTabSkeleton,
 } from "@/components/skeletons/analytics-skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Progress } from "@/components/ui/progress";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import {
   getAnalyticsDocumentsForExport,
@@ -87,7 +70,6 @@ import {
 } from "@/lib/api-client";
 import { parseSelectValue } from "@/lib/select-values";
 import { pageSEO } from "@/lib/seo";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/$slug/analytics")({
   component: AnalyticsPage,
@@ -194,96 +176,72 @@ function AnalyticsContent({
     <div className="space-y-6">
       {isAdmin && (
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 rounded-lg border p-1">
-            <button
-              type="button"
-              onClick={() => onScopeChange("team")}
-              className={cn(
-                "rounded-md px-3 py-1 text-sm transition-colors",
-                scope === "team"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted"
-              )}
-            >
-              Team
-            </button>
-            <button
-              type="button"
-              onClick={() => onScopeChange("personal")}
-              className={cn(
-                "rounded-md px-3 py-1 text-sm transition-colors",
-                scope === "personal"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted"
-              )}
-            >
-              Personal
-            </button>
-          </div>
+          <Tabs
+            variant="segmented"
+            size="sm"
+            value={scope}
+            onValueChange={(value) => onScopeChange(value as AnalyticsScope)}
+            tabs={[
+              { value: "team", label: "Team" },
+              { value: "personal", label: "Personal" },
+            ]}
+          />
         </div>
       )}
 
       <OverviewStats stats={stats} scope={effectiveScope} />
 
-      <Tabs value={activeTab} onValueChange={onTabChange} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="activity">Document Activity</TabsTrigger>
-          <TabsTrigger value="status">Status Breakdown</TabsTrigger>
-          <TabsTrigger value="timeline">Recent Activity</TabsTrigger>
-          <TabsTrigger value="emails">Email Engagement</TabsTrigger>
-          <TabsTrigger value="timing">Recipient Timing</TabsTrigger>
-          <TabsTrigger value="templates">Template Performance</TabsTrigger>
-          <TabsTrigger value="export">Export</TabsTrigger>
-          {isAdmin && <TabsTrigger value="members">Team Members</TabsTrigger>}
-        </TabsList>
+      <div className="space-y-4">
+        <Tabs
+          tabs={[
+            { value: "activity", label: "Document Activity" },
+            { value: "status", label: "Status Breakdown" },
+            { value: "timeline", label: "Recent Activity" },
+            { value: "emails", label: "Email Engagement" },
+            { value: "timing", label: "Recipient Timing" },
+            { value: "templates", label: "Template Performance" },
+            { value: "export", label: "Export" },
+            ...(isAdmin ? [{ value: "members", label: "Team Members" }] : []),
+          ]}
+          value={activeTab}
+          onValueChange={onTabChange}
+        />
 
-        <TabsContent value="activity" className="space-y-4">
-          <TrendControls
-            preset={trendPreset}
-            onPresetChange={onTrendPresetChange}
-            customRange={customRange}
-            onCustomRangeChange={onCustomRangeChange}
-          />
-          <TrendChart
-            preset={trendPreset}
-            customRange={customRange}
-            scope={effectiveScope}
-          />
-        </TabsContent>
+        {activeTab === "activity" && (
+          <div className="space-y-4">
+            <TrendControls
+              preset={trendPreset}
+              onPresetChange={onTrendPresetChange}
+              customRange={customRange}
+              onCustomRangeChange={onCustomRangeChange}
+            />
+            <TrendChart
+              preset={trendPreset}
+              customRange={customRange}
+              scope={effectiveScope}
+            />
+          </div>
+        )}
 
-        <TabsContent value="status" className="space-y-4">
+        {activeTab === "status" && (
           <div className="grid gap-4 md:grid-cols-2">
             <StatusPieChart scope={effectiveScope} />
             <StatusBarChart scope={effectiveScope} />
           </div>
-        </TabsContent>
-
-        <TabsContent value="timeline" className="space-y-4">
-          <RecentActivityFeed />
-        </TabsContent>
-
-        <TabsContent value="emails" className="space-y-4">
-          <EmailEngagementTab />
-        </TabsContent>
-
-        <TabsContent value="timing" className="space-y-4">
-          <RecipientTimingTab />
-        </TabsContent>
-
-        <TabsContent value="templates" className="space-y-4">
-          <TemplatePerformanceTab />
-        </TabsContent>
-
-        <TabsContent value="export" className="space-y-4">
-          <ExportPanel />
-        </TabsContent>
-
-        {isAdmin && (
-          <TabsContent value="members" className="space-y-4">
-            <MemberActivityTable />
-          </TabsContent>
         )}
-      </Tabs>
+
+        {activeTab === "timeline" && <RecentActivityFeed />}
+
+        {activeTab === "emails" && <EmailEngagementTab />}
+
+        {activeTab === "timing" && <RecipientTimingTab />}
+
+        {activeTab === "templates" && <TemplatePerformanceTab />}
+
+        {activeTab === "export" && <ExportPanel />}
+
+        {isAdmin && activeTab === "members" && <MemberActivityTable />}
+      </div>
     </div>
   );
 }
@@ -377,12 +335,12 @@ function StatCard({
   progress?: number;
 }) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+    <LayerCard>
+      <LayerCard.Primary className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <h3 className="text-sm font-medium">{title}</h3>
         <span className="text-muted-foreground">{icon}</span>
-      </CardHeader>
-      <CardContent>
+      </LayerCard.Primary>
+      <div>
         <div className="flex items-center gap-2">
           <span className="text-2xl font-bold">{value}</span>
           {trend === "up" && <ArrowUpIcon className="text-success h-4 w-4" />}
@@ -391,13 +349,19 @@ function StatCard({
           )}
         </div>
         {progress !== undefined && (
-          <Progress value={progress} className="mt-2 h-2" />
+          <Meter
+            label=""
+            aria-label={title}
+            value={progress}
+            showValue={false}
+            className="mt-2"
+          />
         )}
         {description && (
           <p className="text-muted-foreground mt-1 text-xs">{description}</p>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </LayerCard>
   );
 }
 
@@ -426,47 +390,39 @@ function TrendControls({
   customRange: DateRange | undefined;
   onCustomRangeChange: Dispatch<SetStateAction<DateRange | undefined>>;
 }) {
-  const presets: { value: TrendPreset; label: string }[] = [
-    { value: "7", label: "7 days" },
-    { value: "30", label: "30 days" },
-    { value: "90", label: "90 days" },
-    { value: "custom", label: "Custom" },
-  ];
-
   return (
     <div className="flex items-center gap-2">
-      {presets.map((p) => (
-        <button
-          key={p.value}
-          type="button"
-          onClick={() => onPresetChange(p.value)}
-          className={cn(
-            "rounded-md px-3 py-1 text-sm transition-colors",
-            preset === p.value
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:bg-muted"
-          )}
-        >
-          {p.label}
-        </button>
-      ))}
+      <Tabs
+        variant="segmented"
+        size="sm"
+        value={preset}
+        onValueChange={(value) => onPresetChange(value as TrendPreset)}
+        tabs={[
+          { value: "7", label: "7 days" },
+          { value: "30", label: "30 days" },
+          { value: "90", label: "90 days" },
+          { value: "custom", label: "Custom" },
+        ]}
+      />
       {preset === "custom" && (
         <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="ml-1 gap-1.5">
-              <CalendarIcon className="h-3.5 w-3.5" />
-              {formatDateLabel(customRange)}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
+          <Popover.Trigger
+            render={
+              <Button variant="outline" size="sm" className="ml-1 gap-1.5">
+                <CalendarIcon className="h-3.5 w-3.5" />
+                {formatDateLabel(customRange)}
+              </Button>
+            }
+          />
+          <Popover.Content className="w-auto p-0" align="start">
+            <DatePicker
               mode="range"
               selected={customRange}
-              onSelect={onCustomRangeChange}
+              onChange={onCustomRangeChange}
               numberOfMonths={2}
               disabled={{ after: new Date() }}
             />
-          </PopoverContent>
+          </Popover.Content>
         </Popover>
       )}
     </div>
@@ -512,14 +468,12 @@ function TrendChart({
   const hasData = chartData.some((d) => d.created > 0 || d.completed > 0);
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Document Trends</CardTitle>
-        <CardDescription>
-          Documents created and completed over the selected period
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="pl-0 sm:pl-6">
+    <LayerCard>
+      <LayerCard.Primary className="pb-2">
+        <h3 className="text-base">Document Trends</h3>
+        <p>Documents created and completed over the selected period</p>
+      </LayerCard.Primary>
+      <div className="pl-0 sm:pl-6">
         {hasData ? (
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={chartData} margin={{ left: 0, right: 8 }}>
@@ -606,8 +560,8 @@ function TrendChart({
             No document activity yet. Create your first document to see trends.
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </LayerCard>
   );
 }
 
@@ -659,26 +613,26 @@ function StatusPieChart({ scope }: { scope: "personal" | "team" }) {
 
   if (pieData.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Status Distribution</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <LayerCard>
+        <LayerCard.Primary>
+          <h3 className="text-base">Status Distribution</h3>
+        </LayerCard.Primary>
+        <div>
           <div className="text-muted-foreground flex h-[250px] items-center justify-center text-sm">
             No documents yet
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </LayerCard>
     );
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Status Distribution</CardTitle>
-        <CardDescription>Current document status breakdown</CardDescription>
-      </CardHeader>
-      <CardContent>
+    <LayerCard>
+      <LayerCard.Primary className="pb-2">
+        <h3 className="text-base">Status Distribution</h3>
+        <p>Current document status breakdown</p>
+      </LayerCard.Primary>
+      <div>
         <ResponsiveContainer width="100%" height={250}>
           <PieChart>
             <Pie
@@ -717,8 +671,8 @@ function StatusPieChart({ scope }: { scope: "personal" | "team" }) {
             </div>
           ))}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </LayerCard>
   );
 }
 
@@ -755,12 +709,12 @@ function StatusBarChart({ scope }: { scope: "personal" | "team" }) {
   );
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Status Counts</CardTitle>
-        <CardDescription>Document count by workflow status</CardDescription>
-      </CardHeader>
-      <CardContent>
+    <LayerCard>
+      <LayerCard.Primary className="pb-2">
+        <h3 className="text-base">Status Counts</h3>
+        <p>Document count by workflow status</p>
+      </LayerCard.Primary>
+      <div>
         <ResponsiveContainer width="100%" height={250}>
           <BarChart data={barData} margin={{ left: 0, right: 8 }}>
             <XAxis
@@ -791,8 +745,8 @@ function StatusBarChart({ scope }: { scope: "personal" | "team" }) {
             </Bar>
           </BarChart>
         </ResponsiveContainer>
-      </CardContent>
-    </Card>
+      </div>
+    </LayerCard>
   );
 }
 
@@ -801,7 +755,7 @@ const ACTION_LABELS: Record<
   {
     label: string;
     icon: React.ReactNode;
-    variant: "default" | "secondary" | "destructive" | "outline";
+    variant: "primary" | "secondary" | "error" | "neutral";
   }
 > = {
   "document.created": {
@@ -812,37 +766,37 @@ const ACTION_LABELS: Record<
   "document.sent": {
     label: "Sent",
     icon: <ClockIcon className="h-3 w-3" />,
-    variant: "default",
+    variant: "primary",
   },
   "document.completed": {
     label: "Completed",
     icon: <CheckCircle2Icon className="h-3 w-3" />,
-    variant: "default",
+    variant: "primary",
   },
   "document.cancelled": {
     label: "Cancelled",
     icon: <XCircleIcon className="h-3 w-3" />,
-    variant: "destructive",
+    variant: "error",
   },
   "recipient.signed": {
     label: "Signed",
     icon: <CheckCircle2Icon className="h-3 w-3" />,
-    variant: "default",
+    variant: "primary",
   },
   "recipient.viewed": {
     label: "Viewed",
     icon: <FileTextIcon className="h-3 w-3" />,
-    variant: "outline",
+    variant: "neutral",
   },
   "recipient.declined": {
     label: "Declined",
     icon: <XCircleIcon className="h-3 w-3" />,
-    variant: "destructive",
+    variant: "error",
   },
   "signature.created": {
     label: "Signature",
     icon: <CheckCircle2Icon className="h-3 w-3" />,
-    variant: "default",
+    variant: "primary",
   },
   "field.created": {
     label: "Field Added",
@@ -886,38 +840,38 @@ function RecentActivityFeed() {
 
   if (!activity) {
     return (
-      <Card>
-        <CardContent className="py-8">
+      <LayerCard>
+        <div className="py-8">
           <div className="text-muted-foreground flex items-center justify-center text-sm">
             Loading activity...
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </LayerCard>
     );
   }
 
   if (activity.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Recent Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <LayerCard>
+        <LayerCard.Primary>
+          <h3 className="text-base">Recent Activity</h3>
+        </LayerCard.Primary>
+        <div>
           <div className="text-muted-foreground flex h-32 items-center justify-center text-sm">
             No activity recorded yet
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </LayerCard>
     );
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Recent Activity</CardTitle>
-        <CardDescription>Latest actions across your workspace</CardDescription>
-      </CardHeader>
-      <CardContent>
+    <LayerCard>
+      <LayerCard.Primary className="pb-2">
+        <h3 className="text-base">Recent Activity</h3>
+        <p>Latest actions across your workspace</p>
+      </LayerCard.Primary>
+      <div>
         <div className="space-y-3">
           {activity.map((item) => {
             const actionInfo = ACTION_LABELS[item.action];
@@ -954,8 +908,8 @@ function RecentActivityFeed() {
             );
           })}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </LayerCard>
   );
 }
 
@@ -968,43 +922,41 @@ function MemberActivityTable() {
 
   if (!memberActivity) {
     return (
-      <Card>
-        <CardContent className="py-8">
+      <LayerCard>
+        <div className="py-8">
           <div className="text-muted-foreground flex items-center justify-center text-sm">
             Loading member activity...
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </LayerCard>
     );
   }
 
   if (memberActivity.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Team Member Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <LayerCard>
+        <LayerCard.Primary>
+          <h3 className="text-base">Team Member Activity</h3>
+        </LayerCard.Primary>
+        <div>
           <div className="text-muted-foreground flex h-32 items-center justify-center text-sm">
             No team members found
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </LayerCard>
     );
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-4">
+    <LayerCard>
+      <LayerCard.Primary className="pb-4">
         <div className="flex items-center gap-2">
           <UsersIcon className="text-muted-foreground h-4 w-4" />
-          <CardTitle className="text-base">Team Member Activity</CardTitle>
+          <h3 className="text-base">Team Member Activity</h3>
         </div>
-        <CardDescription>
-          Document activity breakdown by workspace member
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+        <p>Document activity breakdown by workspace member</p>
+      </LayerCard.Primary>
+      <div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -1048,8 +1000,8 @@ function MemberActivityTable() {
             </tbody>
           </table>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </LayerCard>
   );
 }
 
@@ -1255,71 +1207,53 @@ function ExportPanel() {
   }, [exportData]);
 
   return (
-    <Card>
-      <CardHeader className="pb-4">
-        <CardTitle className="text-base">Export Documents</CardTitle>
-        <CardDescription>
-          Download document data as CSV or PDF for external analysis
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <LayerCard>
+      <LayerCard.Primary className="pb-4">
+        <h3 className="text-base">Export Documents</h3>
+        <p>Download document data as CSV or PDF for external analysis</p>
+      </LayerCard.Primary>
+      <div className="space-y-4">
         <div className="flex flex-wrap items-end gap-4">
           <div className="space-y-1.5">
-            <Label
-              htmlFor="analytics-export-status"
-              className="text-muted-foreground text-xs font-medium"
-            >
-              Status
-            </Label>
             <Select
+              label="Status"
+              className="w-[160px]"
               value={statusFilter}
               onValueChange={(v) =>
                 setStatusFilter(
-                  parseSelectValue(v, EXPORT_STATUSES) ?? statusFilter
+                  parseSelectValue(v ?? "", EXPORT_STATUSES) ?? statusFilter
                 )
               }
-            >
-              <SelectTrigger id="analytics-export-status" className="w-[160px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="sent">Sent</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-                <SelectItem value="declined">Declined</SelectItem>
-              </SelectContent>
-            </Select>
+              items={{
+                all: "All Statuses",
+                draft: "Draft",
+                sent: "Sent",
+                in_progress: "In Progress",
+                completed: "Completed",
+                cancelled: "Cancelled",
+                declined: "Declined",
+              }}
+            />
           </div>
 
           <div className="space-y-1.5">
-            <Label
-              htmlFor="analytics-export-period"
-              className="text-muted-foreground text-xs font-medium"
-            >
-              Period
-            </Label>
             <Select
+              label="Period"
+              className="w-[160px]"
               value={periodFilter}
               onValueChange={(v) =>
                 setPeriodFilter(
-                  parseSelectValue(v, EXPORT_PERIODS) ?? periodFilter
+                  parseSelectValue(v ?? "", EXPORT_PERIODS) ?? periodFilter
                 )
               }
-            >
-              <SelectTrigger id="analytics-export-period" className="w-[160px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Time</SelectItem>
-                <SelectItem value="week">Last 7 Days</SelectItem>
-                <SelectItem value="month">Last 30 Days</SelectItem>
-                <SelectItem value="quarter">Last 90 Days</SelectItem>
-                <SelectItem value="year">Last Year</SelectItem>
-              </SelectContent>
-            </Select>
+              items={{
+                all: "All Time",
+                week: "Last 7 Days",
+                month: "Last 30 Days",
+                quarter: "Last 90 Days",
+                year: "Last Year",
+              }}
+            />
           </div>
 
           <Button
@@ -1344,8 +1278,8 @@ function ExportPanel() {
             ? "Loading documents..."
             : `${exportData.length} document${exportData.length !== 1 ? "s" : ""} match your filters`}
         </p>
-      </CardContent>
-    </Card>
+      </div>
+    </LayerCard>
   );
 }
 
@@ -1371,13 +1305,13 @@ function EmailEngagementTab() {
 
   if (engagement.total === 0) {
     return (
-      <Card>
-        <CardContent className="flex h-[200px] items-center justify-center">
+      <LayerCard>
+        <div className="flex h-[200px] items-center justify-center">
           <p className="text-muted-foreground text-sm">
             No email data available yet
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </LayerCard>
     );
   }
 
@@ -1448,14 +1382,12 @@ function EmailEngagementTab() {
         />
       </div>
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Email Funnel</CardTitle>
-          <CardDescription>
-            Email engagement progression (last 30 days)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      <LayerCard>
+        <LayerCard.Primary className="pb-2">
+          <h3 className="text-base">Email Funnel</h3>
+          <p>Email engagement progression (last 30 days)</p>
+        </LayerCard.Primary>
+        <div>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={funnelData} margin={{ left: 0, right: 8 }}>
               <XAxis
@@ -1486,8 +1418,8 @@ function EmailEngagementTab() {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-        </CardContent>
-      </Card>
+        </div>
+      </LayerCard>
     </div>
   );
 }
@@ -1516,13 +1448,13 @@ function RecipientTimingTab() {
 
   if (timing.sampleSize === 0) {
     return (
-      <Card>
-        <CardContent className="flex h-[200px] items-center justify-center">
+      <LayerCard>
+        <div className="flex h-[200px] items-center justify-center">
           <p className="text-muted-foreground text-sm">
             No signed documents in the last 30 days
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </LayerCard>
     );
   }
 
@@ -1561,14 +1493,12 @@ function RecipientTimingTab() {
         />
       </div>
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Signing Time Distribution</CardTitle>
-          <CardDescription>
-            How long recipients take to complete signing
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      <LayerCard>
+        <LayerCard.Primary className="pb-2">
+          <h3 className="text-base">Signing Time Distribution</h3>
+          <p>How long recipients take to complete signing</p>
+        </LayerCard.Primary>
+        <div>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={distributionData} margin={{ left: 0, right: 8 }}>
               <XAxis
@@ -1615,8 +1545,8 @@ function RecipientTimingTab() {
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </LayerCard>
     </div>
   );
 }
@@ -1637,39 +1567,37 @@ function TemplatePerformanceTab() {
 
   if (!isPro) {
     return (
-      <Card>
-        <CardContent className="flex h-[200px] flex-col items-center justify-center gap-2">
+      <LayerCard>
+        <div className="flex h-[200px] flex-col items-center justify-center gap-2">
           <TrendingUpIcon className="text-muted-foreground h-8 w-8" />
           <p className="text-muted-foreground text-sm">
             Template Performance is available on the Professional plan
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </LayerCard>
     );
   }
 
   if (templates.length === 0) {
     return (
-      <Card>
-        <CardContent className="flex h-[200px] items-center justify-center">
+      <LayerCard>
+        <div className="flex h-[200px] items-center justify-center">
           <p className="text-muted-foreground text-sm">
             No template-based documents in the last 90 days
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </LayerCard>
     );
   }
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Template Comparison</CardTitle>
-          <CardDescription>
-            Performance of templates over the last 90 days
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      <LayerCard>
+        <LayerCard.Primary className="pb-2">
+          <h3 className="text-base">Template Comparison</h3>
+          <p>Performance of templates over the last 90 days</p>
+        </LayerCard.Primary>
+        <div>
           <div className="space-y-3">
             {templates.map((t) => (
               <div
@@ -1698,7 +1626,7 @@ function TemplatePerformanceTab() {
                     <p className="text-muted-foreground text-xs">Avg time</p>
                   </div>
                   {t.declineRate > 0 && (
-                    <Badge variant="destructive" className="text-xs">
+                    <Badge variant="error" className="text-xs">
                       {t.declineRate}% declined
                     </Badge>
                   )}
@@ -1706,8 +1634,8 @@ function TemplatePerformanceTab() {
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </LayerCard>
     </div>
   );
 }

@@ -5,6 +5,7 @@
  * and subtle background accents. More engaging than plain button stacks.
  */
 
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { useRouter } from "@tanstack/react-router";
 import {
   BarChart3Icon,
@@ -14,13 +15,6 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 interface QuickActionItem {
@@ -79,17 +73,17 @@ export function QuickActions({ slug }: QuickActionsProps): React.ReactElement {
   ];
 
   return (
-    <Card
+    <LayerCard
       style={{
         animation: "fadeInUp var(--duration-slow) var(--ease-enter) both",
         animationDelay: "350ms",
       }}
     >
-      <CardHeader>
-        <CardTitle>Quick Actions</CardTitle>
-        <CardDescription>Get started quickly</CardDescription>
-      </CardHeader>
-      <CardContent>
+      <LayerCard.Secondary>
+        <h3 className="text-base font-semibold">Quick Actions</h3>
+        <p className="text-muted-foreground text-sm">Get started quickly</p>
+      </LayerCard.Secondary>
+      <LayerCard.Primary>
         <div className="grid grid-cols-2 gap-2">
           {actions.map((action) => {
             const Icon = action.icon;
@@ -129,7 +123,7 @@ export function QuickActions({ slug }: QuickActionsProps): React.ReactElement {
             );
           })}
         </div>
-      </CardContent>
-    </Card>
+      </LayerCard.Primary>
+    </LayerCard>
   );
 }

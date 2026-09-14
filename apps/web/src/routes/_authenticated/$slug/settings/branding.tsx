@@ -17,12 +17,12 @@ import { FloppyDisk, Palette } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
 import { FeatureGate } from "@/components/feature-gate";
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
 import { getBrandingSettings, updateBrandingSettings } from "@/lib/api-client";
+import { toast } from "@/lib/toast";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/branding")(
   {

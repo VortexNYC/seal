@@ -11,9 +11,9 @@ import {
   EnableTwoFactorForm,
   SessionList,
 } from "@vortex-api/better-auth-ui";
-import { toast } from "sonner";
 
 import { betterAuthClient } from "@/lib/better-auth";
+import { toast } from "@/lib/toast";
 
 export const Route = createFileRoute(
   "/_authenticated/$slug/settings/profile/security"

@@ -1,34 +1,21 @@
+import { Button } from "@cloudflare/kumo/components/button";
+import { Dialog } from "@cloudflare/kumo/components/dialog";
+import { Tooltip } from "@cloudflare/kumo/components/tooltip";
+import {
+  Bank,
+  BookOpen,
+  CalendarBlank,
+  Scales,
+  Warning,
+} from "@phosphor-icons/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import {
-  AlertTriangleIcon,
-  BanknoteIcon,
-  BookOpenIcon,
-  CalendarIcon,
-  ScaleIcon,
-} from "lucide-react";
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
   dismissDocumentAnnotations,
   getDocumentAnnotations,
 } from "@/lib/api-client";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -66,7 +53,7 @@ const CATEGORY_CONFIG: Record<
   AnnotationCategory,
   {
     label: string;
-    icon: typeof BookOpenIcon;
+    icon: typeof BookOpen;
     bgColor: string;
     textColor: string;
     dotColor: string;
@@ -74,38 +61,38 @@ const CATEGORY_CONFIG: Record<
 > = {
   obligation: {
     label: "Obligation",
-    icon: BookOpenIcon,
-    bgColor: "bg-ai-response-surface/50",
-    textColor: "text-ai-response-text",
-    dotColor: "bg-ai-accent",
+    icon: BookOpen,
+    bgColor: "bg-kumo-info-tint/50",
+    textColor: "text-kumo-info",
+    dotColor: "bg-kumo-info",
   },
   payment: {
     label: "Payment",
-    icon: BanknoteIcon,
-    bgColor: "bg-ai-autofill-surface/50",
-    textColor: "text-ai-autofill-text",
-    dotColor: "bg-ai-autofill-text",
+    icon: Bank,
+    bgColor: "bg-kumo-success-tint/50",
+    textColor: "text-kumo-success",
+    dotColor: "bg-kumo-success",
   },
   risk: {
     label: "Risk",
-    icon: AlertTriangleIcon,
-    bgColor: "bg-ai-error-surface/50",
-    textColor: "text-ai-error-text",
-    dotColor: "bg-ai-error-text",
+    icon: Warning,
+    bgColor: "bg-kumo-danger-tint/50",
+    textColor: "text-kumo-danger",
+    dotColor: "bg-kumo-danger",
   },
   dates: {
     label: "Date",
-    icon: CalendarIcon,
-    bgColor: "bg-ai-suggestion-surface/50",
-    textColor: "text-ai-suggestion-text",
-    dotColor: "bg-ai-accent",
+    icon: CalendarBlank,
+    bgColor: "bg-kumo-warning-tint/50",
+    textColor: "text-kumo-warning",
+    dotColor: "bg-kumo-warning",
   },
   terms: {
     label: "Term",
-    icon: ScaleIcon,
-    bgColor: "bg-ai-warning-surface/50",
-    textColor: "text-ai-warning-text",
-    dotColor: "bg-ai-warning-text",
+    icon: Scales,
+    bgColor: "bg-kumo-elevated/50",
+    textColor: "text-kumo-secondary",
+    dotColor: "bg-kumo-secondary",
   },
 };
 
@@ -183,36 +170,34 @@ function HighlightOverlay({
   const config = CATEGORY_CONFIG[annotation.category];
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div
-          className={cn(
-            "absolute cursor-default rounded-sm transition-opacity",
-            config.bgColor
-          )}
-          style={{ left, top, width, height }}
-        />
-      </TooltipTrigger>
-      <TooltipContent
-        side="top"
-        sideOffset={4}
-        className="border-border bg-popover max-w-xs border px-3 py-2 shadow-lg"
-      >
-        <div className="mb-0.5 flex items-center gap-1.5">
-          <config.icon className={cn("h-3 w-3", config.textColor)} />
-          <span
-            className={cn(
-              "text-[10px] font-semibold tracking-wide uppercase",
-              config.textColor
-            )}
-          >
-            {config.label}
-          </span>
+    <Tooltip
+      side="top"
+      content={
+        <div className="border-kumo-hairline bg-kumo-elevated max-w-xs border px-3 py-2 shadow-lg">
+          <div className="mb-0.5 flex items-center gap-1.5">
+            <config.icon className={cn("h-3 w-3", config.textColor)} />
+            <span
+              className={cn(
+                "text-[10px] font-semibold tracking-wide uppercase",
+                config.textColor
+              )}
+            >
+              {config.label}
+            </span>
+          </div>
+          <p className="text-kumo-primary text-xs leading-relaxed">
+            {annotation.summary}
+          </p>
         </div>
-        <p className="text-popover-foreground text-xs leading-relaxed">
-          {annotation.summary}
-        </p>
-      </TooltipContent>
+      }
+    >
+      <div
+        className={cn(
+          "absolute cursor-default rounded-sm transition-opacity",
+          config.bgColor
+        )}
+        style={{ left, top, width, height }}
+      />
     </Tooltip>
   );
 }
@@ -277,6 +262,7 @@ export function AIInsightsPanel({
   const filtered = allAnnotations.filter((a) =>
     enabledCategories.has(a.category)
   );
+  const [dismissOpen, setDismissOpen] = useState(false);
 
   return (
     <div className="flex flex-col gap-3">
@@ -301,13 +287,13 @@ export function AIInsightsPanel({
                 "flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors",
                 isActive
                   ? cn(config.bgColor, config.textColor)
-                  : "bg-muted text-muted-foreground/60"
+                  : "bg-kumo-elevated text-kumo-secondary/60"
               )}
             >
               <span
                 className={cn(
                   "h-1.5 w-1.5 rounded-full",
-                  isActive ? config.dotColor : "bg-border"
+                  isActive ? config.dotColor : "bg-kumo-hairline"
                 )}
               />
               {config.label}
@@ -327,7 +313,7 @@ export function AIInsightsPanel({
               type="button"
               onClick={() => onPageJump(annotation.page)}
               aria-label={`${config.label} insight on page ${annotation.page}: ${annotation.summary}`}
-              className="hover:bg-muted flex items-start gap-2 rounded-lg px-2 py-1.5 text-left transition-colors"
+              className="hover:bg-kumo-elevated flex items-start gap-2 rounded-lg px-2 py-1.5 text-left transition-colors"
             >
               <span
                 className={cn(
@@ -337,11 +323,11 @@ export function AIInsightsPanel({
                 )}
               />
               <div className="min-w-0 flex-1">
-                <p className="text-foreground text-xs leading-snug">
+                <p className="text-kumo-primary text-xs leading-snug">
                   {annotation.summary}
                 </p>
               </div>
-              <span className="text-muted-foreground bg-muted shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium">
+              <span className="text-kumo-secondary bg-kumo-elevated shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium">
                 p.{annotation.page}
               </span>
             </button>
@@ -350,29 +336,43 @@ export function AIInsightsPanel({
       </div>
 
       {/* Dismiss button */}
-      <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <button
-            type="button"
-            className="text-muted-foreground/60 hover:text-muted-foreground text-[11px] transition-colors"
-          >
-            Dismiss all insights
-          </button>
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Dismiss all insights?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will remove all {allAnnotations.length} document insights.
-              They won&apos;t reappear unless the document is re-analyzed.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={onDismiss}>Dismiss</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Dialog.Root
+        open={dismissOpen}
+        onOpenChange={setDismissOpen}
+        role="alertdialog"
+      >
+        <Button
+          type="button"
+          variant="ghost"
+          size="xs"
+          className="text-kumo-secondary/60 hover:text-kumo-secondary text-[11px]"
+          onClick={() => setDismissOpen(true)}
+        >
+          Dismiss all insights
+        </Button>
+        <Dialog size="sm" className="p-6">
+          <Dialog.Title>Dismiss all insights?</Dialog.Title>
+          <Dialog.Description>
+            This will remove all {allAnnotations.length} document insights. They
+            won&apos;t reappear unless the document is re-analyzed.
+          </Dialog.Description>
+          <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row">
+            <Button variant="outline" onClick={() => setDismissOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              className="sm:ml-auto"
+              onClick={() => {
+                onDismiss();
+                setDismissOpen(false);
+              }}
+            >
+              Dismiss
+            </Button>
+          </div>
+        </Dialog>
+      </Dialog.Root>
     </div>
   );
 }

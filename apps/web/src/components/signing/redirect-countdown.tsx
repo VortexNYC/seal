@@ -1,7 +1,6 @@
-import { ExternalLinkIcon } from "lucide-react";
+import { Button } from "@cloudflare/kumo/components/button";
+import { ArrowSquareOut } from "@phosphor-icons/react";
 import { useCallback, useEffect, useState } from "react";
-
-import { Button } from "@/components/ui/button";
 
 interface RedirectCountdownProps {
   redirectUrl: string;
@@ -66,34 +65,35 @@ export function RedirectCountdown({
   };
 
   return (
-    <div className="border-info-surface bg-info-surface/30 flex flex-col items-center gap-4 rounded-xl border p-4 text-center">
+    <div className="border-kumo-info-tint bg-kumo-info-tint/30 flex flex-col items-center gap-4 rounded-xl border p-4 text-center">
       <div className="flex items-center gap-3" role="status" aria-live="polite">
         <div className="relative flex h-8 w-8 shrink-0 items-center justify-center">
-          <span className="bg-info/20 absolute inset-0 animate-ping rounded-full" />
-          <ExternalLinkIcon className="text-info relative h-4 w-4" />
+          <span className="bg-kumo-info/20 absolute inset-0 animate-ping rounded-full" />
+          <ArrowSquareOut className="text-kumo-info relative h-4 w-4" />
         </div>
-        <span className="text-muted-foreground text-sm">
+        <span className="text-kumo-secondary text-sm">
           Redirecting to{" "}
-          <span className="text-foreground font-medium">{destination}</span> in{" "}
-          <span className="text-foreground font-semibold tabular-nums">
+          <span className="text-kumo-primary font-medium">{destination}</span>{" "}
+          in{" "}
+          <span className="text-kumo-primary font-semibold tabular-nums">
             {secondsLeft}s
           </span>
         </span>
       </div>
       <div className="flex items-center gap-3">
         <Button
-          variant="default"
+          variant="primary"
           size="sm"
           onClick={handleGoNow}
           disabled={secondsLeft === 0}
         >
-          <ExternalLinkIcon className="mr-1.5 h-3.5 w-3.5" />
+          <ArrowSquareOut className="mr-1.5 h-3.5 w-3.5" />
           Go now
         </Button>
         <Button
           variant="ghost"
           size="sm"
-          className="text-muted-foreground"
+          className="text-kumo-secondary"
           onClick={handleStayHere}
         >
           Stay here

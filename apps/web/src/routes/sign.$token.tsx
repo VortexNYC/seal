@@ -6,33 +6,42 @@
  * This is an unauthenticated route - no login required.
  */
 
+import { Textarea } from "@cloudflare/kumo";
+import { Button } from "@cloudflare/kumo/components/button";
+import { buttonVariants } from "@cloudflare/kumo/components/button";
+import { Collapsible } from "@cloudflare/kumo/components/collapsible";
+import { Dialog } from "@cloudflare/kumo/components/dialog";
+import { Label } from "@cloudflare/kumo/components/label";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import {
+  ArrowDown,
+  ArrowUp,
+  CaretDown,
+  CaretUp,
+  CheckCircle,
+  Clock,
+  CreditCard,
+  Download,
+  FileText,
+  Pen,
+  PlayCircle,
+  ShieldCheck,
+  Spinner,
+  User,
+  WarningCircle,
+  WifiSlash,
+  XCircle,
+} from "@phosphor-icons/react";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import {
   type ErrorComponentProps,
   createFileRoute,
   Link,
 } from "@tanstack/react-router";
-import {
-  AlertCircle,
-  ArrowDownIcon,
-  ArrowUpIcon,
-  CheckCircle2Icon,
-  CheckCircleIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  ClockIcon,
-  CreditCardIcon,
-  DownloadIcon,
-  FileTextIcon,
-  Loader2Icon,
-  PenLineIcon,
-  PlayCircleIcon,
-  ShieldCheckIcon,
-  UserIcon,
-  WifiOffIcon,
-  XCircleIcon,
-} from "lucide-react";
 import PdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
 import {
   useCallback,
   useEffect,
@@ -42,43 +51,15 @@ import {
   type ReactElement,
 } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
-import { toast } from "sonner";
 
 import { EsignConsentDialog } from "@/components/documents/esign-consent-dialog";
 import { FieldInputManager } from "@/components/documents/field-input-manager";
 import { FillableFieldOverlay } from "@/components/documents/fillable-field-overlay";
 import { SignatureCapture } from "@/components/documents/signature-capture";
-
-import "react-pdf/dist/Page/AnnotationLayer.css";
-import "react-pdf/dist/Page/TextLayer.css";
 import { SealLogo } from "@/components/seal-logo";
 import { DictateNextSignerDialog } from "@/components/signing/dictate-next-signer-dialog";
 import { DocumentExpiredPage } from "@/components/signing/document-expired-page";
 import { RedirectCountdown } from "@/components/signing/redirect-countdown";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
 import { useAnalytics } from "@/hooks/use-analytics";
 import {
   getClientIp,
@@ -94,6 +75,7 @@ import {
 } from "@/lib/api-client";
 import { formatMoney, money } from "@/lib/money";
 import { pageSEO } from "@/lib/seo";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 function sealAssertPresent<T>(
   value: T | null | undefined,
@@ -213,29 +195,37 @@ function SigningErrorComponent({ error }: ErrorComponentProps) {
 
   return (
     <div className="flex min-h-dvh items-center justify-center p-4">
-      <Card className="w-full max-w-md text-center">
-        <CardHeader>
-          <div className="bg-muted mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
-            <AlertCircle className="text-muted-foreground h-6 w-6" />
+      <LayerCard className="w-full max-w-md text-center">
+        <LayerCard.Primary className="p-6">
+          <div className="flex flex-col items-center text-center">
+            <div className="bg-kumo-elevated mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
+              <WarningCircle className="text-kumo-secondary h-6 w-6" />
+            </div>
+            <h2 className="text-xl font-semibold">
+              {isInvalidToken ? "Invalid Signing Link" : "Something went wrong"}
+            </h2>
+            <p className="text-kumo-secondary mt-2 text-sm">
+              {isInvalidToken
+                ? "This signing link is invalid or has expired. Please check the link and try again, or contact the sender for a new link."
+                : "We encountered an error loading this document. Please try again or contact support."}
+            </p>
           </div>
-          <CardTitle className="text-xl">
-            {isInvalidToken ? "Invalid Signing Link" : "Something went wrong"}
-          </CardTitle>
-          <CardDescription>
-            {isInvalidToken
-              ? "This signing link is invalid or has expired. Please check the link and try again, or contact the sender for a new link."
-              : "We encountered an error loading this document. Please try again or contact support."}
-          </CardDescription>
-        </CardHeader>
-        <CardFooter className="flex justify-center gap-2">
-          <Button asChild variant="default">
-            <Link to="/">Go Home</Link>
-          </Button>
-          <Button variant="outline" onClick={() => window.history.back()}>
-            Go Back
-          </Button>
-        </CardFooter>
-      </Card>
+          <div className="mt-6 flex justify-center gap-2">
+            <Link
+              to="/"
+              className={cn(
+                buttonVariants({ variant: "primary" }),
+                "w-full sm:w-auto"
+              )}
+            >
+              Go Home
+            </Link>
+            <Button variant="outline" onClick={() => window.history.back()}>
+              Go Back
+            </Button>
+          </div>
+        </LayerCard.Primary>
+      </LayerCard>
     </div>
   );
 }
@@ -278,11 +268,11 @@ function formatDate(dateString: string | number): string {
 function getRoleIcon(role: string): ReactElement {
   switch (role) {
     case "signer":
-      return <PenLineIcon className="h-4 w-4" />;
+      return <Pen className="h-4 w-4" />;
     case "approver":
-      return <ShieldCheckIcon className="h-4 w-4" />;
+      return <ShieldCheck className="h-4 w-4" />;
     default:
-      return <UserIcon className="h-4 w-4" />;
+      return <User className="h-4 w-4" />;
   }
 }
 
@@ -296,23 +286,23 @@ function getStatusBadge(status: string): {
     case "signed":
     case "approved":
       return {
-        className: cn(baseStyles, "bg-success-surface text-success"),
-        icon: <CheckCircle2Icon className="h-3 w-3" />,
+        className: cn(baseStyles, "bg-kumo-success-tint text-kumo-success"),
+        icon: <CheckCircle className="h-3 w-3" />,
       };
     case "declined":
       return {
-        className: cn(baseStyles, "bg-destructive/10 text-destructive"),
-        icon: <XCircleIcon className="h-3 w-3" />,
+        className: cn(baseStyles, "bg-kumo-danger/10 text-kumo-danger"),
+        icon: <XCircle className="h-3 w-3" />,
       };
     case "viewed":
       return {
-        className: cn(baseStyles, "bg-info-surface text-info"),
-        icon: <ClockIcon className="h-3 w-3" />,
+        className: cn(baseStyles, "bg-kumo-info-tint text-kumo-info"),
+        icon: <Clock className="h-3 w-3" />,
       };
     default:
       return {
-        className: cn(baseStyles, "bg-warning-surface text-warning"),
-        icon: <ClockIcon className="h-3 w-3" />,
+        className: cn(baseStyles, "bg-kumo-warning-tint text-kumo-warning"),
+        icon: <Clock className="h-3 w-3" />,
       };
   }
 }
@@ -913,14 +903,14 @@ function SigningPage() {
         aria-live="polite"
       >
         <div className="w-full max-w-md space-y-6 text-center">
-          <div className="bg-warning-surface mx-auto flex size-16 items-center justify-center rounded-full">
-            <ClockIcon className="text-warning size-8" />
+          <div className="bg-kumo-warning-tint mx-auto flex size-16 items-center justify-center rounded-full">
+            <Clock className="text-kumo-warning size-8" />
           </div>
           <div className="space-y-2">
             <h1 className="text-xl font-semibold tracking-tight text-balance">
               Waiting for Previous Signers
             </h1>
-            <p className="text-muted-foreground text-sm text-pretty">
+            <p className="text-kumo-secondary text-sm text-pretty">
               This document uses sequential signing.{" "}
               {sequentialProgress
                 ? `Group ${sequentialProgress.currentGroup} of ${sequentialProgress.totalGroups} is currently signing.`
@@ -928,18 +918,18 @@ function SigningPage() {
               You'll be notified by email when it's your turn.
             </p>
           </div>
-          <div className="bg-card rounded-lg border p-4">
+          <div className="bg-kumo-elevated rounded-lg border p-4">
             <div className="flex items-center gap-3">
-              <FileTextIcon className="text-muted-foreground size-5 shrink-0" />
+              <FileText className="text-kumo-secondary size-5 shrink-0" />
               <div className="min-w-0 text-left">
                 <p className="truncate text-sm font-medium">{doc.name}</p>
-                <p className="text-muted-foreground text-xs">
+                <p className="text-kumo-secondary text-xs">
                   You're listed as a {recipient.role} on this document
                 </p>
               </div>
             </div>
           </div>
-          <p className="text-muted-foreground text-xs">
+          <p className="text-kumo-secondary text-xs">
             This page updates automatically. You can also close it and return
             via the link in your email.
           </p>
@@ -980,12 +970,12 @@ function SigningPage() {
       {/* Offline Banner - Global */}
       {!isOnline && (
         <div
-          className="border-warning-surface bg-warning-surface fixed top-0 right-0 left-0 z-50 border-b px-4 py-2"
+          className="border-warning-surface bg-kumo-warning-tint fixed top-0 right-0 left-0 z-50 border-b px-4 py-2"
           role="status"
           aria-live="polite"
         >
-          <div className="text-warning-foreground flex items-center justify-center gap-2">
-            <WifiOffIcon className="h-4 w-4" />
+          <div className="text-kumo-warning flex items-center justify-center gap-2">
+            <WifiSlash className="h-4 w-4" />
             <span className="text-sm font-medium">
               You're offline. Your progress has been saved.
             </span>
@@ -996,7 +986,7 @@ function SigningPage() {
       {/* Desktop Header - Full width top bar (hidden in embedded mode) */}
       <header
         className={cn(
-          "border-border/50 bg-card hidden shrink-0 border-b lg:block",
+          "border-kumo-hairline/50 bg-kumo-elevated hidden shrink-0 border-b lg:block",
           isEmbedded && "!hidden"
         )}
       >
@@ -1023,30 +1013,30 @@ function SigningPage() {
             </a>
             <div className="bg-border/60 h-5 w-px" />
             <div className="flex items-center gap-2">
-              <PenLineIcon className="text-muted-foreground h-4 w-4" />
-              <span className="text-muted-foreground text-sm">Sign</span>
-              <span className="text-muted-foreground/40">·</span>
+              <Pen className="text-kumo-secondary h-4 w-4" />
+              <span className="text-kumo-secondary text-sm">Sign</span>
+              <span className="text-kumo-secondary/40">·</span>
               <span className="max-w-[300px] truncate text-sm font-medium">
                 {doc.name}
               </span>
               {/* Completion status inline with document title */}
               {isCompleted && (
                 <>
-                  <span className="text-muted-foreground/40">·</span>
+                  <span className="text-kumo-secondary/40">·</span>
                   <span
                     role="status"
                     aria-live="polite"
                     className={cn(
                       "inline-flex items-center gap-1.5 text-sm font-medium",
                       recipient.status === "declined"
-                        ? "text-destructive"
-                        : "text-success"
+                        ? "text-kumo-danger"
+                        : "text-kumo-success"
                     )}
                   >
                     {recipient.status === "declined" ? (
-                      <XCircleIcon className="h-4 w-4" />
+                      <XCircle className="h-4 w-4" />
                     ) : (
-                      <CheckCircleIcon className="h-4 w-4" />
+                      <CheckCircle className="h-4 w-4" />
                     )}
                     {recipient.status === "declined" ? "Declined" : "Completed"}
                   </span>
@@ -1060,13 +1050,13 @@ function SigningPage() {
             {!isCompleted && fields.length > 0 && (
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
-                  <div className="bg-muted h-1.5 w-20 overflow-hidden rounded-full">
+                  <div className="bg-kumo-elevated h-1.5 w-20 overflow-hidden rounded-full">
                     <div
-                      className="bg-primary h-full rounded-full transition-[width] duration-500 ease-out"
+                      className="bg-kumo-primary h-full rounded-full transition-[width] duration-500 ease-out"
                       style={{ width: `${fieldCompletionPercent}%` }}
                     />
                   </div>
-                  <span className="text-muted-foreground text-xs font-medium tabular-nums">
+                  <span className="text-kumo-secondary text-xs font-medium tabular-nums">
                     {fieldCompletionPercent}%
                   </span>
                 </div>
@@ -1089,7 +1079,7 @@ function SigningPage() {
       {/* Mobile Header - Only visible on small screens (hidden in embedded mode) */}
       <header
         className={cn(
-          "border-border/50 bg-background/80 sticky top-0 z-40 border-b backdrop-blur-xl lg:hidden",
+          "border-kumo-hairline/50 bg-kumo-base/80 sticky top-0 z-40 border-b backdrop-blur-xl lg:hidden",
           isEmbedded && "!hidden"
         )}
       >
@@ -1117,9 +1107,9 @@ function SigningPage() {
             </a>
             {!isCompleted && fields.length > 0 && (
               <div className="flex items-center gap-2">
-                <div className="bg-muted h-1.5 w-16 overflow-hidden rounded-full">
+                <div className="bg-kumo-elevated h-1.5 w-16 overflow-hidden rounded-full">
                   <div
-                    className="bg-primary h-full rounded-full transition-[width] duration-500 ease-out"
+                    className="bg-kumo-primary h-full rounded-full transition-[width] duration-500 ease-out"
                     style={{ width: `${fieldCompletionPercent}%` }}
                   />
                 </div>
@@ -1136,14 +1126,14 @@ function SigningPage() {
                 className={cn(
                   "inline-flex items-center gap-1.5 text-xs font-medium",
                   recipient.status === "declined"
-                    ? "text-destructive"
-                    : "text-success"
+                    ? "text-kumo-danger"
+                    : "text-kumo-success"
                 )}
               >
                 {recipient.status === "declined" ? (
-                  <XCircleIcon className="h-3.5 w-3.5" />
+                  <XCircle className="h-3.5 w-3.5" />
                 ) : (
-                  <CheckCircleIcon className="h-3.5 w-3.5" />
+                  <CheckCircle className="h-3.5 w-3.5" />
                 )}
                 {recipient.status === "declined" ? "Declined" : "Completed"}
               </span>
@@ -1152,46 +1142,44 @@ function SigningPage() {
         </div>
 
         {/* Mobile Document Info - Collapsible */}
-        <Collapsible open={isInfoExpanded} onOpenChange={setIsInfoExpanded}>
-          <CollapsibleTrigger asChild>
-            <button
-              type="button"
-              aria-expanded={isInfoExpanded}
-              aria-controls="signing-mobile-info"
-              className="bg-muted/30 border-border/30 hover:bg-muted/50 flex w-full items-center justify-between border-t px-4 py-2.5 transition-colors"
-            >
-              <div className="flex min-w-0 flex-1 items-center gap-2 text-left">
-                <span className="truncate text-sm font-medium">{doc.name}</span>
-                <span
-                  className={statusBadge.className}
-                  role="status"
-                  aria-live="polite"
-                >
-                  {statusBadge.icon}
-                  {recipient.status.charAt(0).toUpperCase() +
-                    recipient.status.slice(1)}
-                </span>
-              </div>
-              {isInfoExpanded ? (
-                <ChevronUpIcon className="text-muted-foreground h-4 w-4 shrink-0" />
-              ) : (
-                <ChevronDownIcon className="text-muted-foreground h-4 w-4 shrink-0" />
-              )}
-            </button>
-          </CollapsibleTrigger>
-          <CollapsibleContent
+        <Collapsible.Root
+          open={isInfoExpanded}
+          onOpenChange={setIsInfoExpanded}
+        >
+          <Collapsible.Trigger
+            aria-expanded={isInfoExpanded}
+            aria-controls="signing-mobile-info"
+            className="bg-kumo-elevated/30 border-kumo-hairline/30 hover:bg-kumo-elevated/50 flex w-full items-center justify-between border-t px-4 py-2.5 transition-colors"
+          >
+            <div className="flex min-w-0 flex-1 items-center gap-2 text-left">
+              <span className="truncate text-sm font-medium">{doc.name}</span>
+              <span
+                className={statusBadge.className}
+                role="status"
+                aria-live="polite"
+              >
+                {statusBadge.icon}
+                {recipient.status.charAt(0).toUpperCase() +
+                  recipient.status.slice(1)}
+              </span>
+            </div>
+            {isInfoExpanded ? (
+              <CaretUp className="text-kumo-secondary h-4 w-4 shrink-0" />
+            ) : (
+              <CaretDown className="text-kumo-secondary h-4 w-4 shrink-0" />
+            )}
+          </Collapsible.Trigger>
+          <Collapsible.Panel
             id="signing-mobile-info"
-            className="border-border/30 bg-card border-t"
+            className="border-kumo-hairline/30 bg-kumo-elevated border-t"
           >
             <div className="space-y-4 px-4 py-4">
               {doc.description && (
-                <p className="text-muted-foreground text-sm">
-                  {doc.description}
-                </p>
+                <p className="text-kumo-secondary text-sm">{doc.description}</p>
               )}
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="space-y-1">
-                  <span className="text-muted-foreground text-xs tracking-wider uppercase">
+                  <span className="text-kumo-secondary text-xs tracking-wider uppercase">
                     Recipient
                   </span>
                   <p className="truncate font-medium">
@@ -1199,7 +1187,7 @@ function SigningPage() {
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-muted-foreground text-xs tracking-wider uppercase">
+                  <span className="text-kumo-secondary text-xs tracking-wider uppercase">
                     Role
                   </span>
                   <p className="flex items-center gap-1.5 font-medium">
@@ -1210,21 +1198,21 @@ function SigningPage() {
                 </div>
               </div>
             </div>
-          </CollapsibleContent>
-        </Collapsible>
+          </Collapsible.Panel>
+        </Collapsible.Root>
       </header>
 
       {/* Main Layout - Side by side on desktop */}
       <div className="min-h-0 flex-1 overflow-hidden lg:flex">
         {/* Right Sidebar - Document Info (Desktop only) - Uses order-2 to appear on right */}
-        <aside className="border-border/50 bg-card hidden overflow-hidden lg:order-2 lg:flex lg:w-[380px] lg:flex-col lg:border-l xl:w-[420px]">
+        <aside className="border-kumo-hairline/50 bg-kumo-elevated hidden overflow-hidden lg:order-2 lg:flex lg:w-[380px] lg:flex-col lg:border-l xl:w-[420px]">
           {/* Sidebar Header - Document Details */}
           {doc.description && (
-            <div className="border-border/50 border-b p-6">
-              <h3 className="text-muted-foreground mb-2 text-xs font-medium tracking-wider uppercase">
+            <div className="border-kumo-hairline/50 border-b p-6">
+              <h3 className="text-kumo-secondary mb-2 text-xs font-medium tracking-wider uppercase">
                 About this document
               </h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">
+              <p className="text-kumo-secondary text-sm leading-relaxed">
                 {doc.description}
               </p>
             </div>
@@ -1237,7 +1225,7 @@ function SigningPage() {
               <>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+                    <h3 className="text-kumo-secondary text-xs font-medium tracking-wider uppercase">
                       Progress
                     </h3>
                     <span className="text-sm font-medium tabular-nums">
@@ -1245,7 +1233,7 @@ function SigningPage() {
                     </span>
                   </div>
                   <div
-                    className="bg-muted h-2 overflow-hidden rounded-full"
+                    className="bg-kumo-elevated h-2 overflow-hidden rounded-full"
                     role="progressbar"
                     aria-valuenow={fieldCompletionPercent}
                     aria-valuemin={0}
@@ -1253,41 +1241,41 @@ function SigningPage() {
                     aria-label="Field completion progress"
                   >
                     <div
-                      className="bg-primary h-full rounded-full transition-[width] duration-500 ease-out"
+                      className="bg-kumo-primary h-full rounded-full transition-[width] duration-500 ease-out"
                       style={{ width: `${fieldCompletionPercent}%` }}
                     />
                   </div>
                   {!allRequiredFieldsFilled && (
-                    <p className="text-muted-foreground text-xs">
+                    <p className="text-kumo-secondary text-xs">
                       Complete all required fields to sign
                     </p>
                   )}
                 </div>
-                <Separator />
+                <hr className="border-kumo-hairline" />
               </>
             )}
 
             {/* Recipient Info */}
             <div className="space-y-4">
-              <h3 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+              <h3 className="text-kumo-secondary text-xs font-medium tracking-wider uppercase">
                 Recipient Details
               </h3>
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
-                  <div className="bg-muted flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
-                    <UserIcon className="text-muted-foreground h-4 w-4" />
+                  <div className="bg-kumo-elevated flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
+                    <User className="text-kumo-secondary h-4 w-4" />
                   </div>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">
                       {recipient.name || "Not provided"}
                     </p>
-                    <p className="text-muted-foreground truncate text-xs">
+                    <p className="text-kumo-secondary truncate text-xs">
                       {recipient.email}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
-                  <div className="bg-muted flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
+                  <div className="bg-kumo-elevated flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
                     {getRoleIcon(recipient.role)}
                   </div>
                   <div>
@@ -1295,30 +1283,28 @@ function SigningPage() {
                       {recipient.role.charAt(0).toUpperCase() +
                         recipient.role.slice(1)}
                     </p>
-                    <p className="text-muted-foreground text-xs">
-                      Assigned role
-                    </p>
+                    <p className="text-kumo-secondary text-xs">Assigned role</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            <Separator />
+            <hr className="border-kumo-hairline" />
 
             {/* Timeline / Activity */}
             <div className="space-y-4">
-              <h3 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+              <h3 className="text-kumo-secondary text-xs font-medium tracking-wider uppercase">
                 Activity
               </h3>
               <div className="space-y-3">
                 {recipient.signedAt && (
                   <div className="flex items-center gap-3 text-sm">
-                    <div className="bg-success-surface flex h-8 w-8 items-center justify-center rounded-full">
-                      <CheckCircle2Icon className="text-success h-4 w-4" />
+                    <div className="bg-kumo-success-tint flex h-8 w-8 items-center justify-center rounded-full">
+                      <CheckCircle className="text-kumo-success h-4 w-4" />
                     </div>
                     <div>
                       <p className="font-medium">Signed</p>
-                      <p className="text-muted-foreground text-xs">
+                      <p className="text-kumo-secondary text-xs">
                         {formatDate(recipient.signedAt)}
                       </p>
                     </div>
@@ -1326,12 +1312,12 @@ function SigningPage() {
                 )}
                 {recipient.approvedAt && (
                   <div className="flex items-center gap-3 text-sm">
-                    <div className="bg-success-surface flex h-8 w-8 items-center justify-center rounded-full">
-                      <ShieldCheckIcon className="text-success h-4 w-4" />
+                    <div className="bg-kumo-success-tint flex h-8 w-8 items-center justify-center rounded-full">
+                      <ShieldCheck className="text-kumo-success h-4 w-4" />
                     </div>
                     <div>
                       <p className="font-medium">Approved</p>
-                      <p className="text-muted-foreground text-xs">
+                      <p className="text-kumo-secondary text-xs">
                         {formatDate(recipient.approvedAt)}
                       </p>
                     </div>
@@ -1339,12 +1325,12 @@ function SigningPage() {
                 )}
                 {recipient.declinedAt && (
                   <div className="flex items-center gap-3 text-sm">
-                    <div className="bg-destructive/10 flex h-8 w-8 items-center justify-center rounded-full">
-                      <XCircleIcon className="text-destructive h-4 w-4" />
+                    <div className="bg-kumo-danger/10 flex h-8 w-8 items-center justify-center rounded-full">
+                      <XCircle className="text-kumo-danger h-4 w-4" />
                     </div>
                     <div>
                       <p className="font-medium">Declined</p>
-                      <p className="text-muted-foreground text-xs">
+                      <p className="text-kumo-secondary text-xs">
                         {formatDate(recipient.declinedAt)}
                       </p>
                     </div>
@@ -1352,12 +1338,12 @@ function SigningPage() {
                 )}
                 {recipient.viewedAt && (
                   <div className="flex items-center gap-3 text-sm">
-                    <div className="bg-info-surface flex h-8 w-8 items-center justify-center rounded-full">
-                      <ClockIcon className="text-info h-4 w-4" />
+                    <div className="bg-kumo-info-tint flex h-8 w-8 items-center justify-center rounded-full">
+                      <Clock className="text-kumo-info h-4 w-4" />
                     </div>
                     <div>
                       <p className="font-medium">Viewed</p>
-                      <p className="text-muted-foreground text-xs">
+                      <p className="text-kumo-secondary text-xs">
                         {formatDate(recipient.viewedAt)}
                       </p>
                     </div>
@@ -1368,12 +1354,12 @@ function SigningPage() {
                   !recipient.declinedAt &&
                   !recipient.viewedAt && (
                     <div className="flex items-center gap-3 text-sm">
-                      <div className="bg-warning-surface flex h-8 w-8 items-center justify-center rounded-full">
-                        <ClockIcon className="text-warning h-4 w-4" />
+                      <div className="bg-kumo-warning-tint flex h-8 w-8 items-center justify-center rounded-full">
+                        <Clock className="text-kumo-warning h-4 w-4" />
                       </div>
                       <div>
                         <p className="font-medium">Pending</p>
-                        <p className="text-muted-foreground text-xs">
+                        <p className="text-kumo-secondary text-xs">
                           Awaiting your action
                         </p>
                       </div>
@@ -1387,22 +1373,22 @@ function SigningPage() {
               filledRequiredFields.length > 0 &&
               filledRequiredFields.length < requiredFields.length && (
                 <>
-                  <Separator />
-                  <div className="border-info-surface bg-info-surface/50 rounded-xl border p-4">
+                  <hr className="border-kumo-hairline" />
+                  <div className="border-info-surface bg-kumo-info-tint/50 rounded-xl border p-4">
                     <div className="flex items-start gap-3">
-                      <PlayCircleIcon className="text-info mt-0.5 h-5 w-5 shrink-0" />
+                      <PlayCircle className="text-kumo-info mt-0.5 h-5 w-5 shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-foreground text-sm font-medium">
+                        <p className="text-kumo-primary text-sm font-medium">
                           Resume where you left off
                         </p>
-                        <p className="text-muted-foreground mt-0.5 text-xs">
+                        <p className="text-kumo-secondary mt-0.5 text-xs">
                           {filledRequiredFields.length} of{" "}
                           {requiredFields.length} fields completed
                         </p>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="text-info hover:bg-info-surface mt-2 h-8 px-0"
+                          className="text-kumo-info hover:bg-kumo-info-tint mt-2 h-8 px-0"
                           onClick={() => {
                             if (unfilledFields.length > 0) {
                               scrollToField(
@@ -1413,7 +1399,7 @@ function SigningPage() {
                           aria-label="Jump to the next incomplete field"
                         >
                           Continue
-                          <ArrowDownIcon className="ml-1 h-3.5 w-3.5" />
+                          <ArrowDown className="ml-1 h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </div>
@@ -1424,16 +1410,16 @@ function SigningPage() {
             {/* Payment Section — shown before signing when payment is required */}
             {!isCompleted && hasUnpaidPayments && paymentConfigs.length > 0 && (
               <>
-                <Separator />
+                <hr className="border-kumo-hairline" />
                 <div className="space-y-4">
-                  <div className="border-warning-surface bg-warning-surface/50 rounded-xl border p-4">
+                  <div className="border-warning-surface bg-kumo-warning-tint/50 rounded-xl border p-4">
                     <div className="flex items-start gap-3">
-                      <CreditCardIcon className="text-warning mt-0.5 h-5 w-5 shrink-0" />
+                      <CreditCard className="text-kumo-warning mt-0.5 h-5 w-5 shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-foreground text-sm font-medium">
+                        <p className="text-kumo-primary text-sm font-medium">
                           Payment Required
                         </p>
-                        <p className="text-muted-foreground mt-0.5 text-xs">
+                        <p className="text-kumo-secondary mt-0.5 text-xs">
                           Please complete payment below before signing.
                         </p>
                       </div>
@@ -1448,12 +1434,12 @@ function SigningPage() {
                     .map((config) => (
                       <div
                         key={config._id}
-                        className="border-border/50 bg-muted/20 rounded-lg border p-3"
+                        className="border-kumo-hairline/50 bg-kumo-elevated/20 rounded-lg border p-3"
                       >
-                        <p className="text-foreground text-sm font-medium">
+                        <p className="text-kumo-primary text-sm font-medium">
                           {config.paymentType}
                         </p>
-                        <p className="text-muted-foreground mt-0.5 text-xs">
+                        <p className="text-kumo-secondary mt-0.5 text-xs">
                           {formatMoney(
                             money(
                               config.totalAmountCents,
@@ -1473,16 +1459,16 @@ function SigningPage() {
               isWaitingForPayment &&
               paymentConfigs.length > 0 && (
                 <>
-                  <Separator />
+                  <hr className="border-kumo-hairline" />
                   <div className="space-y-4">
-                    <div className="border-warning-surface bg-warning-surface/50 rounded-xl border p-4">
+                    <div className="border-warning-surface bg-kumo-warning-tint/50 rounded-xl border p-4">
                       <div className="flex items-start gap-3">
-                        <CreditCardIcon className="text-warning mt-0.5 h-5 w-5 shrink-0" />
+                        <CreditCard className="text-kumo-warning mt-0.5 h-5 w-5 shrink-0" />
                         <div className="min-w-0 flex-1">
-                          <p className="text-foreground text-sm font-medium">
+                          <p className="text-kumo-primary text-sm font-medium">
                             Payment Required
                           </p>
-                          <p className="text-muted-foreground mt-0.5 text-xs">
+                          <p className="text-kumo-secondary mt-0.5 text-xs">
                             All signatures collected. Please complete payment
                             below.
                           </p>
@@ -1498,12 +1484,12 @@ function SigningPage() {
                       .map((config) => (
                         <div
                           key={config._id}
-                          className="border-border/50 bg-muted/20 rounded-lg border p-3"
+                          className="border-kumo-hairline/50 bg-kumo-elevated/20 rounded-lg border p-3"
                         >
-                          <p className="text-foreground text-sm font-medium">
+                          <p className="text-kumo-primary text-sm font-medium">
                             {config.paymentType}
                           </p>
-                          <p className="text-muted-foreground mt-0.5 text-xs">
+                          <p className="text-kumo-secondary mt-0.5 text-xs">
                             {formatMoney(
                               money(
                                 config.totalAmountCents,
@@ -1521,7 +1507,7 @@ function SigningPage() {
 
           {/* Sidebar Footer - Actions */}
           {!isCompleted && !showSignatureCapture && (
-            <div className="border-border/50 bg-muted/20 border-t p-6">
+            <div className="border-kumo-hairline/50 bg-kumo-elevated/20 border-t p-6">
               <div className="space-y-3">
                 <Button
                   size="lg"
@@ -1542,7 +1528,7 @@ function SigningPage() {
                     "Submitting..."
                   ) : (
                     <>
-                      <PenLineIcon className="mr-2 h-4 w-4" />
+                      <Pen className="mr-2 h-4 w-4" />
                       {signingButtonLabel}
                     </>
                   )}
@@ -1551,7 +1537,7 @@ function SigningPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-muted-foreground hover:text-foreground w-full"
+                    className="text-kumo-secondary hover:text-kumo-primary w-full"
                     onClick={handleDeclineClick}
                     disabled={declineMutation.isPending}
                     aria-label="Open decline confirmation"
@@ -1565,9 +1551,9 @@ function SigningPage() {
 
           {/* Completed state footer */}
           {isCompleted && recipient.status !== "declined" && (
-            <div className="border-border/50 bg-success-surface/30 space-y-4 border-t p-6">
-              <div className="text-success flex items-center justify-center gap-2">
-                <CheckCircleIcon className="h-5 w-5" />
+            <div className="border-kumo-hairline/50 bg-kumo-success-tint/30 space-y-4 border-t p-6">
+              <div className="text-kumo-success flex items-center justify-center gap-2">
+                <CheckCircle className="h-5 w-5" />
                 <span className="text-sm font-semibold">
                   {recipient.status === "approved"
                     ? "Document Approved"
@@ -1583,9 +1569,9 @@ function SigningPage() {
                 aria-label="Download the signed document"
               >
                 {isDownloading ? (
-                  <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                  <Spinner className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                  <DownloadIcon className="mr-2 h-4 w-4" />
+                  <Download className="mr-2 h-4 w-4" />
                 )}
                 {isDownloading ? "Preparing..." : "Download Document"}
               </Button>
@@ -1605,13 +1591,13 @@ function SigningPage() {
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden lg:order-1">
           {/* Field Navigation Bar */}
           {!isCompleted && fields.length > 0 && (
-            <div className="border-border/50 bg-background/80 sticky top-0 z-30 border-b px-4 py-2.5 backdrop-blur-xl lg:top-0">
+            <div className="border-kumo-hairline/50 bg-kumo-base/80 sticky top-0 z-30 border-b px-4 py-2.5 backdrop-blur-xl lg:top-0">
               <div className="mx-auto flex max-w-4xl items-center justify-between">
                 <div className="hidden items-center gap-4 sm:flex">
                   <div className="flex items-center gap-2">
-                    <div className="bg-muted h-1.5 w-24 overflow-hidden rounded-full">
+                    <div className="bg-kumo-elevated h-1.5 w-24 overflow-hidden rounded-full">
                       <div
-                        className="bg-primary h-full rounded-full transition-[width] duration-500 ease-out"
+                        className="bg-kumo-primary h-full rounded-full transition-[width] duration-500 ease-out"
                         style={{ width: `${fieldCompletionPercent}%` }}
                       />
                     </div>
@@ -1619,7 +1605,7 @@ function SigningPage() {
                       {fieldCompletionPercent}%
                     </span>
                   </div>
-                  <span className="text-muted-foreground text-sm">
+                  <span className="text-kumo-secondary text-sm">
                     {filledRequiredFields.length} of {requiredFields.length}{" "}
                     fields
                   </span>
@@ -1636,10 +1622,10 @@ function SigningPage() {
                         disabled={unfilledFields.length <= 1}
                         aria-label="Navigate to previous required field"
                       >
-                        <ArrowUpIcon className="h-4 w-4 sm:mr-1" />
+                        <ArrowUp className="h-4 w-4 sm:mr-1" />
                         <span className="hidden sm:inline">Prev</span>
                       </Button>
-                      <span className="text-muted-foreground min-w-[60px] px-2 text-center text-sm tabular-nums">
+                      <span className="text-kumo-secondary min-w-[60px] px-2 text-center text-sm tabular-nums">
                         {currentFieldIndex + 1} / {unfilledFields.length}
                       </span>
                       <Button
@@ -1651,12 +1637,12 @@ function SigningPage() {
                         aria-label="Navigate to next required field"
                       >
                         <span className="hidden sm:inline">Next</span>
-                        <ArrowDownIcon className="h-4 w-4 sm:ml-1" />
+                        <ArrowDown className="h-4 w-4 sm:ml-1" />
                       </Button>
                     </>
                   ) : (
-                    <div className="text-success animate-in fade-in slide-in-from-bottom-1 flex items-center gap-2 duration-300">
-                      <CheckCircleIcon className="h-5 w-5" />
+                    <div className="text-kumo-success animate-in fade-in slide-in-from-bottom-1 flex items-center gap-2 duration-300">
+                      <CheckCircle className="h-5 w-5" />
                       <span className="text-sm font-semibold">
                         All fields completed — ready to sign
                       </span>
@@ -1670,21 +1656,21 @@ function SigningPage() {
           {/* PDF Viewer Area */}
           <div
             ref={pdfContainerRef}
-            className="bg-secondary dark:bg-muted/30 flex-1 overflow-auto"
+            className="bg-kumo-elevated dark:bg-kumo-elevated/30 flex-1 overflow-auto"
           >
             <div className="p-4 sm:p-6 lg:p-8">
               <div className="mx-auto max-w-4xl">
                 {/* Page count header */}
                 {numPages && (
                   <div className="mb-4 flex items-center justify-between">
-                    <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                      <FileTextIcon className="h-4 w-4" />
+                    <div className="text-kumo-secondary flex items-center gap-2 text-sm">
+                      <FileText className="h-4 w-4" />
                       <span>
                         {numPages} page{numPages > 1 ? "s" : ""}
                       </span>
                     </div>
                     {numPages > 1 && (
-                      <span className="text-muted-foreground text-xs">
+                      <span className="text-kumo-secondary text-xs">
                         Scroll to view all pages
                       </span>
                     )}
@@ -1699,26 +1685,26 @@ function SigningPage() {
                       onLoadSuccess={onDocumentLoadSuccess}
                       loading={
                         <div
-                          className="border-border/50 bg-card rounded-lg border p-16 text-center shadow-sm"
+                          className="border-kumo-hairline/50 bg-kumo-elevated rounded-lg border p-16 text-center shadow-sm"
                           role="status"
                           aria-live="polite"
                         >
                           <div className="animate-pulse space-y-4">
-                            <div className="bg-muted mx-auto h-4 w-1/3 rounded" />
-                            <div className="bg-muted mx-auto h-4 w-1/2 rounded" />
-                            <div className="bg-muted mx-auto h-4 w-2/5 rounded" />
+                            <div className="bg-kumo-elevated mx-auto h-4 w-1/3 rounded" />
+                            <div className="bg-kumo-elevated mx-auto h-4 w-1/2 rounded" />
+                            <div className="bg-kumo-elevated mx-auto h-4 w-2/5 rounded" />
                           </div>
                         </div>
                       }
                       error={
                         <div
-                          className="border-destructive/30 bg-card rounded-lg border p-16 text-center shadow-sm"
+                          className="border-kumo-danger/30 bg-kumo-elevated rounded-lg border p-16 text-center shadow-sm"
                           role="alert"
                         >
-                          <p className="text-destructive font-medium">
+                          <p className="text-kumo-danger font-medium">
                             Failed to load PDF
                           </p>
-                          <p className="text-muted-foreground mt-1 text-sm">
+                          <p className="text-kumo-secondary mt-1 text-sm">
                             Please try refreshing the page
                           </p>
                         </div>
@@ -1733,7 +1719,7 @@ function SigningPage() {
                         return (
                           <div
                             key={`page_${pageNumber}`}
-                            className="border-border/50 bg-card relative mb-4 overflow-hidden rounded-lg border shadow-sm last:mb-0"
+                            className="border-kumo-hairline/50 bg-kumo-elevated relative mb-4 overflow-hidden rounded-lg border shadow-sm last:mb-0"
                           >
                             <Page
                               pageNumber={pageNumber}
@@ -1812,31 +1798,31 @@ function SigningPage() {
                     {isCompleted &&
                       fields.length === 0 &&
                       recipient.status === "signed" && (
-                        <div className="border-border/50 bg-card mx-auto mt-4 max-w-md rounded-lg border p-4 shadow-sm">
-                          <div className="border-border overflow-hidden rounded-md border">
+                        <div className="border-kumo-hairline/50 bg-kumo-elevated mx-auto mt-4 max-w-md rounded-lg border p-4 shadow-sm">
+                          <div className="border-kumo-hairline overflow-hidden rounded-md border">
                             {/* Signature details stamp - Name, date and time only */}
-                            <div className="bg-card px-4 py-4">
-                              <div className="text-success mb-3 flex items-center gap-2">
-                                <CheckCircleIcon className="h-6 w-6" />
+                            <div className="bg-kumo-elevated px-4 py-4">
+                              <div className="text-kumo-success mb-3 flex items-center gap-2">
+                                <CheckCircle className="h-6 w-6" />
                                 <span className="text-lg font-medium">
                                   Document Signed
                                 </span>
                               </div>
                               <div className="flex flex-col gap-2">
                                 <div className="flex items-baseline gap-2">
-                                  <span className="text-muted-foreground text-sm">
+                                  <span className="text-kumo-secondary text-sm">
                                     Signed by:
                                   </span>
-                                  <span className="text-foreground text-sm font-semibold">
+                                  <span className="text-kumo-primary text-sm font-semibold">
                                     {recipient.name || recipient.email}
                                   </span>
                                 </div>
                                 {recipient.signedAt && (
                                   <div className="flex items-baseline gap-2">
-                                    <span className="text-muted-foreground text-sm">
+                                    <span className="text-kumo-secondary text-sm">
                                       Date:
                                     </span>
-                                    <span className="text-foreground text-sm">
+                                    <span className="text-kumo-primary text-sm">
                                       {new Date(
                                         recipient.signedAt
                                       ).toLocaleDateString(undefined, {
@@ -1862,11 +1848,11 @@ function SigningPage() {
                       )}
                   </div>
                 ) : (
-                  <div className="border-border/50 bg-card rounded-lg border p-16 text-center shadow-sm">
+                  <div className="border-kumo-hairline/50 bg-kumo-elevated rounded-lg border p-16 text-center shadow-sm">
                     <div className="animate-pulse space-y-4">
-                      <div className="bg-muted mx-auto h-4 w-1/3 rounded" />
-                      <div className="bg-muted mx-auto h-4 w-1/2 rounded" />
-                      <div className="bg-muted mx-auto h-4 w-2/5 rounded" />
+                      <div className="bg-kumo-elevated mx-auto h-4 w-1/3 rounded" />
+                      <div className="bg-kumo-elevated mx-auto h-4 w-1/2 rounded" />
+                      <div className="bg-kumo-elevated mx-auto h-4 w-2/5 rounded" />
                     </div>
                   </div>
                 )}
@@ -1878,7 +1864,7 @@ function SigningPage() {
           {!isCompleted && !showSignatureCapture && (
             <div
               className={cn(
-                "border-border/50 bg-background/95 sticky bottom-0 z-40 border-t p-4 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden",
+                "border-kumo-hairline/50 bg-kumo-base/95 sticky bottom-0 z-40 border-t p-4 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden",
                 isEmbedded && "!block"
               )}
             >
@@ -1907,7 +1893,7 @@ function SigningPage() {
                   ) : (
                     <>
                       {recipient.role === "signer" && (
-                        <PenLineIcon className="mr-2 h-4 w-4" />
+                        <Pen className="mr-2 h-4 w-4" />
                       )}
                       {signingButtonLabel}
                     </>
@@ -1919,11 +1905,11 @@ function SigningPage() {
 
           {/* Mobile Completed Footer */}
           {isCompleted && (
-            <div className="border-border/50 bg-background/95 sticky bottom-0 z-40 border-t p-4 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
+            <div className="border-kumo-hairline/50 bg-kumo-base/95 sticky bottom-0 z-40 border-t p-4 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
               {recipient.status !== "declined" ? (
                 <div className="space-y-3">
-                  <div className="text-success flex items-center justify-center gap-2">
-                    <CheckCircleIcon className="h-4 w-4" />
+                  <div className="text-kumo-success flex items-center justify-center gap-2">
+                    <CheckCircle className="h-4 w-4" />
                     <span className="text-xs font-semibold">
                       {recipient.status === "approved" ? "Approved" : "Signed"}{" "}
                       successfully
@@ -1938,15 +1924,15 @@ function SigningPage() {
                     aria-label="Download the final signed document"
                   >
                     {isDownloading ? (
-                      <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                      <Spinner className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
-                      <DownloadIcon className="mr-2 h-4 w-4" />
+                      <Download className="mr-2 h-4 w-4" />
                     )}
                     {isDownloading ? "Preparing..." : "Download Document"}
                   </Button>
                 </div>
               ) : (
-                <p className="text-muted-foreground text-center text-sm">
+                <p className="text-kumo-secondary text-center text-sm">
                   You have declined this document.
                 </p>
               )}
@@ -1956,32 +1942,30 @@ function SigningPage() {
       </div>
 
       {/* Signature Capture Modal */}
-      <Dialog
+      <Dialog.Root
         open={!isCompleted && showSignatureCapture}
         onOpenChange={(open: boolean) => !open && handleCancelSignature()}
       >
-        <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-2xl">
-          <DialogTitle className="sr-only">Sign Document</DialogTitle>
+        <Dialog size="xl" className="gap-0 overflow-hidden p-0">
+          <Dialog.Title className="sr-only">Sign Document</Dialog.Title>
           <SignatureCapture
             recipientName={recipient.name || ""}
             onSignatureCapture={handleSignatureCapture}
             onCancel={handleCancelSignature}
             allowedSignatureTypes={undefined}
           />
-        </DialogContent>
-      </Dialog>
+        </Dialog>
+      </Dialog.Root>
 
       {/* Decline Dialog */}
-      <Dialog open={showDeclineDialog} onOpenChange={setShowDeclineDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Decline Document</DialogTitle>
-            <DialogDescription>
-              Please provide a reason for declining. This will be shared with
-              the document sender.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
+      <Dialog.Root open={showDeclineDialog} onOpenChange={setShowDeclineDialog}>
+        <Dialog size="sm" className="p-6">
+          <Dialog.Title>Decline Document</Dialog.Title>
+          <Dialog.Description>
+            Please provide a reason for declining. This will be shared with the
+            document sender.
+          </Dialog.Description>
+          <div className="space-y-2 py-4">
             <Label htmlFor="decline-reason">Reason</Label>
             <Textarea
               id="decline-reason"
@@ -1994,7 +1978,7 @@ function SigningPage() {
               className="resize-none"
             />
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row">
             <Button
               variant="outline"
               onClick={handleDeclineCancel}
@@ -2006,12 +1990,13 @@ function SigningPage() {
               variant="destructive"
               onClick={handleDeclineConfirm}
               disabled={declineMutation.isPending}
+              className="sm:ml-auto"
             >
               {declineMutation.isPending ? "Declining..." : "Decline"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </Dialog>
+      </Dialog.Root>
 
       {/* Dictate Next Signer Dialog */}
       <DictateNextSignerDialog
@@ -2050,12 +2035,12 @@ function SigningPage() {
 
       {/* Branding footer (hidden in embedded mode) */}
       {!isEmbedded && !branding?.hideSealBranding && (
-        <div className="border-border/50 text-muted-foreground hidden shrink-0 border-t py-2 text-center text-xs lg:block">
+        <div className="border-kumo-hairline/50 text-kumo-secondary hidden shrink-0 border-t py-2 text-center text-xs lg:block">
           {branding?.customFooterText || (
             <a
               href="https://seal.nyc"
               rel="noopener noreferrer"
-              className="hover:text-foreground transition-colors"
+              className="hover:text-kumo-primary transition-colors"
             >
               Powered by Seal
             </a>
@@ -2065,7 +2050,7 @@ function SigningPage() {
       {!isEmbedded &&
         branding?.hideSealBranding &&
         branding?.customFooterText && (
-          <div className="border-border/50 text-muted-foreground hidden shrink-0 border-t py-2 text-center text-xs lg:block">
+          <div className="border-kumo-hairline/50 text-kumo-secondary hidden shrink-0 border-t py-2 text-center text-xs lg:block">
             {branding.customFooterText}
           </div>
         )}

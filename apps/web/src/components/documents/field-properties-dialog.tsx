@@ -1,12 +1,7 @@
+import { Dialog } from "@cloudflare/kumo/components/dialog";
+
 import { type Id } from "@/lib/ids";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "../ui/dialog";
 import { FieldPropertiesPanel } from "./field-properties-panel";
 import type { FieldType } from "./field-toolbar";
 
@@ -66,14 +61,15 @@ export function FieldPropertiesDialog({
   if (!field) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md gap-0 overflow-hidden p-0 [&>button]:hidden">
-        <DialogHeader className="sr-only">
-          <DialogTitle>Field Properties</DialogTitle>
-          <DialogDescription>
-            Edit field label, requirements, and configuration
-          </DialogDescription>
-        </DialogHeader>
+    <Dialog.Root
+      open={open}
+      onOpenChange={(nextOpen) => onOpenChange(nextOpen)}
+    >
+      <Dialog size="sm" className="gap-0 overflow-hidden p-0">
+        <Dialog.Title className="sr-only">Field Properties</Dialog.Title>
+        <Dialog.Description className="sr-only">
+          Edit field label, requirements, and configuration
+        </Dialog.Description>
         <FieldPropertiesPanel
           organizationSlug={organizationSlug}
           documentPublicId={documentPublicId}
@@ -83,7 +79,7 @@ export function FieldPropertiesDialog({
           onSave={onSave}
           onConfigurePayment={onConfigurePayment}
         />
-      </DialogContent>
-    </Dialog>
+      </Dialog>
+    </Dialog.Root>
   );
 }

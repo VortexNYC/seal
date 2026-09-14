@@ -6,6 +6,11 @@
  * and validation rules for signature fields.
  */
 
+import { Button } from "@cloudflare/kumo/components/button";
+import { Input, Textarea } from "@cloudflare/kumo/components/input";
+import { Label } from "@cloudflare/kumo/components/label";
+import { Select } from "@cloudflare/kumo/components/select";
+import { Switch } from "@cloudflare/kumo/components/switch";
 import { useMutation } from "@tanstack/react-query";
 import {
   AlertCircleIcon,
@@ -19,25 +24,13 @@ import {
   TypeIcon,
   XIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { useEffect, useState, type ChangeEvent } from "react";
 
 import { updateSignatureField } from "@/lib/api-client";
 import { type Id } from "@/lib/ids";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import { Switch } from "../ui/switch";
-import { Textarea } from "../ui/textarea";
 import type { FieldType } from "./field-toolbar";
 
 // Common validation patterns
@@ -372,7 +365,9 @@ function FieldPanelHeader({
       </div>
       <Button
         variant="ghost"
-        size="icon"
+        shape="square"
+        size="sm"
+        className="h-8 w-8"
         aria-label="Close field properties"
         onClick={onClose}
       >
@@ -395,29 +390,39 @@ function RecipientAssignmentSection({
     <div className="space-y-2">
       <Label htmlFor="field-recipient">Assigned to</Label>
       {recipients.length > 0 ? (
-        <Select value={selectedRecipientId} onValueChange={onRecipientChange}>
-          <SelectTrigger
-            id="field-recipient"
-            className={
-              selectedRecipientId === "unassigned"
-                ? "border-warning/50 text-warning"
-                : undefined
-            }
-          >
-            <SelectValue placeholder="Select a recipient" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="unassigned" disabled>
-              Unassigned
-            </SelectItem>
-            {recipients.map((recipient) => (
-              <SelectItem key={recipient.publicId} value={recipient.publicId}>
-                {recipient.name
-                  ? `${recipient.name} (${recipient.email})`
-                  : recipient.email}
-              </SelectItem>
-            ))}
-          </SelectContent>
+        <Select
+          value={selectedRecipientId}
+          onValueChange={(value) => value && onRecipientChange(value)}
+          placeholder="Select a recipient"
+          id="field-recipient"
+          className={
+            selectedRecipientId === "unassigned"
+              ? "border-warning/50 text-warning"
+              : undefined
+          }
+          renderValue={(value) =>
+            value === "unassigned"
+              ? "Unassigned"
+              : (() => {
+                  const r = recipients.find((r) => r.publicId === value);
+                  return r
+                    ? r.name
+                      ? `${r.name} (${r.email})`
+                      : r.email
+                    : value;
+                })()
+          }
+        >
+          <Select.Option value="unassigned" disabled>
+            Unassigned
+          </Select.Option>
+          {recipients.map((recipient) => (
+            <Select.Option key={recipient.publicId} value={recipient.publicId}>
+              {recipient.name
+                ? `${recipient.name} (${recipient.email})`
+                : recipient.email}
+            </Select.Option>
+          ))}
         </Select>
       ) : (
         <p className="text-muted-foreground text-xs">
@@ -487,6 +492,7 @@ function BasicFieldSettings({
         <Label htmlFor="field-label">Label</Label>
         <Input
           id="field-label"
+          aria-label="Field label"
           value={label}
           onChange={(event) => setLabel(event.target.value)}
           placeholder="Enter field label"
@@ -504,7 +510,7 @@ function BasicFieldSettings({
           </p>
         </div>
         <Switch
-          id="field-required"
+          aria-label="Required"
           checked={isRequired}
           onCheckedChange={setIsRequired}
         />
@@ -515,6 +521,7 @@ function BasicFieldSettings({
           <Label htmlFor="field-placeholder">Placeholder</Label>
           <Input
             id="field-placeholder"
+            aria-label="Placeholder"
             value={placeholder}
             onChange={(event) => setPlaceholder(event.target.value)}
             placeholder="Enter placeholder text"
@@ -534,8 +541,11 @@ function BasicFieldSettings({
         </Label>
         <Textarea
           id="field-help"
+          aria-label="Help text"
           value={helpText}
-          onChange={(event) => setHelpText(event.target.value)}
+          onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+            setHelpText(event.target.value)
+          }
           placeholder="Add instructions for the signer"
           rows={2}
         />
@@ -577,20 +587,21 @@ function ValidationSettings({
         <Select
           value={validationPattern}
           onValueChange={(value) => {
+            if (!value) return;
             setValidationPattern(value);
             if (value !== "custom") setCustomPattern("");
           }}
+          id="field-validation"
+          placeholder="Select format"
+          renderValue={(value) =>
+            VALIDATION_PATTERNS.find((p) => p.value === value)?.label ?? value
+          }
         >
-          <SelectTrigger id="field-validation">
-            <SelectValue placeholder="Select format" />
-          </SelectTrigger>
-          <SelectContent>
-            {VALIDATION_PATTERNS.map((pattern) => (
-              <SelectItem key={pattern.value} value={pattern.value}>
-                {pattern.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
+          {VALIDATION_PATTERNS.map((pattern) => (
+            <Select.Option key={pattern.value} value={pattern.value}>
+              {pattern.label}
+            </Select.Option>
+          ))}
         </Select>
       </div>
       {validationPattern === "custom" && (
@@ -598,6 +609,7 @@ function ValidationSettings({
           <Label htmlFor="field-custom-pattern">Custom Pattern (Regex)</Label>
           <Input
             id="field-custom-pattern"
+            aria-label="Custom pattern regex"
             value={customPattern}
             onChange={(event) => setCustomPattern(event.target.value)}
             placeholder="^[a-zA-Z]+$"
@@ -610,6 +622,7 @@ function ValidationSettings({
           <Label htmlFor="field-error-message">Error Message</Label>
           <Input
             id="field-error-message"
+            aria-label="Error message"
             value={customMessage}
             onChange={(event) => setCustomMessage(event.target.value)}
             placeholder="Please enter a valid value"
@@ -655,6 +668,7 @@ function NumberInputPair({
             <Label htmlFor={input.id}>{input.label}</Label>
             <Input
               id={input.id}
+              aria-label={input.label}
               type="number"
               min={0}
               value={input.value ?? ""}

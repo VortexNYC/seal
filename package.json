@@ -2,7 +2,7 @@
   "name": "vortex-sign",
   "version": "0.0.1",
   "private": true,
-  "description": "Seal by Vortex — open-source, agent-native e-signature platform",
+  "description": "Seal — open-source, agent-native e-signature platform",
   "type": "module",
   "scripts": {
     "dev": "vp run -r dev --filter @vortex/sign-api --filter @seal/web --filter @seal/landing",
@@ -28,6 +28,7 @@
   "devDependencies": {
     "@seal/tsconfig": "workspace:*",
     "@secretlint/secretlint-rule-preset-recommend": "^13.0.5",
+    "@shadcn/lint": "^0.1.0",
     "knip": "^6.3.0",
     "secretlint": "^13.0.5",
     "simple-git-hooks": "^2.14.0",

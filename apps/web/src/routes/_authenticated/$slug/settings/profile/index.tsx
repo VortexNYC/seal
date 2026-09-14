@@ -12,9 +12,9 @@ import {
   DeleteAccountForm,
   UserProfileForm,
 } from "@vortex-api/better-auth-ui";
-import { toast } from "sonner";
 
 import { betterAuthClient } from "@/lib/better-auth";
+import { toast } from "@/lib/toast";
 
 function resolveAppOrigin(): string {
   const configured = import.meta.env.VITE_APP_URL;

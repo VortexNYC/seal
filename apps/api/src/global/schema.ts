@@ -262,7 +262,7 @@ export const accountRelations = relations(account, ({ one }) => ({
 }));
 
 // -----------------------------------------------------------------------------
-// Seal by Vortex domain tables
+// Seal domain tables
 // -----------------------------------------------------------------------------
 
 export const folders = sqliteTable(
