@@ -1,8 +1,8 @@
+import { createFileRoute } from "@tanstack/react-router";
 /**
  * Forgot password — request a reset email.
  */
-import { AuthProvider, ForgotPasswordForm } from "@seal/auth-ui";
-import { createFileRoute } from "@tanstack/react-router";
+import { AuthProvider, ForgotPasswordForm } from "@vortex-api/better-auth-ui";
 
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { createPageMeta, pageSEO } from "@/lib/seo";

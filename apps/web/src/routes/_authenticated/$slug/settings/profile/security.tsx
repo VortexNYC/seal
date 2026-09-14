@@ -1,7 +1,8 @@
+import { createFileRoute } from "@tanstack/react-router";
 /**
  * Profile Settings Page - Security
  *
- * Sessions, two-factor enrollment, and password change via @vortexnyc/better-auth-ui.
+ * Sessions, two-factor enrollment, and password change via @vortex-api/better-auth-ui.
  * Route: /{slug}/settings/profile/security
  */
 import {
@@ -9,8 +10,7 @@ import {
   ChangePasswordForm,
   EnableTwoFactorForm,
   SessionList,
-} from "@seal/auth-ui";
-import { createFileRoute } from "@tanstack/react-router";
+} from "@vortex-api/better-auth-ui";
 import { toast } from "sonner";
 
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";

@@ -1,7 +1,8 @@
+import { createFileRoute } from "@tanstack/react-router";
 /**
  * Profile Settings Page - General
  *
- * User profile, email, and account management via @vortexnyc/better-auth-ui.
+ * User profile, email, and account management via @vortex-api/better-auth-ui.
  * Route: /{slug}/settings/profile/ (index)
  */
 import {
@@ -10,8 +11,7 @@ import {
   ChangePasswordForm,
   DeleteAccountForm,
   UserProfileForm,
-} from "@seal/auth-ui";
-import { createFileRoute } from "@tanstack/react-router";
+} from "@vortex-api/better-auth-ui";
 import { toast } from "sonner";
 
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";

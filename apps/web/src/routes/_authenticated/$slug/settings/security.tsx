@@ -4,7 +4,6 @@ import { Label } from "@cloudflare/kumo/components/label";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
 import { ArrowsLeftRight, FloppyDisk, Shield } from "@phosphor-icons/react";
-import { AuthProvider, useAuth } from "@seal/auth-ui";
 /**
  * Security Settings Page
  *
@@ -16,6 +15,7 @@ import { AuthProvider, useAuth } from "@seal/auth-ui";
  */
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { AuthProvider, useAuth } from "@vortex-api/better-auth-ui";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 

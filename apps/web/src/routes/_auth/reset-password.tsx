@@ -1,8 +1,8 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
 /**
  * Password reset completion — linked from the recovery email (?token=…).
  */
-import { AuthProvider, ResetPasswordForm } from "@seal/auth-ui";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { AuthProvider, ResetPasswordForm } from "@vortex-api/better-auth-ui";
 
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { createPageMeta, pageSEO } from "@/lib/seo";
