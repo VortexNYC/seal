@@ -7,8 +7,12 @@
 
 import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
+import { DatePicker } from "@cloudflare/kumo/components/date-picker";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Meter } from "@cloudflare/kumo/components/meter";
+import { Popover } from "@cloudflare/kumo/components/popover";
 import { Select } from "@cloudflare/kumo/components/select";
+import { Tabs } from "@cloudflare/kumo/components/tabs";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
@@ -52,14 +56,6 @@ import {
   AnalyticsSkeleton,
   AnalyticsTabSkeleton,
 } from "@/components/skeletons/analytics-skeleton";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import {
   getAnalyticsDocumentsForExport,
@@ -74,7 +70,6 @@ import {
 } from "@/lib/api-client";
 import { parseSelectValue } from "@/lib/select-values";
 import { pageSEO } from "@/lib/seo";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/$slug/analytics")({
   component: AnalyticsPage,
@@ -181,96 +176,72 @@ function AnalyticsContent({
     <div className="space-y-6">
       {isAdmin && (
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 rounded-lg border p-1">
-            <button
-              type="button"
-              onClick={() => onScopeChange("team")}
-              className={cn(
-                "rounded-md px-3 py-1 text-sm transition-colors",
-                scope === "team"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted"
-              )}
-            >
-              Team
-            </button>
-            <button
-              type="button"
-              onClick={() => onScopeChange("personal")}
-              className={cn(
-                "rounded-md px-3 py-1 text-sm transition-colors",
-                scope === "personal"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted"
-              )}
-            >
-              Personal
-            </button>
-          </div>
+          <Tabs
+            variant="segmented"
+            size="sm"
+            value={scope}
+            onValueChange={(value) => onScopeChange(value as AnalyticsScope)}
+            tabs={[
+              { value: "team", label: "Team" },
+              { value: "personal", label: "Personal" },
+            ]}
+          />
         </div>
       )}
 
       <OverviewStats stats={stats} scope={effectiveScope} />
 
-      <Tabs value={activeTab} onValueChange={onTabChange} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="activity">Document Activity</TabsTrigger>
-          <TabsTrigger value="status">Status Breakdown</TabsTrigger>
-          <TabsTrigger value="timeline">Recent Activity</TabsTrigger>
-          <TabsTrigger value="emails">Email Engagement</TabsTrigger>
-          <TabsTrigger value="timing">Recipient Timing</TabsTrigger>
-          <TabsTrigger value="templates">Template Performance</TabsTrigger>
-          <TabsTrigger value="export">Export</TabsTrigger>
-          {isAdmin && <TabsTrigger value="members">Team Members</TabsTrigger>}
-        </TabsList>
+      <div className="space-y-4">
+        <Tabs
+          tabs={[
+            { value: "activity", label: "Document Activity" },
+            { value: "status", label: "Status Breakdown" },
+            { value: "timeline", label: "Recent Activity" },
+            { value: "emails", label: "Email Engagement" },
+            { value: "timing", label: "Recipient Timing" },
+            { value: "templates", label: "Template Performance" },
+            { value: "export", label: "Export" },
+            ...(isAdmin ? [{ value: "members", label: "Team Members" }] : []),
+          ]}
+          value={activeTab}
+          onValueChange={onTabChange}
+        />
 
-        <TabsContent value="activity" className="space-y-4">
-          <TrendControls
-            preset={trendPreset}
-            onPresetChange={onTrendPresetChange}
-            customRange={customRange}
-            onCustomRangeChange={onCustomRangeChange}
-          />
-          <TrendChart
-            preset={trendPreset}
-            customRange={customRange}
-            scope={effectiveScope}
-          />
-        </TabsContent>
+        {activeTab === "activity" && (
+          <div className="space-y-4">
+            <TrendControls
+              preset={trendPreset}
+              onPresetChange={onTrendPresetChange}
+              customRange={customRange}
+              onCustomRangeChange={onCustomRangeChange}
+            />
+            <TrendChart
+              preset={trendPreset}
+              customRange={customRange}
+              scope={effectiveScope}
+            />
+          </div>
+        )}
 
-        <TabsContent value="status" className="space-y-4">
+        {activeTab === "status" && (
           <div className="grid gap-4 md:grid-cols-2">
             <StatusPieChart scope={effectiveScope} />
             <StatusBarChart scope={effectiveScope} />
           </div>
-        </TabsContent>
-
-        <TabsContent value="timeline" className="space-y-4">
-          <RecentActivityFeed />
-        </TabsContent>
-
-        <TabsContent value="emails" className="space-y-4">
-          <EmailEngagementTab />
-        </TabsContent>
-
-        <TabsContent value="timing" className="space-y-4">
-          <RecipientTimingTab />
-        </TabsContent>
-
-        <TabsContent value="templates" className="space-y-4">
-          <TemplatePerformanceTab />
-        </TabsContent>
-
-        <TabsContent value="export" className="space-y-4">
-          <ExportPanel />
-        </TabsContent>
-
-        {isAdmin && (
-          <TabsContent value="members" className="space-y-4">
-            <MemberActivityTable />
-          </TabsContent>
         )}
-      </Tabs>
+
+        {activeTab === "timeline" && <RecentActivityFeed />}
+
+        {activeTab === "emails" && <EmailEngagementTab />}
+
+        {activeTab === "timing" && <RecipientTimingTab />}
+
+        {activeTab === "templates" && <TemplatePerformanceTab />}
+
+        {activeTab === "export" && <ExportPanel />}
+
+        {isAdmin && activeTab === "members" && <MemberActivityTable />}
+      </div>
     </div>
   );
 }
@@ -378,7 +349,13 @@ function StatCard({
           )}
         </div>
         {progress !== undefined && (
-          <Progress value={progress} className="mt-2 h-2" />
+          <Meter
+            label=""
+            aria-label={title}
+            value={progress}
+            showValue={false}
+            className="mt-2"
+          />
         )}
         {description && (
           <p className="text-muted-foreground mt-1 text-xs">{description}</p>
@@ -413,47 +390,39 @@ function TrendControls({
   customRange: DateRange | undefined;
   onCustomRangeChange: Dispatch<SetStateAction<DateRange | undefined>>;
 }) {
-  const presets: { value: TrendPreset; label: string }[] = [
-    { value: "7", label: "7 days" },
-    { value: "30", label: "30 days" },
-    { value: "90", label: "90 days" },
-    { value: "custom", label: "Custom" },
-  ];
-
   return (
     <div className="flex items-center gap-2">
-      {presets.map((p) => (
-        <button
-          key={p.value}
-          type="button"
-          onClick={() => onPresetChange(p.value)}
-          className={cn(
-            "rounded-md px-3 py-1 text-sm transition-colors",
-            preset === p.value
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:bg-muted"
-          )}
-        >
-          {p.label}
-        </button>
-      ))}
+      <Tabs
+        variant="segmented"
+        size="sm"
+        value={preset}
+        onValueChange={(value) => onPresetChange(value as TrendPreset)}
+        tabs={[
+          { value: "7", label: "7 days" },
+          { value: "30", label: "30 days" },
+          { value: "90", label: "90 days" },
+          { value: "custom", label: "Custom" },
+        ]}
+      />
       {preset === "custom" && (
         <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="ml-1 gap-1.5">
-              <CalendarIcon className="h-3.5 w-3.5" />
-              {formatDateLabel(customRange)}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
+          <Popover.Trigger
+            render={
+              <Button variant="outline" size="sm" className="ml-1 gap-1.5">
+                <CalendarIcon className="h-3.5 w-3.5" />
+                {formatDateLabel(customRange)}
+              </Button>
+            }
+          />
+          <Popover.Content className="w-auto p-0" align="start">
+            <DatePicker
               mode="range"
               selected={customRange}
-              onSelect={onCustomRangeChange}
+              onChange={onCustomRangeChange}
               numberOfMonths={2}
               disabled={{ after: new Date() }}
             />
-          </PopoverContent>
+          </Popover.Content>
         </Popover>
       )}
     </div>
