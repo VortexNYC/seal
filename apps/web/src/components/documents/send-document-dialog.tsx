@@ -4,6 +4,13 @@
  * and optional expiration period
  */
 
+import { Button } from "@cloudflare/kumo/components/button";
+import { Collapsible } from "@cloudflare/kumo/components/collapsible";
+import { Dialog } from "@cloudflare/kumo/components/dialog";
+import { Input, Textarea } from "@cloudflare/kumo/components/input";
+import { Label } from "@cloudflare/kumo/components/label";
+import { Select } from "@cloudflare/kumo/components/select";
+import { Switch } from "@cloudflare/kumo/components/switch";
 import { useMutation } from "@tanstack/react-query";
 import {
   ChevronDownIcon,
@@ -25,31 +32,6 @@ import { formatMoney, money } from "@/lib/money";
 import { cn, getErrorMessage } from "@/lib/utils";
 
 import { parseSelectValue } from "../../lib/select-values";
-import { Button } from "../ui/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "../ui/collapsible";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../ui/dialog";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import { Switch } from "../ui/switch";
-import { Textarea } from "../ui/textarea";
 
 type ExpirationPreset = "none" | "7" | "14" | "30" | "60" | "90" | "custom";
 type CustomUnit = "day" | "week" | "month";
@@ -68,6 +50,22 @@ const CUSTOM_UNITS = [
   "week",
   "month",
 ] as const satisfies readonly CustomUnit[];
+
+const EXPIRATION_LABELS: Record<ExpirationPreset, string> = {
+  none: "No expiration",
+  7: "7 days",
+  14: "14 days",
+  30: "30 days",
+  60: "60 days",
+  90: "90 days",
+  custom: "Custom...",
+};
+
+const CUSTOM_UNIT_LABELS: Record<CustomUnit, string> = {
+  day: "Days",
+  week: "Weeks",
+  month: "Months",
+};
 
 const expirationSchema = z.object({
   amount: z.number().int().min(1, "Expiration period must be at least 1"),
@@ -256,15 +254,13 @@ export function SendDocumentDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>Send Document</DialogTitle>
-          <DialogDescription>
-            Send "{documentName}" to {pendingRecipients.length} recipient
-            {pendingRecipients.length !== 1 ? "s" : ""} for signing.
-          </DialogDescription>
-        </DialogHeader>
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog className="flex max-h-[90vh] flex-col sm:max-w-[600px]">
+        <Dialog.Title>Send Document</Dialog.Title>
+        <Dialog.Description>
+          Send "{documentName}" to {pendingRecipients.length} recipient
+          {pendingRecipients.length !== 1 ? "s" : ""} for signing.
+        </Dialog.Description>
 
         <div className="-mx-6 flex-1 space-y-4 overflow-y-auto px-6 py-4">
           {/* Payment Fields Summary */}
@@ -306,7 +302,7 @@ export function SendDocumentDialog({
             <Label className="mb-2 text-sm font-medium">Recipients</Label>
             <div className="mt-2 space-y-2">
               {pendingRecipients.map((recipient) => (
-                <Collapsible
+                <Collapsible.Root
                   key={recipient._id}
                   open={expandedRecipient === recipient._id}
                   onOpenChange={(isExpanded) =>
@@ -314,60 +310,54 @@ export function SendDocumentDialog({
                   }
                 >
                   <div className="overflow-hidden rounded-md border">
-                    <CollapsibleTrigger asChild>
-                      <button
-                        type="button"
-                        className="bg-muted hover:bg-muted/80 flex w-full items-center justify-between p-3 transition-colors"
-                      >
-                        <div className="flex min-w-0 flex-1 items-center gap-3">
-                          <div className="bg-primary/10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium">
-                            {(recipient.name ||
-                              recipient.email)[0].toUpperCase()}
-                          </div>
-                          <div className="min-w-0 flex-1 text-left">
-                            <p className="truncate text-sm font-medium">
-                              {recipient.name || recipient.email}
-                            </p>
-                            <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
-                              {recipient.name && (
-                                <span className="max-w-[180px] truncate">
-                                  {recipient.email}
-                                </span>
-                              )}
-                              {recipient.name && <span>•</span>}
-                              <span className="shrink-0 capitalize">
-                                {recipient.role}
+                    <Collapsible.Trigger className="bg-muted hover:bg-muted/80 flex w-full items-center justify-between p-3 transition-colors">
+                      <div className="flex min-w-0 flex-1 items-center gap-3">
+                        <div className="bg-primary/10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium">
+                          {(recipient.name || recipient.email)[0].toUpperCase()}
+                        </div>
+                        <div className="min-w-0 flex-1 text-left">
+                          <p className="truncate text-sm font-medium">
+                            {recipient.name || recipient.email}
+                          </p>
+                          <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
+                            {recipient.name && (
+                              <span className="max-w-[180px] truncate">
+                                {recipient.email}
                               </span>
-                              {getRecipientMessage(recipient._id) && (
-                                <>
-                                  <span>•</span>
-                                  <span className="text-primary shrink-0">
-                                    Custom message
-                                  </span>
-                                </>
-                              )}
-                            </div>
+                            )}
+                            {recipient.name && <span>•</span>}
+                            <span className="shrink-0 capitalize">
+                              {recipient.role}
+                            </span>
+                            {getRecipientMessage(recipient._id) && (
+                              <>
+                                <span>•</span>
+                                <span className="text-primary shrink-0">
+                                  Custom message
+                                </span>
+                              </>
+                            )}
                           </div>
                         </div>
-                        <div className="ml-2 flex shrink-0 items-center gap-2">
-                          {fieldCountsByRecipient && (
-                            <span className="bg-background rounded border px-2 py-1 text-xs font-medium">
-                              {fieldCountsByRecipient.get(recipient._id) ?? 0}{" "}
-                              {(fieldCountsByRecipient.get(recipient._id) ??
-                                0) === 1
-                                ? "field"
-                                : "fields"}
-                            </span>
-                          )}
-                          {expandedRecipient === recipient._id ? (
-                            <ChevronUpIcon className="text-muted-foreground h-4 w-4" />
-                          ) : (
-                            <ChevronDownIcon className="text-muted-foreground h-4 w-4" />
-                          )}
-                        </div>
-                      </button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
+                      </div>
+                      <div className="ml-2 flex shrink-0 items-center gap-2">
+                        {fieldCountsByRecipient && (
+                          <span className="bg-background rounded border px-2 py-1 text-xs font-medium">
+                            {fieldCountsByRecipient.get(recipient._id) ?? 0}{" "}
+                            {(fieldCountsByRecipient.get(recipient._id) ??
+                              0) === 1
+                              ? "field"
+                              : "fields"}
+                          </span>
+                        )}
+                        {expandedRecipient === recipient._id ? (
+                          <ChevronUpIcon className="text-muted-foreground h-4 w-4" />
+                        ) : (
+                          <ChevronDownIcon className="text-muted-foreground h-4 w-4" />
+                        )}
+                      </div>
+                    </Collapsible.Trigger>
+                    <Collapsible.Panel>
                       <div className="space-y-2 border-t p-3">
                         <Textarea
                           placeholder={`Custom message for ${recipient.name || recipient.email}...`}
@@ -377,15 +367,16 @@ export function SendDocumentDialog({
                           }
                           className="min-h-[80px]"
                           maxLength={500}
+                          aria-label="Custom message"
                         />
                         <p className="text-muted-foreground text-xs">
                           {getRecipientMessage(recipient._id).length}/500
                           characters (leave empty to use default message)
                         </p>
                       </div>
-                    </CollapsibleContent>
+                    </Collapsible.Panel>
                   </div>
-                </Collapsible>
+                </Collapsible.Root>
               ))}
             </div>
           </div>
@@ -405,6 +396,7 @@ export function SendDocumentDialog({
               onChange={(e) => setCustomMessage(e.target.value)}
               className="min-h-[80px]"
               maxLength={500}
+              aria-label="Default message"
             />
             <p className="text-muted-foreground mt-1 text-xs">
               {customMessage.length}/500 characters
@@ -477,6 +469,7 @@ export function SendDocumentDialog({
                   <Switch
                     checked={allowDictateNextSigner}
                     onCheckedChange={setAllowDictateNextSigner}
+                    aria-label="Signers choose next recipient"
                   />
                 </div>
               )}
@@ -491,24 +484,23 @@ export function SendDocumentDialog({
             </p>
             <Select
               value={expirationPreset}
-              onValueChange={(val) =>
+              onValueChange={(val) => {
+                if (!val) return;
                 setExpirationPreset(
                   parseSelectValue(val, EXPIRATION_PRESETS) ?? expirationPreset
-                )
+                );
+              }}
+              renderValue={(value) =>
+                EXPIRATION_LABELS[value as ExpirationPreset]
               }
             >
-              <SelectTrigger>
-                <SelectValue placeholder="No expiration" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No expiration</SelectItem>
-                <SelectItem value="7">7 days</SelectItem>
-                <SelectItem value="14">14 days</SelectItem>
-                <SelectItem value="30">30 days</SelectItem>
-                <SelectItem value="60">60 days</SelectItem>
-                <SelectItem value="90">90 days</SelectItem>
-                <SelectItem value="custom">Custom...</SelectItem>
-              </SelectContent>
+              <Select.Option value="none">No expiration</Select.Option>
+              <Select.Option value="7">7 days</Select.Option>
+              <Select.Option value="14">14 days</Select.Option>
+              <Select.Option value="30">30 days</Select.Option>
+              <Select.Option value="60">60 days</Select.Option>
+              <Select.Option value="90">90 days</Select.Option>
+              <Select.Option value="custom">Custom...</Select.Option>
             </Select>
 
             {expirationPreset === "custom" && (
@@ -517,29 +509,30 @@ export function SendDocumentDialog({
                   type="number"
                   min={1}
                   max={365}
-                  value={customAmount}
+                  value={String(customAmount)}
                   onChange={(e) => {
                     setCustomAmount(Number(e.target.value));
                     if (expirationError) setExpirationError(null);
                   }}
                   className="w-24"
+                  aria-label="Custom expiration amount"
                 />
                 <Select
                   value={customUnit}
-                  onValueChange={(val) =>
+                  onValueChange={(val) => {
+                    if (!val) return;
                     setCustomUnit(
                       parseSelectValue(val, CUSTOM_UNITS) ?? customUnit
-                    )
+                    );
+                  }}
+                  renderValue={(value) =>
+                    CUSTOM_UNIT_LABELS[value as CustomUnit]
                   }
+                  className="w-32"
                 >
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="day">Days</SelectItem>
-                    <SelectItem value="week">Weeks</SelectItem>
-                    <SelectItem value="month">Months</SelectItem>
-                  </SelectContent>
+                  <Select.Option value="day">Days</Select.Option>
+                  <Select.Option value="week">Weeks</Select.Option>
+                  <Select.Option value="month">Months</Select.Option>
                 </Select>
               </div>
             )}
@@ -580,8 +573,9 @@ export function SendDocumentDialog({
           )}
         </div>
 
-        <DialogFooter>
+        <div className="mt-4 flex flex-col-reverse justify-end gap-2 sm:flex-row">
           <Button
+            type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isSending}
@@ -589,6 +583,8 @@ export function SendDocumentDialog({
             Cancel
           </Button>
           <Button
+            type="button"
+            variant="primary"
             onClick={handleSend}
             disabled={isSending || signatureFieldCount === 0}
           >
@@ -604,8 +600,8 @@ export function SendDocumentDialog({
               </>
             )}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </Dialog>
+    </Dialog.Root>
   );
 }
