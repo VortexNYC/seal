@@ -6,26 +6,19 @@
  * Allows users to save a document as a reusable template
  */
 
+import { Textarea } from "@cloudflare/kumo";
+import { Button } from "@cloudflare/kumo/components/button";
+import { Dialog } from "@cloudflare/kumo/components/dialog";
+import { Input } from "@cloudflare/kumo/components/input";
+import { Label } from "@cloudflare/kumo/components/label";
+import { Text } from "@cloudflare/kumo/components/text";
+import { FileText, FloppyDisk } from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
-import { FileTextIcon, Loader2Icon, SaveIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { saveAsTemplate } from "@/lib/api-client";
 import { getErrorMessage } from "@/lib/utils";
-
-import { Button } from "../ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../ui/dialog";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { Textarea } from "../ui/textarea";
 
 interface SaveAsTemplateDialogProps {
   documentPublicId: string;
@@ -82,51 +75,54 @@ export function SaveAsTemplateDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileTextIcon className="h-5 w-5" />
+    <Dialog.Root
+      open={open}
+      onOpenChange={(nextOpen) => onOpenChange(nextOpen)}
+    >
+      <Dialog size="sm" className="p-6">
+        <Dialog.Title>
+          <span className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
             Save as Template
-          </DialogTitle>
-          <DialogDescription>
-            Create a reusable template from "{documentName}". All signature
-            fields will be preserved and can be assigned to new recipients when
-            you use the template.
-          </DialogDescription>
-        </DialogHeader>
+          </span>
+        </Dialog.Title>
+        <Dialog.Description>
+          Create a reusable template from "{documentName}". All signature fields
+          will be preserved and can be assigned to new recipients when you use
+          the template.
+        </Dialog.Description>
 
         <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="templateName">Template Name</Label>
-            <Input
-              id="templateName"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter template name..."
-            />
-          </div>
+          <Input
+            id="templateName"
+            label="Template Name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Enter template name..."
+          />
 
           <div className="space-y-2">
             <Label htmlFor="templateDescription">
               Description{" "}
-              <span className="text-muted-foreground">(optional)</span>
+              <Text as="span" size="sm" variant="secondary">
+                (optional)
+              </Text>
             </Label>
             <Textarea
               id="templateDescription"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(event) => setDescription(event.target.value)}
               placeholder="Describe what this template is for..."
               rows={3}
               maxLength={500}
             />
-            <p className="text-muted-foreground text-right text-xs">
+            <p className="text-kumo-secondary text-right text-xs">
               {description.length}/500
             </p>
           </div>
         </div>
 
-        <DialogFooter>
+        <div className="flex justify-end gap-2">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
@@ -134,21 +130,16 @@ export function SaveAsTemplateDialog({
           >
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={isSaving || !name.trim()}>
-            {isSaving ? (
-              <>
-                <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <SaveIcon className="mr-2 h-4 w-4" />
-                Save Template
-              </>
-            )}
+          <Button
+            onClick={() => void handleSave()}
+            disabled={!name.trim()}
+            loading={isSaving}
+            icon={FloppyDisk}
+          >
+            Save Template
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </Dialog>
+    </Dialog.Root>
   );
 }
