@@ -17,6 +17,7 @@ import { z } from "zod";
 import { createD1 } from "../../global/db.js";
 import { documents, recipients } from "../../global/schema.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
+import { emitWebhookEvent } from "../../platform/webhook-events.js";
 import { createDownloadToken, verifyDownloadToken } from "./download-token.js";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -626,6 +627,8 @@ async function handleSendDocument(
   const rows = await db
     .select({
       id: documents.id,
+      publicId: documents.publicId,
+      name: documents.name,
       status: documents.status,
     })
     .from(documents)
@@ -654,12 +657,35 @@ async function handleSendDocument(
     return c.json({ error: "document_has_no_recipients" }, 400);
   }
 
+  const sentAt = new Date();
   await db
     .update(documents)
-    .set({ status: "sent", sentAt: new Date() })
+    .set({ status: "sent", sentAt })
     .where(
       and(eq(documents.id, id), eq(documents.organizationId, organizationId))
     );
+
+  const emitPromise = emitWebhookEvent(c.env, {
+    organizationId,
+    eventType: "document.sent",
+    payload: {
+      documentId: row.id,
+      publicId: row.publicId,
+      name: row.name,
+      sentAt: sentAt.getTime(),
+    },
+  }).catch((err) => {
+    console.error("[webhooks] document.sent emit failed:", err);
+  });
+  try {
+    if (c.executionCtx?.waitUntil) {
+      c.executionCtx.waitUntil(emitPromise);
+    } else {
+      await emitPromise;
+    }
+  } catch {
+    await emitPromise;
+  }
 
   return c.json({ success: true });
 }

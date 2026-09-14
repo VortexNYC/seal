@@ -2285,3 +2285,55 @@ export async function verifyDocumentByQrToken(
     verifyDocumentResultSchema.nullable()
   );
 }
+
+const apiTokenSchema = z.object({
+  id: z.string(),
+  publicId: z.string(),
+  name: z.string(),
+  scopes: z.array(z.string()),
+  lastUsedAt: z.string().nullable(),
+  revokedAt: z.string().nullable(),
+  createdAt: z.string(),
+});
+export type ApiToken = z.infer<typeof apiTokenSchema>;
+
+const createdApiTokenSchema = apiTokenSchema.extend({
+  token: z.string(),
+});
+export type CreatedApiToken = z.infer<typeof createdApiTokenSchema>;
+
+export async function getApiTokens(
+  organizationSlug: string
+): Promise<ApiToken[]> {
+  return apiFetch(
+    `/api/v1/organizations/${encodeURIComponent(organizationSlug)}/tokens`,
+    z.array(apiTokenSchema)
+  );
+}
+
+export async function createApiToken(
+  organizationSlug: string,
+  input: { name: string; scopes: string[] }
+): Promise<CreatedApiToken> {
+  return apiFetch(
+    `/api/v1/organizations/${encodeURIComponent(organizationSlug)}/tokens`,
+    createdApiTokenSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+export async function revokeApiToken(
+  organizationSlug: string,
+  tokenId: string
+): Promise<{ revoked: boolean }> {
+  return apiFetch(
+    `/api/v1/organizations/${encodeURIComponent(organizationSlug)}/tokens/${encodeURIComponent(tokenId)}`,
+    z.object({ revoked: z.boolean() }),
+    {
+      method: "DELETE",
+    }
+  );
+}
