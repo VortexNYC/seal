@@ -119,6 +119,7 @@ apps/api/.wrangler/
 apps/landing/.wrangler/
 apps/web/.wrangler/
 apps/anydoc-worker/.wrangler/
+apps/convert-worker/.wrangler/
 apps/api/wrangler.toml
 
 # opencode tooling

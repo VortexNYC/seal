@@ -413,10 +413,10 @@ function DropzoneArea({
       ) : (
         <>
           <p className="mb-1 text-sm font-medium">
-            Drag & drop a PDF file here, or click to select
+            Drag & drop a document here, or click to select
           </p>
           <p className="text-muted-foreground text-xs">
-            PDF files only, one at a time
+            PDF, DOCX, XLSX, PPTX, or CSV — one file at a time
           </p>
         </>
       )}
@@ -623,7 +623,7 @@ function UploadDialogFooter({
           controller.atDocumentLimit
         }
       >
-        {controller.uploading ? "Uploading..." : "Upload PDF"}
+        {controller.uploading ? "Uploading..." : "Upload Document"}
       </Button>
     </div>
   );
@@ -681,7 +681,10 @@ async function buildUploadFile(file: File): Promise<FileWithStatus | null> {
     return null;
   }
 
-  const metadata = await extractPdfMetadata(file);
+  const metadata =
+    file.type === "application/pdf"
+      ? await extractPdfMetadata(file)
+      : { pageCount: undefined, thumbnail: null };
   return {
     file,
     status: "pending",

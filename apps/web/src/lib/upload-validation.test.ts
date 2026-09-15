@@ -17,9 +17,17 @@ describe("upload-validation", () => {
   });
 
   describe("DROPZONE_ACCEPT_TYPES", () => {
-    test("accepts application/pdf with .pdf extension", () => {
+    test("accepts all supported file types", () => {
       expect(DROPZONE_ACCEPT_TYPES).toEqual({
         "application/pdf": [".pdf"],
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+          [".docx"],
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
+          ".xlsx",
+        ],
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+          [".pptx"],
+        "text/csv": [".csv"],
       });
     });
   });
@@ -56,8 +64,8 @@ describe("upload-validation", () => {
   });
 
   describe("getSupportedFileTypesDisplay", () => {
-    test("returns 'PDF only'", () => {
-      expect(getSupportedFileTypesDisplay()).toBe("PDF only");
+    test("returns all supported file types", () => {
+      expect(getSupportedFileTypesDisplay()).toBe("PDF, DOCX, XLSX, PPTX, CSV");
     });
   });
 
@@ -66,6 +74,22 @@ describe("upload-validation", () => {
       const file = new File(["pdf content"], "document.pdf", {
         type: "application/pdf",
       });
+      const result = validateFileForUpload(file);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
+    });
+
+    test("accepts a valid DOCX file", () => {
+      const file = new File(["docx content"], "document.docx", {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      });
+      const result = validateFileForUpload(file);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
+    });
+
+    test("accepts a valid CSV file", () => {
+      const file = new File(["a,b"], "data.csv", { type: "text/csv" });
       const result = validateFileForUpload(file);
       expect(result.valid).toBe(true);
       expect(result.errors).toEqual([]);
@@ -91,12 +115,14 @@ describe("upload-validation", () => {
     });
 
     test("rejects a file with wrong MIME type", () => {
-      const file = new File(["content"], "document.pdf", {
+      const file = new File(["content"], "image.png", {
         type: "image/png",
       });
       const result = validateFileForUpload(file);
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain("Only PDF files are supported");
+      expect(result.errors).toContain(
+        "Only PDF, DOCX, XLSX, PPTX, and CSV files are supported"
+      );
     });
 
     test("rejects a file with no MIME type", () => {
@@ -107,12 +133,14 @@ describe("upload-validation", () => {
     });
 
     test("rejects a file with wrong extension", () => {
-      const file = new File(["content"], "document.docx", {
+      const file = new File(["content"], "image.png", {
         type: "application/pdf",
       });
       const result = validateFileForUpload(file);
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain("Only PDF files are supported");
+      expect(result.errors).toContain(
+        "Only PDF, DOCX, XLSX, PPTX, and CSV files are supported"
+      );
     });
 
     test("collects multiple errors for wrong MIME and extension", () => {
@@ -129,7 +157,9 @@ describe("upload-validation", () => {
       const result = validateFileForUpload(file);
       // The source lowercases the extension, so .PDF becomes .pdf
       expect(
-        result.errors.some((e) => e.includes("Only PDF files are supported"))
+        result.errors.some((e) =>
+          e.includes("Only PDF, DOCX, XLSX, PPTX, and CSV files are supported")
+        )
       ).toBe(false);
     });
   });

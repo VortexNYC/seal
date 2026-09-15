@@ -12,6 +12,7 @@ import {
   not,
   type SQL,
 } from "drizzle-orm";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
 
 import { createD1 } from "../global/db.js";
 import {
@@ -29,6 +30,11 @@ import {
   templates,
   user as userTable,
 } from "../global/schema.js";
+import {
+  convertBytesToPdf,
+  ConversionError,
+  isConvertibleFileType,
+} from "../platform/document-conversion.js";
 import {
   type EmailSendResult,
   sendDocumentInvitationEmail,
@@ -202,6 +208,10 @@ async function hasEditDocumentAccess(
 
 function r2Key(organizationId: string, publicId: string) {
   return `${organizationId}/documents/${publicId}`;
+}
+
+function r2OriginalKey(organizationId: string, publicId: string) {
+  return `${organizationId}/originals/${publicId}`;
 }
 
 function base64ToBytes(value: string) {
@@ -1119,19 +1129,67 @@ app.openapi(uploadRouteDef, async (c) => {
   const contentType = input.contentType || "application/octet-stream";
   const key = r2Key(organizationId, publicId);
 
-  await bucket.put(key, bytes, { httpMetadata: { contentType } });
+  const metadata = {
+    organizationId,
+    uploadedBy: c.get("user")!.user.id,
+  };
+
+  let finalBytes: ArrayBuffer | Uint8Array = bytes;
+  let finalContentType = contentType;
+
+  if (isConvertibleFileType(contentType)) {
+    try {
+      const pdf = await convertBytesToPdf(c.env, {
+        contentType,
+        bytes,
+        name: "document",
+      });
+      finalBytes = pdf;
+      finalContentType = "application/pdf";
+    } catch (error) {
+      const status = (
+        error instanceof ConversionError ? error.statusCode : 502
+      ) as ContentfulStatusCode;
+      const detail =
+        error instanceof ConversionError ? error.detail : undefined;
+      return c.json({ error: "conversion_failed", detail }, status);
+    }
+
+    const originalKey = r2OriginalKey(organizationId, publicId);
+    await bucket.put(originalKey, bytes, {
+      httpMetadata: { contentType },
+      customMetadata: metadata,
+    });
+    await bucket.put(key, finalBytes, {
+      httpMetadata: { contentType: finalContentType },
+      customMetadata: {
+        ...metadata,
+        originalContentType: contentType,
+        originalKey,
+      },
+    });
+  } else {
+    await bucket.put(key, finalBytes, {
+      httpMetadata: { contentType: finalContentType },
+      customMetadata: metadata,
+    });
+  }
 
   await db
     .update(documents)
     .set({
       storageKey: key,
-      contentType,
-      size: bytes.length,
+      contentType: finalContentType,
+      size: finalBytes.byteLength,
       status: "uploaded",
     })
     .where(eq(documents.id, doc.id));
 
-  return c.json({ storageKey: key, contentType, size: bytes.length });
+  return c.json({
+    storageKey: key,
+    contentType: finalContentType,
+    size: finalBytes.byteLength,
+  });
 });
 
 const downloadRouteDef = createRoute({

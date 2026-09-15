@@ -19,10 +19,21 @@ vi.mock("../../lib/pdf-utils", () => ({
 }));
 
 vi.mock("../../lib/upload-validation", () => ({
-  DROPZONE_ACCEPT_TYPES: { "application/pdf": [".pdf"] },
+  DROPZONE_ACCEPT_TYPES: {
+    "application/pdf": [".pdf"],
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [
+      ".docx",
+    ],
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
+      ".xlsx",
+    ],
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+      [".pptx"],
+    "text/csv": [".csv"],
+  },
   formatFileSize: (bytes: number) => `${Math.round(bytes / 1024)} KB`,
-  getMaxFileSizeDisplay: () => "100 MB",
-  getSupportedFileTypesDisplay: () => "PDF only",
+  getMaxFileSizeDisplay: () => "50 MB",
+  getSupportedFileTypesDisplay: () => "PDF, DOCX, XLSX, PPTX, CSV",
   validateFileForUpload: () => ({ valid: true, errors: [] }),
 }));
 
@@ -78,17 +89,19 @@ describe("UploadDialog", () => {
 
   test("upload button is disabled when no files are selected", () => {
     renderDialog();
-    const uploadButton = screen.getByRole("button", { name: "Upload PDF" });
+    const uploadButton = screen.getByRole("button", {
+      name: "Upload Document",
+    });
     expect(uploadButton).toBeDisabled();
   });
 
-  test("renders dropzone area with PDF instructions", () => {
+  test("renders dropzone area with document instructions", () => {
     renderDialog();
     expect(
-      screen.getByText("Drag & drop a PDF file here, or click to select")
+      screen.getByText("Drag & drop a document here, or click to select")
     ).toBeInTheDocument();
     expect(
-      screen.getByText("PDF files only, one at a time")
+      screen.getByText("PDF, DOCX, XLSX, PPTX, or CSV — one file at a time")
     ).toBeInTheDocument();
   });
 

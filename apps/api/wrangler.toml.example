@@ -36,5 +36,10 @@ bucket_name = "vortex-sign-documents"
 binding = "ANYDOC"
 service = "seal-anydoc-worker"
 
+# Convert DOCX/XLSX/PPTX/CSV to PDF via the dedicated conversion worker.
+[[services]]
+binding = "SEAL_CONVERT_WORKER"
+service = "seal-convert-worker"
+
 [triggers]
 crons = ["0 9 * * *"]

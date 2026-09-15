@@ -145,6 +145,28 @@ importers:
         specifier: ^4.100.0
         version: 4.118.0(@cloudflare/workers-types@4.20260702.1)
 
+  apps/convert-worker:
+    dependencies:
+      '@cloudflare/containers':
+        specifier: ^0.3.7
+        version: 0.3.7
+      hono:
+        specifier: ^4.13.5
+        version: 4.13.7
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^4.20260101.0
+        version: 4.20260702.1
+      '@seal/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      wrangler:
+        specifier: ^4.100.0
+        version: 4.118.0(@cloudflare/workers-types@4.20260702.1)
+
   apps/docs:
     dependencies:
       blume:
@@ -1132,6 +1154,9 @@ packages:
         optional: true
       react:
         optional: true
+
+  '@cloudflare/containers@0.3.7':
+    resolution: {integrity: sha512-DM9dm3FnIBSyiSJ1FLavKwl/lk3oAmTaynCzZQ9pZR0ncRPquSxkxd8Nu2MFILxmDDsPkxKsSNEh9mHHMty4Fw==}
 
   '@cloudflare/kumo@2.13.2':
     resolution: {integrity: sha512-pNJ3fjwIOz4d3T5pxJMS9yc/2fcTuosdak824MxB60xY4yn/vRomHzRACeNuGvpV52ooHdlrEzpMC4uDhvIQVA==}
@@ -11305,6 +11330,8 @@ snapshots:
       '@ai-sdk/react': 4.0.100(react@19.2.8)(zod@4.4.3)
       react: 19.2.8
     optional: true
+
+  '@cloudflare/containers@0.3.7': {}
 
   '@cloudflare/kumo@2.13.2(@date-fns/tz@1.5.0)(@phosphor-icons/react@2.1.10(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.4.3)':
     dependencies:
