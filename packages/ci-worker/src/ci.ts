@@ -35,10 +35,6 @@ const deployCommand = [
   "pnpm install --frozen-lockfile --silent",
   "pnpm exec vp run build",
   "cd apps/api && pnpm exec wrangler d1 migrations apply vortex-sign-global --env production --remote",
-  "printf '%s' \"$BETTER_AUTH_SECRET\" | pnpm exec wrangler secret put BETTER_AUTH_SECRET --env production",
-  "printf '%s' \"$INTERNAL_API_KEY\" | pnpm exec wrangler secret put INTERNAL_API_KEY --env production",
-  "printf '%s' \"$TOKEN_HASH_SECRET\" | pnpm exec wrangler secret put TOKEN_HASH_SECRET --env production",
-  "printf '%s' \"$MCP_SIGNING_KEY\" | pnpm exec wrangler secret put MCP_SIGNING_KEY --env production",
   "pnpm exec wrangler deploy -e production",
   "cd ../anydoc-worker && pnpm exec wrangler deploy",
   "cd ../convert-worker && pnpm exec wrangler deploy",
@@ -67,10 +63,6 @@ type CiBindings = Parameters<
 type CompleteEnv = Env & {
   CF_TOKEN: string;
   NPM_TOKEN: string;
-  BETTER_AUTH_SECRET?: string;
-  INTERNAL_API_KEY?: string;
-  TOKEN_HASH_SECRET?: string;
-  MCP_SIGNING_KEY?: string;
 };
 
 type RunnerOptions = {
@@ -158,13 +150,7 @@ export class CI extends WorkflowEntrypoint<
     await ci.runner({
       name: "deploy",
       command: `sh -c '${deployCommand}'`,
-      secrets: [
-        "NPM_TOKEN",
-        "BETTER_AUTH_SECRET",
-        "INTERNAL_API_KEY",
-        "TOKEN_HASH_SECRET",
-        "MCP_SIGNING_KEY",
-      ],
+      secrets: ["NPM_TOKEN"],
       env: sealEnv,
       cloudflareCredentials: {
         accountId: this.env.CLOUDFLARE_ACCOUNT_ID,
