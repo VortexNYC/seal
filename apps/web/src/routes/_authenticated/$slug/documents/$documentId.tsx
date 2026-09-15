@@ -138,6 +138,10 @@ function DocumentDetailPage() {
     queryFn: () => getAiSettings(slug),
   });
   const aiEnabled = aiSettings?.aiEnabled !== false;
+  const isScannedOrImageDocument =
+    documentData.pdf_type === "Scanned" ||
+    documentData.pdf_type === "ImageBased";
+  const showAiFeatures = aiEnabled && !isScannedOrImageDocument;
 
   const { data: signingSettings } = useQuery({
     queryKey: ["organization", slug, "signing-settings"],
@@ -250,7 +254,9 @@ function DocumentDetailPage() {
     documentAnnotations.annotations !== null
   );
 
-  const aiSuggestions = useAIFieldSuggestions(documentPublicId);
+  const aiSuggestions = useAIFieldSuggestions(documentPublicId, {
+    enabled: showAiFeatures,
+  });
   const [showAiSuggestions, setShowAiSuggestions] = useState(true);
 
   // ── Derived state ───────────────────────────────────────────────────────
@@ -472,7 +478,7 @@ function DocumentDetailPage() {
   const sendButtonLabel = isExpired ? "Re-send Document" : "Send Document";
 
   const aiSuggestionsToggle =
-    canEdit && aiEnabled ? (
+    canEdit && showAiFeatures ? (
       <div key="ai-toggle" className="flex items-center gap-1.5 sm:flex-none">
         {documentData.aiProcessingStatus === "processing" && (
           <span className="text-ai-accent flex items-center gap-1.5 text-xs">
@@ -594,6 +600,12 @@ function DocumentDetailPage() {
                     pdfViewer.setCurrentZoom(state.scale);
                   }}
                 >
+                  {isScannedOrImageDocument && (
+                    <div className="border-kumo-warning/30 bg-kumo-warning-tint/40 text-kumo-warning mb-3 rounded-lg border px-3 py-2 text-xs sm:mb-4">
+                      This is a scanned or image-only PDF. Field detection is
+                      not available — drag fields onto the document manually.
+                    </div>
+                  )}
                   <div className="mb-3 flex flex-col gap-2 sm:mb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                     <div className="text-foreground flex items-center gap-2 font-serif text-base font-medium sm:gap-3 sm:text-lg">
                       <span>Document Preview</span>
@@ -673,7 +685,7 @@ function DocumentDetailPage() {
                       </Document>
 
                       {canEdit &&
-                        aiEnabled &&
+                        showAiFeatures &&
                         showAiSuggestions &&
                         aiSuggestions.suggestions && (
                           <AIFieldOverlays
@@ -687,7 +699,7 @@ function DocumentDetailPage() {
                         )}
 
                       {canEdit &&
-                        aiEnabled &&
+                        showAiFeatures &&
                         documentAnnotations.annotations && (
                           <AIAnnotationOverlays
                             annotations={documentAnnotations.annotations}
@@ -788,7 +800,7 @@ function DocumentDetailPage() {
               merchantPaymentsReady={merchantPaymentsReady}
               openSections={openSections}
               toggleSection={toggleSection}
-              aiEnabled={aiEnabled}
+              aiEnabled={showAiFeatures}
               documentAnnotations={documentAnnotations}
               aiProcessingStatus={documentData.aiProcessingStatus}
               selectedFieldId={fieldPlacement.selectedFieldId}

@@ -194,7 +194,10 @@ function toSuggestionWithFieldTypes(
   };
 }
 
-export function useAIFieldSuggestions(documentPublicId: string): {
+export function useAIFieldSuggestions(
+  documentPublicId: string,
+  options: { enabled?: boolean } = {}
+): {
   suggestions: SuggestionsWithFieldTypes | null;
   selectedIndices: Set<number>;
   isApplying: boolean;
@@ -207,6 +210,7 @@ export function useAIFieldSuggestions(documentPublicId: string): {
   const { data: apiSuggestions } = useQuery({
     queryKey: ["documents", documentPublicId, "ai", "field-suggestions"],
     queryFn: () => getFieldSuggestions(documentPublicId),
+    enabled: options.enabled,
   });
 
   const applyMutation = useMutation({
