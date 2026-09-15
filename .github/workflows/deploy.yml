@@ -1,0 +1,66 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      BETTER_AUTH_URL: ${{ vars.SEAL_BETTER_AUTH_URL }}
+      ALLOWED_ORIGINS: ${{ vars.SEAL_ALLOWED_ORIGINS }}
+      EMAIL_FROM: ${{ vars.SEAL_EMAIL_FROM }}
+      APP_URL: ${{ vars.SEAL_APP_URL }}
+      SEAL_MCP_SIGNING_KEY_ID: ${{ vars.SEAL_MCP_SIGNING_KEY_ID }}
+      VITE_API_URL: ${{ vars.SEAL_BETTER_AUTH_URL }}
+      VITE_BETTER_AUTH_URL: ${{ vars.SEAL_BETTER_AUTH_URL }}
+      VITE_APP_URL: ${{ vars.SEAL_APP_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@313600b80b104eadebb9111787d37a2e83e014ca # v1.17.0
+        with:
+          node-version: "24"
+          cache: true
+          registry-url: https://npm.pkg.github.com
+          scope: "@vortexnyc"
+          run-install: false
+
+      - name: Install
+        run: vp install --frozen-lockfile
+
+      - name: Render API wrangler.toml
+        working-directory: apps/api
+        run: envsubst < wrangler.toml.template > wrangler.toml
+
+      - name: Upload API secrets
+        working-directory: apps/api
+        env:
+          INTERNAL_API_KEY: ${{ secrets.SEAL_INTERNAL_API_KEY }}
+          BETTER_AUTH_SECRET: ${{ secrets.SEAL_BETTER_AUTH_SECRET }}
+          TOKEN_HASH_SECRET: ${{ secrets.SEAL_TOKEN_HASH_SECRET }}
+          SEAL_MCP_SIGNING_KEY: ${{ secrets.SEAL_MCP_SIGNING_KEY }}
+        run: |
+          printf '%s' "$INTERNAL_API_KEY" | pnpm exec wrangler secret put INTERNAL_API_KEY
+          printf '%s' "$BETTER_AUTH_SECRET" | pnpm exec wrangler secret put BETTER_AUTH_SECRET
+          printf '%s' "$TOKEN_HASH_SECRET" | pnpm exec wrangler secret put TOKEN_HASH_SECRET
+          printf '%s' "$SEAL_MCP_SIGNING_KEY" | pnpm exec wrangler secret put SEAL_MCP_SIGNING_KEY
+
+      - name: Deploy
+        run: pnpm run deploy
