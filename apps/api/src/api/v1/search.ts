@@ -53,7 +53,7 @@ app.get("/", async (c) => {
 
   const { q, types: parsedTypes, limit: parsedLimit } = parseResult.data;
 
-  const results = await searchOrganization(c.env, organizationId, {
+  const results = await searchOrganization(c.env, organizationId, mcp.sub, {
     query: q,
     types: parsedTypes,
     limit: parsedLimit,
