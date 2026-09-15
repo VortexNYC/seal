@@ -1009,6 +1009,8 @@ const documentSchema = z.object({
   size: z.number().int().nullable().optional(),
   fileSize: z.number().int().nullable().optional(),
   pageCount: z.number().int().nullable().optional(),
+  pdf_type: z.string().nullable().optional(),
+  ocr_required: z.boolean().nullable().optional(),
   thumbnailDataUrl: z.string().nullable().optional(),
   redirectUrl: z.string().nullable().optional(),
   allowDictateNextSigner: z.boolean(),
