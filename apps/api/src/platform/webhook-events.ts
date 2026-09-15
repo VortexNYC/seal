@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, lte, lt, or, sql } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import { webhookDeliveries, webhooks } from "../global/schema.js";
@@ -177,7 +177,7 @@ export async function processWebhookDeliveries(
   const conditions = [
     eq(webhookDeliveries.status, "pending"),
     eq(webhookDeliveries.organizationId, webhooks.organizationId),
-    lt(webhookDeliveries.nextRetryAt, now),
+    lte(webhookDeliveries.nextRetryAt, now),
     or(
       isNull(webhookDeliveries.lockedAt),
       lt(webhookDeliveries.lockedAt, lockCutoff)
