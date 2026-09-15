@@ -5,11 +5,11 @@
  */
 export const PLAN_LIMITS = {
   free: {
-    maxSeats: 1,
-    templates: false,
+    maxSeats: 3,
+    templates: true,
     branding: false,
-    api: false,
-    webhooks: false,
+    api: true,
+    webhooks: true,
     sso: false,
   },
   pro: {

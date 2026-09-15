@@ -18,9 +18,18 @@ function safeParseMetadata(
 }
 
 export const planLimits = {
-  free: { documentsPerMonth: 10, storageBytes: 100 * 1024 * 1024 },
-  pro: { documentsPerMonth: 500, storageBytes: 10 * 1024 * 1024 * 1024 },
-  enterprise: { documentsPerMonth: 500, storageBytes: 10 * 1024 * 1024 * 1024 },
+  free: {
+    documentsPerMonth: 100,
+    storageBytes: 1024 * 1024 * 1024,
+  },
+  pro: {
+    documentsPerMonth: 10_000,
+    storageBytes: 50 * 1024 * 1024 * 1024,
+  },
+  enterprise: {
+    documentsPerMonth: 100_000,
+    storageBytes: 1024 * 1024 * 1024 * 1024,
+  },
 } as const;
 
 export type Plan = keyof typeof planLimits;
