@@ -12,6 +12,7 @@ import {
   signatures,
   user as userTable,
 } from "../global/schema.js";
+import { writeAuditLog } from "../platform/audit-log.js";
 import {
   sendDocumentCompletedEmail,
   sendDocumentViewedEmail,
@@ -639,6 +640,44 @@ app.openapi(submitRouteDef, async (c) => {
     .set(update)
     .where(eq(recipients.id, recipient.id));
 
+  const auditActor = { type: "user" as const, id: recipient.id };
+  const auditBase = {
+    organizationId: doc.organizationId,
+    actor: auditActor,
+    resourceType: "recipient" as const,
+    resourceId: recipient.id,
+    ipAddress: input.ipAddress,
+    userAgent: input.userAgent,
+  };
+  const recipientMeta = {
+    documentId: doc.id,
+    publicId: doc.publicId,
+    role: recipient.role,
+  };
+
+  if (input.status === "viewed") {
+    await writeAuditLog(db, {
+      ...auditBase,
+      action: "recipient.viewed",
+      metadata: recipientMeta,
+    });
+  } else if (input.status === "signed" || input.status === "approved") {
+    await writeAuditLog(db, {
+      ...auditBase,
+      action: "recipient.signed",
+      metadata: recipientMeta,
+    });
+  } else if (input.status === "declined") {
+    await writeAuditLog(db, {
+      ...auditBase,
+      action: "recipient.declined",
+      metadata: {
+        ...recipientMeta,
+        hasReason: !!input.declineReason,
+      },
+    });
+  }
+
   const [owner] = await db
     .select({ name: userTable.name, email: userTable.email })
     .from(userTable)
@@ -784,6 +823,17 @@ app.openapi(submitRouteDef, async (c) => {
           publicId: doc.publicId,
         }),
         createdAt: nowDate,
+      });
+
+      await writeAuditLog(db, {
+        organizationId: doc.organizationId,
+        actor: auditActor,
+        action: "document.completed",
+        resourceType: "document",
+        resourceId: doc.id,
+        metadata: { publicId: doc.publicId },
+        ipAddress: input.ipAddress,
+        userAgent: input.userAgent,
       });
 
       const emitPromise = emitWebhookEvent(c.env, {
