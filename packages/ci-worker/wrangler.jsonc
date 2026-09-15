@@ -57,14 +57,7 @@
       "storage": "sqlite",
     },
   },
-  "r2_buckets": [
-    {
-      "binding": "BACKUP_BUCKET",
-      "bucket_name": "vortex-sign-ci-backups",
-    },
-  ],
   "vars": {
-    "BACKUP_BUCKET_NAME": "vortex-sign-ci-backups",
     "CLOUDFLARE_ACCOUNT_ID": "31bfc2c14a28e0a39e8b9e3c556a18be",
   },
   "observability": {
