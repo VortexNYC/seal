@@ -1,0 +1,41 @@
+name = "vortex-sign-api"
+main = "src/index.ts"
+compatibility_date = "2026-07-30"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+BETTER_AUTH_URL = "${BETTER_AUTH_URL}"
+ALLOWED_ORIGINS = "${ALLOWED_ORIGINS}"
+EMAIL_FROM = "${EMAIL_FROM}"
+APP_URL = "${APP_URL}"
+SEAL_MCP_SIGNING_KEY_ID = "${SEAL_MCP_SIGNING_KEY_ID}"
+
+# Secrets are uploaded separately via `wrangler secret put` in CI:
+# INTERNAL_API_KEY, BETTER_AUTH_SECRET, TOKEN_HASH_SECRET, SEAL_MCP_SIGNING_KEY
+
+[ai]
+binding = "AI"
+remote = true
+
+[[d1_databases]]
+binding = "D1"
+database_name = "vortex-sign-global"
+migrations_dir = "migrations"
+
+[[send_email]]
+name = "EMAIL"
+
+[[r2_buckets]]
+binding = "DOCUMENTS_BUCKET"
+bucket_name = "vortex-sign-documents"
+
+[[services]]
+binding = "ANYDOC"
+service = "seal-anydoc-worker"
+
+[[services]]
+binding = "SEAL_CONVERT_WORKER"
+service = "seal-convert-worker"
+
+[triggers]
+crons = ["0 9 * * *"]
