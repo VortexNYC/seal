@@ -32,5 +32,9 @@ name = "EMAIL"
 binding = "DOCUMENTS_BUCKET"
 bucket_name = "vortex-sign-documents"
 
+[[services]]
+binding = "ANYDOC"
+service = "seal-anydoc-worker"
+
 [triggers]
 crons = ["0 9 * * *"]

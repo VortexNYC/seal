@@ -16,6 +16,7 @@ import { z } from "zod";
 
 import { createD1 } from "../../global/db.js";
 import { documents, recipients } from "../../global/schema.js";
+import { parseDocumentFromStorage } from "../../platform/anydoc.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import { createDownloadToken, verifyDownloadToken } from "./download-token.js";
 
@@ -379,11 +380,12 @@ app.post("/", async (c) => {
     deadline,
   } = parsed.data;
 
-  const head = await c.env.DOCUMENTS_BUCKET.head(storage_id);
-  if (!head) {
+  const object = await c.env.DOCUMENTS_BUCKET.get(storage_id);
+  if (!object) {
     return c.json({ error: "storage_id_not_found" }, 400);
   }
 
+  const parsedDocument = await parseDocumentFromStorage(c.env, storage_id);
   const db = createD1(c.env.D1);
   const docId = crypto.randomUUID();
   const inserted = await db
@@ -401,10 +403,10 @@ app.post("/", async (c) => {
       storageKey: storage_id,
       contentType:
         file_type ??
-        head.httpMetadata?.contentType ??
+        object.httpMetadata?.contentType ??
         "application/octet-stream",
-      size: file_size ?? head.size,
-      pageCount: page_count,
+      size: file_size ?? object.size,
+      pageCount: page_count ?? parsedDocument?.pageCount,
       deadline: parseDeadline(deadline),
     })
     .returning({
