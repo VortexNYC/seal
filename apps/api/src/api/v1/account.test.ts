@@ -11,8 +11,8 @@ async function configureSigningKey() {
   const privateJwk = await exportJWK(privateKey);
   privateJwk.alg = "ES256";
   privateJwk.kid = "test-key-id";
-  env.SEAL_MCP_SIGNING_KEY = JSON.stringify(privateJwk);
-  env.SEAL_MCP_SIGNING_KEY_ID = "test-key-id";
+  env.MCP_SIGNING_KEY = JSON.stringify(privateJwk);
+  env.MCP_SIGNING_KEY_ID = "test-key-id";
   return privateJwk;
 }
 
@@ -47,8 +47,8 @@ async function signAccessToken(
 
 describe("GET /api/v1/account", () => {
   beforeEach(async () => {
-    env.SEAL_MCP_SIGNING_KEY = undefined;
-    env.SEAL_MCP_SIGNING_KEY_ID = undefined;
+    env.MCP_SIGNING_KEY = undefined;
+    env.MCP_SIGNING_KEY_ID = undefined;
 
     const db = createD1(env.D1);
     await db.delete(documents);
