@@ -1,0 +1,24 @@
+{
+  "name": "@seal/anydoc-worker",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && wrangler deploy --dry-run"
+  },
+  "dependencies": {
+    "@firecrawl/anydoc-wasm": "^0.2.4",
+    "@firecrawl/pdf-inspector-wasm": "1.17.0",
+    "hono": "^4.13.5",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260101.0",
+    "@seal/tsconfig": "workspace:*",
+    "typescript": "catalog:",
+    "wrangler": "^4.100.0"
+  }
+}
