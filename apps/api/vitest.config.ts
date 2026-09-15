@@ -26,6 +26,35 @@ async function handle(request) {
 }
 `;
 
+const ANYDOC_MOCK = `
+addEventListener("fetch", (event) => {
+  event.respondWith(handle(event.request));
+});
+
+async function handle(request) {
+  const url = new URL(request.url);
+  if (request.method === "POST" && url.pathname === "/parse") {
+    return new Response(JSON.stringify({
+      format: "pdf",
+      markdown: "test",
+      title: null,
+      pageCount: 1,
+      pdfType: null,
+      pagesNeedingOcr: [],
+      ocrReasonsByPage: [],
+      layout: null,
+      hasEncodingIssues: null,
+      confidence: null,
+      processingTimeMs: 0,
+      fieldCandidates: []
+    }), {
+      headers: { "content-type": "application/json" },
+    });
+  }
+  return new Response("Not Found", { status: 404 });
+}
+`;
+
 export default defineConfig({
   plugins: [
     cloudflareTest({
@@ -47,6 +76,10 @@ export default defineConfig({
           {
             name: "seal-convert-worker",
             script: CONVERT_WORKER_MOCK,
+          },
+          {
+            name: "seal-anydoc-worker",
+            script: ANYDOC_MOCK,
           },
         ],
       },
