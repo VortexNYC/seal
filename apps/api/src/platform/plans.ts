@@ -19,15 +19,15 @@ function safeParseMetadata(
 
 export const planLimits = {
   free: {
-    documentsPerMonth: 100,
-    storageBytes: 1024 * 1024 * 1024,
+    documentsPerMonth: 1_000_000,
+    storageBytes: 10 * 1024 * 1024 * 1024,
   },
   pro: {
-    documentsPerMonth: 10_000,
-    storageBytes: 50 * 1024 * 1024 * 1024,
+    documentsPerMonth: 10_000_000,
+    storageBytes: 100 * 1024 * 1024 * 1024,
   },
   enterprise: {
-    documentsPerMonth: 100_000,
+    documentsPerMonth: 100_000_000,
     storageBytes: 1024 * 1024 * 1024 * 1024,
   },
 } as const;
