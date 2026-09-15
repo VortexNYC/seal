@@ -1,30 +1,38 @@
-export interface ImportItem {
-  title: string;
-  fileName: string;
-  contentType?: string;
-  size?: number;
-  storageKey?: string;
-  metadata?: Record<string, unknown>;
-}
+import { z } from "zod";
 
-export interface ImportBatch {
+const importFileSchema = z.object({
+  fileName: z.string(),
+  title: z.string().optional(),
+  contentType: z.string().default("application/pdf"),
+  size: z.number().optional(),
+  storageKey: z.string().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+const importPayloadSchema = z.object({
+  files: z.array(importFileSchema).default([]),
+  credentials: z.record(z.string(), z.string()).optional(),
+  options: z.record(z.string(), z.unknown()).optional(),
+});
+
+const importItemSchema = z.object({
+  title: z.string(),
+  fileName: z.string(),
+  contentType: z.string(),
+  size: z.number().optional(),
+  storageKey: z.string().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+export type ImportFile = z.infer<typeof importFileSchema>;
+export type ImportItem = z.infer<typeof importItemSchema>;
+export type ImportBatch = {
   items: ImportItem[];
   processedCount: number;
   totalCount: number;
   nextCursor: string | null;
-}
-
-export interface ImportPayload {
-  files?: Array<{
-    fileName: string;
-    contentType?: string;
-    size?: number;
-    storageKey?: string;
-    metadata?: Record<string, unknown>;
-  }>;
-  credentials?: Record<string, string>;
-  options?: Record<string, unknown>;
-}
+};
+export type ImportPayload = z.infer<typeof importPayloadSchema>;
 
 const BATCH_SIZE = 2;
 
@@ -33,36 +41,29 @@ export function getSupportedAdapters(): string[] {
 }
 
 function parsePayload(payload: unknown): ImportPayload {
-  if (typeof payload !== "string" && typeof payload !== "object") {
-    throw new Error("import payload must be an object or JSON string");
-  }
-
   const parsed: unknown =
     typeof payload === "string" ? JSON.parse(payload) : payload;
 
-  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error("import payload must be an object");
+  const result = importPayloadSchema.safeParse(parsed);
+  if (!result.success) {
+    throw new Error(`invalid import payload: ${result.error.message}`);
   }
-
-  return parsed as ImportPayload;
+  return result.data;
 }
 
 function pdfAdapter(payload: unknown, cursor: string | null): ImportBatch {
-  const { files = [] } = parsePayload(payload);
-  if (!Array.isArray(files)) {
-    throw new Error("pdf adapter requires payload.files to be an array");
-  }
+  const { files } = parsePayload(payload);
 
   const offset = cursor ? Number(cursor) : 0;
-  if (Number.isNaN(offset) || offset < 0) {
+  if (Number.isNaN(offset) || offset < 0 || !Number.isInteger(offset)) {
     throw new Error("invalid resume cursor");
   }
 
   const batch = files.slice(offset, offset + BATCH_SIZE);
   const items: ImportItem[] = batch.map((file) => ({
-    title: file.fileName.replace(/\.pdf$/i, ""),
+    title: file.title ?? file.fileName.replace(/\.pdf$/i, ""),
     fileName: file.fileName,
-    contentType: file.contentType ?? "application/pdf",
+    contentType: file.contentType,
     size: file.size,
     storageKey: file.storageKey,
     metadata: file.metadata,

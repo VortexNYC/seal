@@ -177,7 +177,7 @@ describe("POST /api/v1/imports", () => {
     );
 
     const response = await createImportJob(token, {
-      adapter: "unknown" as "pdf",
+      adapter: "unknown",
       payload: {},
     });
 
