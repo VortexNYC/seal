@@ -1,9 +1,13 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
+  "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "seal-mcp",
   "main": "src/index.ts",
-  "compatibility_date": "2026-05-24",
+  "compatibility_date": "2026-08-06",
   "compatibility_flags": ["nodejs_compat"],
+  "minify": true,
+  "upload_source_maps": true,
+  "workers_dev": false,
+  "preview_urls": true,
   "vars": {
     "SEAL_API_BASE_URL": "https://api.seal.nyc/api/v1",
     "SEAL_AUTH_SERVER_ORIGIN": "https://api.seal.nyc",
@@ -13,5 +17,7 @@
   "routes": [{ "pattern": "mcp.seal.nyc", "custom_domain": true }],
   "observability": {
     "enabled": true,
+    "logs": { "enabled": true },
+    "traces": { "enabled": true, "head_sampling_rate": 0.1 },
   },
 }

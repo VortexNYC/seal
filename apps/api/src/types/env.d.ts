@@ -11,7 +11,6 @@ declare interface CloudflareBindings {
   D1: D1Database;
   DOCUMENTS_BUCKET: R2Bucket;
   EMAIL: SendEmail;
-  AI: Ai;
   SEAL_CONVERT_WORKER?: Fetcher;
   ANYDOC: Fetcher;
   BETTER_AUTH_SECRET: string;
