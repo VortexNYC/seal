@@ -21,11 +21,6 @@ jobs:
     env:
       NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      BETTER_AUTH_URL: ${{ vars.SEAL_BETTER_AUTH_URL }}
-      ALLOWED_ORIGINS: ${{ vars.SEAL_ALLOWED_ORIGINS }}
-      EMAIL_FROM: ${{ vars.SEAL_EMAIL_FROM }}
-      APP_URL: ${{ vars.SEAL_APP_URL }}
-      SEAL_MCP_SIGNING_KEY_ID: ${{ vars.SEAL_MCP_SIGNING_KEY_ID }}
       VITE_API_URL: ${{ vars.SEAL_BETTER_AUTH_URL }}
       VITE_BETTER_AUTH_URL: ${{ vars.SEAL_BETTER_AUTH_URL }}
       VITE_APP_URL: ${{ vars.SEAL_APP_URL }}
@@ -45,10 +40,6 @@ jobs:
       - name: Install
         run: vp install --frozen-lockfile
 
-      - name: Render API wrangler.toml
-        working-directory: apps/api
-        run: envsubst < wrangler.toml.template > wrangler.toml
-
       - name: Upload API secrets
         working-directory: apps/api
         env:
@@ -57,10 +48,10 @@ jobs:
           TOKEN_HASH_SECRET: ${{ secrets.SEAL_TOKEN_HASH_SECRET }}
           SEAL_MCP_SIGNING_KEY: ${{ secrets.SEAL_MCP_SIGNING_KEY }}
         run: |
-          printf '%s' "$INTERNAL_API_KEY" | pnpm exec wrangler secret put INTERNAL_API_KEY
-          printf '%s' "$BETTER_AUTH_SECRET" | pnpm exec wrangler secret put BETTER_AUTH_SECRET
-          printf '%s' "$TOKEN_HASH_SECRET" | pnpm exec wrangler secret put TOKEN_HASH_SECRET
-          printf '%s' "$SEAL_MCP_SIGNING_KEY" | pnpm exec wrangler secret put SEAL_MCP_SIGNING_KEY
+          printf '%s' "$INTERNAL_API_KEY" | pnpm exec wrangler secret put INTERNAL_API_KEY --env production
+          printf '%s' "$BETTER_AUTH_SECRET" | pnpm exec wrangler secret put BETTER_AUTH_SECRET --env production
+          printf '%s' "$TOKEN_HASH_SECRET" | pnpm exec wrangler secret put TOKEN_HASH_SECRET --env production
+          printf '%s' "$SEAL_MCP_SIGNING_KEY" | pnpm exec wrangler secret put SEAL_MCP_SIGNING_KEY --env production
 
       - name: Deploy
         run: pnpm run deploy

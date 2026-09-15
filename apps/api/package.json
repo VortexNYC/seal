@@ -5,10 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
+    "deploy": "wrangler deploy -e production",
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "pretest": "[ -f wrangler.toml ] || cp wrangler.toml.example wrangler.toml",
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate"
