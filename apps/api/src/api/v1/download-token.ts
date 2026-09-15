@@ -50,7 +50,7 @@ export async function createDownloadToken(
 
   const { issuer, audience } = getIssuerAndAudience(env);
   const now = Math.floor(Date.now() / 1000);
-  const kid = env.SEAL_MCP_SIGNING_KEY_ID ?? "seal-mcp-key-1";
+  const kid = env.MCP_SIGNING_KEY_ID ?? "mcp-key-1";
 
   return new SignJWT({
     sub: userId,

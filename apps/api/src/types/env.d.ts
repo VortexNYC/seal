@@ -17,8 +17,8 @@ declare interface CloudflareBindings {
   BETTER_AUTH_SECRET: string;
   BETTER_AUTH_URL: string;
   TOKEN_HASH_SECRET: string;
-  SEAL_MCP_SIGNING_KEY?: string;
-  SEAL_MCP_SIGNING_KEY_ID?: string;
+  MCP_SIGNING_KEY?: string;
+  MCP_SIGNING_KEY_ID?: string;
   ALLOWED_ORIGINS: string;
   EMAIL_FROM: string;
   APP_URL: string;

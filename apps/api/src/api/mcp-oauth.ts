@@ -84,18 +84,18 @@ function oauthError(status: number, error: string, description?: string) {
 }
 
 async function loadSigningJwk(env: CloudflareBindings): Promise<Jwk | null> {
-  const raw = env.SEAL_MCP_SIGNING_KEY;
+  const raw = env.MCP_SIGNING_KEY;
   if (!raw) return null;
   return safeParseJwk(raw);
 }
 
 function getKeyId(jwk: Jwk, env: CloudflareBindings): string {
   const fromJwk = typeof jwk.kid === "string" ? jwk.kid : undefined;
-  return fromJwk ?? env.SEAL_MCP_SIGNING_KEY_ID ?? "seal-mcp-key-1";
+  return fromJwk ?? env.MCP_SIGNING_KEY_ID ?? "mcp-key-1";
 }
 
 async function publicJwkFromPrivate(jwk: Jwk): Promise<Jwk | null> {
-  const kid = typeof jwk.kid === "string" ? jwk.kid : "seal-mcp-key-1";
+  const kid = typeof jwk.kid === "string" ? jwk.kid : "mcp-key-1";
   const kty = typeof jwk.kty === "string" ? jwk.kty : undefined;
   if (!kty) return null;
 
@@ -140,12 +140,12 @@ export async function importMcpSigningKey(
 }
 
 export function getMcpKeyId(env: CloudflareBindings): string {
-  const jwk = env.SEAL_MCP_SIGNING_KEY;
-  if (!jwk) return env.SEAL_MCP_SIGNING_KEY_ID ?? "seal-mcp-key-1";
+  const jwk = env.MCP_SIGNING_KEY;
+  if (!jwk) return env.MCP_SIGNING_KEY_ID ?? "mcp-key-1";
   const parsed = safeParseJwk(jwk);
   return parsed
     ? getKeyId(parsed, env)
-    : (env.SEAL_MCP_SIGNING_KEY_ID ?? "seal-mcp-key-1");
+    : (env.MCP_SIGNING_KEY_ID ?? "mcp-key-1");
 }
 
 export async function getMcpPublicKey(
