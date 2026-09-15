@@ -418,8 +418,8 @@ importers:
   packages/ci-worker:
     dependencies:
       '@cloudflare/ci':
-        specifier: 0.1.0
-        version: 0.1.0
+        specifier: 0.2.0
+        version: 0.2.0
     devDependencies:
       '@seal/tsconfig':
         specifier: workspace:*
@@ -1168,8 +1168,8 @@ packages:
       react:
         optional: true
 
-  '@cloudflare/ci@0.1.0':
-    resolution: {integrity: sha512-ECQKb+1k9z7Vaz0BhsI3Z6x8UzDFUsD/KuGjixDIrZZBE8ubc15UmgyDFU+ZxrvhgsmhGluBIpWnTpct7tepsw==}
+  '@cloudflare/ci@0.2.0':
+    resolution: {integrity: sha512-uAr54YhZy4sYHaJM2fYMPg2BtmS2btemBMtED59XDdYQhw08lGr29IS+njNKSWnrBGpbJuQGRWc/jWWiMgg3vg==}
 
   '@cloudflare/containers@0.3.7':
     resolution: {integrity: sha512-DM9dm3FnIBSyiSJ1FLavKwl/lk3oAmTaynCzZQ9pZR0ncRPquSxkxd8Nu2MFILxmDDsPkxKsSNEh9mHHMty4Fw==}
@@ -11420,7 +11420,7 @@ snapshots:
       react: 19.2.8
     optional: true
 
-  '@cloudflare/ci@0.1.0':
+  '@cloudflare/ci@0.2.0':
     dependencies:
       '@cloudflare/sandbox': 0.12.1
       zod: 4.6.4

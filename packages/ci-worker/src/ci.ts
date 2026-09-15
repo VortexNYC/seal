@@ -22,13 +22,9 @@ const sealEnv = {
   VITE_APP_URL: "https://app.seal.nyc",
 };
 
-// Run the proof in a fresh, writable /tmp copy of /workspace because the
-// Cloudflare Sandbox checkout creates /workspace as root and the command runs
-// as uid 1000, which cannot write to the root-owned workspace.
-const proofCommand = `sh -c 'tmp=$(mktemp -d) && cp -a /workspace/. "$tmp/" && cd "$tmp" && ${npmrcCommand} && pnpm install --frozen-lockfile && pnpm exec vp run build && pnpm exec vp check && pnpm exec vp run typecheck && pnpm exec vp run test'`;
+const proofCommand = `sh -c '${npmrcCommand} && pnpm install --frozen-lockfile && pnpm exec vp run build && pnpm exec vp check && pnpm exec vp run typecheck && pnpm exec vp run test'`;
 
 const deployCommand = [
-  'tmp=$(mktemp -d) && cp -a /workspace/. "$tmp/" && cd "$tmp"',
   npmrcCommand,
   "pnpm install --frozen-lockfile --silent",
   "pnpm exec vp run build",
