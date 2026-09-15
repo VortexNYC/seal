@@ -4,6 +4,11 @@ import { z } from "zod";
 
 import { createD1 } from "../../global/db.js";
 import { organization } from "../../global/schema.js";
+import {
+  getAuditActor,
+  getAuditRequestMeta,
+  writeAuditLog,
+} from "../../platform/audit-log.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 
 const app = new OpenAPIHono<{
@@ -226,6 +231,21 @@ app.patch("/", async (c) => {
     .update(organization)
     .set({ metadata: JSON.stringify(updatedMetadata) })
     .where(eq(organization.id, organizationId));
+
+  const actor = getAuditActor({ mcp: c.get("mcp") });
+  if (actor) {
+    const categories = (Object.keys(parsed.data) as Array<keyof typeof parsed.data>)
+      .filter((key) => parsed.data[key] !== undefined);
+    await writeAuditLog(db, {
+      organizationId,
+      actor,
+      action: "settings.updated",
+      resourceType: "organization",
+      resourceId: organizationId,
+      metadata: { categories },
+      ...getAuditRequestMeta(c),
+    });
+  }
 
   return c.json({ success: true });
 });

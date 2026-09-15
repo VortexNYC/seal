@@ -5,6 +5,11 @@ import { z } from "zod";
 
 import { createD1 } from "../../global/db.js";
 import { documents, recipients } from "../../global/schema.js";
+import {
+  getAuditActor,
+  getAuditRequestMeta,
+  writeAuditLog,
+} from "../../platform/audit-log.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 
 const app = new OpenAPIHono<{
@@ -283,6 +288,19 @@ app.post("/", async (c) => {
     status: "pending",
   });
 
+  const actor = getAuditActor({ mcp: c.get("mcp") });
+  if (actor) {
+    await writeAuditLog(db, {
+      organizationId,
+      actor,
+      action: "recipient.added",
+      resourceType: "recipient",
+      resourceId: recipientId,
+      metadata: { documentId, role },
+      ...getAuditRequestMeta(c),
+    });
+  }
+
   const rows = await db
     .select({
       id: recipients.id,
@@ -407,6 +425,19 @@ async function handleUpdateRecipient(
     return c.json({ error: "not_found" }, 404);
   }
 
+  const actor = getAuditActor({ mcp: c.get("mcp") });
+  if (actor) {
+    await writeAuditLog(db, {
+      organizationId,
+      actor,
+      action: "recipient.updated",
+      resourceType: "recipient",
+      resourceId: recipientId,
+      metadata: { documentId, fields: Object.keys(updateValues) },
+      ...getAuditRequestMeta(c),
+    });
+  }
+
   return c.json(toApiRecipient(row));
 }
 
@@ -472,6 +503,19 @@ async function handleDeleteRecipient(
     .where(
       and(eq(recipients.id, recipientId), eq(recipients.documentId, documentId))
     );
+
+  const actor = getAuditActor({ mcp: c.get("mcp") });
+  if (actor) {
+    await writeAuditLog(db, {
+      organizationId,
+      actor,
+      action: "recipient.removed",
+      resourceType: "recipient",
+      resourceId: recipientId,
+      metadata: { documentId },
+      ...getAuditRequestMeta(c),
+    });
+  }
 
   return c.json({ success: true });
 }
@@ -542,6 +586,19 @@ async function handleRemindRecipient(
 
   if (row.status !== "pending") {
     return c.json({ error: "recipient_not_pending" }, 400);
+  }
+
+  const actor = getAuditActor({ mcp: c.get("mcp") });
+  if (actor) {
+    await writeAuditLog(db, {
+      organizationId,
+      actor,
+      action: "recipient.reminded",
+      resourceType: "recipient",
+      resourceId: recipientId,
+      metadata: { documentId },
+      ...getAuditRequestMeta(c),
+    });
   }
 
   return c.json({ success: true });

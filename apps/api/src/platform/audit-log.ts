@@ -36,6 +36,15 @@ export async function writeAuditLog(
   });
 }
 
+export function getAuditRequestMeta(c: {
+  req: { header(name: string): string | undefined };
+}): { ipAddress: string | undefined; userAgent: string | undefined } {
+  return {
+    ipAddress: c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
+    userAgent: c.req.header("user-agent"),
+  };
+}
+
 export function getAuditActor(values: {
   apiToken?: { id: string } | null;
   mcp?: { kind?: "mcp" | "api"; clientId: string; jti: string } | null;

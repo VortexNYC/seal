@@ -20,7 +20,11 @@ import {
   fieldCandidateSchema,
   parseDocumentFromStorage,
 } from "../../platform/anydoc.js";
-import { getAuditActor, writeAuditLog } from "../../platform/audit-log.js";
+import {
+  getAuditActor,
+  getAuditRequestMeta,
+  writeAuditLog,
+} from "../../platform/audit-log.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import { emitWebhookEvent } from "../../platform/webhook-events.js";
 import { createDownloadToken, verifyDownloadToken } from "./download-token.js";
@@ -559,9 +563,7 @@ app.post("/", async (c) => {
       resourceType: "document",
       resourceId: docId,
       metadata: { publicId: row.publicId },
-      ipAddress:
-        c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
-      userAgent: c.req.header("user-agent"),
+      ...getAuditRequestMeta(c),
     });
   }
 
@@ -656,6 +658,22 @@ async function handleUpdateDocument(
     return c.json({ error: "not_found" }, 404);
   }
 
+  const actor = getAuditActor({ mcp: c.get("mcp") });
+  if (actor) {
+    await writeAuditLog(db, {
+      organizationId,
+      actor,
+      action: "document.update",
+      resourceType: "document",
+      resourceId: id,
+      metadata: {
+        publicId: row.publicId,
+        fields: Object.keys(updateValues),
+      },
+      ...getAuditRequestMeta(c),
+    });
+  }
+
   const counts = await recipientCountsForDocument(db, row.id);
   return c.json(toApiDocument(row, counts));
 }
@@ -709,7 +727,7 @@ async function handleDeleteDocument(
 
   const db = createD1(c.env.D1);
   const rows = await db
-    .select({ status: documents.status })
+    .select({ id: documents.id, publicId: documents.publicId, status: documents.status })
     .from(documents)
     .where(
       and(
@@ -734,6 +752,19 @@ async function handleDeleteDocument(
     .where(
       and(eq(documents.id, id), eq(documents.organizationId, organizationId))
     );
+
+  const actor = getAuditActor({ mcp: c.get("mcp") });
+  if (actor) {
+    await writeAuditLog(db, {
+      organizationId,
+      actor,
+      action: "document.delete",
+      resourceType: "document",
+      resourceId: row.id,
+      metadata: { publicId: row.publicId, previousStatus: row.status },
+      ...getAuditRequestMeta(c),
+    });
+  }
 
   return c.json({ success: true });
 }
@@ -804,6 +835,22 @@ async function handleSendDocument(
       and(eq(documents.id, id), eq(documents.organizationId, organizationId))
     );
 
+  const actor = getAuditActor({ mcp: c.get("mcp") });
+  if (actor) {
+    await writeAuditLog(db, {
+      organizationId,
+      actor,
+      action: "document.sent",
+      resourceType: "document",
+      resourceId: row.id,
+      metadata: {
+        publicId: row.publicId,
+        recipientCount: recipientRows.length,
+      },
+      ...getAuditRequestMeta(c),
+    });
+  }
+
   const emitPromise = emitWebhookEvent(c.env, {
     organizationId,
     eventType: "document.sent",
@@ -854,7 +901,7 @@ async function handleVoidDocument(
 
   const db = createD1(c.env.D1);
   const rows = await db
-    .select({ status: documents.status })
+    .select({ id: documents.id, publicId: documents.publicId, status: documents.status })
     .from(documents)
     .where(
       and(
@@ -879,6 +926,19 @@ async function handleVoidDocument(
     .where(
       and(eq(documents.id, id), eq(documents.organizationId, organizationId))
     );
+
+  const actor = getAuditActor({ mcp: c.get("mcp") });
+  if (actor) {
+    await writeAuditLog(db, {
+      organizationId,
+      actor,
+      action: "document.voided",
+      resourceType: "document",
+      resourceId: row.id,
+      metadata: { publicId: row.publicId, previousStatus: row.status },
+      ...getAuditRequestMeta(c),
+    });
+  }
 
   return c.json({ success: true });
 }
@@ -949,6 +1009,23 @@ app.put("/access", async (c) => {
   }
 
   const db = createD1(c.env.D1);
+  const rows = await db
+    .select({ id: documents.id, publicId: documents.publicId, sharingMode: documents.sharingMode })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.id, id),
+        eq(documents.organizationId, organizationId),
+        ne(documents.documentStatus, "deleted")
+      )
+    )
+    .limit(1);
+
+  const row = rows[0];
+  if (!row) {
+    return c.json({ error: "not_found" }, 404);
+  }
+
   await db
     .update(documents)
     .set({ sharingMode: parsed.data.sharing_mode })
@@ -959,6 +1036,23 @@ app.put("/access", async (c) => {
         ne(documents.documentStatus, "deleted")
       )
     );
+
+  const actor = getAuditActor({ mcp: c.get("mcp") });
+  if (actor) {
+    await writeAuditLog(db, {
+      organizationId,
+      actor,
+      action: "document.sharing_updated",
+      resourceType: "document",
+      resourceId: row.id,
+      metadata: {
+        publicId: row.publicId,
+        previous: row.sharingMode ?? "private",
+        sharingMode: parsed.data.sharing_mode,
+      },
+      ...getAuditRequestMeta(c),
+    });
+  }
 
   return c.json({ success: true });
 });
@@ -988,10 +1082,12 @@ app.post("/bulk-void", async (c) => {
   const { document_ids } = parsed.data;
   const db = createD1(c.env.D1);
 
+  const actor = getAuditActor({ mcp: c.get("mcp") });
+
   const results = await Promise.all(
     document_ids.map(async (id) => {
       const rows = await db
-        .select({ status: documents.status })
+        .select({ id: documents.id, publicId: documents.publicId, status: documents.status })
         .from(documents)
         .where(
           and(
@@ -1023,6 +1119,18 @@ app.post("/bulk-void", async (c) => {
             eq(documents.organizationId, organizationId)
           )
         );
+
+      if (actor) {
+        await writeAuditLog(db, {
+          organizationId,
+          actor,
+          action: "document.voided",
+          resourceType: "document",
+          resourceId: row.id,
+          metadata: { publicId: row.publicId, previousStatus: row.status },
+          ...getAuditRequestMeta(c),
+        });
+      }
 
       return { id, success: true };
     })
@@ -1062,10 +1170,12 @@ app.post("/bulk-send", async (c) => {
   const { document_ids } = parsed.data;
   const db = createD1(c.env.D1);
 
+  const actor = getAuditActor({ mcp: c.get("mcp") });
+
   const results = await Promise.all(
     document_ids.map(async (id) => {
       const rows = await db
-        .select({ status: documents.status })
+        .select({ id: documents.id, publicId: documents.publicId, status: documents.status })
         .from(documents)
         .where(
           and(
@@ -1105,6 +1215,21 @@ app.post("/bulk-send", async (c) => {
             eq(documents.organizationId, organizationId)
           )
         );
+
+      if (actor) {
+        await writeAuditLog(db, {
+          organizationId,
+          actor,
+          action: "document.sent",
+          resourceType: "document",
+          resourceId: row.id,
+          metadata: {
+            publicId: row.publicId,
+            recipientCount: recipientRows.length,
+          },
+          ...getAuditRequestMeta(c),
+        });
+      }
 
       return { id, success: true };
     })

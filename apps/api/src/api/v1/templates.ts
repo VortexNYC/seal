@@ -20,6 +20,11 @@ import {
   templateFields,
   templates,
 } from "../../global/schema.js";
+import {
+  getAuditActor,
+  getAuditRequestMeta,
+  writeAuditLog,
+} from "../../platform/audit-log.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 
 const app = new OpenAPIHono<{
@@ -437,6 +442,19 @@ app.post("/", async (c) => {
     status: "active",
   });
 
+  const actor = getAuditActor({ mcp: c.get("mcp") });
+  if (actor) {
+    await writeAuditLog(db, {
+      organizationId,
+      actor,
+      action: "template.create",
+      resourceType: "template",
+      resourceId: templateId,
+      metadata: { sourceDocumentId: document_id },
+      ...getAuditRequestMeta(c),
+    });
+  }
+
   const sourceFields = await db
     .select({
       fieldType: signatureFields.fieldType,
@@ -521,6 +539,19 @@ app.put("/update", async (c) => {
       )
     );
 
+  const actor = getAuditActor({ mcp: c.get("mcp") });
+  if (actor) {
+    await writeAuditLog(db, {
+      organizationId,
+      actor,
+      action: "template.update",
+      resourceType: "template",
+      resourceId: id,
+      metadata: { fields: Object.keys(updateValues) },
+      ...getAuditRequestMeta(c),
+    });
+  }
+
   return c.json({ success: true });
 });
 
@@ -547,6 +578,19 @@ app.delete("/delete", async (c) => {
     .where(
       and(eq(templates.id, id), eq(templates.organizationId, organizationId))
     );
+
+  const actor = getAuditActor({ mcp: c.get("mcp") });
+  if (actor) {
+    await writeAuditLog(db, {
+      organizationId,
+      actor,
+      action: "template.delete",
+      resourceType: "template",
+      resourceId: id,
+      metadata: {},
+      ...getAuditRequestMeta(c),
+    });
+  }
 
   return c.json({ success: true });
 });
@@ -671,6 +715,19 @@ app.post("/use", async (c) => {
     .update(templates)
     .set({ useCount: sql`${templates.useCount} + 1` })
     .where(eq(templates.id, id));
+
+  const actor = getAuditActor({ mcp: c.get("mcp") });
+  if (actor) {
+    await writeAuditLog(db, {
+      organizationId,
+      actor,
+      action: "template.use",
+      resourceType: "template",
+      resourceId: id,
+      metadata: { documentId },
+      ...getAuditRequestMeta(c),
+    });
+  }
 
   return c.json({ id: documentId });
 });
