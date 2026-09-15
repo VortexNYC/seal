@@ -12,16 +12,19 @@ const DEPLOY_STEP_TIMEOUT_MS = 30 * 60 * 1000;
 const DEPLOY_COMMAND_TIMEOUT_MS = 29 * 60 * 1000 + 50 * 1000;
 
 const npmrcCommand =
-  'printf "@%s:registry=https://npm.pkg.github.com\\n" vortexnyc > ~/.npmrc && printf "//npm.pkg.github.com/:_authToken=%s\\n" "$NPM_TOKEN" >> ~/.npmrc';
+  'printf "@%s:registry=https://npm.pkg.github.com\\n" vortexnyc > "$NPM_CONFIG_USERCONFIG" && printf "//npm.pkg.github.com/:_authToken=%s\\n" "$NPM_TOKEN" >> "$NPM_CONFIG_USERCONFIG"';
 
 const sealEnv = {
   HOME: "/tmp",
+  NPM_CONFIG_USERCONFIG: "/tmp/.npmrc",
   VITE_API_URL: "https://api.seal.nyc",
   VITE_BETTER_AUTH_URL: "https://api.seal.nyc",
   VITE_APP_URL: "https://app.seal.nyc",
 };
 
-const proofCommand = `sh -c '${npmrcCommand} && pnpm install --frozen-lockfile && pnpm exec vp run build && pnpm exec vp check && pnpm exec vp run typecheck && pnpm exec vp run test'`;
+// Run the proof in a writable /tmp copy of /workspace because the Cloudflare
+// Sandbox mounts /workspace read-only for the command process.
+const proofCommand = `sh -c 'rm -rf /tmp/ws && cp -r /workspace /tmp/ws && cd /tmp/ws && ${npmrcCommand} && pnpm install --frozen-lockfile && pnpm exec vp run build && pnpm exec vp check && pnpm exec vp run typecheck && pnpm exec vp run test'`;
 
 const deployCommand = [
   npmrcCommand,
