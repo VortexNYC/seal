@@ -13,6 +13,7 @@ declare interface CloudflareBindings {
   EMAIL: SendEmail;
   AI: Ai;
   SEAL_CONVERT_WORKER?: Fetcher;
+  ANYDOC: Fetcher;
   BETTER_AUTH_SECRET: string;
   BETTER_AUTH_URL: string;
   TOKEN_HASH_SECRET: string;

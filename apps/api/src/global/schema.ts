@@ -321,6 +321,15 @@ export const documents = sqliteTable(
     contentType: text("content_type"),
     size: integer("size"),
     pageCount: integer("page_count"),
+    parsedText: text("parsed_text"),
+    parsedTitle: text("parsed_title"),
+    parsedFormat: text("parsed_format"),
+    pdfType: text("pdf_type"),
+    ocrRequired: integer("ocr_required", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    pagesNeedingOcr: text("pages_needing_ocr"),
+    fieldCandidates: text("field_candidates"),
     thumbnailDataUrl: text("thumbnail_data_url"),
     qrToken: text("qr_token").unique(),
     documentHash: text("document_hash"),

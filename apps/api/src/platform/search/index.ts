@@ -41,7 +41,7 @@ export async function searchOrganization(
       .select({
         publicId: documents.publicId,
         name: documents.name,
-        description: documents.description,
+        parsedText: documents.parsedText,
       })
       .from(documents)
       .where(eq(documents.organizationId, organizationId));
@@ -51,7 +51,7 @@ export async function searchOrganization(
         publicId: row.publicId,
         type: "document",
         title: row.name,
-        body: row.description ?? "",
+        body: row.parsedText ?? "",
       });
     }
   }
