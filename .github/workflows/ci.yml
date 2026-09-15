@@ -18,7 +18,7 @@ permissions:
 jobs:
   check:
     name: quality
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     timeout-minutes: 20
     env:
       NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

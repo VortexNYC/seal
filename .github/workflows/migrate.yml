@@ -21,7 +21,7 @@ permissions:
 jobs:
   migrate:
     name: Apply D1 migrations
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     timeout-minutes: 10
     outputs:
       d1-stamp: ${{ steps.stamp.outputs.sha }}
