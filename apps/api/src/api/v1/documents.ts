@@ -16,7 +16,10 @@ import { z } from "zod";
 
 import { createD1 } from "../../global/db.js";
 import { documents, recipients } from "../../global/schema.js";
-import { parseDocumentFromStorage } from "../../platform/anydoc.js";
+import {
+  fieldCandidateSchema,
+  parseDocumentFromStorage,
+} from "../../platform/anydoc.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import { createDownloadToken, verifyDownloadToken } from "./download-token.js";
 
@@ -44,6 +47,11 @@ type ApiDocument = {
   deadline?: string;
   download_url?: string;
   recipients?: ApiRecipient[];
+  page_count?: number;
+  ocr_required?: boolean;
+  pages_needing_ocr?: number[];
+  parsed_format?: string;
+  pdf_type?: string;
 };
 
 type ApiRecipient = {
@@ -126,6 +134,25 @@ async function recipientCountsForDocument(
   return { total, signed };
 }
 
+function parseNumberArray(
+  value: string | null | undefined
+): number[] | undefined {
+  if (!value) return undefined;
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (Array.isArray(parsed)) {
+      const numbers: number[] = [];
+      for (const item of parsed) {
+        if (typeof item === "number") numbers.push(item);
+      }
+      return numbers;
+    }
+  } catch {
+    // ignore malformed JSON
+  }
+  return undefined;
+}
+
 function toApiDocument(
   row: {
     id: string;
@@ -136,6 +163,11 @@ function toApiDocument(
     updatedAt: Date;
     deadline: Date | null;
     storageKey: string | null;
+    pageCount?: number | null;
+    ocrRequired?: boolean;
+    pagesNeedingOcr?: string | null;
+    parsedFormat?: string | null;
+    pdfType?: string | null;
   },
   counts: { total: number; signed: number }
 ): ApiDocument {
@@ -152,6 +184,15 @@ function toApiDocument(
     ...(row.storageKey
       ? { download_url: `/api/v1/documents/download?id=${row.id}` }
       : {}),
+    ...(row.pageCount !== null && row.pageCount !== undefined
+      ? { page_count: row.pageCount }
+      : {}),
+    ...(row.ocrRequired !== undefined ? { ocr_required: row.ocrRequired } : {}),
+    ...(row.pagesNeedingOcr
+      ? { pages_needing_ocr: parseNumberArray(row.pagesNeedingOcr) }
+      : {}),
+    ...(row.parsedFormat ? { parsed_format: row.parsedFormat } : {}),
+    ...(row.pdfType ? { pdf_type: row.pdfType } : {}),
   };
 }
 
@@ -332,6 +373,68 @@ app.get("/get", async (c) => {
   return c.json(response);
 });
 
+app.get("/parsed", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:read")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const id = c.req.query("id");
+  if (!id) {
+    return c.json({ error: "missing_document_id" }, 400);
+  }
+
+  const db = createD1(c.env.D1);
+  const rows = await db
+    .select({
+      parsedText: documents.parsedText,
+      parsedTitle: documents.parsedTitle,
+      parsedFormat: documents.parsedFormat,
+      pdfType: documents.pdfType,
+      pageCount: documents.pageCount,
+      ocrRequired: documents.ocrRequired,
+      pagesNeedingOcr: documents.pagesNeedingOcr,
+      fieldCandidates: documents.fieldCandidates,
+    })
+    .from(documents)
+    .where(
+      and(eq(documents.id, id), eq(documents.organizationId, organizationId))
+    )
+    .limit(1);
+
+  const row = rows[0];
+  if (!row) {
+    return c.json({ error: "not_found" }, 404);
+  }
+
+  const fieldCandidates = (() => {
+    if (!row.fieldCandidates) return [];
+    const parsed = z
+      .array(fieldCandidateSchema)
+      .safeParse(JSON.parse(row.fieldCandidates) as unknown);
+    return parsed.success ? parsed.data : [];
+  })();
+
+  const pagesNeedingOcr = parseNumberArray(row.pagesNeedingOcr);
+
+  return c.json({
+    id,
+    parsed_text: row.parsedText,
+    parsed_title: row.parsedTitle,
+    parsed_format: row.parsedFormat,
+    pdf_type: row.pdfType,
+    page_count: row.pageCount,
+    ocr_required: row.ocrRequired,
+    pages_needing_ocr: pagesNeedingOcr,
+    field_candidates: fieldCandidates,
+  });
+});
+
 const deadlineSchema = z.union([
   z.string().datetime(),
   z.number().int().nonnegative(),
@@ -407,6 +510,19 @@ app.post("/", async (c) => {
         "application/octet-stream",
       size: file_size ?? object.size,
       pageCount: page_count ?? parsedDocument?.pageCount,
+      parsedText: parsedDocument?.markdown ?? null,
+      parsedTitle: parsedDocument?.title ?? null,
+      parsedFormat: parsedDocument?.format ?? null,
+      pdfType: parsedDocument?.pdfType ?? null,
+      ocrRequired: parsedDocument
+        ? parsedDocument.pagesNeedingOcr.length > 0
+        : false,
+      pagesNeedingOcr: parsedDocument?.pagesNeedingOcr.length
+        ? JSON.stringify(parsedDocument.pagesNeedingOcr)
+        : null,
+      fieldCandidates: parsedDocument?.fieldCandidates.length
+        ? JSON.stringify(parsedDocument.fieldCandidates)
+        : null,
       deadline: parseDeadline(deadline),
     })
     .returning({
@@ -420,6 +536,11 @@ app.post("/", async (c) => {
       deadline: documents.deadline,
       storageKey: documents.storageKey,
       documentStatus: documents.documentStatus,
+      pageCount: documents.pageCount,
+      ocrRequired: documents.ocrRequired,
+      pagesNeedingOcr: documents.pagesNeedingOcr,
+      parsedFormat: documents.parsedFormat,
+      pdfType: documents.pdfType,
     });
 
   const row = inserted[0];

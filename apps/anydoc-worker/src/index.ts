@@ -13,8 +13,25 @@ import {
 import pdfWasm from "@firecrawl/pdf-inspector-wasm/pdf_inspector_wasm_bg.wasm";
 import { Hono } from "hono";
 
+import { extractFieldCandidates, type FieldCandidate } from "./fields.js";
+
 anydocSync({ module: anydocWasm });
 pdfSync({ module: pdfWasm });
+
+type ParseResponse = {
+  format: string;
+  markdown: string | null;
+  title: string | null;
+  pageCount: number | undefined;
+  pdfType: PdfProcessResult["pdfType"] | null;
+  pagesNeedingOcr: number[];
+  ocrReasonsByPage: PdfProcessResult["ocrReasonsByPage"];
+  layout: PdfProcessResult["layout"] | null;
+  hasEncodingIssues: boolean | null;
+  confidence: number | null;
+  processingTimeMs: number;
+  fieldCandidates: FieldCandidate[];
+};
 
 const app = new Hono();
 
@@ -40,29 +57,48 @@ app.post("/parse", async (c) => {
       return c.json({ error: "unsupported or unrecognized format" }, 400);
     }
 
-    if (detected === "pdf") {
-      const result: PdfProcessResult = processPdf(bytes);
-      const processingTimeMs = Date.now() - startedAt;
+    let response: ParseResponse;
 
-      return c.json({
+    if (detected === "pdf") {
+      const result: PdfProcessResult = processPdf(bytes, {
+        includePageMarkers: true,
+      });
+      const markdown = result.markdown ?? "";
+
+      response = {
         format: detected,
         markdown: result.markdown ?? null,
-        pdfType: result.pdfType,
+        title: result.title ?? null,
         pageCount: result.pageCount,
+        pdfType: result.pdfType,
         pagesNeedingOcr: result.pagesNeedingOcr,
         ocrReasonsByPage: result.ocrReasonsByPage,
-        processingTimeMs,
-      });
+        layout: result.layout,
+        hasEncodingIssues: result.hasEncodingIssues,
+        confidence: result.confidence,
+        processingTimeMs: Date.now() - startedAt,
+        fieldCandidates: extractFieldCandidates(markdown),
+      };
+    } else {
+      const markdown = toMarkdownBytes(bytes, detected as Format);
+
+      response = {
+        format: detected,
+        markdown,
+        title: null,
+        pageCount: undefined,
+        pdfType: null,
+        pagesNeedingOcr: [],
+        ocrReasonsByPage: [],
+        layout: null,
+        hasEncodingIssues: null,
+        confidence: null,
+        processingTimeMs: Date.now() - startedAt,
+        fieldCandidates: extractFieldCandidates(markdown),
+      };
     }
 
-    const markdown = toMarkdownBytes(bytes, detected as Format);
-    const processingTimeMs = Date.now() - startedAt;
-
-    return c.json({
-      format: detected,
-      markdown,
-      processingTimeMs,
-    });
+    return c.json(response);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return c.json({ error: message }, 400);
