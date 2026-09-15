@@ -1284,3 +1284,39 @@ export const auditLogs = sqliteTable(
     ),
   ]
 );
+
+// -------------------------------------------------------------------------
+// Import jobs
+// -------------------------------------------------------------------------
+
+export const importJobs = sqliteTable(
+  "import_jobs",
+  {
+    id: text("id").primaryKey(),
+    publicId: text("public_id").notNull().unique(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    adapter: text("adapter").notNull(),
+    payload: text("payload").notNull().default("{}"),
+    status: text("status").notNull().default("pending_approval"),
+    cursor: text("cursor"),
+    processedCount: integer("processed_count").notNull().default(0),
+    totalCount: integer("total_count"),
+    error: text("error"),
+    approvedBy: text("approved_by"),
+    approvedAt: integer("approved_at", { mode: "timestamp_ms" }),
+    createdBy: text("created_by").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("importJobs_organizationId_idx").on(table.organizationId),
+    index("importJobs_status_idx").on(table.status),
+  ]
+);
