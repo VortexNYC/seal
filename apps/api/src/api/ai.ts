@@ -5,8 +5,6 @@ import { createD1 } from "../global/db.js";
 import {
   aiDocumentAnnotations,
   aiFieldSuggestions,
-  aiProgress,
-  aiThreads,
   documents,
   member,
   organization,
@@ -33,27 +31,12 @@ app.use("/*", async (c, next) => {
 
   const db = createD1(c.env.D1);
 
-  let organizationId: string | null = null;
-
-  if (rootSegment === "progress") {
-    const threadId = segments[3];
-    if (!threadId) {
-      return c.json({ error: "Not found" }, 404);
-    }
-    const threadRows = await db
-      .select({ organizationId: aiThreads.organizationId })
-      .from(aiThreads)
-      .where(eq(aiThreads.threadId, threadId))
-      .limit(1);
-    organizationId = threadRows[0]?.organizationId ?? null;
-  } else {
-    const docRows = await db
-      .select({ organizationId: documents.organizationId })
-      .from(documents)
-      .where(eq(documents.publicId, rootSegment))
-      .limit(1);
-    organizationId = docRows[0]?.organizationId ?? null;
-  }
+  const docRows = await db
+    .select({ organizationId: documents.organizationId })
+    .from(documents)
+    .where(eq(documents.publicId, rootSegment))
+    .limit(1);
+  const organizationId = docRows[0]?.organizationId ?? null;
 
   if (!organizationId) {
     return c.json({ error: "Not found" }, 404);
@@ -297,154 +280,6 @@ app.openapi(getAnnotationsRoute, async (c) => {
   );
 });
 
-const threadResponseSchema = z
-  .object({
-    threadId: z.string().nullable(),
-  })
-  .openapi("DocumentThread");
-
-const getThreadRoute = createRoute({
-  method: "get",
-  path: "/:publicId/thread",
-  request: { params: z.object({ publicId: z.string() }) },
-  responses: {
-    200: {
-      content: { "application/json": { schema: threadResponseSchema } },
-      description: "Thread for the document",
-    },
-    401: {
-      content: {
-        "application/json": { schema: z.object({ error: z.string() }) },
-      },
-      description: "Unauthorized",
-    },
-  },
-});
-
-app.openapi(getThreadRoute, async (c) => {
-  const organizationId = c.get("organization").id;
-  const userId = c.get("user")!.user.id;
-  const { publicId } = c.req.valid("param");
-
-  const db = createD1(c.env.D1);
-
-  const docRows = await db
-    .select({ id: documents.id })
-    .from(documents)
-    .where(
-      and(
-        eq(documents.publicId, publicId),
-        eq(documents.organizationId, organizationId)
-      )
-    )
-    .limit(1);
-
-  const docRow = docRows[0];
-  if (!docRow) {
-    return c.json({ threadId: null }, 200);
-  }
-
-  const documentId = docRow.id;
-
-  const rows = await db
-    .select({ threadId: aiThreads.threadId })
-    .from(aiThreads)
-    .where(
-      and(
-        eq(aiThreads.documentId, documentId),
-        eq(aiThreads.organizationId, organizationId),
-        eq(aiThreads.userId, userId)
-      )
-    )
-    .limit(1);
-
-  const threadRow = rows[0];
-  return c.json({ threadId: threadRow?.threadId ?? null }, 200);
-});
-
-const getOrCreateThreadRoute = createRoute({
-  method: "post",
-  path: "/:publicId/thread",
-  request: { params: z.object({ publicId: z.string() }) },
-  responses: {
-    200: {
-      content: { "application/json": { schema: threadResponseSchema } },
-      description: "Created or existing thread",
-    },
-    401: {
-      content: {
-        "application/json": { schema: z.object({ error: z.string() }) },
-      },
-      description: "Unauthorized",
-    },
-  },
-});
-
-function generatePublicId(): string {
-  return crypto.randomUUID();
-}
-
-app.openapi(getOrCreateThreadRoute, async (c) => {
-  const organizationId = c.get("organization").id;
-  const userId = c.get("user")!.user.id;
-  const { publicId } = c.req.valid("param");
-
-  const db = createD1(c.env.D1);
-
-  const docRows = await db
-    .select({ id: documents.id })
-    .from(documents)
-    .where(
-      and(
-        eq(documents.publicId, publicId),
-        eq(documents.organizationId, organizationId)
-      )
-    )
-    .limit(1);
-
-  const docRow = docRows[0];
-  if (!docRow) {
-    return c.json({ threadId: null }, 200);
-  }
-
-  const documentId = docRow.id;
-
-  const existing = await db
-    .select({ threadId: aiThreads.threadId })
-    .from(aiThreads)
-    .where(
-      and(
-        eq(aiThreads.documentId, documentId),
-        eq(aiThreads.organizationId, organizationId),
-        eq(aiThreads.userId, userId)
-      )
-    )
-    .limit(1);
-
-  const existingThread = existing[0];
-  if (existingThread?.threadId) {
-    return c.json({ threadId: existingThread.threadId }, 200);
-  }
-
-  const threadId = generatePublicId();
-  const publicId2 = generatePublicId();
-  const now = new Date();
-
-  await db.insert(aiThreads).values({
-    id: generatePublicId(),
-    publicId: publicId2,
-    threadId,
-    documentId,
-    organizationId,
-    userId,
-    threadType: "document",
-    createdAt: now,
-    updatedAt: now,
-  });
-
-  return c.json({ threadId }, 200);
-});
-
 const dismissAnnotationsRoute = createRoute({
   method: "post",
   path: "/:publicId/annotations/dismiss",
@@ -598,101 +433,6 @@ app.openapi(dismissFieldSuggestionsRoute, async (c) => {
     );
 
   return c.json({ success: true }, 200);
-});
-
-const aiProgressStatusSchema = z.enum([
-  "in_progress",
-  "completed",
-  "failed",
-  "aborted",
-]);
-
-const progressSchema = z
-  .object({
-    threadId: z.string(),
-    step: z.number().int(),
-    totalSteps: z.number().int().nullable().optional(),
-    completedTools: z.array(z.string()),
-    tokensUsed: z.number().int(),
-    status: aiProgressStatusSchema,
-    error: z.string().nullable().optional(),
-    createdAt: z.number().int(),
-    updatedAt: z.number().int(),
-  })
-  .nullable()
-  .openapi("AIProgress");
-
-const getProgressRoute = createRoute({
-  method: "get",
-  path: "/progress/:threadId",
-  request: { params: z.object({ threadId: z.string() }) },
-  responses: {
-    200: {
-      content: { "application/json": { schema: progressSchema } },
-      description: "AI progress for the thread",
-    },
-    401: {
-      content: {
-        "application/json": { schema: z.object({ error: z.string() }) },
-      },
-      description: "Unauthorized",
-    },
-    403: {
-      content: {
-        "application/json": { schema: z.object({ error: z.string() }) },
-      },
-      description: "Forbidden",
-    },
-  },
-});
-
-app.openapi(getProgressRoute, async (c) => {
-  const organizationId = c.get("organization").id;
-  const { threadId } = c.req.valid("param");
-
-  const db = createD1(c.env.D1);
-
-  const threadRows = await db
-    .select({ id: aiThreads.id })
-    .from(aiThreads)
-    .where(
-      and(
-        eq(aiThreads.threadId, threadId),
-        eq(aiThreads.organizationId, organizationId),
-        eq(aiThreads.userId, c.get("user")!.user.id)
-      )
-    )
-    .limit(1);
-
-  if (threadRows.length === 0) {
-    return c.json(null, 200);
-  }
-
-  const rows = await db
-    .select()
-    .from(aiProgress)
-    .where(eq(aiProgress.threadId, threadId))
-    .limit(1);
-
-  const row = rows[0];
-  if (!row) {
-    return c.json(null, 200);
-  }
-
-  return c.json(
-    {
-      threadId: row.threadId,
-      step: row.step,
-      totalSteps: row.totalSteps,
-      completedTools: JSON.parse(row.completedTools),
-      tokensUsed: row.tokensUsed,
-      status: aiProgressStatusSchema.parse(row.status),
-      error: row.error,
-      createdAt: row.createdAt.getTime(),
-      updatedAt: row.updatedAt.getTime(),
-    },
-    200
-  );
 });
 
 export default app;

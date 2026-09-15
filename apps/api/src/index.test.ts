@@ -21,12 +21,4 @@ describe("app", () => {
     );
     expect(res.status).toBe(401);
   });
-
-  it("rejects unauthenticated agent requests", async () => {
-    const res = await app.fetch(
-      new Request("http://localhost:8787/agents/seal-chat-agent/thread_1"),
-      env
-    );
-    expect(res.status).toBe(401);
-  });
 });

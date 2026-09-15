@@ -1,11 +1,8 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { routeAgentRequest } from "agents";
 import { and, desc, eq, not, or } from "drizzle-orm";
 import { cors } from "hono/cors";
 import { z } from "zod";
 
-import { authenticateAgentConnection } from "./agents/auth.js";
-import { SealChatAgent } from "./agents/seal-chat-agent.js";
 import activity from "./api/activity.js";
 import ai from "./api/ai.js";
 import analytics from "./api/analytics.js";
@@ -46,48 +43,10 @@ import { getSessionUser } from "./platform/session.js";
 import type { Variables } from "./platform/types.js";
 import { projectPayableObjectUpdated } from "./platform/vortex_billing.js";
 
-interface Env extends CloudflareBindings {
-  SealChatAgent: DurableObjectNamespace<SealChatAgent>;
-}
-
 const app = new OpenAPIHono<{
-  Bindings: Env;
+  Bindings: CloudflareBindings;
   Variables: Variables;
 }>();
-
-// Agent WebSocket/HTTP routing runs before CORS and the auth middleware so
-// that `routeAgentRequest` can handle `/agents/...` upgrades directly.
-app.use("*", async (c, next) => {
-  if (!c.req.path.startsWith("/agents/")) {
-    return next();
-  }
-
-  const agentResponse = await routeAgentRequest(c.req.raw, c.env, {
-    prefix: "agents",
-    onBeforeConnect: async (req, lobby) => {
-      const authResult = await authenticateAgentConnection(
-        req,
-        lobby.name,
-        c.env
-      );
-      return authResult ?? req;
-    },
-    onBeforeRequest: async (req, lobby) => {
-      const authResult = await authenticateAgentConnection(
-        req,
-        lobby.name,
-        c.env
-      );
-      return authResult ?? req;
-    },
-  });
-
-  if (agentResponse) {
-    return agentResponse;
-  }
-
-  return next();
-});
 
 app.use(
   "*",
@@ -861,14 +820,10 @@ app.route("/api/v1/templates", templatesV1);
 app.route("/api/v1/uploads", uploadsV1);
 app.route("/api/v1/webhooks", webhooksV1);
 
-export { SealChatAgent };
-
 export default app;
 
-export const scheduled: ExportedHandlerScheduledHandler<Env> = async (
-  _event,
-  env,
-  _ctx
-) => {
+export const scheduled: ExportedHandlerScheduledHandler<
+  CloudflareBindings
+> = async (_event, env, _ctx) => {
   await runScheduledTasks(env);
 };

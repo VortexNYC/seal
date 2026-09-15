@@ -1892,26 +1892,6 @@ export async function dismissFieldSuggestions(publicId: string): Promise<void> {
     { method: "POST" }
   );
 }
-const threadResponseSchema = z.object({
-  threadId: z.string().nullable(),
-});
-export async function getThreadForDocument(publicId: string): Promise<{
-  threadId: string | null;
-}> {
-  return apiFetch(
-    `/api/ai/${encodeURIComponent(publicId)}/thread`,
-    threadResponseSchema
-  );
-}
-export async function getOrCreateThread(publicId: string): Promise<{
-  threadId: string | null;
-}> {
-  return apiFetch(
-    `/api/ai/${encodeURIComponent(publicId)}/thread`,
-    threadResponseSchema,
-    { method: "POST" }
-  );
-}
 const publicSigningRecipientSchema = z.object({
   _id: z.string(),
   publicId: z.string(),
@@ -2208,26 +2188,6 @@ export async function incrementSavedSignatureUsage(id: string): Promise<{
     `/api/saved-signatures/${encodeURIComponent(id)}/use`,
     z.object({ success: z.boolean() }),
     { method: "POST" }
-  );
-}
-const aiProgressSchema = z
-  .object({
-    threadId: z.string(),
-    step: z.number().int(),
-    totalSteps: z.number().int().nullable().optional(),
-    completedTools: z.array(z.string()),
-    tokensUsed: z.number().int(),
-    status: z.enum(["in_progress", "completed", "failed", "aborted"]),
-    error: z.string().nullable().optional(),
-    createdAt: z.number().int(),
-    updatedAt: z.number().int(),
-  })
-  .nullable();
-export type ApiAIProgress = z.infer<typeof aiProgressSchema>;
-export async function getAIProgress(threadId: string): Promise<ApiAIProgress> {
-  return apiFetch(
-    `/api/ai/progress/${encodeURIComponent(threadId)}`,
-    aiProgressSchema
   );
 }
 export async function getClientIp(): Promise<string> {
