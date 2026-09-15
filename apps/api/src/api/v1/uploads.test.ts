@@ -78,6 +78,11 @@ function createPdfBytes(): Uint8Array {
   return new TextEncoder().encode("%PDF-1.4 test");
 }
 
+function createDocxBytes(): Uint8Array {
+  // The conversion worker is mocked, so any non-empty bytes are fine.
+  return new TextEncoder().encode("docx content");
+}
+
 describe("POST /api/v1/uploads", () => {
   beforeEach(async () => {
     env.SEAL_MCP_SIGNING_KEY = undefined;
@@ -141,5 +146,72 @@ describe("POST /api/v1/uploads", () => {
     expect(object).not.toBeNull();
     expect(object?.httpMetadata?.contentType).toBe("application/pdf");
     expect(object?.customMetadata?.organizationId).toBe(orgId);
+  });
+
+  it("converts a DOCX upload to PDF and stores the original", async () => {
+    const privateJwk = await configureSigningKey();
+    const { userId, orgId } = await seedOrgAndUser();
+
+    const token = await signAccessToken(privateJwk, {
+      sub: userId,
+      organizationId: orgId,
+      scope: "mcp documents:write",
+      clientId: crypto.randomUUID(),
+      jti: crypto.randomUUID(),
+    });
+
+    const generateResponse = await indexApp.fetch(
+      new Request("http://localhost:8787/api/v1/uploads/generate-url", {
+        method: "POST",
+        headers: { authorization: `Bearer ${token}` },
+      }),
+      env
+    );
+
+    expect(generateResponse.status).toBe(200);
+    const generateBody = z
+      .object({ upload_url: z.string() })
+      .parse(await generateResponse.json());
+
+    const uploadUrl = new URL(generateBody.upload_url);
+    const uploadToken = uploadUrl.searchParams.get("token");
+    expect(uploadToken).toBeTruthy();
+
+    const uploadResponse = await indexApp.fetch(
+      new Request(
+        `http://localhost:8787/api/v1/uploads?token=${encodeURIComponent(uploadToken!)}`,
+        {
+          method: "POST",
+          body: createDocxBytes(),
+          headers: {
+            "content-type":
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          },
+        }
+      ),
+      env
+    );
+
+    expect(uploadResponse.status).toBe(200);
+    const uploadBody = z
+      .object({ storageId: z.string() })
+      .parse(await uploadResponse.json());
+    expect(uploadBody.storageId).toContain("uploads/");
+
+    const converted = await env.DOCUMENTS_BUCKET.get(uploadBody.storageId);
+    expect(converted).not.toBeNull();
+    expect(converted?.httpMetadata?.contentType).toBe("application/pdf");
+    expect(converted?.customMetadata?.originalContentType).toBe(
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    );
+    expect(converted?.customMetadata?.organizationId).toBe(orgId);
+
+    const originalKey = converted?.customMetadata?.originalKey;
+    expect(originalKey).toBeTruthy();
+    const original = await env.DOCUMENTS_BUCKET.get(originalKey as string);
+    expect(original).not.toBeNull();
+    expect(original?.httpMetadata?.contentType).toBe(
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    );
   });
 });

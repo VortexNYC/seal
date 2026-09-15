@@ -32,5 +32,10 @@ name = "EMAIL"
 binding = "DOCUMENTS_BUCKET"
 bucket_name = "vortex-sign-documents"
 
+# Convert DOCX/XLSX/PPTX/CSV to PDF via the dedicated conversion worker.
+[[services]]
+binding = "SEAL_CONVERT_WORKER"
+service = "seal-convert-worker"
+
 [triggers]
 crons = ["0 9 * * *"]

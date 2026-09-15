@@ -1,5 +1,11 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
 
+import {
+  convertBytesToPdf,
+  ConversionError,
+  isConvertibleFileType,
+} from "../../platform/document-conversion.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import { createUploadToken, verifyUploadToken } from "./upload-token.js";
 
@@ -43,22 +49,57 @@ app.post("/", async (c) => {
     return c.json({ error: "invalid_token" }, 401);
   }
 
-  const body = c.req.raw.body;
-  if (!body) {
+  const bytes = await c.req.arrayBuffer();
+  if (bytes.byteLength === 0) {
     return c.json({ error: "empty_body" }, 400);
   }
 
   const contentType =
     c.req.header("content-type") ?? "application/octet-stream";
-  const storageId = `uploads/${crypto.randomUUID()}`;
+  const id = crypto.randomUUID();
+  const storageId = `uploads/${id}`;
 
-  await c.env.DOCUMENTS_BUCKET.put(storageId, body, {
-    httpMetadata: { contentType },
-    customMetadata: {
-      organizationId: payload.organizationId,
-      uploadedBy: payload.sub,
-    },
-  });
+  const metadata = {
+    organizationId: payload.organizationId,
+    uploadedBy: payload.sub,
+  };
+
+  if (isConvertibleFileType(contentType)) {
+    const originalStorageId = `originals/${id}`;
+    let pdf: ArrayBuffer;
+    try {
+      pdf = await convertBytesToPdf(c.env, {
+        contentType,
+        bytes,
+        name: "document",
+      });
+    } catch (error) {
+      const status = (
+        error instanceof ConversionError ? error.statusCode : 502
+      ) as ContentfulStatusCode;
+      const detail =
+        error instanceof ConversionError ? error.detail : undefined;
+      return c.json({ error: "conversion_failed", detail }, status);
+    }
+
+    await c.env.DOCUMENTS_BUCKET.put(originalStorageId, bytes, {
+      httpMetadata: { contentType },
+      customMetadata: metadata,
+    });
+    await c.env.DOCUMENTS_BUCKET.put(storageId, pdf, {
+      httpMetadata: { contentType: "application/pdf" },
+      customMetadata: {
+        ...metadata,
+        originalContentType: contentType,
+        originalKey: originalStorageId,
+      },
+    });
+  } else {
+    await c.env.DOCUMENTS_BUCKET.put(storageId, bytes, {
+      httpMetadata: { contentType },
+      customMetadata: metadata,
+    });
+  }
 
   return c.json({ storageId });
 });

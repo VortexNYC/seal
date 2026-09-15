@@ -12,6 +12,7 @@ declare interface CloudflareBindings {
   DOCUMENTS_BUCKET: R2Bucket;
   EMAIL: SendEmail;
   AI: Ai;
+  SEAL_CONVERT_WORKER?: Fetcher;
   BETTER_AUTH_SECRET: string;
   BETTER_AUTH_URL: string;
   TOKEN_HASH_SECRET: string;

@@ -10,17 +10,32 @@ export const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 /**
  * Allowed MIME types
- * SEA-62: PDF only
  */
-const ALLOWED_MIME_TYPES = new Set(["application/pdf"]);
+const ALLOWED_MIME_TYPES = new Set([
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "text/csv",
+]);
+
+const ALLOWED_EXTENSIONS = new Set([".pdf", ".docx", ".xlsx", ".pptx", ".csv"]);
 
 /**
  * MIME type to file extensions mapping for react-dropzone
- * react-dropzone expects: { 'mime/type': ['.ext1', '.ext2'] }
- * SEA-62: PDF only
  */
 export const DROPZONE_ACCEPT_TYPES: Record<string, string[]> = {
   "application/pdf": [".pdf"],
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [
+    ".docx",
+  ],
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
+    ".xlsx",
+  ],
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": [
+    ".pptx",
+  ],
+  "text/csv": [".csv"],
 };
 
 /**
@@ -45,10 +60,9 @@ export function getMaxFileSizeDisplay(): string {
 
 /**
  * Get supported file types for display
- * SEA-62: PDF only
  */
 export function getSupportedFileTypesDisplay(): string {
-  return "PDF only";
+  return "PDF, DOCX, XLSX, PPTX, CSV";
 }
 
 /**
@@ -69,19 +83,19 @@ export function validateFileForUpload(file: File): {
     );
   }
 
-  // Validate MIME type (SEA-62: PDF only)
+  // Validate MIME type
   if (!file.type) {
     errors.push("File type could not be determined");
   } else if (!ALLOWED_MIME_TYPES.has(file.type)) {
-    errors.push("Only PDF files are supported");
+    errors.push("Only PDF, DOCX, XLSX, PPTX, and CSV files are supported");
   }
 
-  // Validate extension (SEA-62: PDF only)
+  // Validate extension
   const fileExt = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
   if (!fileExt) {
     errors.push("File must have an extension");
-  } else if (fileExt !== ".pdf") {
-    errors.push("Only PDF files are supported");
+  } else if (!ALLOWED_EXTENSIONS.has(fileExt)) {
+    errors.push("Only PDF, DOCX, XLSX, PPTX, and CSV files are supported");
   }
 
   return {

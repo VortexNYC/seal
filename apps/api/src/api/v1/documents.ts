@@ -402,10 +402,10 @@ app.post("/", async (c) => {
       sharingMode: "private",
       storageKey: storage_id,
       contentType:
-        file_type ??
         head.httpMetadata?.contentType ??
+        file_type ??
         "application/octet-stream",
-      size: file_size ?? head.size,
+      size: head.size ?? file_size ?? 0,
       pageCount: page_count,
       deadline: parseDeadline(deadline),
     })
