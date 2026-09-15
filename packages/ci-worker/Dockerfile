@@ -2,5 +2,8 @@ FROM docker.io/cloudflare/sandbox:0.12.1@sha256:ea9b35e61c800eddbc4450fad333e5dd
 
 RUN npm install -g pnpm@11.13.1
 
+# Make /workspace writable for the non-root sandbox user.
+RUN chown -R 1000:1000 /workspace
+
 # CI sandbox only: do not run the installed toolchain as root.
 USER 1000
