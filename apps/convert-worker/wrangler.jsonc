@@ -1,0 +1,28 @@
+{
+  "name": "seal-convert-worker",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "containers": [
+    {
+      "class_name": "Converter",
+      "image": "docker.io/gotenberg/gotenberg:8",
+      "max_instances": 5,
+      "instance_type": "basic",
+    },
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "CONVERTER",
+        "class_name": "Converter",
+      },
+    ],
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["Converter"],
+    },
+  ],
+}

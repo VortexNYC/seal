@@ -12,7 +12,7 @@
     "build": "pnpm --filter @seal/web run build",
     "build:all": "vp run -r build",
     "test": "pnpm --filter @vortex/sign-api --filter @seal/web run test",
-    "typecheck": "pnpm --filter @vortex/sign-api --filter @seal/web --filter @seal/react --filter @seal/transactional --filter @seal/client --filter seal-cli run typecheck",
+    "typecheck": "pnpm --filter @vortex/sign-api --filter @seal/web --filter @seal/react --filter @seal/transactional --filter @seal/client --filter seal-cli --filter @seal/convert-worker run typecheck",
     "lint": "vp lint",
     "lint:fix": "vp lint --fix && vp fmt",
     "format": "vp fmt",
