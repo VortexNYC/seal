@@ -14,7 +14,21 @@ import type {
 } from "./types";
 
 const DEFAULT_BASE_URL = "https://app.seal.nyc";
-const SEAL_ORIGIN_PATTERN = /^https?:\/\/(app\.seal\.nyc|localhost:\d+)$/;
+const ALLOWED_ORIGIN_PATTERN = /^https:\/\/app\.seal\.nyc$/;
+
+function resolveAllowedBaseUrl(baseUrl: string | undefined): string {
+  if (!baseUrl) return DEFAULT_BASE_URL;
+  let url: URL;
+  try {
+    url = new URL(baseUrl);
+  } catch {
+    return DEFAULT_BASE_URL;
+  }
+  if (!ALLOWED_ORIGIN_PATTERN.test(url.origin)) {
+    return DEFAULT_BASE_URL;
+  }
+  return url.origin;
+}
 
 const SEAL_EVENT_TYPES: ReadonlySet<string> = new Set<SealEvent["type"]>([
   "seal:ready",
@@ -68,7 +82,7 @@ export const SealSigningEmbed = forwardRef<
 ) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const resolvedBaseUrl = baseUrl ?? DEFAULT_BASE_URL;
+  const resolvedBaseUrl = resolveAllowedBaseUrl(baseUrl);
 
   const iframeSrc = useMemo(() => {
     const url = new URL(`/sign/${token}`, resolvedBaseUrl);
@@ -80,10 +94,8 @@ export const SealSigningEmbed = forwardRef<
 
   const handleMessage = useCallback(
     (event: MessageEvent) => {
-      // Validate origin — allow configured base URL and localhost for development
-      const origin = event.origin;
-      const expectedOrigin = new URL(resolvedBaseUrl).origin;
-      if (origin !== expectedOrigin && !SEAL_ORIGIN_PATTERN.test(origin)) {
+      // Validate origin — only accept messages from the configured Seal app origin
+      if (event.origin !== resolvedBaseUrl) {
         return;
       }
 
