@@ -22,12 +22,9 @@ const sealEnv = {
   VITE_APP_URL: "https://app.seal.nyc",
 };
 
-// Run the proof in a writable /tmp copy of /workspace because the Cloudflare
-// Sandbox mounts /workspace read-only for the command process.
-const proofCommand = `sh -c 'rm -rf /tmp/ws && mkdir -p /tmp/ws && cp -a /workspace/. /tmp/ws/ && cd /tmp/ws && ${npmrcCommand} && pnpm install --frozen-lockfile && pnpm exec vp run build && pnpm exec vp check && pnpm exec vp run typecheck && pnpm exec vp run test'`;
+const proofCommand = `sh -c '${npmrcCommand} && pnpm install --frozen-lockfile && pnpm exec vp run build && pnpm exec vp check && pnpm exec vp run typecheck && pnpm exec vp run test'`;
 
 const deployCommand = [
-  "rm -rf /tmp/ws && mkdir -p /tmp/ws && cp -a /workspace/. /tmp/ws/ && cd /tmp/ws",
   npmrcCommand,
   "pnpm install --frozen-lockfile --silent",
   "pnpm exec vp run build",
