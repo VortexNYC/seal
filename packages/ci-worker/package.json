@@ -9,8 +9,7 @@
     "types": "wrangler types --path ./src/worker-configuration.d.ts"
   },
   "dependencies": {
-    "@cloudflare/ci": "0.2.0",
-    "@cloudflare/sandbox": "0.12.1"
+    "@cloudflare/ci": "0.2.0"
   },
   "devDependencies": {
     "@seal/tsconfig": "workspace:*",
