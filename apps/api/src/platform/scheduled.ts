@@ -13,6 +13,7 @@ import {
   sendDocumentExpirationAlertEmail,
   sendDocumentReminderEmail,
 } from "./email.js";
+import { processWebhookDeliveries } from "./webhook-events.js";
 
 const MS_PER_DAY = 86_400_000;
 const MAX_REMINDERS = 5;
@@ -237,4 +238,5 @@ export async function runScheduledTasks(
   await runDocumentReminders(env);
   await runExpirationAlerts(env);
   await runDunningEmails(env);
+  await processWebhookDeliveries(env);
 }

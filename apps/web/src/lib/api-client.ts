@@ -2245,3 +2245,169 @@ export async function verifyDocumentByQrToken(
     verifyDocumentResultSchema.nullable()
   );
 }
+
+const apiTokenSchema = z.object({
+  id: z.string(),
+  publicId: z.string(),
+  name: z.string(),
+  scopes: z.array(z.string()),
+  lastUsedAt: z.string().nullable(),
+  revokedAt: z.string().nullable(),
+  createdAt: z.string(),
+});
+export type ApiToken = z.infer<typeof apiTokenSchema>;
+
+const createdApiTokenSchema = apiTokenSchema.extend({
+  token: z.string(),
+});
+export type CreatedApiToken = z.infer<typeof createdApiTokenSchema>;
+
+export async function getApiTokens(
+  organizationSlug: string
+): Promise<ApiToken[]> {
+  return apiFetch(
+    `/api/v1/organizations/${encodeURIComponent(organizationSlug)}/tokens`,
+    z.array(apiTokenSchema)
+  );
+}
+
+export async function createApiToken(
+  organizationSlug: string,
+  input: { name: string; scopes: string[] }
+): Promise<CreatedApiToken> {
+  return apiFetch(
+    `/api/v1/organizations/${encodeURIComponent(organizationSlug)}/tokens`,
+    createdApiTokenSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+export async function revokeApiToken(
+  organizationSlug: string,
+  tokenId: string
+): Promise<{ revoked: boolean }> {
+  return apiFetch(
+    `/api/v1/organizations/${encodeURIComponent(organizationSlug)}/tokens/${encodeURIComponent(tokenId)}`,
+    z.object({ revoked: z.boolean() }),
+    {
+      method: "DELETE",
+    }
+  );
+}
+
+const auditLogActorTypeSchema = z.enum(["user", "agent", "api_token"]);
+const auditLogEntrySchema = z.object({
+  id: z.string(),
+  organizationId: z.string(),
+  actorId: z.string(),
+  actorType: auditLogActorTypeSchema,
+  action: z.string(),
+  resourceType: z.string(),
+  resourceId: z.string().nullable(),
+  metadata: z.record(z.string(), z.unknown()).nullable(),
+  ipAddress: z.string().nullable(),
+  userAgent: z.string().nullable(),
+  createdAt: z.string(),
+});
+const auditLogListSchema = z.object({
+  entries: z.array(auditLogEntrySchema),
+  has_more: z.boolean(),
+  next_cursor: z.string().optional(),
+});
+export type AuditLogList = z.infer<typeof auditLogListSchema>;
+
+export async function getAuditLogs(
+  organizationSlug: string,
+  params?: {
+    actor?: string;
+    action?: string;
+    resourceType?: string;
+    from?: string;
+    to?: string;
+    limit?: number;
+    cursor?: string;
+  }
+): Promise<AuditLogList> {
+  const url = new URL(
+    `/api/v1/organizations/${encodeURIComponent(organizationSlug)}/audit`,
+    window.location.origin
+  );
+  if (params?.actor) url.searchParams.set("actor", params.actor);
+  if (params?.action) url.searchParams.set("action", params.action);
+  if (params?.resourceType) {
+    url.searchParams.set("resourceType", params.resourceType);
+  }
+  if (params?.from) url.searchParams.set("from", params.from);
+  if (params?.to) url.searchParams.set("to", params.to);
+  if (params?.limit) url.searchParams.set("limit", String(params.limit));
+  if (params?.cursor) url.searchParams.set("cursor", params.cursor);
+  return apiFetch(`${url.pathname}${url.search}`, auditLogListSchema);
+}
+
+const organizationUsageSchema = z.object({
+  totalDocuments: z.number().int(),
+  workflowCounts: z.object({
+    draft: z.number().int(),
+    sent: z.number().int(),
+    in_progress: z.number().int(),
+    completed: z.number().int(),
+    cancelled: z.number().int(),
+    declined: z.number().int(),
+  }),
+  documentsThisMonth: z.number().int(),
+  sentThisMonth: z.number().int(),
+  completedThisMonth: z.number().int(),
+  storageUsedBytes: z.number().int(),
+  storageLimitBytes: z.number().int(),
+  storagePercentUsed: z.number(),
+  plan: z.string(),
+  documentsLimit: z.number().int(),
+  documentsPercentUsed: z.number(),
+  completionRate: z.number().int(),
+});
+export type ApiOrganizationUsage = z.infer<typeof organizationUsageSchema>;
+
+export async function getOrganizationUsage(
+  organizationSlug: string
+): Promise<ApiOrganizationUsage> {
+  return apiFetch(
+    `/api/v1/organizations/${encodeURIComponent(organizationSlug)}/usage`,
+    organizationUsageSchema
+  );
+}
+
+const organizationInvoiceSchema = z.object({
+  id: z.string(),
+  status: z.string(),
+  amountDue: z.number().int(),
+  currency: z.string(),
+  hostedInvoiceUrl: z.string().nullable(),
+  paidAt: z.string().nullable(),
+  createdAt: z.string(),
+});
+const organizationSubscriptionSchema = z.object({
+  status: z.string(),
+  currentPeriodStart: z.string().nullable(),
+  currentPeriodEnd: z.string().nullable(),
+  cancelAtPeriodEnd: z.boolean(),
+  canceledAt: z.string().nullable(),
+  pastDueSince: z.string().nullable(),
+});
+const organizationBillingSchema = z.object({
+  plan: z.string(),
+  subscription: organizationSubscriptionSchema.nullable(),
+  invoices: z.array(organizationInvoiceSchema),
+});
+export type ApiOrganizationBilling = z.infer<typeof organizationBillingSchema>;
+
+export async function getOrganizationBilling(
+  organizationSlug: string
+): Promise<ApiOrganizationBilling> {
+  return apiFetch(
+    `/api/v1/organizations/${encodeURIComponent(organizationSlug)}/billing`,
+    organizationBillingSchema
+  );
+}
