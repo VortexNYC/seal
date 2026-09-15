@@ -25,6 +25,8 @@ import { registerAllTools } from "./tools";
 interface Env {
   SEAL_API_BASE_URL: string;
   SEAL_API_KEY?: string;
+  ALLOWED_ORIGINS?: string;
+  SEAL_AUTH_SERVER_ORIGIN?: string;
 }
 
 const MCP_OAUTH_RESOURCE_SLUG = "seal-mcp";
@@ -53,10 +55,31 @@ const MCP_OAUTH_SCOPES = [
   "signatures:write",
 ];
 
-function withCors(resp: Response): Response {
+function allowedOrigins(requestOrigin: string): Set<string> {
+  const config = getConfig();
+  const origins = new Set<string>([requestOrigin]);
+  if (config.authServerOrigin) {
+    origins.add(new URL(config.authServerOrigin).origin);
+  }
+  if (process.env.ALLOWED_ORIGINS) {
+    for (const origin of process.env.ALLOWED_ORIGINS.split(",")) {
+      const trimmed = origin.trim();
+      if (trimmed) origins.add(trimmed);
+    }
+  }
+  return origins;
+}
+
+function withCors(request: Request, resp: Response): Response {
+  const origin = request.headers.get("Origin");
+  if (!origin) return resp;
+  const requestOrigin = new URL(request.url).origin;
+  if (!allowedOrigins(requestOrigin).has(origin)) return resp;
+
   const h = new Headers(resp.headers);
-  h.set("Access-Control-Allow-Origin", "*");
-  h.set("Access-Control-Expose-Headers", "WWW-Authenticate, Mcp-Session-Id");
+  h.set("Access-Control-Allow-Origin", origin);
+  h.set("Vary", "Origin");
+  h.set("Access-Control-Expose-Headers", "WWW-Authenticate");
   h.set(
     "Access-Control-Allow-Headers",
     "Content-Type, Authorization, Mcp-Session-Id, Mcp-Protocol-Version"
@@ -106,8 +129,10 @@ function buildProtectedResourceMetadata(
   };
 }
 
-function unauthorized(url: URL): Response {
+function unauthorized(request: Request): Response {
+  const url = new URL(request.url);
   return withCors(
+    request,
     new Response(
       JSON.stringify({
         error: "unauthorized",
@@ -135,11 +160,12 @@ export default {
     const url = new URL(request.url);
 
     if (request.method === "OPTIONS") {
-      return withCors(new Response(null, { status: 204 }));
+      return withCors(request, new Response(null, { status: 204 }));
     }
 
     if (url.pathname === "/") {
       return withCors(
+        request,
         Response.json({
           name: "Seal MCP Server",
           version: "0.0.1",
@@ -157,6 +183,7 @@ export default {
 
     if (url.pathname === "/health") {
       return withCors(
+        request,
         Response.json({
           status: "ok",
           name: "seal-mcp-server",
@@ -171,6 +198,7 @@ export default {
       const config = getConfig();
       const authServerOrigin = resolveAuthServerOrigin(config, url.origin);
       return withCors(
+        request,
         Response.json(
           buildProtectedResourceMetadata(url.origin, authServerOrigin)
         )
@@ -180,6 +208,7 @@ export default {
     if (url.pathname === MCP_PATH) {
       if (request.method !== "POST") {
         return withCors(
+          request,
           Response.json(
             {
               jsonrpc: "2.0",
@@ -193,7 +222,7 @@ export default {
 
       const bearer = getBearerToken(request);
       if (!bearer) {
-        return unauthorized(url);
+        return unauthorized(request);
       }
 
       // Per-request server + tools/resources/prompts. The bearer is forwarded
@@ -215,9 +244,9 @@ export default {
           },
         },
       });
-      return withCors(await handler(request, env, ctx));
+      return withCors(request, await handler(request, env, ctx));
     }
 
-    return withCors(new Response("Not found", { status: 404 }));
+    return withCors(request, new Response("Not found", { status: 404 }));
   },
 };
