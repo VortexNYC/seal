@@ -727,7 +727,11 @@ async function handleDeleteDocument(
 
   const db = createD1(c.env.D1);
   const rows = await db
-    .select({ id: documents.id, publicId: documents.publicId, status: documents.status })
+    .select({
+      id: documents.id,
+      publicId: documents.publicId,
+      status: documents.status,
+    })
     .from(documents)
     .where(
       and(
@@ -901,7 +905,11 @@ async function handleVoidDocument(
 
   const db = createD1(c.env.D1);
   const rows = await db
-    .select({ id: documents.id, publicId: documents.publicId, status: documents.status })
+    .select({
+      id: documents.id,
+      publicId: documents.publicId,
+      status: documents.status,
+    })
     .from(documents)
     .where(
       and(
@@ -1010,7 +1018,11 @@ app.put("/access", async (c) => {
 
   const db = createD1(c.env.D1);
   const rows = await db
-    .select({ id: documents.id, publicId: documents.publicId, sharingMode: documents.sharingMode })
+    .select({
+      id: documents.id,
+      publicId: documents.publicId,
+      sharingMode: documents.sharingMode,
+    })
     .from(documents)
     .where(
       and(
@@ -1087,7 +1099,11 @@ app.post("/bulk-void", async (c) => {
   const results = await Promise.all(
     document_ids.map(async (id) => {
       const rows = await db
-        .select({ id: documents.id, publicId: documents.publicId, status: documents.status })
+        .select({
+          id: documents.id,
+          publicId: documents.publicId,
+          status: documents.status,
+        })
         .from(documents)
         .where(
           and(
@@ -1175,7 +1191,11 @@ app.post("/bulk-send", async (c) => {
   const results = await Promise.all(
     document_ids.map(async (id) => {
       const rows = await db
-        .select({ id: documents.id, publicId: documents.publicId, status: documents.status })
+        .select({
+          id: documents.id,
+          publicId: documents.publicId,
+          status: documents.status,
+        })
         .from(documents)
         .where(
           and(

@@ -234,8 +234,9 @@ app.patch("/", async (c) => {
 
   const actor = getAuditActor({ mcp: c.get("mcp") });
   if (actor) {
-    const categories = (Object.keys(parsed.data) as Array<keyof typeof parsed.data>)
-      .filter((key) => parsed.data[key] !== undefined);
+    const categories = (
+      Object.keys(parsed.data) as Array<keyof typeof parsed.data>
+    ).filter((key) => parsed.data[key] !== undefined);
     await writeAuditLog(db, {
       organizationId,
       actor,
