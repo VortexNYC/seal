@@ -260,7 +260,7 @@ export class CI extends WorkflowEntrypoint<
           this.env.SANDBOX,
           `${slugify(options.name)}-${crypto.randomUUID()}`,
           {
-            transport: "rpc",
+            transport: "http",
             enableDefaultSession: false,
             containerTimeouts: { portReadyTimeoutMS: PORT_READY_TIMEOUT_MS },
           }
