@@ -257,4 +257,57 @@ describe("GET /api/v1/search", () => {
 
     expect(response.status).toBe(403);
   });
+
+  it("does not return another user's private document", async () => {
+    const privateJwk = await configureSigningKey();
+    const { userId, orgId, db } = await seedOrgAndUser();
+
+    const otherUserId = crypto.randomUUID();
+    await db.insert(user).values({
+      id: otherUserId,
+      name: "Other User",
+      email: "other@example.com",
+      emailVerified: true,
+    });
+    await db.insert(member).values({
+      id: crypto.randomUUID(),
+      organizationId: orgId,
+      userId: otherUserId,
+      role: "member",
+    });
+
+    await db.insert(documents).values({
+      id: crypto.randomUUID(),
+      publicId: crypto.randomUUID(),
+      organizationId: orgId,
+      ownerId: userId,
+      name: "Secret Alpha Contract",
+      status: "draft",
+      documentStatus: "active",
+      sharingMode: "private",
+    });
+
+    const token = await setupToken(
+      privateJwk,
+      otherUserId,
+      orgId,
+      "mcp documents:read"
+    );
+
+    const response = await indexApp.fetch(
+      new Request(
+        "http://localhost:8787/api/v1/search?q=alpha&types=document",
+        {
+          headers: { authorization: `Bearer ${token}` },
+        }
+      ),
+      env
+    );
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      data: Array<{ title: string; type: string }>;
+    };
+    expect(body.data).toHaveLength(0);
+  });
 });

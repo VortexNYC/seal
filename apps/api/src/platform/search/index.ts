@@ -1,8 +1,13 @@
 import { create, insert, search, type Results } from "@orama/orama";
-import { eq } from "drizzle-orm";
+import { and, eq, or, sql } from "drizzle-orm";
 
 import { createD1 } from "../../global/db.js";
-import { contacts, documents, templates } from "../../global/schema.js";
+import {
+  contacts,
+  documentAccess,
+  documents,
+  templates,
+} from "../../global/schema.js";
 
 export type SearchResult = {
   id: string;
@@ -24,9 +29,19 @@ export interface SearchOptions {
   limit?: number;
 }
 
+function documentReadCondition(userId: string) {
+  const specificAccess = sql`EXISTS (SELECT 1 FROM ${documentAccess} WHERE ${documentAccess.documentId} = ${documents.id} AND ${documentAccess.userId} = ${userId} AND ${documentAccess.revokedAt} IS NULL)`;
+  return or(
+    eq(documents.ownerId, userId),
+    eq(documents.sharingMode, "workspace"),
+    and(eq(documents.sharingMode, "specific"), specificAccess)
+  );
+}
+
 export async function searchOrganization(
   env: CloudflareBindings,
   organizationId: string,
+  userId: string,
   options: SearchOptions
 ): Promise<SearchResult[]> {
   const db = createD1(env.D1);
@@ -44,7 +59,12 @@ export async function searchOrganization(
         parsedText: documents.parsedText,
       })
       .from(documents)
-      .where(eq(documents.organizationId, organizationId));
+      .where(
+        and(
+          eq(documents.organizationId, organizationId),
+          documentReadCondition(userId)
+        )
+      );
 
     for (const row of rows) {
       await insert(index, {
