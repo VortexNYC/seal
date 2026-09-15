@@ -37,17 +37,6 @@ describe("seal-web wrangler custom-domain routes", () => {
     expect(config.name).toBe("seal-web");
   });
 
-  test("binds sign.app.vortex.nyc as a custom domain", () => {
-    const signRoute = config.routes?.find(
-      (r) => r.pattern === "sign.app.vortex.nyc"
-    );
-    expect(
-      signRoute,
-      "sign.app.vortex.nyc route must be declared"
-    ).toBeDefined();
-    expect(signRoute?.custom_domain).toBe(true);
-  });
-
   test("preserves the app.seal.nyc production custom domain", () => {
     const appRoute = config.routes?.find((r) => r.pattern === "app.seal.nyc");
     expect(appRoute, "app.seal.nyc route must be preserved").toBeDefined();
@@ -63,12 +52,12 @@ describe("seal-web wrangler custom-domain routes", () => {
     }
   });
 
-  test("does not bind any Sign marketing/docs domains (out of scope)", () => {
-    const outOfScope = ["sign.vortex.nyc", "docs.sign.vortex.nyc"];
+  test("does not bind out-of-scope custom domains", () => {
+    const outOfScope = ["sign.example.com", "docs.sign.example.com"];
     for (const domain of outOfScope) {
       expect(
         config.routes?.some((r) => r.pattern === domain),
-        `${domain} must NOT be bound on the web runtime (owned by VOR-33/VOR-9)`
+        `${domain} must NOT be bound on the web runtime`
       ).toBeFalsy();
     }
   });

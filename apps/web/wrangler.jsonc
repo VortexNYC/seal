@@ -19,9 +19,5 @@
       "pattern": "app.seal.nyc",
       "custom_domain": true,
     },
-    {
-      "pattern": "sign.app.vortex.nyc",
-      "custom_domain": true,
-    },
   ],
 }
