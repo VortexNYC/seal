@@ -260,7 +260,7 @@ export class CI extends WorkflowEntrypoint<
           this.env.SANDBOX,
           `${slugify(options.name)}-${crypto.randomUUID()}`,
           {
-            transport: "http",
+            transport: "rpc",
             enableDefaultSession: false,
             containerTimeouts: { portReadyTimeoutMS: PORT_READY_TIMEOUT_MS },
           }
@@ -279,9 +279,10 @@ export class CI extends WorkflowEntrypoint<
             cwd,
             env: extraEnv,
             autoCleanup: false,
+            timeout: commandTimeoutMs,
           });
 
-          const { exitCode } = await proc.waitForExit(commandTimeoutMs);
+          const { exitCode } = await proc.waitForExit();
           const preview = await readPreviews(sandbox);
 
           if (exitCode !== 0) {
