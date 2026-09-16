@@ -416,19 +416,6 @@ importers:
         specifier: ^4.132.0
         version: 4.132.0(@cloudflare/workers-types@5.20260908.1)(@types/node@25.9.5)
 
-  packages/ci-worker:
-    dependencies:
-      '@cloudflare/ci':
-        specifier: 0.2.0
-        version: 0.2.0
-    devDependencies:
-      '@seal/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      wrangler:
-        specifier: ^4.132.0
-        version: 4.132.0(@cloudflare/workers-types@4.20260702.1)(@types/node@26.1.1)
-
   packages/cli:
     dependencies:
       '@seal/client':
@@ -1178,9 +1165,6 @@ packages:
       react:
         optional: true
 
-  '@cloudflare/ci@0.2.0':
-    resolution: {integrity: sha512-uAr54YhZy4sYHaJM2fYMPg2BtmS2btemBMtED59XDdYQhw08lGr29IS+njNKSWnrBGpbJuQGRWc/jWWiMgg3vg==}
-
   '@cloudflare/containers@0.3.7':
     resolution: {integrity: sha512-DM9dm3FnIBSyiSJ1FLavKwl/lk3oAmTaynCzZQ9pZR0ncRPquSxkxd8Nu2MFILxmDDsPkxKsSNEh9mHHMty4Fw==}
 
@@ -1202,20 +1186,6 @@ packages:
   '@cloudflare/kv-asset-handler@0.5.0':
     resolution: {integrity: sha512-jxQYkj8dSIzc0cD6cMMNdOc1UVjqSqu8BZdor5s8cGjW2I8BjODt/kWPVdY+u9zj3ms75Q5qaZgnxUad83+eAg==}
     engines: {node: '>=22.0.0'}
-
-  '@cloudflare/sandbox@0.12.1':
-    resolution: {integrity: sha512-P1ZmNDLYtuEY1ZUcAx0OgTol98VqS617LGd4nf1RTOjSV2yHLDAp59NI36/gg3/pxkHPgmAEyFIjH/ie8FoA7g==}
-    peerDependencies:
-      '@openai/agents': ^0.3.3
-      '@opencode-ai/sdk': ^1.1.40
-      '@xterm/xterm': '>=5.0.0'
-    peerDependenciesMeta:
-      '@openai/agents':
-        optional: true
-      '@opencode-ai/sdk':
-        optional: true
-      '@xterm/xterm':
-        optional: true
 
   '@cloudflare/unenv-preset@2.16.1':
     resolution: {integrity: sha512-ECxObrMfyTl5bhQf/lZCXwo5G6xX9IAUo+nDMKK4SZ8m4Jvvxp52vilxyySSWh2YTZz8+HQ07qGH/2rEom1vDw==}
@@ -5987,9 +5957,6 @@ packages:
   canvg@3.0.11:
     resolution: {integrity: sha512-5ON+q7jCTgMp9cjpu4Jo6XbvfYwSB2Ow3kzHKfIyJfaCAOHLbdKPQqGKgfED/R5B+3TFFfe8pegYA+b423SRyA==}
     engines: {node: '>=10.0.0'}
-
-  capnweb@0.8.0:
-    resolution: {integrity: sha512-BK/TuXUiyfLSKsmjojn70yN7oYG/JJzoURZ3tckjg5Zj2KcygPm0A5jyOlswK7SYB4f0Gh9tt+RZ132b80iLfA==}
 
   ccount@2.0.1:
     resolution: {integrity: sha512-eyrF0jiFpY+3drT6383f1qhkbGsLSifNAjA61IUjZjmLCWjItY6LB9ft9YhoDgwfmclB2zhu51Lc7+95b8NRAg==}
@@ -11458,15 +11425,6 @@ snapshots:
       react: 19.2.8
     optional: true
 
-  '@cloudflare/ci@0.2.0':
-    dependencies:
-      '@cloudflare/sandbox': 0.12.1
-      zod: 4.6.4
-    transitivePeerDependencies:
-      - '@openai/agents'
-      - '@opencode-ai/sdk'
-      - '@xterm/xterm'
-
   '@cloudflare/containers@0.3.7': {}
 
   '@cloudflare/kumo@2.13.2(@date-fns/tz@1.5.0)(@phosphor-icons/react@2.1.10(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.4.3)':
@@ -11492,13 +11450,6 @@ snapshots:
       - date-fns
 
   '@cloudflare/kv-asset-handler@0.5.0': {}
-
-  '@cloudflare/sandbox@0.12.1':
-    dependencies:
-      '@cloudflare/containers': 0.3.7
-      aws4fetch: 1.0.20
-      capnweb: 0.8.0
-      hono: 4.13.7
 
   '@cloudflare/unenv-preset@2.16.1(unenv@2.0.0-rc.24)(workerd@1.20260730.1)':
     dependencies:
@@ -15696,7 +15647,8 @@ snapshots:
 
   avsc@5.7.9: {}
 
-  aws4fetch@1.0.20: {}
+  aws4fetch@1.0.20:
+    optional: true
 
   axobject-query@4.1.0: {}
 
@@ -16080,8 +16032,6 @@ snapshots:
       stackblur-canvas: 2.7.0
       svg-pathdata: 6.0.3
     optional: true
-
-  capnweb@0.8.0: {}
 
   ccount@2.0.1: {}
 
