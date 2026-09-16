@@ -21,6 +21,7 @@
   "env": {
     "production": {
       "name": "seal-web",
+      "preview_urls": true,
       "routes": [
         {
           "pattern": "app.seal.nyc",
