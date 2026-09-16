@@ -25,6 +25,7 @@ traces = { enabled = true, head_sampling_rate = 0.1 }
 [[d1_databases]]
 binding = "D1"
 database_name = "vortex-sign-global"
+database_id = "6a27b4da-e253-4e8a-8092-d2b17d984953"
 migrations_dir = "migrations"
 
 [[send_email]]
@@ -65,6 +66,7 @@ traces = { enabled = true, head_sampling_rate = 0.1 }
 [[env.production.d1_databases]]
 binding = "D1"
 database_name = "vortex-sign-global"
+database_id = "6a27b4da-e253-4e8a-8092-d2b17d984953"
 migrations_dir = "migrations"
 
 [[env.production.send_email]]
