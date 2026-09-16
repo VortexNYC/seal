@@ -14,11 +14,6 @@ An open-source, agent-native e-signature platform. Built and powered by Vortex.
 - **Docs / landing:** TanStack Start + Fumadocs
 - **Tooling:** pnpm + Vite+ (`vp`)
 
-## Migration status
-
-- Vortex Core and Convex have been removed from the dependency graph.
-- Shared auth UI is now consumed from the public package `@vortex-api/better-auth-ui`.
-
 ## Workspace overview
 
 | Path                     | Purpose                                       | Stack                           |
