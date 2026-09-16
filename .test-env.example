@@ -11,9 +11,6 @@ TEST_USER_PASSWORD=12345678
 APP_ORIGIN=
 VORTEX_AUTH_TEST_SESSION_SECRET=
 
-# Third-party provider item IDs for services Seal still calls directly.
-CLERK_SECRET_KEY_1PASSWORD_ITEM=
-
 # Dev URLs declared by vortex.project.json.
 # DEV_URL_1=http://seal.localhost:1355
 # DEV_URL_2=http://seal-landing.localhost:1355
