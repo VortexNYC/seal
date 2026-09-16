@@ -41,9 +41,7 @@ Important values from the latest setup:
 - Web automation tool: `vb`
 - Local app URL: `http://seal.localhost:1355`
 - Dev command: `cd /Users/shlomokabareti/Projects/Seal && portless seal ol bun run dev:web`
-- Use staging for Vortex Connect, subscriptions, billing, and payment verification:
-  - `https://staging-app.seal.nyc`
-  - Convex deployment: `clever-goose-484`
+- Use the configured Vortex Payments staging environment for Connect, subscriptions, billing, and payment verification. Do not hard-code retired URLs or Convex deployments.
 
 ## Non-Negotiable Rules
 
