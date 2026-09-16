@@ -4,26 +4,36 @@
 //   R2_ACCESS_KEY_ID=<id> R2_SECRET_ACCESS_KEY=<secret> pnpm exec scripts/set-r2-secrets.mjs
 // Sets R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY as secrets on the vortex-sign-ci worker.
 
-import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 
 let accessKeyId = process.env.R2_ACCESS_KEY_ID;
 let secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
 
 if (process.env.R2_API_TOKEN) {
   const token = process.env.R2_API_TOKEN;
-  const verifyResp = await fetch("https://api.cloudflare.com/client/v4/user/tokens/verify", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const verifyResp = await fetch(
+    "https://api.cloudflare.com/client/v4/user/tokens/verify",
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
 
   if (!verifyResp.ok) {
-    console.error("Failed to verify R2_API_TOKEN:", verifyResp.status, await verifyResp.text());
+    console.error(
+      "Failed to verify R2_API_TOKEN:",
+      verifyResp.status,
+      await verifyResp.text()
+    );
     process.exit(1);
   }
 
   const verify = await verifyResp.json();
   if (!verify.success) {
-    console.error("R2_API_TOKEN verification failed:", JSON.stringify(verify.errors));
+    console.error(
+      "R2_API_TOKEN verification failed:",
+      JSON.stringify(verify.errors)
+    );
     process.exit(1);
   }
 

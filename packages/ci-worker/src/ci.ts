@@ -5,6 +5,7 @@ import {
   type CloudflareArtifacts,
 } from "@cloudflare/ci";
 import type { WorkflowEvent, WorkflowStep } from "cloudflare:workers";
+
 import type { Bindings } from "./env";
 
 const MINUTE = 60 * 1000;
@@ -106,6 +107,11 @@ export class CI extends CIWorkflow<CloudflareArtifacts, Bindings> {
         },
       }),
     ]);
+
+    void lint;
+    void typecheck;
+    void test;
+    void build;
 
     if (branch !== "main") {
       return;

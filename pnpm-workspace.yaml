@@ -1,3 +1,7 @@
+nodeLinker: isolated
+strictPeerDependencies: false
+autoInstallPeers: true
+
 packages:
   - "apps/*"
   - "packages/*"
