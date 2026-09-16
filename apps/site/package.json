@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "deploy": "wrangler deploy -e production",
-    "preview-deploy": "wrangler versions upload -e production --preview-alias",
+    "build:production": "CLOUDFLARE_ENV=production astro build",
+    "deploy": "pnpm run build:production && wrangler deploy -e production",
+    "preview-deploy": "pnpm run build:production && wrangler versions upload -e production --preview-alias",
     "typecheck": "astro check && tsc -p tsconfig.worker.json --noEmit"
   },
   "dependencies": {
