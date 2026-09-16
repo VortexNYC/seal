@@ -34,26 +34,28 @@
 ### Files Overview
 
 **New files to create:**
-| File | Purpose |
-|------|---------|
+
+| File                                                                      | Purpose                                          |
+| ------------------------------------------------------------------------- | ------------------------------------------------ |
 | `apps/web/src/components/documents/field-inputs/payment-field-inline.tsx` | Inline PaymentElement component for signing page |
 
 **Files to modify:**
-| File | Changes |
-|------|---------|
-| `apps/backend/convex/schemas/document_workflow_status.ts` | Add `waiting_for_payment` to enum, transitions, labels |
-| `apps/backend/convex/documents/workflow_helpers.ts` | Update `canCompleteDocument`, `isTerminalWorkflowStatus` |
-| `apps/backend/convex/documents/workflow_mutations.ts` | Check payment fields before completing → route to `waiting_for_payment` |
-| `apps/backend/convex/retired_provider/payment_field_actions.ts` | Extract `retrieveClientSecret` helper |
-| `apps/backend/convex/retired_provider/connect_webhook_handlers.ts` | Add document completion check after `invoice.paid` |
-| `apps/backend/convex/payment_fields/mutations.ts` | Return `documentId` from `updatePaymentStatusFromWebhook` |
-| `apps/backend/convex/payment_fields/queries.ts` | Add `getPaymentSecret` public action (or new action file) |
-| `apps/web/src/components/documents/workflow-status-badge.tsx` | Add `waiting_for_payment` badge config |
-| `apps/web/src/components/documents/document-status-hero.tsx` | Add `waiting_for_payment` status styles |
-| `apps/web/src/lib/formatting.ts` | Add `waiting_for_payment` label |
-| `apps/web/src/components/documents/field-inputs/payment-field-summary.tsx` | Replace "Pay Now" link with inline PaymentElement |
-| `apps/web/src/components/documents/field-inputs/index.ts` | Export new component |
-| `apps/web/src/components/documents/field-input-manager.tsx` | Wire up inline payment component |
+
+| File                                                                       | Changes                                                                 |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `apps/backend/convex/schemas/document_workflow_status.ts`                  | Add `waiting_for_payment` to enum, transitions, labels                  |
+| `apps/backend/convex/documents/workflow_helpers.ts`                        | Update `canCompleteDocument`, `isTerminalWorkflowStatus`                |
+| `apps/backend/convex/documents/workflow_mutations.ts`                      | Check payment fields before completing → route to `waiting_for_payment` |
+| `apps/backend/convex/retired_provider/payment_field_actions.ts`            | Extract `retrieveClientSecret` helper                                   |
+| `apps/backend/convex/retired_provider/connect_webhook_handlers.ts`         | Add document completion check after `invoice.paid`                      |
+| `apps/backend/convex/payment_fields/mutations.ts`                          | Return `documentId` from `updatePaymentStatusFromWebhook`               |
+| `apps/backend/convex/payment_fields/queries.ts`                            | Add `getPaymentSecret` public action (or new action file)               |
+| `apps/web/src/components/documents/workflow-status-badge.tsx`              | Add `waiting_for_payment` badge config                                  |
+| `apps/web/src/components/documents/document-status-hero.tsx`               | Add `waiting_for_payment` status styles                                 |
+| `apps/web/src/lib/formatting.ts`                                           | Add `waiting_for_payment` label                                         |
+| `apps/web/src/components/documents/field-inputs/payment-field-summary.tsx` | Replace "Pay Now" link with inline PaymentElement                       |
+| `apps/web/src/components/documents/field-inputs/index.ts`                  | Export new component                                                    |
+| `apps/web/src/components/documents/field-input-manager.tsx`                | Wire up inline payment component                                        |
 
 ---
 

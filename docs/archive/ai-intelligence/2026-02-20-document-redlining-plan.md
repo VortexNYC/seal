@@ -38,11 +38,7 @@ export const annotationSeverityTuple = v.union(
 );
 
 export type AnnotationCategory =
-  | "obligation"
-  | "payment"
-  | "risk"
-  | "dates"
-  | "terms";
+  "obligation" | "payment" | "risk" | "dates" | "terms";
 export type AnnotationSeverity = "informational" | "important" | "critical";
 
 export const aiDocumentAnnotationsTable = defineTable({

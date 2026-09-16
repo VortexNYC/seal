@@ -12,12 +12,12 @@
   "dependencies": {
     "@cloudflare/containers": "^0.3.7",
     "@seal/internal-auth": "workspace:*",
-    "hono": "^4.13.5"
+    "hono": "^4.13.8"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260101.0",
+    "@cloudflare/workers-types": "^5.20260916.1",
     "@seal/tsconfig": "workspace:*",
     "typescript": "catalog:",
-    "wrangler": "^4.132.0"
+    "wrangler": "^4.133.0"
   }
 }

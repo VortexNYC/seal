@@ -1,9 +1,9 @@
 /*
  * Seal Design System — single source of truth for all web apps.
  *
- * This IS the Seal identity. The web app and landing site inherit everything
+ * This IS the Seal identity. The web app and docs site inherit everything
  * here. Apps only override what is genuinely unique to them:
- *   - Landing: fumadocs color overrides, marketing-specific animations
+ *   - Docs: content typography and code-block presentation
  *   - Web app: sidebar dimensions, chart colors
  *
  * Color space: OKLCH throughout (perceptually uniform, excellent for dark mode).

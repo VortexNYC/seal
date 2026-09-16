@@ -8,13 +8,13 @@
 
 ## OVERVIEW
 
-Seal is a pnpm + Vite+ (VoidZero) monorepo with a React 19 product app, a TanStack Start landing/docs site, a Cloudflare Workers backend, transactional email templates, an embeddable React SDK, and shared design tokens. Auth uses Better-Auth through Vortex Auth (`@vortexnyc/auth`); the product UI uses Tailwind v4 + Shadcn patterns. Product data lives in the Cloudflare Worker API (`apps/api`).
+Seal is a pnpm + Vite+ (VoidZero) monorepo with a React 19 product app, a blume (Astro) static docs site, a Cloudflare Workers backend, transactional email templates, an embeddable React SDK, and shared design tokens. Auth uses Better-Auth through Vortex Auth (`@vortexnyc/auth`); the product UI uses Tailwind v4 + Shadcn patterns. Product data lives in the Cloudflare Worker API (`apps/api`).
 
 ## STRUCTURE
 
 ```text
 vortex-sign/
-├── apps/               # web, landing, api, mcp-worker
+├── apps/               # web, docs, api, mcp-worker, anydoc-worker, convert-worker
 ├── packages/           # transactional, react-sdk, tokens
 ├── tooling/            # shared TypeScript config
 └── docs/               # planning, architecture, design notes (mostly archival)
@@ -30,9 +30,9 @@ vortex-sign/
 | REST API routes        | `apps/api/src/api/`                                            | Public + internal API routes                      |
 | Product web routing    | `apps/web/src/routes/`                                         | TanStack file-based routes                      |
 | Product web entry      | `apps/web/src/main.tsx`                                        | Better-Auth + TanStack Query + Router setup     |
-| Landing/docs routes    | `apps/landing/src/routes/`                                     | Marketing site, docs, API reference             |
-| Published docs content | `apps/landing/content/docs/`                                   | Fumadocs MDX source                             |
-| API spec source        | `apps/landing/openapi.yaml`                                    | Generates API docs                              |
+| Docs site config       | `apps/docs/blume.config.ts`                                    | blume site config, OpenAPI route                |
+| Published docs content | `apps/docs/docs/`                                              | blume (Astro) MDX source                        |
+| API spec source        | `apps/docs/openapi.yaml`                                       | OpenAPI spec rendered at `/reference`           |
 | MCP tools/resources    | `apps/mcp-worker/src/tools/`, `apps/mcp-worker/src/resources/` | MCP worker surface                              |
 | Email templates        | `packages/transactional/src/emails/`                           | React Email templates                           |
 | React SDK              | `packages/react-sdk/src/`                                      | Embeddable signing components                   |
@@ -42,23 +42,21 @@ vortex-sign/
 ## SUBDIRECTORY GUIDES
 
 - `apps/web/AGENTS.md`
-- `apps/landing/AGENTS.md`
-- `apps/mcp-worker/AGENTS.md`
 - `packages/transactional/AGENTS.md`
 
 ## CONVENTIONS (PROJECT-SPECIFIC)
 
 - TypeScript strict: no `any`, `@ts-ignore`, `@ts-expect-error`, `as any`; exported functions have explicit return types.
 - Cloudflare Worker backend (`apps/api`): use Hono + Drizzle + wrangler; native-first auth/storage.
-- Routes: TanStack file-based; `apps/web/src/routeTree.gen.ts` and `apps/landing/src/routeTree.gen.ts` are generated.
-- Landing docs: `apps/landing/.source/*` and `apps/landing/content/docs/api-reference/*` are generated artifacts; regenerate from source instead of hand-editing.
+- Routes: TanStack file-based; `apps/web/src/routeTree.gen.ts` is generated.
+- Docs: `apps/docs/dist/*` is a generated artifact; regenerate via `pnpm --dir apps/docs run build` instead of hand-editing.
 - E2E: Playwright page objects; prefer `data-testid` selectors.
 
 ## ANTI-PATTERNS (THIS PROJECT)
 
 - Mutate historical usage counters directly; preserve usage history through documented payment projections.
-- Edit generated files: `apps/web/src/routeTree.gen.ts`, `apps/landing/src/routeTree.gen.ts`, `apps/landing/.source/*`.
-- Hand-edit generated API reference docs under `apps/landing/content/docs/api-reference/`; update `apps/landing/openapi.yaml` and regenerate instead.
+- Edit generated files: `apps/web/src/routeTree.gen.ts`, `apps/docs/dist/*`.
+- Let the API reference drift from `apps/docs/openapi.yaml`; the spec is the source of truth rendered at `/reference`.
 - Use CSS-class selectors in E2E tests.
 - Commit secrets or `.env*` files.
 - Run `git push --force` or `git push --force-with-lease` without explicit user approval in the current thread. If a branch needs to be updated from `main` and the user did not explicitly request a rebase, prefer merging `main` into the branch.
@@ -67,8 +65,8 @@ vortex-sign/
 
 - Large single-file route components exist in `apps/web/src/routes/` (avoid expanding unless refactoring).
 - MCP server returns text payloads via tools/resources and logs to stderr only.
-- Product/planning docs in `docs/` are mostly archival; published developer docs live in `apps/landing/content/docs/`.
-- The landing site blends Fumadocs MDX, TanStack Start routes, and repo-managed content modules.
+- Product/planning docs in `docs/` are mostly archival; published developer docs live in `apps/docs/docs/`.
+- The docs site is a `blume` (Astro) static build with MDX content modules and an OpenAPI reference at `/reference`.
 
 ## COMMANDS
 
@@ -76,7 +74,7 @@ vortex-sign/
 pnpm run dev
 pnpm --filter @seal/api run dev
 pnpm --filter @seal/web run dev
-pnpm --filter @seal/landing run dev
+pnpm --filter @seal/docs run dev
 pnpm --filter @seal/mcp-worker run dev
 pnpm --filter @seal/transactional run dev
 
@@ -90,11 +88,11 @@ pnpm run test
 pnpm --filter @seal/api run test
 pnpm --filter @seal/web run test
 pnpm --dir apps/web run test:e2e
-pnpm --dir apps/landing run docs:generate:api
+pnpm --dir apps/docs run build
 ```
 
-`pnpm run dev` starts the main product stack: `@seal/api`, `@seal/web`, and `@seal/landing`.
-Use targeted `pnpm --filter ... run dev` commands for other workspaces; `@seal/landing` and `@seal/transactional` both default to port `3001`.
+`pnpm run dev` starts the main product stack: `@seal/api`, `@seal/web`, and `@seal/docs`.
+Use targeted `pnpm --filter ... run dev` commands for other workspaces; `@seal/transactional` defaults to port `3001`.
 
 ## NOTES
 
