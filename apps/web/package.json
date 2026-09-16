@@ -59,7 +59,7 @@
     "@tanstack/react-router-devtools": "1.167.1",
     "@tanstack/react-virtual": "^3.13.18",
     "@tanstack/router-plugin": "1.168.24",
-    "@vortexnyc/better-auth-ui": "link:../../../better-auth-ui",
+    "@vortexnyc/better-auth-ui": "0.1.3",
     "better-auth": "1.7.2",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -102,6 +102,6 @@
     "vite": "catalog:",
     "vitest": "catalog:",
     "vitest-dom": "^0.1.1",
-    "wrangler": "^4.100.0"
+    "wrangler": "^4.132.0"
   }
 }

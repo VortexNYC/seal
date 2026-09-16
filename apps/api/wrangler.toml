@@ -29,6 +29,7 @@ migrations_dir = "migrations"
 
 [[send_email]]
 name = "EMAIL"
+allowed_sender_addresses = ["notifications@seal.nyc", "test@example.com"]
 
 [[r2_buckets]]
 binding = "DOCUMENTS_BUCKET"
@@ -68,6 +69,7 @@ migrations_dir = "migrations"
 
 [[env.production.send_email]]
 name = "EMAIL"
+allowed_sender_addresses = ["notifications@seal.nyc"]
 
 [[env.production.r2_buckets]]
 binding = "DOCUMENTS_BUCKET"
