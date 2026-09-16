@@ -53,8 +53,7 @@
     ],
     "cloudNotes": [
       "Preserve root AGENTS.md and CLAUDE.md because they contain Seal-specific navigation and design context.",
-      "Use staging for Vortex payments, subscriptions, webhooks, billing, and payment verification.",
-      "Do not target the retired self-hosted Convex URLs."
+      "Use staging for Vortex payments, subscriptions, webhooks, billing, and payment verification."
     ],
     "localOnlyNotes": [
       "Read .test-env before live proof; it is the local source of truth for dev URLs and deployments.",
