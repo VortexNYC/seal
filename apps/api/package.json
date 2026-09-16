@@ -24,13 +24,13 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "^0.19.1",
+    "@cloudflare/vitest-pool-workers": "^0.22.0",
     "@cloudflare/workers-types": "^5.20260916.1",
     "@seal/tsconfig": "workspace:*",
     "drizzle-kit": "^0.31.10",
     "tsx": "^4.23.13",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "wrangler": "^4.132.0"
+    "wrangler": "^4.133.0"
   }
 }

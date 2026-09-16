@@ -34,11 +34,11 @@
     "secretlint": "^13.0.5",
     "simple-git-hooks": "^2.14.0",
     "tsx": "^4.23.13",
-    "typescript": "~5.9.3",
+    "typescript": "~7.0.2",
     "vite-plus": "0.3.2"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm run scan:secrets"
   },
-  "packageManager": "pnpm@11.27.0"
+  "packageManager": "pnpm@12.4.2"
 }

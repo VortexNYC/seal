@@ -102,6 +102,6 @@
     "vite": "catalog:",
     "vitest": "catalog:",
     "vitest-dom": "^0.1.1",
-    "wrangler": "^4.132.0"
+    "wrangler": "^4.133.0"
   }
 }

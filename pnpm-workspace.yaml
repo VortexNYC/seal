@@ -13,7 +13,7 @@ catalog:
   "@types/react-dom": "^19.3.0"
   "react": "^19.3.0"
   "react-dom": "^19.3.0"
-  "typescript": "~5.9.3"
+  "typescript": "~7.0.2"
   "vite": "^8.3.0"
   "vite-node": "^6.0.0"
   "vitest": "^4.1.11"
@@ -69,12 +69,12 @@ minimumReleaseAgeExclude:
   - '@cloudflare/workerd-windows-64@1.20260915.1 || 1.20260916.1'
   - miniflare@5.20260915.0-alpha || 5.20260916.0-alpha
   - workerd@1.20260915.1 || 1.20260916.1
-  - wrangler@4.132.0
+  - wrangler@4.132.0 || 4.133.0
   - '@cloudflare/vite-plugin@1.54.11'
   - '@cloudflare/workers-types@5.20260916.1'
 
 overrides:
-  "wrangler": "^4.132.0"
+  "wrangler": "^4.133.0"
   "react": "19.3.0"
   "react-dom": "19.3.0"
   "@tanstack/router-core": "1.171.16"

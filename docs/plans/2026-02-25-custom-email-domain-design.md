@@ -112,8 +112,9 @@ New section within the existing settings area (or a new settings tab if one does
 - **Domain failed**: Show the domain with a red "Failed" badge, explanation text, and options to retry or remove
 
 **DNS Records Table Columns:**
+
 | Type | Name | Value | Status |
-|------|------|-------|--------|
+| ---- | ---- | ----- | ------ |
 
 Each row has a copy button for the Value field.
 

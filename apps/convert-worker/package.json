@@ -18,6 +18,6 @@
     "@cloudflare/workers-types": "^5.20260916.1",
     "@seal/tsconfig": "workspace:*",
     "typescript": "catalog:",
-    "wrangler": "^4.132.0"
+    "wrangler": "^4.133.0"
   }
 }
