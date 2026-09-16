@@ -6,13 +6,34 @@ import {
 } from "@cloudflare/ci";
 import type { WorkflowEvent, WorkflowStep } from "cloudflare:workers";
 
-const PROOF_STEP_TIMEOUT_MS = 20 * 60 * 1000;
-const PROOF_COMMAND_TIMEOUT_MS = 19 * 60 * 1000 + 50 * 1000;
-const DEPLOY_STEP_TIMEOUT_MS = 30 * 60 * 1000;
-const DEPLOY_COMMAND_TIMEOUT_MS = 29 * 60 * 1000 + 50 * 1000;
+const MINUTE = 60 * 1000;
+
+const stepConfig = {
+  install: {
+    timeoutMs: 20 * MINUTE,
+    commandTimeoutMs: 19 * MINUTE + 50 * 1000,
+  },
+  check: {
+    timeoutMs: 20 * MINUTE,
+    commandTimeoutMs: 19 * MINUTE + 50 * 1000,
+  },
+  build: {
+    timeoutMs: 20 * MINUTE,
+    commandTimeoutMs: 19 * MINUTE + 50 * 1000,
+  },
+  migrate: {
+    timeoutMs: 10 * MINUTE,
+    commandTimeoutMs: 9 * MINUTE + 50 * 1000,
+  },
+  deploy: {
+    timeoutMs: 45 * MINUTE,
+    commandTimeoutMs: 44 * MINUTE + 50 * 1000,
+  },
+};
 
 const npmrcCommand =
-  'printf "@%s:registry=https://npm.pkg.github.com\\n" vortexnyc > "$NPM_CONFIG_USERCONFIG" && printf "//npm.pkg.github.com/:_authToken=%s\\n" "$NPM_TOKEN" >> "$NPM_CONFIG_USERCONFIG"';
+  'printf "@%s:registry=https://npm.pkg.github.com\\n" vortexnyc > /tmp/.npmrc && ' +
+  'printf "//npm.pkg.github.com/:_authToken=%s\\n" "$NPM_TOKEN" >> /tmp/.npmrc';
 
 const sealEnv = {
   HOME: "/tmp",
@@ -22,64 +43,97 @@ const sealEnv = {
   VITE_APP_URL: "https://app.seal.nyc",
 };
 
-// Minimal proof to verify Sandbox lifecycle before running the full wall.
-const proofCommand = `sh -c 'rm -rf /tmp/ws && mkdir -p /tmp/ws && cp -a /workspace/. /tmp/ws/ && cd /tmp/ws && pnpm --version'`;
-
-const deployCommand = [
-  "rm -rf /tmp/ws && mkdir -p /tmp/ws && cp -a /workspace/. /tmp/ws/ && cd /tmp/ws",
-  npmrcCommand,
-  "pnpm install --frozen-lockfile --silent",
-  "pnpm exec vp run build",
-  "cd apps/api && pnpm exec wrangler d1 migrations apply vortex-sign-global --env production --remote",
-  "printf '%s' \"$BETTER_AUTH_SECRET\" | pnpm exec wrangler secret put BETTER_AUTH_SECRET --env production",
-  "printf '%s' \"$INTERNAL_API_KEY\" | pnpm exec wrangler secret put INTERNAL_API_KEY --env production",
-  "printf '%s' \"$TOKEN_HASH_SECRET\" | pnpm exec wrangler secret put TOKEN_HASH_SECRET --env production",
-  "printf '%s' \"$MCP_SIGNING_KEY\" | pnpm exec wrangler secret put MCP_SIGNING_KEY --env production",
-  "pnpm exec wrangler deploy -e production",
-  "cd ../anydoc-worker && pnpm exec wrangler deploy",
-  "cd ../convert-worker && pnpm exec wrangler deploy",
-  "cd ../mcp-worker && pnpm exec wrangler deploy",
-  "cd ../web && pnpm exec wrangler deploy",
-].join(" && ");
-
 export class CI extends CIWorkflow<CloudflareArtifacts> {
   protected async pipeline(
     _event: WorkflowEvent<CiParams<CloudflareArtifacts>>,
     _step: WorkflowStep,
     ci: CiContext
   ): Promise<void> {
-    await ci.runner({
-      name: "proof",
-      command: proofCommand,
+    const branch = _event.payload.branch;
+
+    const install = await ci.runner({
+      name: "install",
+      command: `${npmrcCommand} && pnpm install --frozen-lockfile`,
+      cache: { inputs: ["package.json", "pnpm-lock.yaml"] },
+      secrets: ["NPM_TOKEN"],
       env: sealEnv,
       cloudflareCredentials: false,
       config: {
-        timeout: PROOF_STEP_TIMEOUT_MS,
-        commandTimeoutMs: PROOF_COMMAND_TIMEOUT_MS,
+        timeout: stepConfig.install.timeoutMs,
+        commandTimeoutMs: stepConfig.install.commandTimeoutMs,
       },
     });
 
-    if (_event.payload.branch !== "main") {
+    const [lint, typecheck, test, build] = await Promise.all([
+      install.runner({
+        name: "lint",
+        command: "pnpm exec vp run lint",
+        env: sealEnv,
+        cloudflareCredentials: false,
+        config: {
+          timeout: stepConfig.check.timeoutMs,
+          commandTimeoutMs: stepConfig.check.commandTimeoutMs,
+        },
+      }),
+      install.runner({
+        name: "typecheck",
+        command: "pnpm exec vp run typecheck",
+        env: sealEnv,
+        cloudflareCredentials: false,
+        config: {
+          timeout: stepConfig.check.timeoutMs,
+          commandTimeoutMs: stepConfig.check.commandTimeoutMs,
+        },
+      }),
+      install.runner({
+        name: "test",
+        command: "pnpm exec vp run test",
+        env: sealEnv,
+        cloudflareCredentials: false,
+        config: {
+          timeout: stepConfig.check.timeoutMs,
+          commandTimeoutMs: stepConfig.check.commandTimeoutMs,
+        },
+      }),
+      install.runner({
+        name: "build",
+        command: "pnpm exec vp run build:all",
+        env: sealEnv,
+        cloudflareCredentials: false,
+        config: {
+          timeout: stepConfig.build.timeoutMs,
+          commandTimeoutMs: stepConfig.build.commandTimeoutMs,
+        },
+      }),
+    ]);
+
+    if (branch !== "main") {
       return;
     }
 
-    await ci.runner({
-      name: "deploy",
-      command: `sh -c '${deployCommand}'`,
-      secrets: [
-        "NPM_TOKEN",
-        "BETTER_AUTH_SECRET",
-        "INTERNAL_API_KEY",
-        "TOKEN_HASH_SECRET",
-        "MCP_SIGNING_KEY",
-      ],
-      env: sealEnv,
+    await install.runner({
+      name: "migrate",
+      command:
+        "cd apps/api && pnpm exec wrangler d1 migrations apply vortex-sign-global --env production --remote",
       cloudflareCredentials: {
         accountId: this.env.CLOUDFLARE_ACCOUNT_ID,
       },
       config: {
-        timeout: DEPLOY_STEP_TIMEOUT_MS,
-        commandTimeoutMs: DEPLOY_COMMAND_TIMEOUT_MS,
+        timeout: stepConfig.migrate.timeoutMs,
+        commandTimeoutMs: stepConfig.migrate.commandTimeoutMs,
+      },
+    });
+
+    await build.runner({
+      name: "deploy",
+      command: "pnpm exec vp run deploy",
+      cloudflareCredentials: {
+        accountId: this.env.CLOUDFLARE_ACCOUNT_ID,
+      },
+      env: sealEnv,
+      config: {
+        timeout: stepConfig.deploy.timeoutMs,
+        commandTimeoutMs: stepConfig.deploy.commandTimeoutMs,
       },
     });
   }

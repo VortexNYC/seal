@@ -8,54 +8,53 @@
   "artifacts": [
     {
       "binding": "ARTIFACTS",
-      "namespace": "vortex-sign",
-    },
+      "namespace": "vortex"
+    }
   ],
   "containers": [
     {
       "class_name": "CiSandbox",
       "image": "./Dockerfile",
       "max_instances": 10,
-      "instance_type": "standard-4",
-    },
+      "instance_type": "standard-4"
+    }
   ],
   "durable_objects": {
     "bindings": [
       {
         "name": "SANDBOX",
-        "class_name": "CiSandbox",
-      },
-    ],
+        "class_name": "CiSandbox"
+      }
+    ]
   },
   "triggers": {
     "events": [
       {
         "type": "cf.artifacts.repo.pushed",
         "filter": {
-          "namespace": "vortex-sign",
-          "repo_name": "vortex-sign",
+          "namespace": "vortex"
         },
         "targets": [
           {
             "type": "workflow",
-            "workflow_name": "vortex-sign-ci",
-          },
-        ],
-      },
-    ],
+            "workflow_name": "vortex-sign-ci"
+          }
+        ]
+      }
+    ]
   },
   "workflows": [
     {
       "name": "vortex-sign-ci",
       "binding": "CI_WORKFLOW",
-      "class_name": "CI",
-    },
+      "class_name": "CI"
+    }
   ],
   "exports": {
     "CiSandbox": {
       "type": "durable-object",
-      "storage": "sqlite",
-    },
+      "storage": "sqlite"
+    }
   },
   "r2_buckets": [
     {
@@ -70,7 +69,7 @@
   "observability": {
     "enabled": true,
     "logs": {
-      "enabled": true,
-    },
-  },
+      "enabled": true
+    }
+  }
 }

@@ -6,6 +6,6 @@ export { CiSandbox, CI };
 
 export default {
   fetch(_request: Request, _env: Env) {
-    return new Response("vortex-sign-ci", { status: 200 });
+    return new Response("vortex-ci", { status: 200 });
   },
 };
