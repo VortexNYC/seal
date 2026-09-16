@@ -36,8 +36,6 @@ const fmt = {
     "**/.wrangler",
     "**/.astro",
     "**/_astro",
-    "**/.vercel",
-    "**/.netlify",
     "**/.cache",
     "**/.vite",
     "**/.expo",
