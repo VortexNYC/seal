@@ -24,7 +24,7 @@ packages/transactional/
 | Layout shell  | `emails/email-layout.tsx`              | Thin adapter over `@vortexnyc/email`       |
 | Exports       | `packages/transactional/src/index.tsx` | Components + `renderX()` helpers           |
 | Auth emails   | `@vortexnyc/auth`                      | Not in this package                        |
-| Transport     | `apps/api/src/platform/email.ts`       | Worker `send_email` binding + Resend transport. |
+| Transport     | `apps/api/src/platform/email.ts`       | Cloudflare `send_email` binding (`EMAIL`). |
 
 ## CONVENTIONS
 
