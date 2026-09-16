@@ -5,6 +5,7 @@ import {
   type CloudflareArtifacts,
 } from "@cloudflare/ci";
 import type { WorkflowEvent, WorkflowStep } from "cloudflare:workers";
+import type { Bindings } from "./env";
 
 const MINUTE = 60 * 1000;
 
@@ -31,19 +32,26 @@ const stepConfig = {
   },
 };
 
-const npmrcCommand =
-  'printf "@%s:registry=https://npm.pkg.github.com\\n" vortexnyc > /tmp/.npmrc && ' +
-  'printf "//npm.pkg.github.com/:_authToken=%s\\n" "$NPM_TOKEN" >> /tmp/.npmrc';
-
-const sealEnv = {
+const installEnv = {
   HOME: "/tmp",
   NPM_CONFIG_USERCONFIG: "/tmp/.npmrc",
+};
+
+const buildEnv = {
+  HOME: "/tmp",
   VITE_API_URL: "https://api.seal.nyc",
   VITE_BETTER_AUTH_URL: "https://api.seal.nyc",
   VITE_APP_URL: "https://app.seal.nyc",
 };
 
-export class CI extends CIWorkflow<CloudflareArtifacts> {
+const npmrcCommand =
+  'printf "@%s:registry=https://npm.pkg.github.com\\n" vortexnyc > /tmp/.npmrc && ' +
+  'printf "//npm.pkg.github.com/:_authToken=%s\\n" "$NPM_TOKEN" >> /tmp/.npmrc';
+
+// Pipeline shape follows the Cloudflare Artifacts example:
+// install -> parallel lint/test/typecheck/build -> migrate (main) -> deploy (main)
+// Source: https://github.com/cloudflare/ci/blob/main/examples/cloudflare-artifacts/cloudflare.ci.ts
+export class CI extends CIWorkflow<CloudflareArtifacts, Bindings> {
   protected async pipeline(
     _event: WorkflowEvent<CiParams<CloudflareArtifacts>>,
     _step: WorkflowStep,
@@ -56,8 +64,7 @@ export class CI extends CIWorkflow<CloudflareArtifacts> {
       command: `${npmrcCommand} && pnpm install --frozen-lockfile`,
       cache: { inputs: ["package.json", "pnpm-lock.yaml"] },
       secrets: ["NPM_TOKEN"],
-      env: sealEnv,
-      cloudflareCredentials: false,
+      env: installEnv,
       config: {
         timeout: stepConfig.install.timeoutMs,
         commandTimeoutMs: stepConfig.install.commandTimeoutMs,
@@ -68,8 +75,6 @@ export class CI extends CIWorkflow<CloudflareArtifacts> {
       install.runner({
         name: "lint",
         command: "pnpm exec vp run lint",
-        env: sealEnv,
-        cloudflareCredentials: false,
         config: {
           timeout: stepConfig.check.timeoutMs,
           commandTimeoutMs: stepConfig.check.commandTimeoutMs,
@@ -78,8 +83,6 @@ export class CI extends CIWorkflow<CloudflareArtifacts> {
       install.runner({
         name: "typecheck",
         command: "pnpm exec vp run typecheck",
-        env: sealEnv,
-        cloudflareCredentials: false,
         config: {
           timeout: stepConfig.check.timeoutMs,
           commandTimeoutMs: stepConfig.check.commandTimeoutMs,
@@ -88,8 +91,6 @@ export class CI extends CIWorkflow<CloudflareArtifacts> {
       install.runner({
         name: "test",
         command: "pnpm exec vp run test",
-        env: sealEnv,
-        cloudflareCredentials: false,
         config: {
           timeout: stepConfig.check.timeoutMs,
           commandTimeoutMs: stepConfig.check.commandTimeoutMs,
@@ -98,8 +99,7 @@ export class CI extends CIWorkflow<CloudflareArtifacts> {
       install.runner({
         name: "build",
         command: "pnpm exec vp run build:all",
-        env: sealEnv,
-        cloudflareCredentials: false,
+        env: buildEnv,
         config: {
           timeout: stepConfig.build.timeoutMs,
           commandTimeoutMs: stepConfig.build.commandTimeoutMs,
@@ -128,9 +128,8 @@ export class CI extends CIWorkflow<CloudflareArtifacts> {
       name: "deploy",
       command: "pnpm exec vp run deploy",
       cloudflareCredentials: {
-        accountId: this.env.CLOUDFLARE_ACCOUNT_ID,
+        accountId: this.env.CLOUDFLARE_DEPLOY_ACCOUNT_ID,
       },
-      env: sealEnv,
       config: {
         timeout: stepConfig.deploy.timeoutMs,
         commandTimeoutMs: stepConfig.deploy.commandTimeoutMs,
