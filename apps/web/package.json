@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "CLOUDFLARE_ENV=production vite build",
     "serve": "vite preview",
     "preview": "vite preview",
     "lint": "vp lint .",
@@ -22,7 +22,7 @@
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:report": "playwright show-report",
     "test:e2e:codegen": "playwright codegen http://localhost:5180",
-    "deploy": "vp run build && vp exec wrangler deploy",
+    "deploy": "vp run build && vp exec wrangler deploy -e production",
     "react:doctor": "vortex-react-doctor --diff",
     "react:doctor:full": "vortex-react-doctor --full --advisory",
     "cf:types:mkdir": "node -e \"require('node:fs').mkdirSync('.wrangler/types', { recursive: true })\"",

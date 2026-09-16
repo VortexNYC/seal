@@ -1,6 +1,6 @@
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
-  "name": "seal-anydoc-worker",
+  "name": "seal-anydoc-worker-dev",
   "main": "src/index.ts",
   "compatibility_date": "2026-08-06",
   "compatibility_flags": ["nodejs_compat"],
@@ -12,5 +12,10 @@
     "enabled": true,
     "logs": { "enabled": true },
     "traces": { "enabled": true, "head_sampling_rate": 0.1 },
+  },
+  "env": {
+    "production": {
+      "name": "seal-anydoc-worker",
+    },
   },
 }
