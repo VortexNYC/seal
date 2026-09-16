@@ -1,4 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { verifyInternalApiKey } from "@seal/internal-auth";
 import { and, desc, eq, not, or } from "drizzle-orm";
 import { cors } from "hono/cors";
 import { z } from "zod";
@@ -46,7 +47,6 @@ import {
 } from "./platform/api-token-auth.js";
 import { createAuth } from "./platform/auth.js";
 import { sendEmail } from "./platform/email.js";
-import { verifyInternalApiKey } from "./platform/internal-auth.js";
 import { verifyMcpAccessToken } from "./platform/mcp-auth.js";
 import { runScheduledTasks } from "./platform/scheduled.js";
 import { getSessionUser } from "./platform/session.js";

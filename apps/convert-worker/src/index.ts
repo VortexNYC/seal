@@ -1,4 +1,5 @@
 import { Container } from "@cloudflare/containers";
+import { verifyInternalApiKey } from "@seal/internal-auth";
 import { Hono } from "hono";
 
 const ALLOWED_INPUT_TYPES = new Set([
@@ -23,10 +24,21 @@ export class Converter extends Container {
 }
 
 type Bindings = {
+  INTERNAL_API_KEY?: string;
   CONVERTER: DurableObjectNamespace<Converter>;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
+
+app.use("*", async (c, next) => {
+  if (c.req.path === "/health") {
+    return next();
+  }
+  if (!verifyInternalApiKey(c)) {
+    return c.text("unauthorized", 401);
+  }
+  return next();
+});
 
 app.get("/health", (c) => {
   return c.json({ status: "ok" });

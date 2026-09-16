@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@cloudflare/containers": "^0.3.7",
+    "@seal/internal-auth": "workspace:*",
     "hono": "^4.13.5"
   },
   "devDependencies": {

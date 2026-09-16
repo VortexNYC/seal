@@ -69,6 +69,9 @@ export async function parseDocumentFromStorage(
       new Request("http://anydoc/parse", {
         method: "POST",
         body: object.body,
+        headers: {
+          "x-internal-api-key": env.INTERNAL_API_KEY,
+        },
       })
     );
 

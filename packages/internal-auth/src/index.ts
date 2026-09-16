@@ -1,4 +1,7 @@
-import type { Context } from "hono";
+export interface InternalAuthContext {
+  env: { INTERNAL_API_KEY?: string | undefined };
+  req: { header(name: string): string | undefined };
+}
 
 function constantTimeEq(a: string, b: string): boolean {
   if (a.length !== b.length) {
@@ -13,9 +16,8 @@ function constantTimeEq(a: string, b: string): boolean {
   return diff === 0;
 }
 
-export function verifyInternalApiKey(c: Context): boolean {
-  const env = c.env as CloudflareBindings;
-  const configured = env.INTERNAL_API_KEY;
+export function verifyInternalApiKey(c: InternalAuthContext): boolean {
+  const configured = c.env.INTERNAL_API_KEY;
   if (configured == null || configured.length === 0) {
     return false;
   }
