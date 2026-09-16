@@ -13,11 +13,11 @@
     "@firecrawl/anydoc-wasm": "^0.2.4",
     "@firecrawl/pdf-inspector-wasm": "1.17.0",
     "@seal/internal-auth": "workspace:*",
-    "hono": "^4.13.5",
+    "hono": "^4.13.8",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260101.0",
+    "@cloudflare/workers-types": "^5.20260916.1",
     "@seal/tsconfig": "workspace:*",
     "typescript": "catalog:",
     "wrangler": "^4.132.0"

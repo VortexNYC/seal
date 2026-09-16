@@ -13,22 +13,22 @@
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
-    "@hono/zod-openapi": "^0.19.5",
+    "@hono/zod-openapi": "^0.19.10",
     "@orama/orama": "^3.1.18",
     "@seal/internal-auth": "workspace:*",
     "@seal/transactional": "workspace:*",
-    "better-auth": "1.7.2",
+    "better-auth": "1.7.5",
     "drizzle-orm": "^0.45.2",
-    "hono": "^4.13.5",
-    "jose": "^6.2.4",
+    "hono": "^4.13.8",
+    "jose": "^6.2.12",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.19.1",
-    "@cloudflare/workers-types": "^4.20260101.0",
+    "@cloudflare/workers-types": "^5.20260916.1",
     "@seal/tsconfig": "workspace:*",
     "drizzle-kit": "^0.31.10",
-    "tsx": "^4.20.5",
+    "tsx": "^4.23.13",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "wrangler": "^4.132.0"

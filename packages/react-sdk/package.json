@@ -24,7 +24,7 @@
     "knip:fix": "knip --fix --allow-remove-files"
   },
   "devDependencies": {
-    "@types/react": "^19.2.14",
+    "@types/react": "^19.3.0",
     "typescript": "catalog:"
   },
   "peerDependencies": {
