@@ -23,7 +23,6 @@
     "test:e2e:report": "playwright show-report",
     "test:e2e:codegen": "playwright codegen http://localhost:5180",
     "deploy": "vp run build && vp exec wrangler deploy",
-    "deploy:staging": "VITE_APP_URL=https://staging-app.seal.nyc VITE_BETTER_AUTH_URL=https://api.seal.nyc vp run build && vp exec wrangler deploy --name seal-web-staging --domain staging-app.seal.nyc",
     "react:doctor": "vortex-react-doctor --diff",
     "react:doctor:full": "vortex-react-doctor --full --advisory",
     "cf:types:mkdir": "node -e \"require('node:fs').mkdirSync('.wrangler/types', { recursive: true })\"",
