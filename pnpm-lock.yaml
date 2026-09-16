@@ -416,19 +416,6 @@ importers:
         specifier: ^4.132.0
         version: 4.132.0(@cloudflare/workers-types@5.20260908.1)(@types/node@25.9.5)
 
-  packages/ci-worker:
-    dependencies:
-      '@cloudflare/ci':
-        specifier: 0.2.0
-        version: 0.2.0
-    devDependencies:
-      '@seal/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      wrangler:
-        specifier: ^4.132.0
-        version: 4.132.0(@cloudflare/workers-types@4.20260702.1)(@types/node@26.1.1)
-
   packages/cli:
     dependencies:
       '@seal/client':
