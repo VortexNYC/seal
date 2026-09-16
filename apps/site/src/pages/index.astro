@@ -1,0 +1,19 @@
+---
+import { landing } from "../data/landing";
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{landing.title}</title>
+    <meta name="description" content={landing.description} />
+  </head>
+  <body>
+    <main>
+      <h1>{landing.headline}</h1>
+      <p>{landing.subheadline}</p>
+      <a href={landing.cta.href}>{landing.cta.label}</a>
+    </main>
+  </body>
+</html>
