@@ -1,6 +1,6 @@
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
-  "name": "seal-web",
+  "name": "seal-web-dev",
   "main": "src/server.ts",
   "compatibility_date": "2026-08-06",
   "compatibility_flags": ["nodejs_compat"],
@@ -18,10 +18,16 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/ingest/*"],
   },
-  "routes": [
-    {
-      "pattern": "app.seal.nyc",
-      "custom_domain": true,
+  "env": {
+    "production": {
+      "name": "seal-web",
+      "preview_urls": true,
+      "routes": [
+        {
+          "pattern": "app.seal.nyc",
+          "custom_domain": true,
+        },
+      ],
     },
-  ],
+  },
 }
