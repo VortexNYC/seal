@@ -5,9 +5,9 @@
   "description": "Seal — open-source, agent-native e-signature platform",
   "type": "module",
   "scripts": {
-    "dev": "vp run -r dev --filter @seal/api --filter @seal/web --filter @seal/landing",
+    "dev": "vp run -r dev --filter @seal/api --filter @seal/web --filter @seal/docs",
     "dev:web": "pnpm --dir apps/web run dev -- --host 0.0.0.0",
-    "dev:landing": "pnpm --dir apps/landing run dev -- --host 0.0.0.0",
+    "dev:docs": "pnpm --dir apps/docs run dev",
     "dev:all": "pnpm run dev",
     "build": "pnpm --filter @seal/web run build",
     "build:all": "vp run -r build",

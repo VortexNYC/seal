@@ -66,11 +66,11 @@ reviews:
         - No `@ts-ignore`, `eslint-disable`, or `biome-ignore`.
         - Use TanStack Router patterns; don't edit `routeTree.gen.ts`.
         - E2E selectors use `data-testid`, not CSS classes.
-    - path: "apps/landing/**/*.{ts,tsx,mdx}"
+    - path: "apps/docs/**/*.{ts,tsx,mdx}"
       instructions: |
-        Fumadocs + TanStack Start landing/docs site.
-        - Don't hand-edit generated files under `.source/` or `content/docs/api-reference/`.
-        - Update `apps/landing/openapi.yaml` and regenerate docs instead.
+        blume (Astro) static docs site; MDX content under docs/.
+        - Don't hand-edit `dist/` build output.
+        - `openapi.yaml` is the API spec source of truth rendered at /reference.
 
   pre_merge_checks:
     docstrings:

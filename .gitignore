@@ -116,7 +116,6 @@ wrangler.toml-*
 .agents/skills/openlogs-server-logs/
 apps/*/PORT
 apps/api/.wrangler/
-apps/landing/.wrangler/
 apps/web/.wrangler/
 apps/anydoc-worker/.wrangler/
 apps/convert-worker/.wrangler/
