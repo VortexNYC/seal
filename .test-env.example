@@ -17,8 +17,7 @@ CLERK_SECRET_KEY_1PASSWORD_ITEM=
 # Dev URLs declared by vortex.project.json.
 # DEV_URL_1=http://seal.localhost:1355
 # DEV_URL_2=http://seal-landing.localhost:1355
-# DEV_URL_3=https://staging-app.seal.nyc
-# DEV_URL_4=https://app.seal.nyc
+# DEV_URL_3=https://app.seal.nyc
 
 # App-specific URLs.
 # APP_APPS_WEB_REACT_19_VITE_PRODUCT_APP_WITH_TANSTACK_ROUTER_BETTER_AUTH_AND_CLOUDFLARE_DEPLOYS_URL=
@@ -34,9 +33,7 @@ TEST_LANDING_URL=http://seal-landing.localhost:1355
 API_URL=http://localhost:8787
 VITE_BETTER_AUTH_URL=http://localhost:8787
 BETTER_AUTH_URL=http://localhost:8787
-BETTER_AUTH_TRUSTED_ORIGINS=http://localhost:5180,http://seal.localhost:1355,https://staging-app.seal.nyc,https://app.seal.nyc
-STAGING_WEB_URL=https://staging-app.seal.nyc
-STAGING_API_URL=https://staging-api.seal.nyc
+BETTER_AUTH_TRUSTED_ORIGINS=http://localhost:5180,http://seal.localhost:1355,https://app.seal.nyc
 PRODUCTION_WEB_URL=https://app.seal.nyc
 PRODUCTION_API_URL=https://api.seal.nyc
 

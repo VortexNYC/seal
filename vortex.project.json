@@ -32,7 +32,6 @@
     "devUrls": [
       "http://seal.localhost:1355",
       "http://seal-landing.localhost:1355",
-      "https://staging-app.seal.nyc",
       "https://app.seal.nyc"
     ],
     "apps": [
@@ -86,9 +85,7 @@
       "API_URL=http://localhost:8787",
       "VITE_BETTER_AUTH_URL=http://localhost:8787",
       "BETTER_AUTH_URL=http://localhost:8787",
-      "BETTER_AUTH_TRUSTED_ORIGINS=http://localhost:5180,http://seal.localhost:1355,https://staging-app.seal.nyc,https://app.seal.nyc",
-      "STAGING_WEB_URL=https://staging-app.seal.nyc",
-      "STAGING_API_URL=https://staging-api.seal.nyc",
+      "BETTER_AUTH_TRUSTED_ORIGINS=http://localhost:5180,http://seal.localhost:1355,https://app.seal.nyc",
       "PRODUCTION_WEB_URL=https://app.seal.nyc",
       "PRODUCTION_API_URL=https://api.seal.nyc"
     ]

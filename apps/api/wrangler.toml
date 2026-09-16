@@ -4,8 +4,8 @@ compatibility_date = "2026-08-06"
 compatibility_flags = ["nodejs_compat"]
 minify = true
 upload_source_maps = true
-workers_dev = true
-preview_urls = true
+workers_dev = false
+preview_urls = false
 
 [vars]
 BETTER_AUTH_URL = "http://localhost:8787"
@@ -24,17 +24,17 @@ traces = { enabled = true, head_sampling_rate = 0.1 }
 
 [[d1_databases]]
 binding = "D1"
-database_name = "vortex-sign-global"
-database_id = "6a27b4da-e253-4e8a-8092-d2b17d984953"
+database_name = "vortex-sign-dev"
+database_id = "90ace57d-cbf1-403c-8458-dc3e370e2570"
 migrations_dir = "migrations"
 
 [[send_email]]
 name = "EMAIL"
-allowed_sender_addresses = ["notifications@seal.nyc", "test@example.com"]
+allowed_sender_addresses = ["notifications@seal.nyc"]
 
 [[r2_buckets]]
 binding = "DOCUMENTS_BUCKET"
-bucket_name = "vortex-sign-documents"
+bucket_name = "vortex-sign-dev-documents"
 
 [[services]]
 binding = "ANYDOC"

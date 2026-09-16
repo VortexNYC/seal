@@ -69,7 +69,7 @@ export default defineConfig({
           TOKEN_HASH_SECRET: "test-token-hash-secret-do-not-use-in-prod",
           BETTER_AUTH_URL: "http://localhost:8787",
           ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173",
-          EMAIL_FROM: "test@example.com",
+          EMAIL_FROM: "notifications@seal.nyc",
           APP_URL: "http://localhost:3000",
         },
         workers: [

@@ -108,8 +108,11 @@ apps/node_modules/
 
 # Local env variants and backups
 apps/web/.env.production-env
-apps/web/.env.staging-custom
-apps/web/.env.staging-env
+
+# Wrangler local secrets and generated backups
+**/.dev.vars
+*.bak
+wrangler.toml-*
 
 .claude/hookify.*.local.md
 .claude/skills/openlogs-server-logs

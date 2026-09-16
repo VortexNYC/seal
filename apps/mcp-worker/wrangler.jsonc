@@ -7,7 +7,7 @@
   "minify": true,
   "upload_source_maps": true,
   "workers_dev": false,
-  "preview_urls": true,
+  "preview_urls": false,
   "vars": {
     "SEAL_API_BASE_URL": "https://api.seal.nyc/api/v1",
     "SEAL_AUTH_SERVER_ORIGIN": "https://api.seal.nyc",
