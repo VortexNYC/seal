@@ -12,6 +12,14 @@ const wranglerRouteValidator = z.object({
 const wranglerConfigValidator = z.object({
   name: z.string(),
   routes: z.array(wranglerRouteValidator).optional(),
+  env: z
+    .object({
+      production: z.object({
+        name: z.string(),
+        routes: z.array(wranglerRouteValidator).optional(),
+      }),
+    })
+    .optional(),
 });
 
 /**
@@ -22,6 +30,12 @@ const wranglerConfigValidator = z.object({
 function loadWranglerConfig(): {
   name: string;
   routes?: Array<{ pattern: string; custom_domain: boolean }>;
+  env?: {
+    production: {
+      name: string;
+      routes?: Array<{ pattern: string; custom_domain: boolean }>;
+    };
+  };
 } {
   const configPath = resolve(import.meta.dirname, "../../wrangler.jsonc");
   const raw = readFileSync(configPath, "utf8");
@@ -32,19 +46,27 @@ function loadWranglerConfig(): {
 
 describe("seal-web wrangler custom-domain routes", () => {
   const config = loadWranglerConfig();
+  const production = config.env?.production;
 
-  test("targets the seal-web Worker", () => {
-    expect(config.name).toBe("seal-web");
+  test("top-level config is the dev-only worker", () => {
+    expect(config.name).toBe("seal-web-dev");
+    expect(config.routes, "top-level routes must be empty").toBeUndefined();
+  });
+
+  test("production env targets the seal-web Worker", () => {
+    expect(production?.name).toBe("seal-web");
   });
 
   test("preserves the app.seal.nyc production custom domain", () => {
-    const appRoute = config.routes?.find((r) => r.pattern === "app.seal.nyc");
+    const appRoute = production?.routes?.find(
+      (r) => r.pattern === "app.seal.nyc"
+    );
     expect(appRoute, "app.seal.nyc route must be preserved").toBeDefined();
     expect(appRoute?.custom_domain).toBe(true);
   });
 
   test("every route uses custom_domain (not a route pattern script)", () => {
-    for (const route of config.routes ?? []) {
+    for (const route of production?.routes ?? []) {
       expect(
         route.custom_domain,
         `${route.pattern} must be custom_domain: true`
@@ -56,7 +78,7 @@ describe("seal-web wrangler custom-domain routes", () => {
     const outOfScope = ["sign.example.com", "docs.sign.example.com"];
     for (const domain of outOfScope) {
       expect(
-        config.routes?.some((r) => r.pattern === domain),
+        production?.routes?.some((r) => r.pattern === domain),
         `${domain} must NOT be bound on the web runtime`
       ).toBeFalsy();
     }
