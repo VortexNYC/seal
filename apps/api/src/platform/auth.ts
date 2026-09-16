@@ -8,10 +8,16 @@ import * as schema from "../global/schema.js";
 export function createAuth(env: CloudflareBindings) {
   const db = createD1(env.D1);
 
+  const allowedOrigins =
+    env.ALLOWED_ORIGINS?.split(",")
+      .map((s) => s.trim())
+      .filter(Boolean) ?? [];
+
   return betterAuth({
     database: drizzleAdapter(db, { provider: "sqlite", schema }),
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
+    trustedOrigins: allowedOrigins,
     emailAndPassword: { enabled: true },
     user: {
       additionalFields: {

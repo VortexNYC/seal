@@ -46,6 +46,7 @@ import {
 } from "./platform/api-token-auth.js";
 import { createAuth } from "./platform/auth.js";
 import { sendEmail } from "./platform/email.js";
+import { verifyInternalApiKey } from "./platform/internal-auth.js";
 import { verifyMcpAccessToken } from "./platform/mcp-auth.js";
 import { runScheduledTasks } from "./platform/scheduled.js";
 import { getSessionUser } from "./platform/session.js";
@@ -76,6 +77,13 @@ app.use(async (c, next) => {
   await next();
 });
 
+app.use("/internal/*", async (c, next) => {
+  if (!verifyInternalApiKey(c)) {
+    return c.json({ error: "unauthorized" }, 401);
+  }
+  return next();
+});
+
 app.doc("/openapi.json", {
   openapi: "3.0.0",
   info: {
@@ -94,11 +102,6 @@ const sendEmailBody = z.object({
 });
 
 app.post("/internal/send-email", async (c) => {
-  const key = c.req.header("x-internal-api-key");
-  if (key !== c.env.INTERNAL_API_KEY) {
-    return c.json({ error: "unauthorized" }, 401);
-  }
-
   const body = sendEmailBody.safeParse(await c.req.json());
   if (!body.success) {
     return c.json({ error: "invalid body" }, 400);
@@ -149,11 +152,6 @@ function timestamp(value: number | null | undefined): Date | null {
 }
 
 app.post("/internal/document-invoices", async (c) => {
-  const key = c.req.header("x-internal-api-key");
-  if (key !== c.env.INTERNAL_API_KEY) {
-    return c.json({ error: "unauthorized" }, 401);
-  }
-
   const parseResult = documentInvoiceBody.safeParse(await c.req.json());
   if (!parseResult.success) {
     return c.json({ error: "invalid body" }, 400);
@@ -213,11 +211,6 @@ const documentInvoiceUpdateBody = z.object({
 });
 
 app.patch("/internal/document-invoices/:id", async (c) => {
-  const key = c.req.header("x-internal-api-key");
-  if (key !== c.env.INTERNAL_API_KEY) {
-    return c.json({ error: "unauthorized" }, 401);
-  }
-
   const parseResult = documentInvoiceUpdateBody.safeParse(await c.req.json());
   if (!parseResult.success) {
     return c.json({ error: "invalid body" }, 400);
@@ -294,11 +287,6 @@ const paymentFieldConfigBody = z.object({
 });
 
 app.post("/internal/payment-field-configs", async (c) => {
-  const key = c.req.header("x-internal-api-key");
-  if (key !== c.env.INTERNAL_API_KEY) {
-    return c.json({ error: "unauthorized" }, 401);
-  }
-
   const parseResult = paymentFieldConfigBody.safeParse(await c.req.json());
   if (!parseResult.success) {
     return c.json({ error: "invalid body" }, 400);
@@ -353,11 +341,6 @@ app.post("/internal/payment-field-configs", async (c) => {
 });
 
 app.get("/internal/payment-field-configs/:id", async (c) => {
-  const key = c.req.header("x-internal-api-key");
-  if (key !== c.env.INTERNAL_API_KEY) {
-    return c.json({ error: "unauthorized" }, 401);
-  }
-
   const db = createD1(c.env.D1);
   const config = await db.query.paymentFieldConfigs.findFirst({
     where: eq(paymentFieldConfigs.id, c.req.param("id")),
@@ -384,11 +367,6 @@ const paymentFieldConfigUpdateBody = z.object({
 });
 
 app.patch("/internal/payment-field-configs/:id", async (c) => {
-  const key = c.req.header("x-internal-api-key");
-  if (key !== c.env.INTERNAL_API_KEY) {
-    return c.json({ error: "unauthorized" }, 401);
-  }
-
   const parseResult = paymentFieldConfigUpdateBody.safeParse(
     await c.req.json()
   );
@@ -425,11 +403,6 @@ app.patch("/internal/payment-field-configs/:id", async (c) => {
 });
 
 app.get("/internal/payment-field-configs", async (c) => {
-  const key = c.req.header("x-internal-api-key");
-  if (key !== c.env.INTERNAL_API_KEY) {
-    return c.json({ error: "unauthorized" }, 401);
-  }
-
   const documentId = c.req.query("documentId");
   if (!documentId) {
     return c.json({ error: "documentId required" }, 400);
@@ -456,11 +429,6 @@ const payableObjectBody = z.object({
 });
 
 app.post("/internal/webhooks/vortex-billing/payable-object", async (c) => {
-  const key = c.req.header("x-internal-api-key");
-  if (key !== c.env.INTERNAL_API_KEY) {
-    return c.json({ error: "unauthorized" }, 401);
-  }
-
   const parseResult = payableObjectBody.safeParse(await c.req.json());
   if (!parseResult.success) {
     return c.json({ error: "invalid body" }, 400);
@@ -497,11 +465,6 @@ const invoiceEventBody = z.object({
 });
 
 app.post("/internal/webhooks/vortex-billing/invoice", async (c) => {
-  const key = c.req.header("x-internal-api-key");
-  if (key !== c.env.INTERNAL_API_KEY) {
-    return c.json({ error: "unauthorized" }, 401);
-  }
-
   const parseResult = invoiceEventBody.safeParse(await c.req.json());
   if (!parseResult.success) {
     return c.json({ error: "invalid body" }, 400);
@@ -582,11 +545,6 @@ const subscriptionEventBody = z.object({
 });
 
 app.post("/internal/webhooks/vortex-billing/subscription", async (c) => {
-  const key = c.req.header("x-internal-api-key");
-  if (key !== c.env.INTERNAL_API_KEY) {
-    return c.json({ error: "unauthorized" }, 401);
-  }
-
   const parseResult = subscriptionEventBody.safeParse(await c.req.json());
   if (!parseResult.success) {
     return c.json({ error: "invalid body" }, 400);
