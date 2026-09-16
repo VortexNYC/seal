@@ -46,7 +46,7 @@ export function getConvertibleFileExtension(
 }
 
 export async function convertBytesToPdf(
-  env: { SEAL_CONVERT_WORKER?: Fetcher },
+  env: CloudflareBindings,
   input: ConvertInput
 ): Promise<ArrayBuffer> {
   if (!env.SEAL_CONVERT_WORKER) {
@@ -77,6 +77,9 @@ export async function convertBytesToPdf(
     new Request("http://internal/convert", {
       method: "POST",
       body: form,
+      headers: {
+        "x-internal-api-key": env.INTERNAL_API_KEY,
+      },
     })
   );
 

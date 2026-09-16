@@ -6,18 +6,25 @@
   "compatibility_flags": ["nodejs_compat"],
   "minify": true,
   "upload_source_maps": true,
-  "workers_dev": false,
-  "preview_urls": false,
+  "workers_dev": true,
   "vars": {
-    "SEAL_API_BASE_URL": "https://api.seal.nyc/api/v1",
-    "SEAL_AUTH_SERVER_ORIGIN": "https://api.seal.nyc",
+    "SEAL_API_BASE_URL": "http://localhost:8787/api/v1",
+    "SEAL_AUTH_SERVER_ORIGIN": "http://localhost:8787",
   },
-  // Custom domain — replaces the Vercel deployment that previously held this
-  // host. CF auto-manages the DNS A records when custom_domain is true.
-  "routes": [{ "pattern": "mcp.seal.nyc", "custom_domain": true }],
   "observability": {
     "enabled": true,
     "logs": { "enabled": true },
     "traces": { "enabled": true, "head_sampling_rate": 0.1 },
+  },
+  "env": {
+    "production": {
+      "workers_dev": false,
+      "preview_urls": false,
+      "vars": {
+        "SEAL_API_BASE_URL": "https://api.seal.nyc/api/v1",
+        "SEAL_AUTH_SERVER_ORIGIN": "https://api.seal.nyc",
+      },
+      "routes": [{ "pattern": "mcp.seal.nyc", "custom_domain": true }],
+    },
   },
 }

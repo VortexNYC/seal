@@ -74,6 +74,9 @@ importers:
       '@firecrawl/pdf-inspector-wasm':
         specifier: 1.17.0
         version: 1.17.0
+      '@seal/internal-auth':
+        specifier: workspace:*
+        version: link:../../packages/internal-auth
       hono:
         specifier: ^4.13.5
         version: 4.13.7
@@ -102,6 +105,9 @@ importers:
       '@orama/orama':
         specifier: ^3.1.18
         version: 3.1.18
+      '@seal/internal-auth':
+        specifier: workspace:*
+        version: link:../../packages/internal-auth
       '@seal/transactional':
         specifier: workspace:*
         version: link:../../packages/transactional
@@ -151,6 +157,9 @@ importers:
       '@cloudflare/containers':
         specifier: ^0.3.7
         version: 0.3.7
+      '@seal/internal-auth':
+        specifier: workspace:*
+        version: link:../../packages/internal-auth
       hono:
         specifier: ^4.13.5
         version: 4.13.7
@@ -443,6 +452,15 @@ importers:
       openapi-typescript:
         specifier: 7.13.0
         version: 7.13.0(typescript@5.9.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+
+  packages/internal-auth:
+    devDependencies:
+      '@seal/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
       typescript:
         specifier: 'catalog:'
         version: 5.9.3

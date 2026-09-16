@@ -11,6 +11,7 @@ import {
   type PdfProcessResult,
 } from "@firecrawl/pdf-inspector-wasm";
 import pdfWasm from "@firecrawl/pdf-inspector-wasm/pdf_inspector_wasm_bg.wasm";
+import { verifyInternalApiKey } from "@seal/internal-auth";
 import { Hono } from "hono";
 
 import { extractFieldCandidates, type FieldCandidate } from "./fields.js";
@@ -33,7 +34,21 @@ type ParseResponse = {
   fieldCandidates: FieldCandidate[];
 };
 
-const app = new Hono();
+type Bindings = {
+  INTERNAL_API_KEY?: string;
+};
+
+const app = new Hono<{ Bindings: Bindings }>();
+
+app.use("*", async (c, next) => {
+  if (c.req.path === "/") {
+    return next();
+  }
+  if (!verifyInternalApiKey(c)) {
+    return c.json({ error: "unauthorized" }, 401);
+  }
+  return next();
+});
 
 app.get("/", (c) =>
   c.json({
