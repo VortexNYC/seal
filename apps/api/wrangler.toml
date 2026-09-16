@@ -1,4 +1,4 @@
-name = "vortex-sign-api"
+name = "vortex-sign-api-dev"
 main = "src/index.ts"
 compatibility_date = "2026-08-06"
 compatibility_flags = ["nodejs_compat"]
@@ -50,6 +50,7 @@ crons = ["0 9 * * *"]
 [env.production]
 name = "vortex-sign-api"
 workers_dev = false
+preview_urls = false
 
 [env.production.vars]
 BETTER_AUTH_URL = "https://api.seal.nyc"
