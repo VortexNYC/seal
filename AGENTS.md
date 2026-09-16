@@ -74,7 +74,7 @@ vortex-sign/
 
 ```bash
 pnpm run dev
-pnpm --filter @vortex/sign-api run dev
+pnpm --filter @seal/api run dev
 pnpm --filter @seal/web run dev
 pnpm --filter @seal/landing run dev
 pnpm --filter @seal/mcp-worker run dev
@@ -87,13 +87,13 @@ pnpm run typecheck
 pnpm run verify
 pnpm run test
 
-pnpm --filter @vortex/sign-api run test
+pnpm --filter @seal/api run test
 pnpm --filter @seal/web run test
 pnpm --dir apps/web run test:e2e
 pnpm --dir apps/landing run docs:generate:api
 ```
 
-`pnpm run dev` starts the main product stack: `@vortex/sign-api`, `@seal/web`, and `@seal/landing`.
+`pnpm run dev` starts the main product stack: `@seal/api`, `@seal/web`, and `@seal/landing`.
 Use targeted `pnpm --filter ... run dev` commands for other workspaces; `@seal/landing` and `@seal/transactional` both default to port `3001`.
 
 ## NOTES
