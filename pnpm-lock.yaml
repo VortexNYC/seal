@@ -379,6 +379,9 @@ importers:
       '@emdash-cms/cloudflare':
         specifier: ^0.38.0
         version: 0.38.0(1fbbeb0f34f2cad795c640d767c164ad)
+      '@seal/tokens':
+        specifier: workspace:*
+        version: link:../../packages/tokens
       astro:
         specifier: ^7.3.3
         version: 7.3.3(@azure/identity@4.13.1(supports-color@10.2.2))(@azure/storage-blob@12.33.0(supports-color@10.2.2))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(@types/node@25.9.7)(@vercel/functions@3.9.7(ws@8.21.3))(aws4fetch@1.0.20)(db0@0.3.4(@libsql/client@0.17.4)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260916.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.5)(pg@8.22.0)))(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1)
