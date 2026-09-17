@@ -342,6 +342,10 @@ importers:
       blume:
         specifier: ^1.7.0
         version: 1.7.0(21f452edba44ff0e1b50d75c18b917ad)
+    devDependencies:
+      wrangler:
+        specifier: ^4.133.0
+        version: 4.133.0(@cloudflare/workers-types@5.20260916.1)(@types/node@26.1.1)
 
   apps/mcp-worker:
     dependencies:
