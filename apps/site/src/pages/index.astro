@@ -1,4 +1,5 @@
 ---
+import { Code } from "astro:components";
 import Base from "../layouts/Base.astro";
 import { landing } from "../data/landing";
 ---
@@ -39,43 +40,69 @@ import { landing } from "../data/landing";
       <ul class="proof">
         {landing.hero.proof.map((p) => <li>{p}</li>)}
       </ul>
+      <div class="code-window">
+        <div class="code-titlebar">
+          <span class="code-dots" aria-hidden="true"><i /><i /><i /></span>
+          <span class="mono">{landing.hero.codeFile}</span>
+          <span class="mono code-host">api.seal.nyc</span>
+        </div>
+        <Code code={landing.hero.codeSnippet} lang="ts" theme="github-dark-default" />
+      </div>
     </div>
   </header>
 
-  <section id="product" class="features">
-    {
-      landing.features.map((f, i) => (
-        <div class={`container feature ${i % 2 === 1 ? "feature-flip" : ""}`}>
-          <div class="feature-copy">
-            <p class="eyebrow">{f.eyebrow}</p>
-            <h2 class="serif">{f.title}</h2>
-            <p class="feature-body">{f.body}</p>
-            <ul class="feature-bullets">
-              {f.bullets.map((b) => (
-                <li>{b}</li>
-              ))}
-            </ul>
-          </div>
-          <div class="feature-visual" aria-hidden="true">
-            <div class="doc-card">
-              <div class="doc-line w-70" />
-              <div class="doc-line w-90" />
-              <div class="doc-line w-55" />
-              <div class="doc-gap" />
-              <div class="doc-line w-90" />
-              <div class="doc-line w-40" />
-              <div class="doc-seal">
-                <svg viewBox="0 0 64 64" width="44" height="44">
-                  <circle cx="32" cy="32" r="30" fill="var(--primary)" opacity="0.92" />
-                  <circle cx="32" cy="32" r="24" fill="none" stroke="#fafaf9" stroke-width="1.5" opacity="0.7" />
-                </svg>
-                <span class="mono">Signed</span>
-              </div>
+  <section id="api" class="api">
+    <div class="container">
+      <p class="eyebrow">{landing.api.eyebrow}</p>
+      <h2 class="serif">{landing.api.title}</h2>
+      <p class="api-body">{landing.api.body}</p>
+      <div class="endpoint-table">
+        {
+          landing.api.endpoints.map((e) => (
+            <div class="endpoint-row">
+              <span class={`mono method method-${e.method.toLowerCase()}`}>{e.method}</span>
+              <span class="mono endpoint-path">{e.path}</span>
+              <span class="endpoint-desc">{e.desc}</span>
             </div>
-          </div>
-        </div>
-      ))
-    }
+          ))
+        }
+      </div>
+      <p class="api-footer">{landing.api.footer}</p>
+    </div>
+  </section>
+
+  <section id="pricing" class="pricing">
+    <div class="container">
+      <p class="eyebrow">{landing.pricing.eyebrow}</p>
+      <h2 class="serif">{landing.pricing.title}</h2>
+      <p class="pricing-sub">{landing.pricing.subtitle}</p>
+      <div class="tiers">
+        {
+          landing.pricing.tiers.map((t) => (
+            <div class={`tier ${t.featured ? "tier-featured" : ""}`}>
+              <h3 class="tier-name">{t.name}</h3>
+              <div class="tier-price">
+                <span class="serif">{t.price}</span>
+                <span class="mono tier-unit">{t.unit}</span>
+              </div>
+              <p class="tier-blurb">{t.blurb}</p>
+              <ul class="tier-features">
+                {t.features.map((f) => (
+                  <li>{f}</li>
+                ))}
+              </ul>
+              <a
+                class={t.featured ? "btn-primary tier-cta" : "btn-ghost tier-cta"}
+                href={t.cta.href}
+              >
+                {t.cta.label}
+              </a>
+            </div>
+          ))
+        }
+      </div>
+      <p class="pricing-note mono">{landing.pricing.note}</p>
+    </div>
   </section>
 
   <section id="developers" class="developer">
@@ -88,7 +115,13 @@ import { landing } from "../data/landing";
           {landing.developer.endpoints.map((e) => <li class="mono">{e}</li>)}
         </ul>
       </div>
-      <pre class="code"><code>{landing.developer.codeSnippet}</code></pre>
+      <div class="dev-panel" aria-hidden="true">
+        <div class="mcp-card">
+          <div class="mcp-row"><span class="mono mcp-method">MCP</span><span class="mono">mcp.seal.nyc</span></div>
+          <div class="mcp-msg">documents.send({`{ title: "Mutual NDA", … }`})</div>
+          <div class="mcp-msg mcp-ok">→ sent · signing link emailed to jane@acme.com</div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -198,6 +231,7 @@ import { landing } from "../data/landing";
     font-weight: 600;
     padding: 9px 18px;
     transition: opacity 0.15s;
+    text-align: center;
   }
   .btn-primary {
     background: var(--primary);
@@ -220,7 +254,7 @@ import { landing } from "../data/landing";
   }
 
   .hero {
-    padding: 120px 0 96px;
+    padding: 104px 0 96px;
     text-align: center;
   }
   .hero h1 {
@@ -250,7 +284,7 @@ import { landing } from "../data/landing";
     gap: 28px;
     justify-content: center;
     list-style: none;
-    margin-top: 36px;
+    margin-top: 32px;
     font-size: 13px;
     color: var(--muted-foreground);
   }
@@ -261,92 +295,213 @@ import { landing } from "../data/landing";
     font-weight: 700;
   }
 
-  .features {
-    padding: 40px 0;
+  .code-window {
+    margin: 56px auto 0;
+    max-width: 720px;
+    text-align: left;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid oklch(0.28 0.01 65);
+    background: oklch(0.17 0.012 65);
+    box-shadow: 0 32px 80px -32px rgba(26, 23, 20, 0.45);
   }
-  .feature {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 80px;
+  .code-titlebar {
+    display: flex;
     align-items: center;
-    padding: 96px 24px;
-    border-top: 1px solid var(--border);
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid oklch(0.28 0.01 65);
+    font-size: 12px;
+    color: oklch(0.65 0.01 80);
   }
-  .feature-flip .feature-copy {
-    order: 2;
+  .code-dots {
+    display: inline-flex;
+    gap: 6px;
   }
-  .feature-copy h2 {
+  .code-dots i {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: oklch(0.35 0.01 65);
+    display: block;
+  }
+  .code-dots i:first-child {
+    background: var(--primary);
+  }
+  .code-host {
+    margin-left: auto;
+    color: oklch(0.55 0.01 80);
+  }
+  .code-window pre {
+    padding: 24px !important;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.7;
+    overflow-x: auto;
+    margin: 0;
+    background: transparent !important;
+  }
+
+  .api {
+    padding: 40px 0 96px;
+    text-align: center;
+  }
+  .api h2 {
     font-size: clamp(30px, 4vw, 44px);
     line-height: 1.1;
     margin: 16px 0 20px;
-    max-width: 20ch;
   }
-  .feature-body {
+  .api-body {
+    max-width: 62ch;
+    margin: 0 auto;
     color: var(--muted-foreground);
     font-size: 17px;
-    max-width: 48ch;
   }
-  .feature-bullets {
-    list-style: none;
-    margin-top: 24px;
+  .endpoint-table {
+    margin: 48px auto 0;
+    max-width: 860px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--card);
+    text-align: left;
+  }
+  .endpoint-row {
     display: grid;
-    gap: 12px;
+    grid-template-columns: 64px 1fr 1fr;
+    gap: 16px;
+    align-items: baseline;
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
   }
-  .feature-bullets li {
-    padding-left: 24px;
+  .endpoint-row:first-child {
+    border-top: none;
+  }
+  .method {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+  .method-post {
+    color: var(--primary);
+  }
+  .method-get {
+    color: oklch(0.55 0.12 155);
+  }
+  .method-delete {
+    color: var(--muted-foreground);
+  }
+  .endpoint-path {
+    font-size: 13px;
+  }
+  .endpoint-desc {
+    font-size: 14px;
+    color: var(--muted-foreground);
+  }
+  .api-footer {
+    margin-top: 24px;
+    font-size: 14px;
+    color: var(--muted-foreground);
+  }
+
+  .pricing {
+    padding: 96px 0;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+  .pricing h2 {
+    font-size: clamp(30px, 4vw, 44px);
+    line-height: 1.1;
+    margin: 16px 0 20px;
+  }
+  .pricing-sub {
+    max-width: 56ch;
+    margin: 0 auto;
+    color: var(--muted-foreground);
+    font-size: 17px;
+  }
+  .tiers {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    max-width: 960px;
+    margin: 48px auto 0;
+    text-align: left;
+  }
+  .tier {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--card);
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+  }
+  .tier-featured {
+    border-color: var(--primary);
+    box-shadow: 0 24px 60px -28px rgba(166, 61, 47, 0.35);
+  }
+  .tier-name {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+  .tier-featured .tier-name {
+    color: var(--primary);
+  }
+  .tier-price {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .tier-price .serif {
+    font-size: 44px;
+    line-height: 1;
+  }
+  .tier-unit {
+    font-size: 12px;
+    color: var(--muted-foreground);
+    letter-spacing: 0.04em;
+  }
+  .tier-blurb {
+    font-size: 14px;
+    color: var(--muted-foreground);
+    margin-top: 10px;
+  }
+  .tier-features {
+    list-style: none;
+    margin: 20px 0 24px;
+    display: grid;
+    gap: 10px;
+    font-size: 14px;
+    flex: 1;
+  }
+  .tier-features li {
+    padding-left: 20px;
     position: relative;
-    font-size: 15px;
   }
-  .feature-bullets li::before {
+  .tier-features li::before {
     content: "—";
     position: absolute;
     left: 0;
     color: var(--primary);
   }
-  .feature-visual {
-    display: flex;
-    justify-content: center;
-  }
-  .doc-card {
+  .tier-cta {
     width: 100%;
-    max-width: 380px;
-    aspect-ratio: 8.5 / 11;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: 0 24px 60px -24px rgba(26, 23, 20, 0.18);
-    padding: 40px 32px;
-    position: relative;
   }
-  .doc-line {
-    height: 10px;
-    border-radius: 5px;
-    background: var(--secondary);
-    margin-bottom: 14px;
-  }
-  .doc-line.w-70 { width: 70%; }
-  .doc-line.w-90 { width: 90%; }
-  .doc-line.w-55 { width: 55%; }
-  .doc-line.w-40 { width: 40%; }
-  .doc-gap { height: 90px; }
-  .doc-seal {
-    position: absolute;
-    right: 28px;
-    bottom: 28px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    color: var(--primary);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+  .pricing-note {
+    margin-top: 28px;
+    font-size: 12px;
+    color: var(--muted-foreground);
+    letter-spacing: 0.04em;
   }
 
   .developer {
     background: var(--foreground);
     color: oklch(0.982 0.002 90);
-    padding: 120px 0;
+    padding: 96px 0;
   }
   .dev-inner {
     display: grid;
@@ -378,20 +533,44 @@ import { landing } from "../data/landing";
     content: "→ ";
     color: var(--brand-400);
   }
-  .code {
+  .dev-panel {
+    display: flex;
+    justify-content: center;
+  }
+  .mcp-card {
+    width: 100%;
+    max-width: 440px;
     background: oklch(0.19 0.01 65);
     border: 1px solid oklch(0.28 0.01 65);
     border-radius: var(--radius);
-    padding: 28px;
+    padding: 24px;
     font-family: var(--font-mono);
     font-size: 13px;
-    line-height: 1.7;
-    overflow-x: auto;
-    color: oklch(0.9 0.02 80);
+    line-height: 1.8;
+    display: grid;
+    gap: 14px;
+  }
+  .mcp-row {
+    display: flex;
+    gap: 12px;
+    align-items: baseline;
+    color: oklch(0.7 0.02 80);
+  }
+  .mcp-method {
+    color: oklch(0.78 0.09 30);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    font-size: 11px;
+  }
+  .mcp-msg {
+    color: oklch(0.85 0.02 80);
+  }
+  .mcp-ok {
+    color: oklch(0.75 0.12 155);
   }
 
   .comparison {
-    padding: 120px 0;
+    padding: 96px 0;
   }
   .comparison h2 {
     font-size: clamp(30px, 4vw, 44px);
@@ -443,7 +622,7 @@ import { landing } from "../data/landing";
   }
 
   .final-cta {
-    padding: 120px 0;
+    padding: 96px 0;
     border-top: 1px solid var(--border);
     text-align: center;
   }
@@ -511,20 +690,19 @@ import { landing } from "../data/landing";
     .nav-links {
       display: none;
     }
-    .feature,
-    .dev-inner {
+    .dev-inner,
+    .tiers {
       grid-template-columns: 1fr;
       gap: 40px;
-      padding: 64px 24px;
     }
-    .feature-flip .feature-copy {
-      order: 0;
+    .dev-inner {
+      gap: 40px;
     }
-    .feature-visual {
-      order: -1;
+    .endpoint-row {
+      grid-template-columns: 56px 1fr;
     }
-    .doc-card {
-      max-width: 300px;
+    .endpoint-desc {
+      grid-column: 2;
     }
     .compare-head,
     .compare-row {
@@ -543,7 +721,7 @@ import { landing } from "../data/landing";
       gap: 40px;
     }
     .hero {
-      padding: 80px 0 64px;
+      padding: 72px 0 64px;
     }
   }
 </style>
