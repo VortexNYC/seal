@@ -48,11 +48,12 @@ Sent (3) → Viewed (2) → Signed (1) → Complete
 Visual horizontal funnel showing each recipient's progress with time at each stage.
 
 **Timing Metrics (per recipient):**
+
 | Recipient | Sent → Viewed | Viewed → Signed | Total Time |
-|-----------|--------------|-----------------|------------|
-| Alice | 2h 15m | 1d 3h | 1d 5h |
-| Bob | 5m | 23m | 28m |
-| Carol | 3d (waiting) | — | — |
+| --------- | ------------- | --------------- | ---------- |
+| Alice     | 2h 15m        | 1d 3h           | 1d 5h      |
+| Bob       | 5m            | 23m             | 28m        |
+| Carol     | 3d (waiting)  | —               | —          |
 
 **Email Engagement (per recipient):**
 

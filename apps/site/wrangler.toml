@@ -1,0 +1,68 @@
+name = "seal-site-dev"
+main = "src/worker.ts"
+compatibility_date = "2026-09-16"
+compatibility_flags = ["nodejs_compat"]
+upload_source_maps = true
+workers_dev = false
+preview_urls = false
+
+[observability]
+enabled = true
+logs = { enabled = true }
+traces = { enabled = true, head_sampling_rate = 0.1 }
+
+[[d1_databases]]
+binding = "DB"
+database_name = "vortex-sign-site-dev"
+database_id = "a49e8564-9cec-4292-955e-df3856877ecc"
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "vortex-sign-site-media-dev"
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = "d8af87b49d074df692ce4f554df3cdfb"
+
+[[worker_loaders]]
+binding = "LOADER"
+
+[triggers]
+crons = ["* * * * *"]
+
+[env.production]
+name = "seal-site"
+workers_dev = false
+preview_urls = true
+
+[env.production.observability]
+enabled = true
+logs = { enabled = true }
+traces = { enabled = true, head_sampling_rate = 0.1 }
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "vortex-sign-site"
+database_id = "a75accae-909c-48b6-9fd7-a6dfb025701b"
+
+[[env.production.r2_buckets]]
+binding = "MEDIA"
+bucket_name = "vortex-sign-site-media"
+
+[[env.production.kv_namespaces]]
+binding = "CACHE"
+id = "703a141820b34446bb875654345fabdd"
+
+[[env.production.worker_loaders]]
+binding = "LOADER"
+
+[env.production.triggers]
+crons = ["* * * * *"]
+
+[[env.production.routes]]
+pattern = "seal.nyc"
+custom_domain = true
+
+[[env.production.routes]]
+pattern = "www.seal.nyc"
+custom_domain = true

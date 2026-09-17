@@ -13,12 +13,12 @@ VORTEX_AUTH_TEST_SESSION_SECRET=
 
 # Dev URLs declared by vortex.project.json.
 # DEV_URL_1=http://seal.localhost:1355
-# DEV_URL_2=http://seal-landing.localhost:1355
+# DEV_URL_2=http://localhost:4321
 # DEV_URL_3=https://app.seal.nyc
 
 # App-specific URLs.
 # APP_APPS_WEB_REACT_19_VITE_PRODUCT_APP_WITH_TANSTACK_ROUTER_BETTER_AUTH_AND_CLOUDFLARE_DEPLOYS_URL=
-# APP_APPS_LANDING_TANSTACK_START_FUMADOCS_MARKETING_AND_DEVELOPER_DOCS_SITE_URL=
+# APP_APPS_DOCS_BLUME_ASTRO_DEVELOPER_DOCS_SITE_WITH_OPENAPI_REFERENCE_URL=
 # APP_APPS_API_CLOUDFLARE_WORKERS_HONO_OPENAPI_BACKEND_WITH_D1_DRIZZLE_URL=
 # APP_APPS_MCP_WORKER_CLOUDFLARE_WORKER_MCP_SERVER_URL=
 
@@ -26,7 +26,7 @@ VORTEX_AUTH_TEST_SESSION_SECRET=
 PLATFORM=web
 TESTING_TOOL=vb
 TEST_WEB_URL=http://localhost:5180
-TEST_LANDING_URL=http://seal-landing.localhost:1355
+TEST_DOCS_URL=http://localhost:4321
 API_URL=http://localhost:8787
 VITE_BETTER_AUTH_URL=http://localhost:8787
 BETTER_AUTH_URL=http://localhost:8787
@@ -36,6 +36,4 @@ PRODUCTION_API_URL=https://api.seal.nyc
 
 # Forbidden touch zones documented for agents.
 # - apps/web/src/routeTree.gen.ts
-# - apps/landing/src/routeTree.gen.ts
-# - apps/landing/.source/*
-# - apps/landing/content/docs/api-reference/*
+# - apps/docs/dist/*

@@ -17,11 +17,11 @@
     "format": "vp fmt",
     "format:check": "vp fmt --check",
     "typecheck": "tsc --noEmit",
-    "knip": "knip",
-    "knip:fix": "knip --fix --allow-remove-files"
+    "knip": "pnpm -w exec knip -W @seal/transactional",
+    "knip:fix": "pnpm -w exec knip -W @seal/transactional --fix --allow-remove-files"
   },
   "dependencies": {
-    "@react-email/components": "^1.0.2",
+    "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.1.0",
     "@seal/tokens": "workspace:*",
     "react": "catalog:",

@@ -81,6 +81,6 @@ Last audited: 2026-03-04
 
 ## Working Board
 
-| Board                           | ID    | Status |
+| Board | ID | Status |
 | ------------------------------- | ----- | ------ | ----------------------------------- |
-| Direction — Design Shakeup Plan | 62T-1 | ⬜     | Working doc, not for implementation |
+| Direction — Design Shakeup Plan | 62T-1 | ⬜ | Working doc, not for implementation |

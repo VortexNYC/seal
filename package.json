@@ -5,15 +5,15 @@
   "description": "Seal — open-source, agent-native e-signature platform",
   "type": "module",
   "scripts": {
-    "dev": "vp run -r dev --filter @seal/api --filter @seal/web --filter @seal/landing",
+    "dev": "vp run -r dev --filter @seal/api --filter @seal/web --filter @seal/docs",
     "dev:web": "pnpm --dir apps/web run dev -- --host 0.0.0.0",
-    "dev:landing": "pnpm --dir apps/landing run dev -- --host 0.0.0.0",
+    "dev:docs": "pnpm --dir apps/docs run dev",
     "dev:all": "pnpm run dev",
     "build": "pnpm --filter @seal/web run build",
     "build:all": "vp run -r build",
-    "deploy": "vp run -F @seal/anydoc-worker deploy && vp run -F @seal/convert-worker deploy && vp run -F @seal/api deploy && vp run -F @seal/mcp-worker deploy && vp run -F @seal/web deploy",
-    "test": "pnpm --filter @seal/api --filter @seal/web run test",
-    "typecheck": "pnpm --filter @seal/api --filter @seal/web --filter @seal/react --filter @seal/transactional --filter @seal/client --filter seal-cli --filter @seal/convert-worker --filter @seal/anydoc-worker --filter @seal/mcp-worker --filter @seal/internal-auth run typecheck",
+    "deploy": "vp run -F @seal/anydoc-worker deploy && vp run -F @seal/convert-worker deploy && vp run -F @seal/api deploy && vp run -F @seal/mcp-worker deploy && vp run -F @seal/web deploy && vp run -F @seal/site deploy",
+    "test": "vp run -F @seal/api -F @seal/web test",
+    "typecheck": "vp run -F @seal/api -F @seal/web -F @seal/react -F @seal/transactional -F @seal/client -F seal-cli -F @seal/convert-worker -F @seal/anydoc-worker -F @seal/mcp-worker -F @seal/internal-auth -F @seal/site typecheck",
     "lint": "vp lint",
     "lint:fix": "vp lint --fix && vp fmt",
     "format": "vp fmt",
@@ -30,15 +30,15 @@
     "@seal/tsconfig": "workspace:*",
     "@secretlint/secretlint-rule-preset-recommend": "^13.0.5",
     "@shadcn/lint": "^0.1.0",
-    "knip": "^6.3.0",
+    "knip": "^6.35.1",
     "secretlint": "^13.0.5",
     "simple-git-hooks": "^2.14.0",
-    "tsx": "^4.20.5",
-    "typescript": "~5.9.3",
-    "vite-plus": "0.2.4"
+    "tsx": "^4.23.13",
+    "typescript": "~7.0.2",
+    "vite-plus": "0.3.2"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm run scan:secrets"
   },
-  "packageManager": "pnpm@11.13.1"
+  "packageManager": "pnpm@12.4.2"
 }

@@ -18,8 +18,8 @@
     "format": "vp fmt",
     "format:check": "vp fmt --check",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "knip": "knip",
-    "knip:fix": "knip --fix --allow-remove-files"
+    "knip": "pnpm -w exec knip -W @seal/client",
+    "knip:fix": "pnpm -w exec knip -W @seal/client --fix --allow-remove-files"
   },
   "devDependencies": {
     "@seal/tsconfig": "workspace:*",

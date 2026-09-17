@@ -16,12 +16,12 @@
     "format": "vp fmt",
     "format:check": "vp fmt --check",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "knip": "knip",
-    "knip:fix": "knip --fix --allow-remove-files"
+    "knip": "pnpm -w exec knip -W seal-cli",
+    "knip:fix": "pnpm -w exec knip -W seal-cli --fix --allow-remove-files"
   },
   "dependencies": {
     "@seal/client": "workspace:*",
-    "tsx": "^4.20.5"
+    "tsx": "^4.23.13"
   },
   "devDependencies": {
     "@seal/tsconfig": "workspace:*",

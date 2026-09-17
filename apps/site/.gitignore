@@ -1,0 +1,9 @@
+dist/
+.astro/
+.emdash/
+.env
+data.db
+uploads/
+.cache/
+emdash-env.d.ts
+.wrangler/

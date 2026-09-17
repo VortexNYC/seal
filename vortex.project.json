@@ -17,39 +17,37 @@
     "packageManager": "pnpm@11.13.1",
     "setupCommands": ["pnpm install"],
     "verificationCommands": [
-      "pnpm run project-kit:check",
-      "pnpm run project-kit:doctor",
       "pnpm run typecheck",
       "pnpm run lint",
       "pnpm run format:check",
-      "pnpm run check:preferred-stack",
       "pnpm run build",
       "pnpm run test",
-      "pnpm run verify:seal-vortex-migration",
-      "pnpm run auth:check",
-      "pnpm run auth:preflight"
+      "pnpm run verify"
     ],
     "devUrls": [
       "http://seal.localhost:1355",
-      "http://seal-landing.localhost:1355",
+      "http://localhost:4321",
       "https://app.seal.nyc"
     ],
     "apps": [
       "apps/web - React 19 Vite product app with TanStack Router, Better Auth, and Cloudflare deploys",
-      "apps/landing - TanStack Start/Fumadocs marketing and developer docs site",
+      "apps/docs - blume (Astro) developer docs site with OpenAPI reference",
       "apps/api - Cloudflare Workers Hono/OpenAPI backend with D1/Drizzle",
-      "apps/mcp-worker - Cloudflare Worker MCP server"
+      "apps/mcp-worker - Cloudflare Worker MCP server",
+      "apps/anydoc-worker - Cloudflare Worker document ingestion service",
+      "apps/convert-worker - Cloudflare Worker PDF conversion via Gotenberg container"
     ],
     "packages": [
       "packages/transactional - React Email templates",
       "packages/react-sdk - embeddable signing components",
+      "packages/client - typed API client",
+      "packages/cli - seal CLI",
+      "packages/internal-auth - shared internal API-key auth",
       "packages/tokens - shared Seal design tokens"
     ],
     "forbiddenTouchZones": [
       "apps/web/src/routeTree.gen.ts",
-      "apps/landing/src/routeTree.gen.ts",
-      "apps/landing/.source/*",
-      "apps/landing/content/docs/api-reference/*"
+      "apps/docs/dist/*"
     ],
     "cloudNotes": [
       "Preserve root AGENTS.md and CLAUDE.md because they contain Seal-specific navigation and design context.",
@@ -71,7 +69,7 @@
       "../crm for the current clean Vortex Core consumer proof"
     ],
     "firstActions": [
-      "Run `pnpm run repo:status` from the repo root.",
+      "Run `pnpm run verify` from the repo root.",
       "Read AGENTS.md and any subdirectory AGENTS.md before touching code.",
       "Read .test-env before live proof or dev-server work.",
       "Attack the single active limiter; do not broaden payments, auth, or docs scope without evidence."
@@ -80,7 +78,7 @@
       "PLATFORM=web",
       "TESTING_TOOL=vb",
       "TEST_WEB_URL=http://localhost:5180",
-      "TEST_LANDING_URL=http://seal-landing.localhost:1355",
+      "TEST_DOCS_URL=http://localhost:4321",
       "API_URL=http://localhost:8787",
       "VITE_BETTER_AUTH_URL=http://localhost:8787",
       "BETTER_AUTH_URL=http://localhost:8787",
