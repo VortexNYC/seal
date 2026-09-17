@@ -20,8 +20,8 @@
     "format": "vp fmt",
     "format:check": "vp fmt --check",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "knip": "knip",
-    "knip:fix": "knip --fix --allow-remove-files"
+    "knip": "pnpm -w exec knip -W @seal/react",
+    "knip:fix": "pnpm -w exec knip -W @seal/react --fix --allow-remove-files"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",
