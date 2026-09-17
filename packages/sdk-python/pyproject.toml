@@ -1,0 +1,23 @@
+[project]
+name = "vortex-api-seal"
+version = "0.1.0"
+description = "A client library for accessing Seal API"
+authors = [{ name = "Vortex", email = "hello@seal.nyc" }]
+requires-python = ">=3.11"
+readme = "README.md"
+dependencies = ["httpx>=0.23.1,<0.29.0", "attrs>=22.2.0"]
+
+[tool.uv.build-backend]
+# import name stays seal_api_client; PyPI name is vortex-api-seal
+module-name = "seal_api_client"
+module-root = ""
+
+[build-system]
+requires = ["uv_build>=0.12.0,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["F", "I", "UP"]
