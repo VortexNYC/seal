@@ -96,7 +96,10 @@ export const landing = landingSchema.parse({
       { label: "Changelog", href: "/changelog" },
     ],
     signIn: { label: "Sign in", href: "https://app.seal.nyc" },
-    cta: { label: "Get an API key", href: "https://app.seal.nyc/sign-up?next=developer" },
+    cta: {
+      label: "Get an API key",
+      href: "https://app.seal.nyc/sign-up?next=developer",
+    },
   },
 
   hero: {
@@ -193,7 +196,10 @@ await seal.request("POST", \`/documents/send?id=\${id}\`);`,
           "Uploads, webhooks, audit trail",
           "No credit card",
         ],
-        cta: { label: "Get an API key", href: "https://app.seal.nyc/sign-up?next=developer" },
+        cta: {
+          label: "Get an API key",
+          href: "https://app.seal.nyc/sign-up?next=developer",
+        },
         featured: false,
       },
       {
@@ -208,7 +214,10 @@ await seal.request("POST", \`/documents/send?id=\${id}\`);`,
           "Sequential signing + templates",
           "Priority support",
         ],
-        cta: { label: "Start with Pro", href: "https://app.seal.nyc/sign-up?next=developer" },
+        cta: {
+          label: "Start with Pro",
+          href: "https://app.seal.nyc/sign-up?next=developer",
+        },
         featured: true,
       },
       {
@@ -266,7 +275,10 @@ await seal.request("POST", \`/documents/send?id=\${id}\`);`,
   finalCta: {
     headline: "Sign something today.",
     sub: "Create an account, get an API key, send a document. That's the whole onboarding.",
-    cta: { label: "Get an API key", href: "https://app.seal.nyc/sign-up?next=developer" },
+    cta: {
+      label: "Get an API key",
+      href: "https://app.seal.nyc/sign-up?next=developer",
+    },
     note: "Free tier · No card · No demo call · Your documents stay yours",
   },
 

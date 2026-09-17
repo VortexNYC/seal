@@ -19,7 +19,9 @@ export const Route = createFileRoute(
   "/_authenticated/onboarding/choose-organization/"
 )({
   component: RouteComponent,
-  validateSearch: (search: Record<string, unknown>): ChooseOrganizationSearch => {
+  validateSearch: (
+    search: Record<string, unknown>
+  ): ChooseOrganizationSearch => {
     const result: ChooseOrganizationSearch = {};
     if (search.next === "developer") {
       result.next = "developer";
