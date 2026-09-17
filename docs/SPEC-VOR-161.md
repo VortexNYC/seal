@@ -6,7 +6,7 @@ Make the workspace audit log in Seal comprehensive and trustworthy. The `audit_l
 
 ## Assumptions
 
-1. The base branch for vortex-sign is `main` (no `staging` branch currently exists in the repo); previous Seal PRs have targeted `main`.
+1. The base branch for seal is `main` (no `staging` branch currently exists in the repo); previous Seal PRs have targeted `main`.
 2. The existing `audit_logs` schema and `/audit` API are the contract; we extend usage rather than redesign.
 3. PII means names, emails, phone numbers, SSNs, token secrets, and full signing URLs; safe metadata is IDs, slugs, public IDs, status values, and counts.
 4. UI changes are limited to the existing `audit-log.tsx` settings page; a richer design is out of scope.

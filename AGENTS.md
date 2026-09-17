@@ -13,7 +13,7 @@ Seal is a pnpm + Vite+ (VoidZero) monorepo with a React 19 product app, a blume 
 ## STRUCTURE
 
 ```text
-vortex-sign/
+seal/
 ├── apps/               # web, docs, api, mcp-worker, anydoc-worker, convert-worker
 ├── packages/           # transactional, react-sdk, tokens
 ├── tooling/            # shared TypeScript config
