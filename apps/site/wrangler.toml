@@ -13,16 +13,16 @@ traces = { enabled = true, head_sampling_rate = 0.1 }
 
 [[d1_databases]]
 binding = "DB"
-database_name = "vortex-sign-site-dev"
-database_id = "a49e8564-9cec-4292-955e-df3856877ecc"
+database_name = "seal-site-dev"
+database_id = "c78f16c2-9965-483f-bbb1-5ee56881218d"
 
 [[r2_buckets]]
 binding = "MEDIA"
-bucket_name = "vortex-sign-site-media-dev"
+bucket_name = "seal-site-media-dev"
 
 [[kv_namespaces]]
 binding = "CACHE"
-id = "d8af87b49d074df692ce4f554df3cdfb"
+id = "c3e1eedd1533466b8f589aed4d2e010e"
 
 [[worker_loaders]]
 binding = "LOADER"
@@ -42,16 +42,16 @@ traces = { enabled = true, head_sampling_rate = 0.1 }
 
 [[env.production.d1_databases]]
 binding = "DB"
-database_name = "vortex-sign-site"
-database_id = "a75accae-909c-48b6-9fd7-a6dfb025701b"
+database_name = "seal-site"
+database_id = "98724613-82fc-44c7-b40d-d07a99da68a0"
 
 [[env.production.r2_buckets]]
 binding = "MEDIA"
-bucket_name = "vortex-sign-site-media"
+bucket_name = "seal-site-media"
 
 [[env.production.kv_namespaces]]
 binding = "CACHE"
-id = "703a141820b34446bb875654345fabdd"
+id = "9f7b0df19b0e409da75d20edf089836c"
 
 [[env.production.worker_loaders]]
 binding = "LOADER"

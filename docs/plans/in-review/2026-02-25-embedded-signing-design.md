@@ -112,12 +112,12 @@ embeddingConfig: v.optional(
 );
 ```
 
-### React SDK (`@seal/react`)
+### React SDK (`@vortex-api/seal/react`)
 
 A lightweight npm package wrapping the iFrame:
 
 ```typescript
-import { SealSigningEmbed } from "@seal/react";
+import { SealSigningEmbed } from "@vortex-api/seal/react";
 
 function MyApp() {
   return (
@@ -206,13 +206,13 @@ Embedded signing itself is free — it drives adoption. Advanced configuration o
 
 ### Key Files to Modify/Create
 
-| File                                          | Action                                                                |
-| --------------------------------------------- | --------------------------------------------------------------------- |
-| `apps/web/vercel.json`                        | Modify — route-specific headers for `/sign/*`                         |
-| `apps/web/src/routes/sign.$token.tsx`         | Modify — detect `?embed=true`, conditional layout, postMessage events |
-| `apps/backend/convex/schemas/documents.ts`    | Modify — add `embeddingConfig`                                        |
-| `packages/react-sdk/`                         | Create — `@seal/react` npm package with `SealSigningEmbed` component  |
-| `packages/react-sdk/src/SealSigningEmbed.tsx` | Create — iFrame wrapper component                                     |
-| `packages/react-sdk/src/types.ts`             | Create — event type definitions                                       |
-| `packages/react-sdk/package.json`             | Create — package config                                               |
-| `docs/embedded-signing.md`                    | Create — developer documentation                                      |
+| File                                          | Action                                                                          |
+| --------------------------------------------- | ------------------------------------------------------------------------------- |
+| `apps/web/vercel.json`                        | Modify — route-specific headers for `/sign/*`                                   |
+| `apps/web/src/routes/sign.$token.tsx`         | Modify — detect `?embed=true`, conditional layout, postMessage events           |
+| `apps/backend/convex/schemas/documents.ts`    | Modify — add `embeddingConfig`                                                  |
+| `packages/sdk/src/react/`                     | Create — `@vortex-api/seal/react` npm package with `SealSigningEmbed` component |
+| `packages/sdk/src/react/SealSigningEmbed.tsx` | Create — iFrame wrapper component                                               |
+| `packages/sdk/src/react/types.ts`             | Create — event type definitions                                                 |
+| `packages/sdk/package.json`                   | Create — package config                                                         |
+| `docs/embedded-signing.md`                    | Create — developer documentation                                                |

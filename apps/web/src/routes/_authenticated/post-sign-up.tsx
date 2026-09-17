@@ -4,9 +4,11 @@ import { useEffect } from "react";
 
 import Loader from "@/components/loader";
 import { betterAuthClient } from "@/lib/better-auth";
+import { buildOrganizationPath } from "@/lib/organization-path";
 
 interface PostSignUpSearch {
   invitation_token?: string;
+  next?: string;
 }
 
 interface SessionWithActiveOrganization {
@@ -22,13 +24,16 @@ export const Route = createFileRoute("/_authenticated/post-sign-up")({
     if (typeof search.invitation_token === "string") {
       result.invitation_token = search.invitation_token;
     }
+    if (search.next === "developer") {
+      result.next = "developer";
+    }
     return result;
   },
 });
 
 function RouteComponent() {
   const navigate = useNavigate();
-  const { invitation_token: invitationToken } = Route.useSearch();
+  const { invitation_token: invitationToken, next } = Route.useSearch();
 
   const { data: sessionData, isPending: isSessionPending } =
     betterAuthClient?.useSession() ?? {
@@ -94,6 +99,11 @@ function RouteComponent() {
     const currentOrganizations = organizations;
     const typedSession = sessionData as SessionWithActiveOrganization;
 
+    const toDestination = (slug: string | null | undefined) =>
+      next === "developer" && slug
+        ? buildOrganizationPath(slug, "/settings/developer")
+        : "/app";
+
     async function finish() {
       if (invitationToken) {
         await acceptInvitation.mutateAsync(invitationToken);
@@ -102,7 +112,10 @@ function RouteComponent() {
       }
 
       if (typedSession.session?.activeOrganizationId) {
-        void navigate({ to: "/app", replace: true });
+        const active = currentOrganizations.find(
+          (o) => o.id === typedSession.session?.activeOrganizationId
+        );
+        void navigate({ to: toDestination(active?.slug), replace: true });
         return;
       }
 
@@ -111,11 +124,15 @@ function RouteComponent() {
         if (first?.id) {
           await setActive.mutateAsync(first.id);
         }
-        void navigate({ to: "/app", replace: true });
+        void navigate({ to: toDestination(first?.slug), replace: true });
         return;
       }
 
-      void navigate({ to: "/onboarding/choose-organization", replace: true });
+      void navigate({
+        to: "/onboarding/choose-organization",
+        search: next === "developer" ? { next } : {},
+        replace: true,
+      });
     }
 
     void finish();
@@ -124,6 +141,7 @@ function RouteComponent() {
     isOrganizationsPending,
     organizations,
     invitationToken,
+    next,
     acceptInvitation,
     setActive,
     navigate,

@@ -30,6 +30,6 @@ jobs:
       - name: Push to Artifacts
         run: |
           set -euo pipefail
-          REMOTE="https://${ARTIFACTS_ACCOUNT_ID}.artifacts.cloudflare.net/git/vortex/vortex-sign.git"
+          REMOTE="https://${ARTIFACTS_ACCOUNT_ID}.artifacts.cloudflare.net/git/vortex/seal.git"
           # Artifacts is a mirror: force-push so rebased/rewritten branches still sync.
           git -c http.extraHeader="Authorization: Bearer ${ARTIFACTS_TOKEN}" push --force "$REMOTE" "HEAD:refs/heads/${GITHUB_REF_NAME}"

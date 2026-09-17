@@ -25,9 +25,7 @@ An open-source, agent-native e-signature platform. Built and powered by Vortex.
 | `apps/anydoc-worker`     | Document ingestion service                    | Cloudflare Workers              |
 | `apps/convert-worker`    | PDF conversion via Gotenberg container        | Cloudflare Workers, Containers  |
 | `packages/transactional` | Transactional email templates                 | React Email                     |
-| `packages/react-sdk`     | Embeddable React signing SDK                  | TypeScript, React               |
-| `packages/client`        | Typed API client                              | TypeScript                      |
-| `packages/cli`           | `seal` CLI                                    | TypeScript                      |
+| `packages/sdk`           | `@vortex-api/seal` — client, React SDK, CLI   | TypeScript, React               |
 | `packages/internal-auth` | Shared internal API-key auth                  | TypeScript                      |
 | `packages/tokens`        | Shared theme / font tokens                    | CSS, TypeScript                 |
 | `tooling/typescript`     | Shared TypeScript configuration               | TypeScript                      |

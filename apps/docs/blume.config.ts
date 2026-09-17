@@ -23,7 +23,7 @@ export default defineConfig({
 
   deployment: {
     output: "static",
-    site: "https://seal.nyc",
+    site: "https://docs.seal.nyc",
   },
 
   seo: {
