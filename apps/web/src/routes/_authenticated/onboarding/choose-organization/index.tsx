@@ -11,14 +11,31 @@ import Loader from "@/components/loader";
 import { betterAuthClient } from "@/lib/better-auth";
 import { buildOrganizationPath } from "@/lib/organization-path";
 
+interface ChooseOrganizationSearch {
+  next?: string;
+}
+
 export const Route = createFileRoute(
   "/_authenticated/onboarding/choose-organization/"
 )({
   component: RouteComponent,
+  validateSearch: (search: Record<string, unknown>): ChooseOrganizationSearch => {
+    const result: ChooseOrganizationSearch = {};
+    if (search.next === "developer") {
+      result.next = "developer";
+    }
+    return result;
+  },
 });
 
 function RouteComponent() {
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
+  const orgDestination = (slug: string) =>
+    buildOrganizationPath(
+      slug,
+      next === "developer" ? "/settings/developer" : "/home"
+    );
   const { data: organizations, isPending } = useQuery({
     queryKey: ["auth", "organization", "list"],
     queryFn: async () => {
@@ -59,7 +76,18 @@ function RouteComponent() {
                 }
               : undefined
           }
-          onCreated={() => {
+          onCreated={(slug) => {
+            if (next === "developer" && slug) {
+              void betterAuthClient?.organization
+                .setActive({ organizationSlug: slug })
+                .then(() => {
+                  void navigate({
+                    to: orgDestination(slug),
+                    replace: true,
+                  });
+                });
+              return;
+            }
             void navigate({ to: "/app", replace: true });
           }}
         />
@@ -83,7 +111,7 @@ function RouteComponent() {
               slug={org.slug}
               onSelect={() => {
                 void navigate({
-                  to: buildOrganizationPath(org.slug, "/home"),
+                  to: orgDestination(org.slug),
                   replace: true,
                 });
               }}
@@ -156,7 +184,7 @@ function CreateOrganizationCard({
 }: {
   hasOrganizations: boolean;
   onCancel?: () => void;
-  onCreated: () => void;
+  onCreated: (slug?: string) => void;
 }) {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -186,8 +214,12 @@ function CreateOrganizationCard({
     create.mutate(
       { name: name.trim(), slug: slug.trim() },
       {
-        onSuccess: () => {
-          onCreated();
+        onSuccess: (data) => {
+          onCreated(
+            typeof data === "object" && data !== null && "slug" in data
+              ? (data.slug as string)
+              : undefined
+          );
         },
         onError: (err) => {
           setError(

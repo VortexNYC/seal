@@ -6,6 +6,7 @@ import { createPageMeta, pageSEO } from "@/lib/seo";
 
 interface SignUpSearch {
   token?: string;
+  next?: string;
 }
 
 export const Route = createFileRoute("/_auth/sign-up")({
@@ -16,17 +17,22 @@ export const Route = createFileRoute("/_auth/sign-up")({
     if (typeof search.token === "string") {
       result.token = search.token;
     }
+    if (search.next === "developer") {
+      result.next = "developer";
+    }
     return result;
   },
 });
 
 function RouteComponent() {
-  const { token } = Route.useSearch();
+  const { token, next } = Route.useSearch();
   const client = getBetterAuthUiClient();
 
   const redirectTo = token
     ? `/accept-invite?token=${encodeURIComponent(token)}`
-    : "/post-sign-up";
+    : next === "developer"
+      ? "/post-sign-up?next=developer"
+      : "/post-sign-up";
 
   if (client === null) {
     return <p className="text-center text-sm">Auth client not configured.</p>;

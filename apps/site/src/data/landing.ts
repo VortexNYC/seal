@@ -96,7 +96,7 @@ export const landing = landingSchema.parse({
       { label: "Changelog", href: "/changelog" },
     ],
     signIn: { label: "Sign in", href: "https://app.seal.nyc" },
-    cta: { label: "Get an API key", href: "https://app.seal.nyc/sign-up" },
+    cta: { label: "Get an API key", href: "https://app.seal.nyc/sign-up?next=developer" },
   },
 
   hero: {
@@ -107,7 +107,7 @@ export const landing = landingSchema.parse({
       "Upload a PDF, add signers, get it back signed — with an audit trail. A REST API, typed SDK, and MCP server. No seat licenses, no demo call, no envelope quota designed to be hit in month eleven.",
     primaryCta: {
       label: "Get an API key",
-      href: "https://app.seal.nyc/sign-up",
+      href: "https://app.seal.nyc/sign-up?next=developer",
     },
     secondaryCta: { label: "API Documentation", href: "https://docs.seal.nyc" },
     proof: [
@@ -193,7 +193,7 @@ await seal.request("POST", \`/documents/send?id=\${id}\`);`,
           "Uploads, webhooks, audit trail",
           "No credit card",
         ],
-        cta: { label: "Get an API key", href: "https://app.seal.nyc/sign-up" },
+        cta: { label: "Get an API key", href: "https://app.seal.nyc/sign-up?next=developer" },
         featured: false,
       },
       {
@@ -208,7 +208,7 @@ await seal.request("POST", \`/documents/send?id=\${id}\`);`,
           "Sequential signing + templates",
           "Priority support",
         ],
-        cta: { label: "Start with Pro", href: "https://app.seal.nyc/sign-up" },
+        cta: { label: "Start with Pro", href: "https://app.seal.nyc/sign-up?next=developer" },
         featured: true,
       },
       {
@@ -266,7 +266,7 @@ await seal.request("POST", \`/documents/send?id=\${id}\`);`,
   finalCta: {
     headline: "Sign something today.",
     sub: "Create an account, get an API key, send a document. That's the whole onboarding.",
-    cta: { label: "Get an API key", href: "https://app.seal.nyc/sign-up" },
+    cta: { label: "Get an API key", href: "https://app.seal.nyc/sign-up?next=developer" },
     note: "Free tier · No card · No demo call · Your documents stay yours",
   },
 
