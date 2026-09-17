@@ -2,7 +2,7 @@
   "name": "seal",
   "version": "0.0.1",
   "private": true,
-  "description": "Seal \u2014 open-source, agent-native e-signature platform",
+  "description": "Seal — open-source, agent-native e-signature platform",
   "type": "module",
   "scripts": {
     "dev": "vp run -r dev --filter @seal/api --filter @seal/web --filter @seal/docs",

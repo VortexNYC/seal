@@ -3,6 +3,13 @@
   "version": "0.1.0",
   "description": "Seal SDK — typed API client, React signing components, and CLI",
   "license": "MIT",
+  "bin": {
+    "seal": "./bin/seal.mjs"
+  },
+  "files": [
+    "src",
+    "bin"
+  ],
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -16,13 +23,6 @@
       "import": "./src/react/index.ts"
     }
   },
-  "bin": {
-    "seal": "./bin/seal.mjs"
-  },
-  "files": [
-    "src",
-    "bin"
-  ],
   "scripts": {
     "generate": "openapi-typescript ../../apps/docs/openapi.yaml -o ./src/openapi.ts",
     "lint": "vp lint .",
@@ -35,9 +35,6 @@
   "dependencies": {
     "tsx": "^4.23.13"
   },
-  "peerDependencies": {
-    "react": ">=18.0.0"
-  },
   "devDependencies": {
     "@seal/tsconfig": "workspace:*",
     "@types/node": "catalog:",
@@ -45,5 +42,8 @@
     "openapi-typescript": "7.13.0",
     "react": "catalog:",
     "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
   }
 }
