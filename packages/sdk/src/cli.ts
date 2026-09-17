@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 
-import { createSealClient, type HttpMethod } from "@seal/client";
+import { createSealClient, type HttpMethod } from "./index.js";
 
 const VALID_METHODS: HttpMethod[] = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 

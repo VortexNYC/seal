@@ -17,14 +17,9 @@ const config: KnipConfig = {
       ignoreExportsUsedInFile: true,
       ignoreIssues: { "**/*": ["duplicates"] },
     },
-    "packages/cli": {
-      ignoreDependencies: ["@seal/tsconfig"],
-    },
-    "packages/client": {
+    "packages/sdk": {
       ignoreDependencies: ["@seal/tsconfig"],
       ignore: ["src/openapi.ts"],
-    },
-    "packages/react-sdk": {
       ignoreIssues: { "**/*": ["duplicates"] },
     },
     "packages/transactional": {

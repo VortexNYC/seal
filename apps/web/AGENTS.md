@@ -84,7 +84,7 @@ entitlements in Core come later.
 | ------------------------------------------ | ----------------------------- | ----------------------------------------- |
 | Signature types, deadlines, e-sign consent | **Seal**                      | `settings/signing`, org `signingSettings` |
 | Public token signing UX / PDF canvas       | **Seal**                      | `/sign/$token` (`sign.$token.tsx`)        |
-| Recipient token security, embed SDK        | **Seal**                      | `recipients_*`, `packages/react-sdk`      |
+| Recipient token security, embed SDK        | **Seal**                      | `recipients_*`, `packages/sdk`      |
 | Org logo / colors on sign chrome           | Core brand when VOR-182 lands | Apply tokens; do not invent identity here |
 
 Do not move signing settings or `/sign/$token` into `@vortexnyc/auth`.

@@ -18,5 +18,6 @@
   "devDependencies": {
     "@seal/tsconfig": "workspace:*",
     "typescript": "catalog:"
-  }
+  },
+  "private": true
 }

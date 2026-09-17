@@ -35,7 +35,7 @@ vortex-sign/
 | API spec source        | `apps/docs/openapi.yaml`                                       | OpenAPI spec rendered at `/reference`           |
 | MCP tools/resources    | `apps/mcp-worker/src/tools/`, `apps/mcp-worker/src/resources/` | MCP worker surface                              |
 | Email templates        | `packages/transactional/src/emails/`                           | React Email templates                           |
-| React SDK              | `packages/react-sdk/src/`                                      | Embeddable signing components                   |
+| SDK                    | `packages/sdk/src/`                                            | `@vortex-api/seal` — client, React components, CLI |
 | Shared design tokens   | `packages/tokens/src/`                                         | Shared fonts/theme exports                      |
 | E2E tests              | `apps/web/e2e/`                                                | Playwright POM pattern                          |
 

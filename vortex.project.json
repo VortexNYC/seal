@@ -39,9 +39,7 @@
     ],
     "packages": [
       "packages/transactional - React Email templates",
-      "packages/react-sdk - embeddable signing components",
-      "packages/client - typed API client",
-      "packages/cli - seal CLI",
+      "packages/sdk - @vortex-api/seal: typed client, embeddable signing components, seal CLI",
       "packages/internal-auth - shared internal API-key auth",
       "packages/tokens - shared Seal design tokens"
     ],

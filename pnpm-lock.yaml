@@ -644,11 +644,17 @@ importers:
         specifier: ^4.133.0
         version: 4.133.0(@cloudflare/workers-types@5.20260916.1)(@types/node@25.9.7)
 
-  packages/cli:
-    dependencies:
-      '@seal/client':
+  packages/internal-auth:
+    devDependencies:
+      '@seal/tsconfig':
         specifier: workspace:*
-        version: link:../client
+        version: link:../../tooling/typescript
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+
+  packages/sdk:
+    dependencies:
       tsx:
         specifier: ^4.23.13
         version: 4.23.13
@@ -659,39 +665,14 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 25.9.7
-      typescript:
+      '@types/react':
         specifier: 'catalog:'
-        version: 7.0.2
-
-  packages/client:
-    devDependencies:
-      '@seal/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
+        version: 19.3.0
       openapi-typescript:
         specifier: 7.13.0
         version: 7.13.0(typescript@7.0.2)
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-
-  packages/internal-auth:
-    devDependencies:
-      '@seal/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-
-  packages/react-sdk:
-    dependencies:
       react:
         specifier: 19.3.0
-        version: 19.3.0
-    devDependencies:
-      '@types/react':
-        specifier: ^19.3.0
         version: 19.3.0
       typescript:
         specifier: 'catalog:'

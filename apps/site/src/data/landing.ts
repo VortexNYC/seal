@@ -119,7 +119,7 @@ export const landing = landingSchema.parse({
       "10 documents/month on us",
     ],
     codeFile: "send-for-signature.ts",
-    codeSnippet: `import { SealClient } from "@seal/client";
+    codeSnippet: `import { SealClient } from "@vortex-api/seal";
 
 const seal = new SealClient({ apiKey: process.env.SEAL_API_KEY });
 
@@ -242,7 +242,7 @@ await seal.request("POST", \`/documents/send?id=\${id}\`);`,
     eyebrow: "For humans and their agents",
     title: "An API your AI can drive.",
     body: "First-class REST API, typed SDKs generated from the OpenAPI spec, a CLI, and a hosted MCP server. Your agent can draft, send, and chase signatures without a human opening a tab.",
-    endpoints: ["api.seal.nyc", "mcp.seal.nyc", "@seal/client on npm"],
+    endpoints: ["api.seal.nyc", "mcp.seal.nyc", "@vortex-api/seal on npm"],
   },
 
   comparison: {
