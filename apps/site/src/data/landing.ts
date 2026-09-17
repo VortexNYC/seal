@@ -204,7 +204,7 @@ await seal.request("POST", \`/documents/send?id=\${id}\`);`,
       },
       {
         name: "Pro",
-        price: "$0.40",
+        price: "Metered",
         unit: "per document",
         blurb: "For production workloads that sign real contracts.",
         features: [
@@ -259,7 +259,7 @@ await seal.request("POST", \`/documents/send?id=\${id}\`);`,
       },
       {
         them: '"Contact sales" where the price should be',
-        seal: "The price is on the page. Scroll up.",
+        seal: "A free developer tier and metered usage. No sales call required.",
       },
       {
         them: "Agents bolted on in 2025 press releases",
