@@ -2,7 +2,9 @@
 import Base from "../layouts/Base.astro";
 
 const services = [
-  { name: "Landing", host: "seal.nyc", url: "https://seal.nyc/" },
+  // seal.nyc is this worker — a Worker can't subrequest its own hostname
+  // (self-loop → 522). Rendering this page is the liveness proof.
+  { name: "Landing", host: "seal.nyc", self: true },
   { name: "API", host: "api.seal.nyc", url: "https://api.seal.nyc/health" },
   { name: "App", host: "app.seal.nyc", url: "https://app.seal.nyc/" },
   { name: "Docs", host: "docs.seal.nyc", url: "https://docs.seal.nyc/" },
@@ -11,6 +13,7 @@ const services = [
 
 const checks = await Promise.all(
   services.map(async (s) => {
+    if ("self" in s && s.self) return { ...s, ok: true, code: 200, ms: 0 };
     const start = Date.now();
     try {
       const res = await fetch(s.url, {
@@ -62,7 +65,7 @@ const checkedAt = new Date().toISOString().replace("T", " ").slice(0, 19) + " UT
               <td class:list={["mono", "state", c.ok ? "ok" : "down"]}>
                 {c.ok ? "OPERATIONAL" : `DOWN ${c.code || "—"}`}
               </td>
-              <td class="mono dim num">{c.ms}ms</td>
+              <td class="mono dim num">{"self" in c && c.self ? "—" : `${c.ms}ms`}</td>
             </tr>
           ))}
         </tbody>
