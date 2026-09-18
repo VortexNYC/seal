@@ -1,6 +1,26 @@
-# Seal
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="packages/tokens/src/assets/logo/seal-lockup-dark.png">
+  <img alt="Seal" src="packages/tokens/src/assets/logo/seal-lockup-light.png" width="300">
+</picture>
+
+**Contract infrastructure for your code and your agents.**
+Where deals get done — upload, send, sign, audit, all API-first. Signing is free.
 
 An open-source, agent-native e-signature platform. Built and powered by Vortex.
+
+|            |                                            |
+| ---------- | ------------------------------------------ |
+| **Site**   | [seal.nyc](https://seal.nyc)               |
+| **Docs**   | [docs.seal.nyc](https://docs.seal.nyc)     |
+| **API**    | `api.seal.nyc`                             |
+| **MCP**    | `mcp.seal.nyc`                             |
+| **Status** | [seal.nyc/status](https://seal.nyc/status) |
+
+```bash
+npm install @vortex-api/seal      # TypeScript — client + React + CLI
+pip install vortex-api-seal       # Python
+go get github.com/VortexNYC/seal/packages/sdk-go  # Go
+```
 
 ## Stack
 
