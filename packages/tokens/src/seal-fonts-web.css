@@ -1,20 +1,44 @@
 /*
  * Seal Design System — Web Font Declarations
  *
- * Three-typeface stack:
- *   Instrument Serif  — display, marketing headlines, wordmark
- *   Plus Jakarta Sans — all product UI, body text, labels
- *   JetBrains Mono    — code blocks, API keys, monospaced data
+ * Three-typeface stack, self-hosted — no third-party font CDN at runtime:
+ *   Instrument Serif  — display, marketing headlines, wordmark (static 400 + italic)
+ *   Plus Jakarta Sans — all product UI, body text, labels (variable, wght 200–800)
+ *   JetBrains Mono    — code blocks, API keys, monospaced data (variable, wght 100–800)
  *
- * Import order matters: this file must be imported before seal-theme-web.css
- * so that @theme inline font-family tokens resolve correctly.
+ * Files live in ./fonts and are latin-subset woff2. Import order matters: this
+ * file must be imported before seal-theme-web.css so the font-family tokens
+ * resolve correctly.
  */
 
-/* Instrument Serif — variable (400 only, italic variant included) */
-@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap");
+@font-face {
+  font-family: "Instrument Serif";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./fonts/instrument-serif-400.woff2") format("woff2");
+}
 
-/* Plus Jakarta Sans — variable, full weight range 200–800 */
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap");
+@font-face {
+  font-family: "Instrument Serif";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./fonts/instrument-serif-400-italic.woff2") format("woff2");
+}
 
-/* JetBrains Mono — variable, full weight range 100–800 */
-@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap");
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url("./fonts/plus-jakarta-sans-var.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url("./fonts/jetbrains-mono-var.woff2") format("woff2");
+}
