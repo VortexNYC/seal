@@ -8,12 +8,12 @@ Where deals get done — upload, send, sign, audit, all API-first. Signing is fr
 
 An open-source, agent-native e-signature platform. Built and powered by Vortex.
 
-| | |
-|---|---|
-| **Site** | [seal.nyc](https://seal.nyc) |
-| **Docs** | [docs.seal.nyc](https://docs.seal.nyc) |
-| **API** | `api.seal.nyc` |
-| **MCP** | `mcp.seal.nyc` |
+|            |                                            |
+| ---------- | ------------------------------------------ |
+| **Site**   | [seal.nyc](https://seal.nyc)               |
+| **Docs**   | [docs.seal.nyc](https://docs.seal.nyc)     |
+| **API**    | `api.seal.nyc`                             |
+| **MCP**    | `mcp.seal.nyc`                             |
 | **Status** | [seal.nyc/status](https://seal.nyc/status) |
 
 ```bash
