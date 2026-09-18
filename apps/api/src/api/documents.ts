@@ -36,13 +36,16 @@ import {
   isConvertibleFileType,
 } from "../platform/document-conversion.js";
 import {
-  type EmailSendResult,
   sendDocumentInvitationEmail,
   sendOwnershipTransferredEmail,
 } from "../platform/email.js";
 import { organizationMiddleware } from "../platform/organization-middleware.js";
 import type { Variables } from "../platform/types.js";
 import ai from "./ai.js";
+import {
+  generateSigningToken,
+  sendDocumentForSigning,
+} from "./document-send.js";
 
 const DocumentSchema = z
   .object({
@@ -147,14 +150,6 @@ function documentResponse(doc: {
 
 function generatePublicId() {
   return crypto.randomUUID();
-}
-
-function generateSigningToken(): string {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join(
-    ""
-  );
 }
 
 function validateRedirectUrl(redirectUrl: string | null | undefined): void {
@@ -4073,7 +4068,6 @@ app.openapi(sendRouteDef, async (c) => {
     );
   }
 
-  const now = new Date();
   const expirationMs = input.expirationPeriod
     ? input.expirationPeriod.amount *
       (input.expirationPeriod.unit === "day"
@@ -4081,88 +4075,35 @@ app.openapi(sendRouteDef, async (c) => {
         : input.expirationPeriod.unit === "week"
           ? 7 * 24 * 60 * 60 * 1000
           : 30 * 24 * 60 * 60 * 1000)
-    : 30 * 24 * 60 * 60 * 1000;
-  const tokenExpiresAt = new Date(now.getTime() + expirationMs);
-
-  const recipientRows = await db
-    .select()
-    .from(recipients)
-    .where(eq(recipients.documentId, doc.id));
-
-  const recipientUpdates = recipientRows.map((recipient) => {
-    const token = recipient.signingToken ?? generateSigningToken();
-    return {
-      id: recipient.id,
-      signingToken: token,
-      tokenExpiresAt,
-      updatedAt: now,
-    };
-  });
-
-  await Promise.all(
-    recipientUpdates.map((update) =>
-      db.update(recipients).set(update).where(eq(recipients.id, update.id))
-    )
-  );
-
-  await db
-    .update(documents)
-    .set({
-      status: "sent",
-      sentAt: now,
-      deadline: tokenExpiresAt,
-      updatedAt: now,
-    })
-    .where(eq(documents.id, doc.id));
+    : undefined;
 
   const senderName =
     c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown";
 
-  const emailPromises: Promise<EmailSendResult>[] = [];
-  for (const update of recipientUpdates) {
-    const recipient = recipientRows.find((r) => r.id === update.id);
-    if (!recipient || !recipient.email) {
-      emailPromises.push(
-        Promise.resolve({ success: false, error: "missing recipient email" })
-      );
-      continue;
+  const { sentAt, recipients: sentRecipients } = await sendDocumentForSigning(
+    db,
+    c.env,
+    {
+      documentId: doc.id,
+      documentName: doc.name,
+      senderName,
+      expirationMs,
+      recipientMessages: input.recipientMessages,
     }
-    const customMessage = input.recipientMessages?.[recipient.publicId];
-    emailPromises.push(
-      sendDocumentInvitationEmail(c.env, {
-        to: recipient.email,
-        recipientName: recipient.name ?? recipient.email,
-        senderName,
-        documentName: doc.name,
-        signingToken: update.signingToken,
-        customMessage,
-        expiresAt: tokenExpiresAt.getTime(),
-      })
-    );
-  }
-  const emailResults = await Promise.all(emailPromises);
-
-  const failedEmails = emailResults.filter((r) => !r.success);
-  if (failedEmails.length > 0) {
-    console.error(
-      "[documents/send] some invitation emails failed:",
-      failedEmails
-    );
-  }
+  );
 
   await db.insert(activity).values({
     id: crypto.randomUUID(),
     organizationId,
     action: "document.sent",
-    actorName:
-      c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown",
+    actorName: senderName,
     targetName: doc.name,
     metadata: JSON.stringify({
       documentId: doc.id,
       publicId,
-      recipientCount: recipientRows.length,
+      recipientCount: sentRecipients.length,
     }),
-    createdAt: now,
+    createdAt: sentAt,
   });
 
   return c.json({ success: true });

@@ -15,7 +15,7 @@ import type { Context } from "hono";
 import { z } from "zod";
 
 import { createD1 } from "../../global/db.js";
-import { documents, recipients } from "../../global/schema.js";
+import { documents, organization, recipients } from "../../global/schema.js";
 import {
   fieldCandidateSchema,
   parseDocumentFromStorage,
@@ -27,6 +27,7 @@ import {
 } from "../../platform/audit-log.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import { emitWebhookEvent } from "../../platform/webhook-events.js";
+import { sendDocumentForSigning } from "../document-send.js";
 import { createDownloadToken, verifyDownloadToken } from "./download-token.js";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -776,6 +777,11 @@ async function handleDeleteDocument(
 app.post("/delete", async (c) => handleDeleteDocument(c));
 app.delete("/delete", async (c) => handleDeleteDocument(c));
 
+const sendDocumentBodySchema = z.object({
+  notify: z.boolean().optional(),
+  expires_in_days: z.number().int().positive().max(365).optional(),
+});
+
 async function handleSendDocument(
   c: Context<{
     Bindings: CloudflareBindings;
@@ -819,7 +825,7 @@ async function handleSendDocument(
   if (!row) {
     return c.json({ error: "not_found" }, 404);
   }
-  if (row.status !== "draft") {
+  if (row.status !== "draft" && row.status !== "expired") {
     return c.json({ error: "document_not_in_draft_status" }, 400);
   }
 
@@ -831,13 +837,34 @@ async function handleSendDocument(
     return c.json({ error: "document_has_no_recipients" }, 400);
   }
 
-  const sentAt = new Date();
-  await db
-    .update(documents)
-    .set({ status: "sent", sentAt })
-    .where(
-      and(eq(documents.id, id), eq(documents.organizationId, organizationId))
-    );
+  const rawBody: unknown = await c.req.json().catch(() => undefined);
+  const parsedBody = sendDocumentBodySchema.safeParse(rawBody ?? {});
+  if (!parsedBody.success) {
+    return c.json({ error: "validation_error" }, 400);
+  }
+  const notify = parsedBody.data.notify ?? true;
+  const expirationMs = parsedBody.data.expires_in_days
+    ? parsedBody.data.expires_in_days * 24 * 60 * 60 * 1000
+    : undefined;
+
+  const orgRows = await db
+    .select({ name: organization.name })
+    .from(organization)
+    .where(eq(organization.id, organizationId))
+    .limit(1);
+  const senderName = orgRows[0]?.name ?? "your team";
+
+  const {
+    sentAt,
+    deadline,
+    recipients: sentRecipients,
+  } = await sendDocumentForSigning(db, c.env, {
+    documentId: id,
+    documentName: row.name,
+    senderName,
+    expirationMs,
+    notify,
+  });
 
   const actor = getAuditActor({ mcp: c.get("mcp") });
   if (actor) {
@@ -849,7 +876,7 @@ async function handleSendDocument(
       resourceId: row.id,
       metadata: {
         publicId: row.publicId,
-        recipientCount: recipientRows.length,
+        recipientCount: sentRecipients.length,
       },
       ...getAuditRequestMeta(c),
     });
@@ -877,7 +904,19 @@ async function handleSendDocument(
     await emitPromise;
   }
 
-  return c.json({ success: true });
+  return c.json({
+    success: true,
+    sent_at: sentAt.getTime(),
+    deadline: deadline.getTime(),
+    recipients: sentRecipients.map((r) => ({
+      id: r.id,
+      email: r.email,
+      name: r.name,
+      signing_url: r.signingUrl,
+      expires_at: deadline.getTime(),
+      ...(notify ? { email_sent: r.emailSent } : {}),
+    })),
+  });
 }
 
 app.post("/send", async (c) => handleSendDocument(c));
