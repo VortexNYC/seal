@@ -1243,7 +1243,6 @@ export const apiTokens = sqliteTable(
   (table) => [
     index("apiTokens_organizationId_idx").on(table.organizationId),
     index("apiTokens_userId_idx").on(table.userId),
-    index("apiTokens_tokenHash_idx").on(table.tokenHash),
   ]
 );
 

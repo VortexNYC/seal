@@ -1,0 +1,1 @@
+DROP INDEX `apiTokens_tokenHash_idx`;
