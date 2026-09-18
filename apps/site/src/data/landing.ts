@@ -59,6 +59,12 @@ export const landing = z
       index: z.string(),
       eyebrow: z.string(),
       title: z.string(),
+      definition: z.object({
+        term: z.string(),
+        phonetic: z.string(),
+        pos: z.string(),
+        gloss: z.string(),
+      }),
       lines: z.array(z.string()),
     }),
     pricing: z.object({
@@ -75,6 +81,7 @@ export const landing = z
       title: z.string(),
       body: z.string(),
       points: z.array(z.string()),
+      clients: z.string(),
     }),
     comparison: z.object({
       index: z.string(),
@@ -211,6 +218,13 @@ await seal.request("POST", \`/documents/send?id=\${id}\`);`,
       index: "02 / 04",
       eyebrow: "The thesis",
       title: "Paying for signatures is over.",
+      definition: {
+        term: "seal",
+        phonetic: "/sēl/",
+        pos: "n.",
+        gloss:
+          "a device stamped in wax to authenticate a document — the original signing primitive",
+      },
       lines: [
         "A signature is a primitive, not a product. Incumbents charge per seat per month for a bit of ink — then charge again when your team grows.",
         "Seal gives signing away. What you pay for is the platform around it: the API surface, the audit trail, the agent that prepares and chases the contract for you.",
@@ -286,6 +300,8 @@ await seal.request("POST", \`/documents/send?id=\${id}\`);`,
         "Typed SDKs: TypeScript, Python, Go — one OpenAPI spec",
         "Every action lands in the audit trail, agent or human",
       ],
+      clients:
+        "Works with Claude Code, Cursor, Codex — any MCP client. Your agent already speaks Seal.",
     },
     comparison: {
       index: "",

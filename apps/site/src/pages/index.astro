@@ -89,6 +89,12 @@ import { landing } from "../data/landing";
         <span class="mono section-index">( {landing.manifesto.index} )</span>
       </div>
       <h2>{landing.manifesto.title}</h2>
+      <p class="dict serif">
+        <span class="dict-term">{landing.manifesto.definition.term}</span>
+        <span class="mono dict-phonetic">{landing.manifesto.definition.phonetic}</span>
+        <span class="mono dict-pos">{landing.manifesto.definition.pos}</span>
+        <em class="dict-gloss">{landing.manifesto.definition.gloss}</em>
+      </p>
       <div class="manifesto-lines">
         {landing.manifesto.lines.map((line) => <p class="serif">{line}</p>)}
       </div>
@@ -144,6 +150,7 @@ import { landing } from "../data/landing";
           {landing.developer.points.map((p) => <li class="mono">{p}</li>)}
         </ul>
       </div>
+      <p class="dev-clients mono">{landing.developer.clients}</p>
     </div>
   </section>
 
@@ -407,7 +414,7 @@ import { landing } from "../data/landing";
 
   .install {
     margin-top: 56px;
-    max-width: 640px;
+    max-width: 720px;
     border: 1px solid var(--border);
   }
   .install-tabs {
@@ -518,6 +525,35 @@ import { landing } from "../data/landing";
   }
 
   /* ————— manifesto ————— */
+
+  .dict {
+    margin-top: 40px;
+    padding: 20px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    font-size: clamp(18px, 2.2vw, 24px);
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .dict-term {
+    color: var(--primary);
+    font-size: 1.3em;
+  }
+  .dict-phonetic {
+    color: var(--muted-foreground);
+    font-size: 0.7em;
+    letter-spacing: 0.02em;
+  }
+  .dict-pos {
+    color: var(--primary);
+    font-size: 0.7em;
+  }
+  .dict-gloss {
+    color: var(--muted-foreground);
+    font-size: 0.85em;
+  }
 
   .manifesto-lines {
     margin-top: 56px;
@@ -657,6 +693,14 @@ import { landing } from "../data/landing";
   .dev-points li::before {
     content: "→ ";
     color: oklch(0.78 0.09 30);
+  }
+  .dev-clients {
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: 1px solid oklch(0.3 0.01 65);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: oklch(0.6 0.01 80);
   }
 
   /* ————— comparison ————— */
