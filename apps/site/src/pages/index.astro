@@ -8,10 +8,10 @@ import { landing } from "../data/landing";
   <nav class="nav">
     <div class="container nav-inner">
       <a href="/" class="logo" aria-label="Seal home">
-        <svg viewBox="0 0 64 64" width="26" height="26" aria-hidden="true">
-          <circle cx="32" cy="32" r="30" fill="var(--primary)"></circle>
-          <circle cx="32" cy="32" r="24" fill="none" stroke="#fafaf9" stroke-width="1.5" opacity="0.6"></circle>
-          <text x="32" y="42" text-anchor="middle" font-family="Georgia, serif" font-size="30" fill="#fafaf9">S</text>
+        <svg viewBox="0 0 200 200" width="26" height="26" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true">
+          <ellipse cx="96" cy="94" rx="88" ry="81" stroke-width="10"/>
+          <ellipse cx="104" cy="106" rx="60" ry="55" stroke-width="6"/>
+          <circle cx="112" cy="114" r="9" fill="currentColor" stroke="none"/>
         </svg>
         <span class="logo-word">Seal</span>
       </a>
@@ -26,6 +26,13 @@ import { landing } from "../data/landing";
   </nav>
 
   <header class="hero">
+    <div class="hero-mark" aria-hidden="true">
+      <svg viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-linecap="round">
+        <ellipse cx="96" cy="94" rx="88" ry="81" stroke-width="10"/>
+        <ellipse cx="104" cy="106" rx="60" ry="55" stroke-width="6"/>
+        <circle cx="112" cy="114" r="9" fill="currentColor" stroke="none"/>
+      </svg>
+    </div>
     <div class="container">
       <p class="eyebrow">{landing.hero.eyebrow}</p>
       <h1>{landing.hero.headline}</h1>
@@ -180,6 +187,11 @@ import { landing } from "../data/landing";
 
   <section class="final-cta">
     <div class="container final-inner">
+      <svg class="final-mark" viewBox="0 0 200 200" width="72" height="72" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true">
+        <ellipse cx="96" cy="94" rx="88" ry="81" stroke-width="10"/>
+        <ellipse cx="104" cy="106" rx="60" ry="55" stroke-width="6"/>
+        <circle cx="112" cy="114" r="9" fill="currentColor" stroke="none"/>
+      </svg>
       <h2>{landing.finalCta.headline}</h2>
       <p>{landing.finalCta.sub}</p>
       <a class="btn btn-ink btn-lg" href={landing.finalCta.cta.href}>{landing.finalCta.cta.label}</a>
@@ -190,7 +202,14 @@ import { landing } from "../data/landing";
   <footer class="footer">
     <div class="container footer-inner">
       <div class="footer-brand">
-        <span class="logo-word">Seal</span>
+        <span class="logo footer-logo">
+          <svg viewBox="0 0 200 200" width="30" height="30" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true">
+            <ellipse cx="96" cy="94" rx="88" ry="81" stroke-width="10"/>
+            <ellipse cx="104" cy="106" rx="60" ry="55" stroke-width="6"/>
+            <circle cx="112" cy="114" r="9" fill="currentColor" stroke="none"/>
+          </svg>
+          <span class="logo-word">Seal</span>
+        </span>
         <p>{landing.footer.tagline}</p>
       </div>
       <div class="footer-cols">
@@ -318,9 +337,10 @@ import { landing } from "../data/landing";
     gap: 10px;
   }
   .logo-word {
-    font-size: 19px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
+    font-family: var(--font-serif);
+    font-size: 24px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
   }
   .nav-links {
     display: flex;
@@ -390,6 +410,27 @@ import { landing } from "../data/landing";
 
   .hero {
     padding: 120px 0 100px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-mark {
+    position: absolute;
+    top: -18%;
+    right: -12%;
+    width: min(880px, 62vw);
+    color: var(--foreground);
+    opacity: 0.045;
+    transform: rotate(-8deg);
+    pointer-events: none;
+  }
+  .hero-mark svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .hero .container {
+    position: relative;
+    z-index: 1;
   }
   .hero h1 {
     font-size: clamp(52px, 8.5vw, 104px);
@@ -508,10 +549,10 @@ import { landing } from "../data/landing";
     letter-spacing: 0.08em;
   }
   .method-post {
-    color: var(--primary);
+    color: var(--foreground);
   }
   .method-get {
-    color: oklch(0.55 0.12 155);
+    color: var(--muted-foreground);
   }
   .method-delete {
     color: var(--muted-foreground);
@@ -659,7 +700,7 @@ import { landing } from "../data/landing";
     border-top-color: oklch(0.45 0.01 65);
   }
   .eyebrow-dark {
-    color: oklch(0.78 0.09 30);
+    color: oklch(0.78 0.01 80);
   }
   .section-index-dark {
     color: oklch(0.55 0.01 80);
@@ -692,7 +733,7 @@ import { landing } from "../data/landing";
   }
   .dev-points li::before {
     content: "→ ";
-    color: oklch(0.78 0.09 30);
+    color: oklch(0.78 0.01 80);
   }
   .dev-clients {
     margin-top: 48px;
@@ -750,6 +791,10 @@ import { landing } from "../data/landing";
   .final-cta {
     padding: 120px 0;
     border-top: 1px solid var(--border);
+  }
+  .final-mark {
+    color: var(--foreground);
+    margin-bottom: 28px;
   }
   .final-inner h2 {
     font-size: clamp(48px, 7vw, 88px);

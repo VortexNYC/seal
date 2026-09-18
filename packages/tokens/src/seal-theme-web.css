@@ -28,8 +28,8 @@
   --card-foreground: oklch(0.138 0.01 65);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.138 0.01 65);
-  --primary: oklch(0.441 0.148 30); /* #A63D2F — Wax Red */
-  --primary-foreground: oklch(1 0 0);
+  --primary: oklch(0.138 0.01 65); /* #1A1714 — Seal ink; monochrome by design */
+  --primary-foreground: oklch(0.982 0.002 90); /* #FAFAF9 — paper */
   --secondary: oklch(0.962 0.006 80); /* #F5F3F0 — elevated surface */
   --secondary-foreground: oklch(0.138 0.01 65);
   --muted: oklch(0.962 0.006 80);
@@ -40,34 +40,32 @@
   --destructive-foreground: oklch(1 0 0);
   --border: oklch(0.912 0.008 75); /* #E8E4DF — warm light border */
   --input: oklch(0.912 0.008 75);
-  --ring: oklch(0.513 0.156 30); /* #C8473A — wax red hover */
+  --ring: oklch(0.563 0.012 70); /* #8A8279 — warm mid-gray */
 
   /* Sidebar */
   --sidebar: oklch(0.962 0.006 80); /* #F5F3F0 */
   --sidebar-foreground: oklch(0.138 0.01 65);
-  --sidebar-primary: oklch(0.441 0.148 30);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(
-    0.972 0.012 30
-  ); /* #FEF5F4 — brand tint per board 17 */
+  --sidebar-primary: oklch(0.138 0.01 65);
+  --sidebar-primary-foreground: oklch(0.982 0.002 90);
+  --sidebar-accent: oklch(0.955 0.007 75); /* #EDEAE6 — neutral tint */
   --sidebar-accent-foreground: oklch(0.138 0.01 65);
   --sidebar-border: oklch(0.912 0.008 75);
-  --sidebar-ring: oklch(0.513 0.156 30);
+  --sidebar-ring: oklch(0.563 0.012 70);
 
   /* Border radius */
   --radius: 0.5rem; /* 8px base */
 
-  /* ── Brand scale — Wax Red ──────────────────────────────────────────────── */
-  --brand-50: oklch(0.965 0.012 30);
-  --brand-100: oklch(0.93 0.028 30);
-  --brand-200: oklch(0.87 0.055 30);
-  --brand-300: oklch(0.78 0.09 30);
-  --brand-400: oklch(0.66 0.125 30);
-  --brand-500: oklch(0.513 0.156 30); /* #C8473A — hover */
-  --brand-600: oklch(0.441 0.148 30); /* #A63D2F — primary */
-  --brand-700: oklch(0.37 0.128 30);
-  --brand-800: oklch(0.295 0.1 30);
-  --brand-900: oklch(0.225 0.072 30);
+  /* ── Brand scale — graphite: paper to ink ─────────────────────────────── */
+  --brand-50: oklch(0.965 0.005 75);
+  --brand-100: oklch(0.925 0.007 75);
+  --brand-200: oklch(0.84 0.01 75);
+  --brand-300: oklch(0.72 0.012 75);
+  --brand-400: oklch(0.585 0.013 75);
+  --brand-500: oklch(0.475 0.013 75); /* #6B6459 */
+  --brand-600: oklch(0.355 0.011 75); /* #4D473F */
+  --brand-700: oklch(0.27 0.01 75);
+  --brand-800: oklch(0.195 0.008 75);
+  --brand-900: oklch(0.138 0.01 65); /* #1A1714 — ink */
 
   /* ── Semantic status colors ─────────────────────────────────────────────── */
   --success: oklch(0.527 0.167 155); /* #16A34A — per board 02 */
@@ -79,9 +77,7 @@
   --info: oklch(0.489 0.22 254); /* #2563EB — per board 02 */
   --info-foreground: oklch(1 0 0);
   --info-surface: oklch(0.96 0.035 255);
-  --expired: oklch(
-    0.441 0.148 30
-  ); /* Wax Red — same as primary — expired docs */
+  --expired: oklch(0.449 0.206 22); /* #DC2626 — functional red, same as destructive */
   --expired-foreground: oklch(1 0 0);
 
   /* ── Signer color slots (10 recipients) ────────────────────────────────── */
@@ -126,8 +122,8 @@
   --role-member-surface: oklch(0.962 0.018 152);
   --role-viewer: oklch(0.57 0 0); /* neutral gray */
   --role-viewer-surface: oklch(0.94 0 0);
-  --role-system: oklch(0.441 0.148 30); /* brand red (destructive) */
-  --role-system-surface: oklch(0.965 0.012 30);
+  --role-system: oklch(0.355 0.011 75); /* graphite — system authority */
+  --role-system-surface: oklch(0.955 0.007 75);
 
   /* ── Field type colors ───────────────────────────────────────────────────── */
   --field-signature: oklch(0.55 0.18 255); /* blue */
@@ -207,8 +203,8 @@
   --card-foreground: oklch(0.95 0.008 75);
   --popover: oklch(0.155 0 0); /* #202020 — elevated popover */
   --popover-foreground: oklch(0.95 0.008 75);
-  --primary: oklch(0.513 0.156 30); /* #C8473A — lighter wax red for dark */
-  --primary-foreground: oklch(1 0 0);
+  --primary: oklch(0.95 0.008 75); /* #F0ECE8 — paper-bright */
+  --primary-foreground: oklch(0.138 0.01 65); /* ink */
   --secondary: oklch(0.155 0 0);
   --secondary-foreground: oklch(0.95 0.008 75);
   --muted: oklch(0.155 0 0);
@@ -219,19 +215,17 @@
   --destructive-foreground: oklch(1 0 0);
   --border: oklch(0.197 0 0); /* #252525 */
   --input: oklch(0.197 0 0);
-  --ring: oklch(0.513 0.156 30);
+  --ring: oklch(0.573 0 0);
 
   /* Sidebar */
   --sidebar: oklch(0.118 0 0); /* #141414 */
   --sidebar-foreground: oklch(0.95 0.008 75);
-  --sidebar-primary: oklch(0.513 0.156 30);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(
-    0.155 0.035 30
-  ); /* #2A1410 — brand tint per board 17 */
+  --sidebar-primary: oklch(0.95 0.008 75);
+  --sidebar-primary-foreground: oklch(0.138 0.01 65);
+  --sidebar-accent: oklch(0.17 0 0); /* neutral tint */
   --sidebar-accent-foreground: oklch(0.95 0.008 75);
   --sidebar-border: oklch(0.197 0 0);
-  --sidebar-ring: oklch(0.513 0.156 30);
+  --sidebar-ring: oklch(0.573 0 0);
 
   /* ── Signer color slots — dark mode (lightened for dark bg) ────────────── */
   --signer-1: oklch(0.7 0.15 255); /* Blue */
@@ -264,8 +258,8 @@
   --role-member-surface: oklch(0.2 0.03 152);
   --role-viewer: oklch(0.7 0 0);
   --role-viewer-surface: oklch(0.22 0 0);
-  --role-system: oklch(0.65 0.15 30);
-  --role-system-surface: oklch(0.2 0.04 30);
+  --role-system: oklch(0.72 0.01 75);
+  --role-system-surface: oklch(0.2 0.005 75);
 
   /* ── Field type colors — dark mode ──────────────────────────────────────── */
   --field-signature: oklch(0.7 0.15 255);
@@ -326,17 +320,17 @@
   --ai-warning-surface: oklch(0.17 0.03 80);
   --ai-warning-text: oklch(0.75 0.155 75);
 
-  /* ── Brand scale — dark mode (lighter for visibility) ───────────────────── */
-  --brand-50: oklch(0.22 0.035 30);
-  --brand-100: oklch(0.27 0.055 30);
-  --brand-200: oklch(0.33 0.08 30);
-  --brand-300: oklch(0.4 0.11 30);
-  --brand-400: oklch(0.47 0.138 30);
-  --brand-500: oklch(0.513 0.156 30);
-  --brand-600: oklch(0.58 0.15 30);
-  --brand-700: oklch(0.65 0.13 30);
-  --brand-800: oklch(0.74 0.1 30);
-  --brand-900: oklch(0.85 0.06 30);
+  /* ── Brand scale — dark mode (inverse graphite) ─────────────────────────── */
+  --brand-50: oklch(0.195 0.008 75);
+  --brand-100: oklch(0.24 0.009 75);
+  --brand-200: oklch(0.3 0.01 75);
+  --brand-300: oklch(0.38 0.011 75);
+  --brand-400: oklch(0.46 0.012 75);
+  --brand-500: oklch(0.54 0.012 75);
+  --brand-600: oklch(0.62 0.011 75);
+  --brand-700: oklch(0.7 0.01 75);
+  --brand-800: oklch(0.8 0.009 75);
+  --brand-900: oklch(0.9 0.007 75);
 
   /* ── Semantic status colors — dark mode (per board 04) ──────────────────── */
   --success: oklch(0.7 0.165 160);
@@ -348,7 +342,7 @@
   --info: oklch(0.62 0.195 260);
   --info-foreground: oklch(1 0 0);
   --info-surface: oklch(0.16 0.035 255);
-  --expired: oklch(0.513 0.156 30);
+  --expired: oklch(0.577 0.245 27); /* functional red, same as destructive */
   --expired-foreground: oklch(1 0 0);
 }
 
