@@ -2,6 +2,17 @@
 
 Astro 7 + EmDash CMS on a Cloudflare Worker. Owns `seal.nyc` / `www.seal.nyc`.
 
+## Brand
+
+Mark source: `packages/tokens/src/mark.svg` + `seal-mark.ts` (`MARK_SVG`,
+currentColor). The quill — blade, spine, two barbs — single-color only.
+
+Palette: Tailwind `stone` ramp on `--brand-*`; the one accent is deep taupe
+`#44403C` (`--primary`, stone-700). Everything else is paper `#FAFAF9` and ink
+`#1A1714`. Status hues (success/warning/destructive) are functional, not brand.
+
+Brand kit page lives at `/brand`. Wordmark is Instrument Serif.
+
 ## Deploying
 
 `@astrojs/cloudflare` generates `dist/server/wrangler.json` at **build time**,

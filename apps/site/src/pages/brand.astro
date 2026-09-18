@@ -1,0 +1,270 @@
+---
+import Base from "../layouts/Base.astro";
+
+const ramp = [
+  { step: "50", hex: "#FAFAF9" },
+  { step: "100", hex: "#F5F5F4" },
+  { step: "200", hex: "#E7E5E4" },
+  { step: "300", hex: "#D6D3D1" },
+  { step: "400", hex: "#A8A29E" },
+  { step: "500", hex: "#78716C" },
+  { step: "600", hex: "#57534E" },
+  { step: "700", hex: "#44403C" },
+  { step: "800", hex: "#292524" },
+  { step: "900", hex: "#1C1917" },
+];
+
+const surfaces = [
+  { name: "Paper", hex: "#FAFAF9", note: "background — light" },
+  { name: "Raised", hex: "#FFFFFF", note: "card — light" },
+  { name: "Ink", hex: "#1A1714", note: "foreground — light / primary" },
+  { name: "Muted", hex: "#8A8279", note: "secondary text — light" },
+  { name: "Taupe", hex: "#44403C", note: "the accent — primary" },
+  { name: "Void", hex: "#0A0A0A", note: "background — dark" },
+  { name: "Surface", hex: "#141414", note: "card — dark" },
+  { name: "Bright", hex: "#F0ECE8", note: "foreground — dark / primary" },
+];
+
+const fonts = [
+  { name: "Instrument Serif", role: "display, headlines, wordmark", className: "font-serif" },
+  { name: "Plus Jakarta Sans", role: "product UI, body, labels", className: "font-sans" },
+  { name: "JetBrains Mono", role: "code, endpoints, micro-labels", className: "font-mono" },
+];
+---
+
+<Base title="Seal — Brand" description="The Seal identity: mark, palette, and type.">
+  <div class="container">
+    <header class="page-head">
+      <p class="eyebrow">SEAL — BRAND KIT</p>
+      <h1>The quill, mid-stroke.</h1>
+      <p class="lede">
+        Two rings, offset, converging to a pool of wax — a stamp that landed the way real stamps
+        land: slightly askew. Seal is monochrome by design. Identity lives in the mark and the
+        type, not in a hue.
+      </p>
+    </header>
+
+    <section class="block">
+      <div class="block-head"><span class="mono block-index">01</span><h2 class="mono">THE MARK</h2></div>
+      <div class="mark-grid">
+        <div class="mark-cell light">
+          <svg viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M50 154 C58 108 88 62 152 40 C146 90 116 136 62 146 Z" stroke-width="9"/><path d="M42 166 C84 124 120 78 152 40" stroke-width="6"/><path d="M74 130 C84 127 92 122 98 114" stroke-width="5"/><path d="M104 92 C114 89 122 84 128 76" stroke-width="5"/></svg>
+        </div>
+        <div class="mark-cell dark">
+          <svg viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M50 154 C58 108 88 62 152 40 C146 90 116 136 62 146 Z" stroke-width="9"/><path d="M42 166 C84 124 120 78 152 40" stroke-width="6"/><path d="M74 130 C84 127 92 122 98 114" stroke-width="5"/><path d="M104 92 C114 89 122 84 128 76" stroke-width="5"/></svg>
+        </div>
+        <div class="mark-cell light small">
+          <svg viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M50 154 C58 108 88 62 152 40 C146 90 116 136 62 146 Z" stroke-width="9"/><path d="M42 166 C84 124 120 78 152 40" stroke-width="6"/><path d="M74 130 C84 127 92 122 98 114" stroke-width="5"/><path d="M104 92 C114 89 122 84 128 76" stroke-width="5"/></svg>
+          <svg class="md" viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M50 154 C58 108 88 62 152 40 C146 90 116 136 62 146 Z" stroke-width="9"/><path d="M42 166 C84 124 120 78 152 40" stroke-width="6"/><path d="M74 130 C84 127 92 122 98 114" stroke-width="5"/><path d="M104 92 C114 89 122 84 128 76" stroke-width="5"/></svg>
+          <svg class="xs" viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M50 154 C58 108 88 62 152 40 C146 90 116 136 62 146 Z" stroke-width="9"/><path d="M42 166 C84 124 120 78 152 40" stroke-width="6"/><path d="M74 130 C84 127 92 122 98 114" stroke-width="5"/><path d="M104 92 C114 89 122 84 128 76" stroke-width="5"/></svg>
+        </div>
+        <div class="mark-cell word">
+          <span class="word-row">
+            <svg class="word-mark" viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M50 154 C58 108 88 62 152 40 C146 90 116 136 62 146 Z" stroke-width="9"/><path d="M42 166 C84 124 120 78 152 40" stroke-width="6"/><path d="M74 130 C84 127 92 122 98 114" stroke-width="5"/><path d="M104 92 C114 89 122 84 128 76" stroke-width="5"/></svg>
+            <span class="logo-word">Seal</span>
+          </span>
+        </div>
+      </div>
+      <p class="note mono">SINGLE-COLOR VIA currentColor — RENDER IN TAUPE, INK, OR PAPER. CLEAR SPACE = ONE BLADE WIDTH.</p>
+    </section>
+
+    <section class="block">
+      <div class="block-head"><span class="mono block-index">02</span><h2 class="mono">STONE RAMP</h2></div>
+      <div class="ramp">
+        {ramp.map((s) => (
+          <div class="swatch" style={`background:${s.hex}`}>
+            <span class="mono swatch-step">{s.step}</span>
+          </div>
+        ))}
+      </div>
+      <div class="surface-table">
+        {surfaces.map((s) => (
+          <div class="surface-row">
+            <span class="chip" style={`background:${s.hex}`} />
+            <span class="mono surface-name">{s.name}</span>
+            <span class="mono surface-hex">{s.hex}</span>
+            <span class="surface-note">{s.note}</span>
+          </div>
+        ))}
+      </div>
+      <p class="note mono">TAILWIND STONE RAMP. STATUS COLORS — SUCCESS, WARNING, DESTRUCTIVE — ARE FUNCTIONAL, NOT BRAND.</p>
+    </section>
+
+    <section class="block">
+      <div class="block-head"><span class="mono block-index">03</span><h2 class="mono">TYPE</h2></div>
+      <div class="font-rows">
+        {fonts.map((f) => (
+          <div class="font-row">
+            <span class={`font-sample ${f.className}`}>Where deals get done.</span>
+            <div>
+              <span class="mono font-name">{f.name}</span>
+              <span class="font-role">{f.role}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-head"><span class="mono block-index">04</span><h2 class="mono">RULES</h2></div>
+      <ul class="rules">
+        <li>One accent: deep taupe (#44403C). Everything else is paper and ink.</li>
+        <li>The mark is always one color. Never fill the blade or add a second barb color.</li>
+        <li>The quill may watermark surfaces at 4–6% taupe, bleeding off the edge — never behind body text.</li>
+        <li>Serif for display, sans for product, mono for anything that looks like it came from a terminal.</li>
+        <li>Hairlines over shadows. Rules over cards. Numbers over adjectives.</li>
+      </ul>
+    </section>
+  </div>
+</Base>
+
+<style>
+  .page-head {
+    padding: 96px 0 64px;
+  }
+  h1 {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: clamp(44px, 6.5vw, 76px);
+    letter-spacing: -0.025em;
+    line-height: 1.02;
+    margin-top: 28px;
+  }
+  .lede {
+    max-width: 56ch;
+    margin-top: 24px;
+    font-size: 17px;
+    color: var(--muted-foreground);
+    line-height: 1.65;
+  }
+
+  .block {
+    padding: 56px 0;
+    border-top: 1px solid var(--border);
+  }
+  .block-head {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 36px;
+  }
+  .block-head h2 {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+  }
+  .block-index {
+    font-size: 11px;
+    color: var(--muted-foreground);
+  }
+
+  .mark-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border: 1px solid var(--border);
+  }
+  .mark-cell {
+    aspect-ratio: 4 / 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .mark-cell:nth-child(2n) { border-right: none; }
+  .mark-cell:nth-last-child(-n + 2) { border-bottom: none; }
+  .mark-cell svg { width: 62%; height: auto; }
+  .mark-cell.light { background: var(--background); color: var(--foreground); }
+  .mark-cell.dark { background: #0a0a0a; color: #f0ece8; }
+  .mark-cell.small { gap: 28px; }
+  .mark-cell.small svg { width: 64px; }
+  .mark-cell.small svg.md { width: 36px; }
+  .mark-cell.small svg.xs { width: 20px; }
+  .mark-cell.word { flex-direction: column; }
+  .word-row { display: flex; align-items: center; gap: 14px; }
+  .word-mark { width: 44px; display: block; }
+  .logo-word {
+    font-family: var(--font-serif);
+    font-size: 42px;
+    letter-spacing: -0.01em;
+  }
+
+  .ramp {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    border: 1px solid var(--border);
+  }
+  .swatch {
+    aspect-ratio: 1;
+    border-right: 1px solid var(--border);
+    padding: 8px;
+  }
+  .swatch:last-child { border-right: none; }
+  .swatch-step {
+    font-size: 10px;
+    color: var(--muted-foreground);
+    mix-blend-mode: difference;
+    filter: invert(1);
+  }
+
+  .surface-table { margin-top: 24px; border-top: 1px solid var(--foreground); }
+  .surface-row {
+    display: grid;
+    grid-template-columns: 32px 120px 100px 1fr;
+    gap: 16px;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .chip { width: 24px; height: 24px; border: 1px solid var(--border); }
+  .surface-name { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .surface-hex { font-size: 12px; color: var(--muted-foreground); }
+  .surface-note { font-size: 13px; color: var(--muted-foreground); }
+
+  .note {
+    margin-top: 20px;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--muted-foreground);
+  }
+
+  .font-rows { display: grid; gap: 32px; }
+  .font-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 32px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .font-sample { font-size: clamp(28px, 4vw, 44px); letter-spacing: -0.02em; }
+  .font-sans { font-family: var(--font-sans); font-weight: 500; }
+  .font-serif { font-family: var(--font-serif); }
+  .font-mono { font-family: var(--font-mono); font-size: clamp(18px, 3vw, 30px); }
+  .font-name { display: block; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .font-role { display: block; font-size: 13px; color: var(--muted-foreground); margin-top: 4px; }
+
+  .rules {
+    list-style: none;
+    display: grid;
+    gap: 14px;
+    max-width: 640px;
+    font-size: 15px;
+    color: var(--foreground);
+  }
+  .rules li { padding-left: 20px; position: relative; }
+  .rules li::before { content: "—"; position: absolute; left: 0; color: var(--muted-foreground); }
+
+  @media (max-width: 720px) {
+    .mark-grid { grid-template-columns: 1fr; }
+    .mark-cell { border-right: none; }
+    .mark-cell:nth-last-child(-n + 2) { border-bottom: 1px solid var(--border); }
+    .mark-cell:last-child { border-bottom: none; }
+    .ramp { grid-template-columns: repeat(5, 1fr); }
+    .swatch:nth-child(5) { border-right: none; }
+    .surface-row { grid-template-columns: 32px 1fr 1fr; }
+    .surface-note { grid-column: 2 / -1; }
+  }
+</style>

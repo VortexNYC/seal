@@ -8,10 +8,11 @@ import { landing } from "../data/landing";
   <nav class="nav">
     <div class="container nav-inner">
       <a href="/" class="logo" aria-label="Seal home">
-        <svg viewBox="0 0 200 200" width="26" height="26" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true">
-          <ellipse cx="96" cy="94" rx="88" ry="81" stroke-width="10"/>
-          <ellipse cx="104" cy="106" rx="60" ry="55" stroke-width="6"/>
-          <circle cx="112" cy="114" r="9" fill="currentColor" stroke="none"/>
+        <svg viewBox="0 0 200 200" width="26" height="26" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M50 154 C58 108 88 62 152 40 C146 90 116 136 62 146 Z" stroke-width="9"/>
+          <path d="M42 166 C84 124 120 78 152 40" stroke-width="6"/>
+          <path d="M74 130 C84 127 92 122 98 114" stroke-width="5"/>
+          <path d="M104 92 C114 89 122 84 128 76" stroke-width="5"/>
         </svg>
         <span class="logo-word">Seal</span>
       </a>
@@ -27,10 +28,11 @@ import { landing } from "../data/landing";
 
   <header class="hero">
     <div class="hero-mark" aria-hidden="true">
-      <svg viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-linecap="round">
-        <ellipse cx="96" cy="94" rx="88" ry="81" stroke-width="10"/>
-        <ellipse cx="104" cy="106" rx="60" ry="55" stroke-width="6"/>
-        <circle cx="112" cy="114" r="9" fill="currentColor" stroke="none"/>
+      <svg viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M50 154 C58 108 88 62 152 40 C146 90 116 136 62 146 Z" stroke-width="9"/>
+        <path d="M42 166 C84 124 120 78 152 40" stroke-width="6"/>
+        <path d="M74 130 C84 127 92 122 98 114" stroke-width="5"/>
+        <path d="M104 92 C114 89 122 84 128 76" stroke-width="5"/>
       </svg>
     </div>
     <div class="container">
@@ -187,10 +189,11 @@ import { landing } from "../data/landing";
 
   <section class="final-cta">
     <div class="container final-inner">
-      <svg class="final-mark" viewBox="0 0 200 200" width="72" height="72" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true">
-        <ellipse cx="96" cy="94" rx="88" ry="81" stroke-width="10"/>
-        <ellipse cx="104" cy="106" rx="60" ry="55" stroke-width="6"/>
-        <circle cx="112" cy="114" r="9" fill="currentColor" stroke="none"/>
+      <svg class="final-mark" viewBox="0 0 200 200" width="72" height="72" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M50 154 C58 108 88 62 152 40 C146 90 116 136 62 146 Z" stroke-width="9"/>
+        <path d="M42 166 C84 124 120 78 152 40" stroke-width="6"/>
+        <path d="M74 130 C84 127 92 122 98 114" stroke-width="5"/>
+        <path d="M104 92 C114 89 122 84 128 76" stroke-width="5"/>
       </svg>
       <h2>{landing.finalCta.headline}</h2>
       <p>{landing.finalCta.sub}</p>
@@ -203,10 +206,11 @@ import { landing } from "../data/landing";
     <div class="container footer-inner">
       <div class="footer-brand">
         <span class="logo footer-logo">
-          <svg viewBox="0 0 200 200" width="30" height="30" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true">
-            <ellipse cx="96" cy="94" rx="88" ry="81" stroke-width="10"/>
-            <ellipse cx="104" cy="106" rx="60" ry="55" stroke-width="6"/>
-            <circle cx="112" cy="114" r="9" fill="currentColor" stroke="none"/>
+          <svg viewBox="0 0 200 200" width="30" height="30" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M50 154 C58 108 88 62 152 40 C146 90 116 136 62 146 Z" stroke-width="9"/>
+            <path d="M42 166 C84 124 120 78 152 40" stroke-width="6"/>
+            <path d="M74 130 C84 127 92 122 98 114" stroke-width="5"/>
+            <path d="M104 92 C114 89 122 84 128 76" stroke-width="5"/>
           </svg>
           <span class="logo-word">Seal</span>
         </span>
@@ -336,6 +340,9 @@ import { landing } from "../data/landing";
     align-items: center;
     gap: 10px;
   }
+  .logo svg {
+    color: var(--primary);
+  }
   .logo-word {
     font-family: var(--font-serif);
     font-size: 24px;
@@ -388,8 +395,8 @@ import { landing } from "../data/landing";
     text-align: center;
   }
   .btn-ink {
-    background: var(--foreground);
-    color: var(--background);
+    background: var(--primary);
+    color: var(--primary-foreground);
   }
   .btn-ink:hover {
     opacity: 0.85;
@@ -415,12 +422,12 @@ import { landing } from "../data/landing";
   }
   .hero-mark {
     position: absolute;
-    top: -18%;
-    right: -12%;
-    width: min(880px, 62vw);
-    color: var(--foreground);
-    opacity: 0.045;
-    transform: rotate(-8deg);
+    top: -14%;
+    right: -8%;
+    width: min(760px, 56vw);
+    color: var(--primary);
+    opacity: 0.055;
+    transform: rotate(10deg);
     pointer-events: none;
   }
   .hero-mark svg {
@@ -481,7 +488,7 @@ import { landing } from "../data/landing";
   .install-tab.active {
     color: var(--foreground);
     background: var(--secondary);
-    box-shadow: inset 0 -2px 0 var(--foreground);
+    box-shadow: inset 0 -2px 0 var(--primary);
   }
   .install-cmd {
     display: flex;
@@ -549,7 +556,7 @@ import { landing } from "../data/landing";
     letter-spacing: 0.08em;
   }
   .method-post {
-    color: var(--foreground);
+    color: var(--primary);
   }
   .method-get {
     color: var(--muted-foreground);
@@ -793,7 +800,7 @@ import { landing } from "../data/landing";
     border-top: 1px solid var(--border);
   }
   .final-mark {
-    color: var(--foreground);
+    color: var(--primary);
     margin-bottom: 28px;
   }
   .final-inner h2 {

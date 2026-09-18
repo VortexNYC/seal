@@ -1,13 +1,14 @@
 /**
  * @module tokens/seal-mark
  *
- * The Seal mark — "the imperfect impression".
- * Two offset rings + a wax pool, converging bottom-right (Vortex stroke DNA).
- * Single-color via `currentColor`; render at any size in ink or paper.
+ * The Seal mark — "the quill". A feather blade, spine, and two barbs,
+ * cut on the diagonal mid-stroke: the original signing instrument.
+ * Single-color via `currentColor`; render in taupe, ink, or paper.
  */
 
-export const MARK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-linecap="round">
-  <ellipse cx="96" cy="94" rx="88" ry="81" stroke-width="10"/>
-  <ellipse cx="104" cy="106" rx="60" ry="55" stroke-width="6"/>
-  <circle cx="112" cy="114" r="9" fill="currentColor" stroke="none"/>
+export const MARK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M50 154 C58 108 88 62 152 40 C146 90 116 136 62 146 Z" stroke-width="9"/>
+  <path d="M42 166 C84 124 120 78 152 40" stroke-width="6"/>
+  <path d="M74 130 C84 127 92 122 98 114" stroke-width="5"/>
+  <path d="M104 92 C114 89 122 84 128 76" stroke-width="5"/>
 </svg>`;
