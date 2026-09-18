@@ -1,0 +1,158 @@
+---
+import Base from "../layouts/Base.astro";
+
+const services = [
+  { name: "Landing", host: "seal.nyc", url: "https://seal.nyc/" },
+  { name: "API", host: "api.seal.nyc", url: "https://api.seal.nyc/health" },
+  { name: "App", host: "app.seal.nyc", url: "https://app.seal.nyc/" },
+  { name: "Docs", host: "docs.seal.nyc", url: "https://docs.seal.nyc/" },
+  { name: "MCP", host: "mcp.seal.nyc", url: "https://mcp.seal.nyc/" },
+];
+
+const checks = await Promise.all(
+  services.map(async (s) => {
+    const start = Date.now();
+    try {
+      const res = await fetch(s.url, {
+        signal: AbortSignal.timeout(8000),
+        headers: { "user-agent": "seal-status/1.0" },
+      });
+      return { ...s, ok: res.ok, code: res.status, ms: Date.now() - start };
+    } catch {
+      return { ...s, ok: false, code: 0, ms: Date.now() - start };
+    }
+  })
+);
+
+const allOk = checks.every((c) => c.ok);
+const checkedAt = new Date().toISOString().replace("T", " ").slice(0, 19) + " UTC";
+---
+
+<Base
+  title="Seal — Status"
+  description="Live status of Seal surfaces: API, app, docs, MCP."
+>
+  <div class="container">
+    <header class="page-head">
+      <p class="eyebrow">SEAL — STATUS</p>
+      <h1 class={allOk ? "" : "degraded"}>
+        {allOk ? "All surfaces operational." : "Degraded."}
+      </h1>
+      <p class="lede">
+        Live checks against every public surface, run at request time.
+      </p>
+    </header>
+
+    <section class="block">
+      <div class="block-head">
+        <span class="mono block-index">SURFACES</span>
+        <h2 class="mono">LIVE CHECKS</h2>
+      </div>
+      <table class="status-table">
+        <thead>
+          <tr class="mono">
+            <th>Service</th><th>Host</th><th>State</th><th class="num">Latency</th>
+          </tr>
+        </thead>
+        <tbody>
+          {checks.map((c) => (
+            <tr>
+              <td>{c.name}</td>
+              <td class="mono dim">{c.host}</td>
+              <td class:list={["mono", "state", c.ok ? "ok" : "down"]}>
+                {c.ok ? "OPERATIONAL" : `DOWN ${c.code || "—"}`}
+              </td>
+              <td class="mono dim num">{c.ms}ms</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p class="note mono">CHECKED {checkedAt} — REFRESH TO RE-CHECK.</p>
+    </section>
+  </div>
+</Base>
+
+<style>
+  .page-head {
+    padding: 96px 0 64px;
+    border-bottom: 1px solid var(--border);
+  }
+  h1 {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: clamp(40px, 5.5vw, 64px);
+    letter-spacing: -0.02em;
+    margin: 16px 0 20px;
+  }
+  h1.degraded {
+    color: var(--destructive);
+  }
+  .lede {
+    font-size: 18px;
+    color: var(--muted-foreground);
+    max-width: 560px;
+  }
+  .block {
+    padding: 56px 0 96px;
+  }
+  .block-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 14px;
+  }
+  .block-index {
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    color: var(--primary);
+  }
+  .block-head h2 {
+    font-size: 13px;
+    letter-spacing: 0.14em;
+    font-weight: 500;
+    color: var(--muted-foreground);
+  }
+  .status-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .status-table th {
+    text-align: left;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    padding: 16px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .status-table td {
+    padding: 18px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 15px;
+  }
+  .status-table .num {
+    text-align: right;
+  }
+  .dim {
+    color: var(--muted-foreground);
+    font-size: 13px;
+  }
+  .state {
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    font-weight: 500;
+  }
+  .state.ok {
+    color: var(--success);
+  }
+  .state.down {
+    color: var(--destructive);
+  }
+  .note {
+    margin-top: 20px;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--muted-foreground);
+  }
+</style>

@@ -358,7 +358,7 @@ await seal.request("POST", \`/documents/send?id=\${id}\`);`,
               href: "https://www.npmjs.com/package/@vortex-api/seal",
             },
             { label: "API Reference", href: "https://docs.seal.nyc" },
-            { label: "Status", href: "https://status.seal.nyc" },
+            { label: "Status", href: "/status" },
           ],
         },
         {
