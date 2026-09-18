@@ -37,3 +37,16 @@ a placeholder the CF API rejects, and its HTTPS proxy corrupts binary (gzipped)
 response bodies. A preload shim (`NODE_OPTIONS=-r <shim>`) that wraps
 `globalThis.fetch` to call `password-manager use` per request works correctly.
 The `cloudflare` Veil item has D1:Edit on the Vortex account.
+
+## Migrating the site database to a new D1
+
+`wrangler d1 export` cannot export databases containing FTS5 virtual tables
+(Cloudflare-documented limitation — their workaround is delete + recreate the
+virtual tables). EmDash's `ec_*` content tables, `_emdash_fts_*` tables, and
+their triggers are created dynamically per collection, NOT by the migration
+manifest — the manifest owns only `_emdash_*` system tables.
+
+To clone this DB: run `emdash migrate` on the new DB (system schema), replay
+missing DDL (`ec_*` tables, FTS `CREATE VIRTUAL TABLE`, `idx_ec_*`, triggers)
+from the old DB's `sqlite_master`, then import data-only. FTS indexes
+repopulate via triggers on insert — no manual rebuild needed.
