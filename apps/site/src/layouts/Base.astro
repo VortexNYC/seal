@@ -86,4 +86,117 @@ const ogImage = "https://seal.nyc/og.png";
     text-transform: uppercase;
     color: var(--primary);
   }
+
+  /* ————— nav ————— */
+
+  .nav {
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--background);
+    z-index: 10;
+  }
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    height: 60px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo svg {
+    color: var(--primary);
+  }
+  .logo-word {
+    font-family: var(--font-serif);
+    font-size: 24px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+  .nav-links {
+    display: flex;
+    gap: 26px;
+    flex: 1;
+  }
+  .nav-links a {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+  .nav-links a:hover {
+    color: var(--foreground);
+  }
+  .nav-actions {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+  .nav-signin {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+    white-space: nowrap;
+  }
+  .nav-signin:hover {
+    color: var(--foreground);
+  }
+
+  /* ————— buttons ————— */
+
+  .btn {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 10px 20px;
+    border-radius: 4px;
+    transition: opacity 0.15s;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .btn-ink {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+  .btn-ink:hover {
+    opacity: 0.85;
+  }
+  .btn-line {
+    border: 1px solid var(--foreground);
+    color: var(--foreground);
+  }
+  .btn-line:hover {
+    background: var(--secondary);
+  }
+  .btn-lg {
+    padding: 14px 28px;
+    font-size: 13px;
+  }
+
+  a:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  @media (max-width: 860px) {
+    .nav-links {
+      display: none;
+    }
+  }
+  @media (max-width: 560px) {
+    .nav-signin {
+      display: none;
+    }
+  }
 </style>

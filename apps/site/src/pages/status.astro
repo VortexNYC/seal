@@ -1,5 +1,6 @@
 ---
 import Base from "../layouts/Base.astro";
+import { landing } from "../data/landing";
 
 const services = [
   // seal.nyc is this worker — a Worker can't subrequest its own hostname
@@ -35,6 +36,26 @@ const checkedAt = new Date().toISOString().replace("T", " ").slice(0, 19) + " UT
   title="Seal — Status"
   description="Live status of Seal surfaces: API, app, docs, MCP."
 >
+  <nav class="nav">
+    <div class="container nav-inner">
+      <a href="/" class="logo" aria-label="Seal home">
+        <svg viewBox="0 0 200 200" width="26" height="26" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M50 154 C58 108 88 62 152 40 C146 90 116 136 62 146 Z" stroke-width="9"/>
+          <path d="M42 166 C84 124 120 78 152 40" stroke-width="6"/>
+          <path d="M74 130 C84 127 92 122 98 114" stroke-width="5"/>
+          <path d="M104 92 C114 89 122 84 128 76" stroke-width="5"/>
+        </svg>
+        <span class="logo-word">Seal</span>
+      </a>
+      <div class="nav-links">
+        {landing.nav.links.map((l) => <a href={l.href}>{l.label}</a>)}
+      </div>
+      <div class="nav-actions">
+        <a class="nav-signin" href={landing.nav.signIn.href}>{landing.nav.signIn.label}</a>
+        <a class="btn btn-ink" href={landing.nav.cta.href}>{landing.nav.cta.label}</a>
+      </div>
+    </div>
+  </nav>
   <div class="container">
     <header class="page-head">
       <p class="eyebrow">SEAL — STATUS</p>
