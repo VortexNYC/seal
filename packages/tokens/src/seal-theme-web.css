@@ -35,7 +35,9 @@
   --secondary: oklch(0.962 0.006 80); /* #F5F3F0 — elevated surface */
   --secondary-foreground: oklch(0.138 0.01 65);
   --muted: oklch(0.962 0.006 80);
-  --muted-foreground: oklch(0.553 0.0116 58.1); /* #78716C — stone-500, AA on paper */
+  --muted-foreground: oklch(
+    0.553 0.0116 58.1
+  ); /* #78716C — stone-500, AA on paper */
   --accent: oklch(0.962 0.006 80);
   --accent-foreground: oklch(0.138 0.01 65);
   --destructive: oklch(0.449 0.206 22); /* #DC2626 — per board 02 */
