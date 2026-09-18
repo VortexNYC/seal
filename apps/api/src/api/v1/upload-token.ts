@@ -33,8 +33,9 @@ export async function createUploadToken(
   env: CloudflareBindings,
   { userId, organizationId }: { userId: string; organizationId: string }
 ): Promise<string | null> {
-  const key = await importMcpSigningKey(env);
-  if (!key) return null;
+  const signing = await importMcpSigningKey(env);
+  if (!signing) return null;
+  const { key, alg } = signing;
 
   const { issuer, audience } = getIssuerAndAudience(env);
   const now = Math.floor(Date.now() / 1000);
@@ -46,7 +47,7 @@ export async function createUploadToken(
     purpose: "upload" as const,
     jti: crypto.randomUUID(),
   })
-    .setProtectedHeader({ alg: "ES256", kid, typ: "JWT" })
+    .setProtectedHeader({ alg, kid, typ: "JWT" })
     .setIssuedAt(now)
     .setExpirationTime(now + UPLOAD_TOKEN_LIFETIME_SECONDS)
     .setIssuer(issuer)

@@ -124,16 +124,30 @@ async function publicJwkFromPrivate(jwk: Jwk): Promise<Jwk | null> {
   return null;
 }
 
+export function inferJwkAlg(jwk: Jwk): string | null {
+  if (typeof jwk.alg === "string" && jwk.alg) return jwk.alg;
+  const kty = typeof jwk.kty === "string" ? jwk.kty : undefined;
+  const crv = typeof jwk.crv === "string" ? jwk.crv : undefined;
+  if (kty === "EC") {
+    if (crv === "P-384") return "ES384";
+    if (crv === "P-521") return "ES512";
+    return "ES256";
+  }
+  if (kty === "OKP") return crv === "Ed25519" ? "EdDSA" : null;
+  if (kty === "RSA") return "RS256";
+  return null;
+}
+
 export async function importMcpSigningKey(
   env: CloudflareBindings
-): Promise<CryptoKey | null> {
+): Promise<{ key: CryptoKey; alg: string } | null> {
   const jwk = await loadSigningJwk(env);
   if (!jwk) return null;
-  const alg = typeof jwk.alg === "string" ? jwk.alg : undefined;
+  const alg = inferJwkAlg(jwk);
   if (!alg) return null;
   try {
     const key = await importJWK(jwk, alg);
-    return key instanceof CryptoKey ? key : null;
+    return key instanceof CryptoKey ? { key, alg } : null;
   } catch {
     return null;
   }
@@ -155,7 +169,8 @@ export async function getMcpPublicKey(
   if (!jwk) return null;
   const publicJwk = await publicJwkFromPrivate(jwk);
   if (!publicJwk) return null;
-  const alg = typeof jwk.alg === "string" ? jwk.alg : "ES256";
+  const alg = inferJwkAlg(jwk);
+  if (!alg) return null;
   publicJwk.kid = getKeyId(jwk, env);
   publicJwk.alg = alg;
   try {
@@ -259,8 +274,9 @@ async function createAccessToken(
     jti: string;
   }
 ): Promise<{ token: string; expiresIn: number } | null> {
-  const key = await importMcpSigningKey(env);
-  if (!key) return null;
+  const signing = await importMcpSigningKey(env);
+  if (!signing) return null;
+  const { key, alg } = signing;
 
   const now = Math.floor(Date.now() / 1000);
   const expiresIn = DEFAULT_ACCESS_TOKEN_LIFETIME_SECONDS;
@@ -272,7 +288,7 @@ async function createAccessToken(
     scope: scopes.join(" "),
     jti,
   })
-    .setProtectedHeader({ alg: "ES256", kid: getMcpKeyId(env), typ: "JWT" })
+    .setProtectedHeader({ alg, kid: getMcpKeyId(env), typ: "JWT" })
     .setIssuedAt(now)
     .setExpirationTime(now + expiresIn)
     .setIssuer(`${env.BETTER_AUTH_URL ?? "https://api.seal.nyc"}${ISSUER_PATH}`)

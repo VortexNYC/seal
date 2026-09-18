@@ -2066,7 +2066,7 @@ export async function getPublicSigningPaymentConfigs(
 }
 export async function getPublicSigningPdf(token: string): Promise<Blob> {
   const response = await fetch(
-    `/api/public/signing/${encodeURIComponent(token)}/pdf`
+    `${getBaseUrl()}/api/public/signing/${encodeURIComponent(token)}/pdf`
   );
   if (!response.ok) {
     throw new Error("Failed to load PDF");
@@ -2111,7 +2111,7 @@ export async function recordPublicSigningOptOut(
   );
 }
 export function getPublicSigningSignedPdfUrl(token: string): string {
-  return `/api/public/signing/${encodeURIComponent(token)}/signed-pdf`;
+  return `${getBaseUrl()}/api/public/signing/${encodeURIComponent(token)}/signed-pdf`;
 }
 export async function dictatePublicSigningNextSigner(
   token: string,
