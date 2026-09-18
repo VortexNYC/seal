@@ -18,6 +18,8 @@ const config: KnipConfig = {
       ignoreIssues: { "**/*": ["duplicates"] },
     },
     "packages/sdk": {
+      entry: ["src/index.ts", "src/react/index.ts", "src/cli.ts"],
+      project: ["src/**/*.{ts,tsx}"],
       ignoreDependencies: ["@seal/tsconfig"],
       ignore: ["src/openapi.ts"],
       ignoreIssues: { "**/*": ["duplicates"] },

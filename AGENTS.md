@@ -37,6 +37,7 @@ seal/
 | Email templates        | `packages/transactional/src/emails/`                           | React Email templates                           |
 | SDK                    | `packages/sdk/src/`                                            | `@vortex-api/seal` — client, React components, CLI |
 | Shared design tokens   | `packages/tokens/src/`                                         | Shared fonts/theme exports                      |
+| Brand system / assets  | `docs/brand-bootstrap.md`                                      | Mark, palette, fonts, OG/favicon render pipeline — reuse for other products |
 | E2E tests              | `apps/web/e2e/`                                                | Playwright POM pattern                          |
 
 ## SUBDIRECTORY GUIDES

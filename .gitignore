@@ -90,6 +90,10 @@ sample-doc.pdf
 *.png
 *.gif
 
+# Real assets, not ad-hoc screenshots
+!apps/site/public/*.png
+!packages/tokens/src/assets/**/*.png
+
 # Generated reference docs
 docs/app-feature-map.md
 

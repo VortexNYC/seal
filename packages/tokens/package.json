@@ -2,9 +2,26 @@
   "name": "@seal/tokens",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
   "exports": {
     "./seal-fonts-web.css": "./src/seal-fonts-web.css",
     "./seal-theme-web.css": "./src/seal-theme-web.css",
-    "./theme": "./src/theme.ts"
+    "./theme": "./src/theme.ts",
+    "./seal-mark": "./src/seal-mark.ts",
+    "./mark.svg": "./src/mark.svg",
+    "./react": "./src/seal-mark.tsx",
+    "./fonts/*": "./src/fonts/*",
+    "./assets/*": "./src/assets/*"
+  },
+  "peerDependencies": {
+    "react": ">=19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
   }
 }

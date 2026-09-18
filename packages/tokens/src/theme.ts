@@ -15,18 +15,18 @@
  * When updating a color, change both files.
  */
 
-/** Brand color scale — warm red palette used for primary actions and identity */
+/** Brand color scale — Tailwind stone, paper to ink. Accent is deep taupe (700) */
 export const brand = {
-  50: "#f9eeec",
-  100: "#f0d4cf",
-  200: "#e0a99f",
-  300: "#cc7a6e",
-  400: "#b85448",
-  500: "#c8473a", // hover / --brand-500
-  600: "#a63d2f", // primary / --brand-600
-  700: "#872f24",
-  800: "#6a2219",
-  900: "#4e160f",
+  50: "#fafaf9",
+  100: "#f5f5f4",
+  200: "#e7e5e4",
+  300: "#d6d3d1",
+  400: "#a8a29e",
+  500: "#78716c",
+  600: "#57534e",
+  700: "#44403c", // taupe — the accent / --brand-700
+  800: "#292524",
+  900: "#1c1917", // ink
 } as const;
 
 export const light = {
@@ -39,9 +39,9 @@ export const light = {
   input: "#e8e4df",
   muted: "#f5f3f0",
   mutedForeground: "#8a8279",
-  primary: "#a63d2f",
-  primaryForeground: "#ffffff",
-  ring: "#c8473a",
+  primary: "#44403c",
+  primaryForeground: "#fafaf9",
+  ring: "#a8a29e",
 } as const;
 
 export const dark = {
@@ -54,9 +54,9 @@ export const dark = {
   input: "#252525",
   muted: "#202020",
   mutedForeground: "#8a8a8a",
-  primary: "#c8473a",
-  primaryForeground: "#ffffff",
-  ring: "#c8473a",
+  primary: "#e7e5e4",
+  primaryForeground: "#1c1917",
+  ring: "#78716c",
 } as const;
 
 export const status = {
@@ -69,9 +69,9 @@ export const status = {
   info: "#2563eb",
   infoForeground: "#ffffff",
   infoSurface: "#eff6ff",
-  destructive: "#a63d2f",
+  destructive: "#dc2626",
   destructiveForeground: "#ffffff",
-  expired: "#a63d2f",
+  expired: "#dc2626",
   expiredForeground: "#ffffff",
 } as const;
 
@@ -95,7 +95,7 @@ export const roles = {
   admin: { color: "#2563eb", surface: "#eff6ff" }, // blue
   member: { color: "#1f8f5c", surface: "#e8f7ef" }, // green
   viewer: { color: "#737373", surface: "#f5f5f5" }, // neutral gray
-  system: { color: "#a63d2f", surface: "#f9eeec" }, // brand red
+  system: { color: "#57534e", surface: "#f5f5f4" }, // stone
 } as const;
 
 /** Field type colors — light mode hex */
@@ -221,8 +221,8 @@ export const email = {
   border: "#e8e4df",
   foreground: "#1a1714",
   mutedForeground: "#8a8279",
-  primary: "#a63d2f",
-  primaryForeground: "#ffffff",
+  primary: "#44403c",
+  primaryForeground: "#fafaf9",
   success: "#1f8f5c",
   warning: "#c97f00",
   warningSurface: "#fef7e0",
