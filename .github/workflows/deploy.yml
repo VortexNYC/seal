@@ -184,10 +184,29 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
     steps:
+      # /containers/applications currently rejects API tokens entirely
+      # (OAuth-only — Cloudflare platform gap, same class as workers-sdk#14741).
+      # Probe cheaply before paying for checkout+install; if the token can read
+      # the endpoint, a full deploy proceeds. The day CF ships token support
+      # this job starts working with no further changes.
+      - name: Probe containers API token access
+        id: probe
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/containers/applications" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}")
+          echo "status=$code" >> "$GITHUB_OUTPUT"
+          echo "containers/applications → $code"
+          if [ "$code" != "200" ]; then
+            echo "::warning::containers/applications rejected the API token (HTTP $code). Skipping container rollout. Container image/config changes deploy manually: cd apps/convert-worker && wrangler login && pnpm exec wrangler deploy -e production"
+          fi
+
       - name: Checkout
+        if: steps.probe.outputs.status == '200'
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Vite+
+        if: steps.probe.outputs.status == '200'
         uses: voidzero-dev/setup-vp@d5616419e3a9637febec6da1475cee9d07a317fd # v1.20.0
         with:
           node-version: "24"
@@ -197,11 +216,13 @@ jobs:
           run-install: false
 
       - name: Install
+        if: steps.probe.outputs.status == '200'
         run: vp install --frozen-lockfile
 
       - name: Deploy convert-worker (full, incl. container app)
+        if: steps.probe.outputs.status == '200'
         run: |
           if ! vp run -F @seal/convert-worker deploy; then
-            echo "::error::Container application deploy failed. The /containers/applications API currently rejects API tokens (only OAuth works — cloudflare/workers-sdk limitation). Deploy locally: cd apps/convert-worker && pnpm exec wrangler login && wrangler deploy -e production"
+            echo "::error::Container application deploy failed despite read access. Check token has Containers + Cloudchamber edit scopes, or deploy locally: cd apps/convert-worker && pnpm exec wrangler deploy -e production"
             exit 1
           fi
