@@ -24,7 +24,7 @@
     "jose": "^6.2.12",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "react-email": "5.1.0",
+    "react-email": "6.9.5",
     "zod": "catalog:"
   },
   "devDependencies": {
