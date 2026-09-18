@@ -11,7 +11,7 @@ import type {
   SealEvent,
   SealSigningEmbedProps,
   SealSigningEmbedRef,
-} from "./types";
+} from "./types.js";
 
 const DEFAULT_BASE_URL = "https://app.seal.nyc";
 const ALLOWED_ORIGIN_PATTERN = /^https:\/\/app\.seal\.nyc$/;
