@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-const navLinkSchema = z.object({ label: z.string(), href: z.string() });
+const linkSchema = z.object({ label: z.string(), href: z.string() });
+
+const installTabSchema = z.object({
+  label: z.string(),
+  command: z.string(),
+});
 
 const endpointSchema = z.object({
   method: z.enum(["GET", "POST", "DELETE"]),
@@ -8,306 +13,345 @@ const endpointSchema = z.object({
   desc: z.string(),
 });
 
-const pricingTierSchema = z.object({
+const tierSchema = z.object({
   name: z.string(),
   price: z.string(),
   unit: z.string(),
   blurb: z.string(),
   features: z.array(z.string()),
-  cta: navLinkSchema,
-  featured: z.boolean().default(false),
+  cta: linkSchema,
+  featured: z.boolean(),
 });
 
-const comparisonRowSchema = z.object({
+const compareRowSchema = z.object({
   them: z.string(),
   seal: z.string(),
 });
 
-const landingSchema = z.object({
-  title: z.string(),
-  description: z.string(),
-  nav: z.object({
-    links: z.array(navLinkSchema),
-    signIn: navLinkSchema,
-    cta: navLinkSchema,
-  }),
-  hero: z.object({
-    eyebrow: z.string(),
-    headline: z.string(),
-    headlineEmphasis: z.string(),
-    subheadline: z.string(),
-    primaryCta: navLinkSchema,
-    secondaryCta: navLinkSchema,
-    proof: z.array(z.string()),
-    codeFile: z.string(),
-    codeSnippet: z.string(),
-  }),
-  api: z.object({
-    eyebrow: z.string(),
+export const landing = z
+  .object({
     title: z.string(),
-    body: z.string(),
-    endpoints: z.array(endpointSchema),
-    footer: z.string(),
-  }),
-  pricing: z.object({
-    eyebrow: z.string(),
-    title: z.string(),
-    subtitle: z.string(),
-    tiers: z.array(pricingTierSchema),
-    note: z.string(),
-  }),
-  developer: z.object({
-    eyebrow: z.string(),
-    title: z.string(),
-    body: z.string(),
-    endpoints: z.array(z.string()),
-  }),
-  comparison: z.object({
-    title: z.string(),
-    subtitle: z.string(),
-    rows: z.array(comparisonRowSchema),
-  }),
-  finalCta: z.object({
-    headline: z.string(),
-    sub: z.string(),
-    cta: navLinkSchema,
-    note: z.string(),
-  }),
-  footer: z.object({
-    tagline: z.string(),
-    columns: z.array(
-      z.object({
-        title: z.string(),
-        links: z.array(navLinkSchema),
-      })
-    ),
-  }),
+    description: z.string(),
+    nav: z.object({
+      links: z.array(linkSchema),
+      signIn: linkSchema,
+      cta: linkSchema,
+    }),
+    hero: z.object({
+      eyebrow: z.string(),
+      headline: z.string(),
+      subheadline: z.string(),
+      primaryCta: linkSchema,
+      secondaryCta: linkSchema,
+      installTabs: z.array(installTabSchema),
+      codeFile: z.string(),
+      codeSnippet: z.string(),
+    }),
+    api: z.object({
+      index: z.string(),
+      eyebrow: z.string(),
+      title: z.string(),
+      body: z.string(),
+      endpoints: z.array(endpointSchema),
+      footer: z.string(),
+    }),
+    manifesto: z.object({
+      index: z.string(),
+      eyebrow: z.string(),
+      title: z.string(),
+      lines: z.array(z.string()),
+    }),
+    pricing: z.object({
+      index: z.string(),
+      eyebrow: z.string(),
+      title: z.string(),
+      subtitle: z.string(),
+      tiers: z.array(tierSchema),
+      note: z.string(),
+    }),
+    developer: z.object({
+      index: z.string(),
+      eyebrow: z.string(),
+      title: z.string(),
+      body: z.string(),
+      points: z.array(z.string()),
+    }),
+    comparison: z.object({
+      index: z.string(),
+      title: z.string(),
+      subtitle: z.string(),
+      rows: z.array(compareRowSchema),
+    }),
+    finalCta: z.object({
+      headline: z.string(),
+      sub: z.string(),
+      cta: linkSchema,
+      note: z.string(),
+    }),
+    footer: z.object({
+      tagline: z.string(),
+      columns: z.array(
+        z.object({ title: z.string(), links: z.array(linkSchema) })
+      ),
+    }),
+  })
+  .parse({
+    title: "Seal — Contracts, as an API",
+    description:
+      "Seal is contract infrastructure for your code and your agents. Upload, send, sign, audit — signing is free, the platform is the point.",
+    nav: {
+      links: [
+        { label: "API", href: "#api" },
+        { label: "Docs", href: "https://docs.seal.nyc" },
+        { label: "Pricing", href: "#pricing" },
+      ],
+      signIn: { label: "Sign in", href: "https://app.seal.nyc" },
+      cta: {
+        label: "Get an API key",
+        href: "https://app.seal.nyc/sign-up?next=developer",
+      },
+    },
+    hero: {
+      eyebrow: "Seal — Contract Infrastructure",
+      headline: "Where deals get done.",
+      subheadline:
+        "Seal is the contract API — upload, send, sign, audit. Built for your code, designed for your agents. And signing is free, because paying for a primitive is over.",
+      primaryCta: {
+        label: "Get an API key",
+        href: "https://app.seal.nyc/sign-up?next=developer",
+      },
+      secondaryCta: { label: "Read the docs", href: "https://docs.seal.nyc" },
+      installTabs: [
+        { label: "TypeScript", command: "npm install @vortex-api/seal" },
+        { label: "Python", command: "pip install vortex-api-seal" },
+        {
+          label: "Go",
+          command: "go get github.com/VortexNYC/seal/packages/sdk-go",
+        },
+        { label: "MCP", command: "mcp.seal.nyc" },
+      ],
+      codeFile: "send-contract.ts",
+      codeSnippet: `import { createSealClient } from "@vortex-api/seal";
+
+const seal = createSealClient({ apiKey: process.env.SEAL_API_KEY });
+
+const { url } = await seal.request("POST", "/uploads/generate-url", {
+  filename: "mutual-nda.pdf",
 });
+// …upload the PDF to url…
 
-export const landing = landingSchema.parse({
-  title: "Seal — the e-signature API",
-  description:
-    "Seal is the e-signature API. Upload a PDF, add signers, get it back signed — from your code or your agent. Free developer tier, per-document pricing, real docs.",
-
-  nav: {
-    links: [
-      { label: "API Documentation", href: "https://docs.seal.nyc" },
-      { label: "Pricing", href: "#pricing" },
-      { label: "Changelog", href: "/changelog" },
-    ],
-    signIn: { label: "Sign in", href: "https://app.seal.nyc" },
-    cta: {
-      label: "Get an API key",
-      href: "https://app.seal.nyc/sign-up?next=developer",
-    },
-  },
-
-  hero: {
-    eyebrow: "The e-signature API",
-    headline: "Documents in,",
-    headlineEmphasis: "signatures out.",
-    subheadline:
-      "Upload a PDF, add signers, get it back signed — with an audit trail. A REST API, typed SDK, and MCP server. No seat licenses, no demo call, no envelope quota designed to be hit in month eleven.",
-    primaryCta: {
-      label: "Get an API key",
-      href: "https://app.seal.nyc/sign-up?next=developer",
-    },
-    secondaryCta: { label: "API Documentation", href: "https://docs.seal.nyc" },
-    proof: [
-      "Free developer tier",
-      "First signature in minutes",
-      "10 documents/month on us",
-    ],
-    codeFile: "send-for-signature.ts",
-    codeSnippet: `import { SealClient } from "@vortex-api/seal";
-
-const seal = new SealClient({ apiKey: process.env.SEAL_API_KEY });
-
-// Get an upload URL and push the PDF
-const { upload_url, storage_id } =
-  await seal.request("POST", "/uploads/generate-url");
-await fetch(upload_url, { method: "POST", body: pdf });
-
-// Create the document and add a signer
 const { id } = await seal.request("POST", "/documents", {
   title: "Mutual NDA",
-  storage_id,
-  file_size: pdf.byteLength,
+  source: { uploadedUrl: url },
 });
+
 await seal.request("POST", \`/recipients?document_id=\${id}\`, {
   email: "jane@acme.com",
-  name: "Jane Smith",
   role: "signer",
 });
 
-// Send. She gets a link, signs in the browser. Done.
 await seal.request("POST", \`/documents/send?id=\${id}\`);`,
-  },
-
-  api: {
-    eyebrow: "The whole product is an API",
-    title: "Every verb, documented and typed.",
-    body: "No features hiding behind a UI you have to click through. If Seal can do it, the endpoint exists — and the SDK is generated from the same spec the docs render.",
-    endpoints: [
-      {
-        method: "POST",
-        path: "/uploads/generate-url",
-        desc: "Pre-signed upload for the PDF",
-      },
-      { method: "POST", path: "/documents", desc: "Create a draft document" },
-      {
-        method: "POST",
-        path: "/recipients",
-        desc: "Add signers with order and roles",
-      },
-      { method: "POST", path: "/documents/send", desc: "Send for signature" },
-      { method: "GET", path: "/documents", desc: "List and filter by status" },
-      { method: "GET", path: "/signatures/audit", desc: "Full audit trail" },
-      {
-        method: "POST",
-        path: "/signatures/verify",
-        desc: "Verify a signed document",
-      },
-      { method: "POST", path: "/documents/void", desc: "Cancel and notify" },
-      {
-        method: "POST",
-        path: "/recipients/remind",
-        desc: "Nudge the stragglers",
-      },
-    ],
-    footer:
-      "Plus webhooks for every lifecycle event — sent, viewed, signed, declined, expired.",
-  },
-
-  pricing: {
-    eyebrow: "Pricing",
-    title: "Pay for documents, not seats.",
-    subtitle:
-      "The incumbents charge per person per month whether or not anyone signs anything. We charge for the thing you actually use.",
-    tiers: [
-      {
-        name: "Developer",
-        price: "$0",
-        unit: "forever",
-        blurb: "For building, prototyping, and side projects.",
-        features: [
-          "10 documents / month",
-          "Full API + MCP access",
-          "Uploads, webhooks, audit trail",
-          "No credit card",
-        ],
-        cta: {
-          label: "Get an API key",
-          href: "https://app.seal.nyc/sign-up?next=developer",
-        },
-        featured: false,
-      },
-      {
-        name: "Pro",
-        price: "Metered",
-        unit: "per document",
-        blurb: "For production workloads that sign real contracts.",
-        features: [
-          "500 documents / month included",
-          "Then metered per document",
-          "White-label signing chrome",
-          "Sequential signing + templates",
-          "Priority support",
-        ],
-        cta: {
-          label: "Start with Pro",
-          href: "https://app.seal.nyc/sign-up?next=developer",
-        },
-        featured: true,
-      },
-      {
-        name: "Enterprise",
-        price: "Custom",
-        unit: "volume",
-        blurb: "For volume, compliance, and procurement realities.",
-        features: [
-          "Volume pricing",
-          "SSO / SAML",
-          "Custom data retention",
-          "Dedicated support channel",
-        ],
-        cta: { label: "Contact us", href: "mailto:hello@seal.nyc" },
-        featured: false,
-      },
-    ],
-    note: "A document is one envelope: uploaded, sent, signed, sealed. Recipients are always free.",
-  },
-
-  developer: {
-    eyebrow: "For humans and their agents",
-    title: "An API your AI can drive.",
-    body: "First-class REST API, typed SDKs generated from the OpenAPI spec, a CLI, and a hosted MCP server. Your agent can draft, send, and chase signatures without a human opening a tab.",
-    endpoints: ["api.seal.nyc", "mcp.seal.nyc", "@vortex-api/seal on npm"],
-  },
-
-  comparison: {
-    title: "The incumbents had twenty years.",
-    subtitle: "We read their pricing pages so you don't have to.",
-    rows: [
-      {
-        them: "Per-seat pricing that multiplies as your team grows",
-        seal: "Per-document pricing. Seats don't sign things — documents do.",
-      },
-      {
-        them: "Envelope quotas designed to be hit in month eleven",
-        seal: "Metered usage you'd have to try to abuse.",
-      },
-      {
-        them: '"Contact sales" where the price should be',
-        seal: "A free developer tier and metered usage. No sales call required.",
-      },
-      {
-        them: "Agents bolted on in 2025 press releases",
-        seal: "MCP server and typed SDKs since day one.",
-      },
-      {
-        them: "An interface that remembers Internet Explorer",
-        seal: "An API on Cloudflare Workers. Fast everywhere, by default.",
-      },
-    ],
-  },
-
-  finalCta: {
-    headline: "Sign something today.",
-    sub: "Create an account, get an API key, send a document. That's the whole onboarding.",
-    cta: {
-      label: "Get an API key",
-      href: "https://app.seal.nyc/sign-up?next=developer",
     },
-    note: "Free tier · No card · No demo call · Your documents stay yours",
-  },
-
-  footer: {
-    tagline: "The e-signature API. Made in New York City.",
-    columns: [
-      {
-        title: "Product",
-        links: [
-          { label: "Pricing", href: "#pricing" },
-          { label: "Changelog", href: "/changelog" },
-          { label: "API Documentation", href: "https://docs.seal.nyc" },
-        ],
+    api: {
+      index: "01 / 04",
+      eyebrow: "The contract API",
+      title: "Every step of a deal, one endpoint away.",
+      body: "Documents, recipients, signatures, audit — the full lifecycle of a contract as REST calls, generated from a single OpenAPI spec into typed SDKs.",
+      endpoints: [
+        {
+          method: "POST",
+          path: "/uploads/generate-url",
+          desc: "Signed upload URL for a document",
+        },
+        {
+          method: "POST",
+          path: "/documents",
+          desc: "Create a document from the upload",
+        },
+        {
+          method: "GET",
+          path: "/documents",
+          desc: "List documents with filters",
+        },
+        {
+          method: "POST",
+          path: "/recipients",
+          desc: "Add a signer, viewer, or approver",
+        },
+        {
+          method: "POST",
+          path: "/documents/send",
+          desc: "Dispatch signing requests",
+        },
+        {
+          method: "POST",
+          path: "/recipients/remind",
+          desc: "Nudge an unsigned recipient",
+        },
+        {
+          method: "POST",
+          path: "/documents/void",
+          desc: "Void an in-flight document",
+        },
+        {
+          method: "GET",
+          path: "/signatures/audit",
+          desc: "Tamper-evident audit trail",
+        },
+        {
+          method: "POST",
+          path: "/templates/use",
+          desc: "Document from a template",
+        },
+      ],
+      footer:
+        "Full reference at docs.seal.nyc — same spec generates every SDK.",
+    },
+    manifesto: {
+      index: "02 / 04",
+      eyebrow: "The thesis",
+      title: "Paying for signatures is over.",
+      lines: [
+        "A signature is a primitive, not a product. Incumbents charge per seat per month for a bit of ink — then charge again when your team grows.",
+        "Seal gives signing away. What you pay for is the platform around it: the API surface, the audit trail, the agent that prepares and chases the contract for you.",
+        "Contracts are where deals happen. This is where they get done.",
+      ],
+    },
+    pricing: {
+      index: "03 / 04",
+      eyebrow: "Pricing",
+      title: "Signing is free.",
+      subtitle:
+        "The incumbents charge per person per month whether or not anyone signs anything. We charge for the platform you actually use.",
+      tiers: [
+        {
+          name: "Developer",
+          price: "$0",
+          unit: "forever",
+          blurb: "For building, prototyping, and side projects.",
+          features: [
+            "10 documents / month",
+            "Full API + MCP access",
+            "Uploads, webhooks, audit trail",
+            "No credit card",
+          ],
+          cta: {
+            label: "Get an API key",
+            href: "https://app.seal.nyc/sign-up?next=developer",
+          },
+          featured: false,
+        },
+        {
+          name: "Platform",
+          price: "Metered",
+          unit: "per document",
+          blurb: "For production deal flow at any volume.",
+          features: [
+            "500 documents / month included",
+            "Then metered per document",
+            "White-label signing chrome",
+            "Sequential signing + templates",
+            "Priority support",
+          ],
+          cta: {
+            label: "Start on Platform",
+            href: "https://app.seal.nyc/sign-up?next=developer",
+          },
+          featured: true,
+        },
+        {
+          name: "Enterprise",
+          price: "Custom",
+          unit: "volume",
+          blurb: "For volume, compliance, and procurement realities.",
+          features: [
+            "Volume pricing",
+            "SSO / SAML",
+            "Custom data retention",
+            "Dedicated support channel",
+          ],
+          cta: { label: "Contact us", href: "mailto:hello@seal.nyc" },
+          featured: false,
+        },
+      ],
+      note: "Every tier includes the full API, audit trail, and MCP access.",
+    },
+    developer: {
+      index: "04 / 04",
+      eyebrow: "Agent-first",
+      title: "Your agent can close the loop.",
+      body: "Seal ships a real MCP server, not a marketing claim. Agents can draft documents, add recipients, send for signature, and read the audit trail — with scoped API keys you control.",
+      points: [
+        "mcp.seal.nyc — remote MCP, OAuth + scoped tokens",
+        "Typed SDKs: TypeScript, Python, Go — one OpenAPI spec",
+        "Every action lands in the audit trail, agent or human",
+      ],
+    },
+    comparison: {
+      index: "",
+      title: "Them vs. Seal",
+      subtitle: "We read their pricing pages so you don't have to.",
+      rows: [
+        {
+          them: "Per-seat pricing that multiplies as your team grows",
+          seal: "Signing is free. You pay for platform usage, not people.",
+        },
+        {
+          them: "Envelope quotas designed to be hit in month eleven",
+          seal: "Metered usage you'd have to try to abuse.",
+        },
+        {
+          them: '"Contact sales" where the price should be',
+          seal: "A free developer tier and metered usage. No sales call required.",
+        },
+        {
+          them: "Agents bolted on in 2025 press releases",
+          seal: "MCP server and typed SDKs since day one.",
+        },
+        {
+          them: "A UI built for administrators",
+          seal: "An API built for the thing doing the work.",
+        },
+      ],
+    },
+    finalCta: {
+      headline: "Ship the deal.",
+      sub: "One API key to a signed contract in minutes.",
+      cta: {
+        label: "Get an API key",
+        href: "https://app.seal.nyc/sign-up?next=developer",
       },
-      {
-        title: "Developers",
-        links: [
-          { label: "API reference", href: "https://docs.seal.nyc" },
-          { label: "MCP server", href: "https://mcp.seal.nyc" },
-          { label: "Status", href: "https://status.seal.nyc" },
-        ],
-      },
-      {
-        title: "Company",
-        links: [
-          { label: "Blog", href: "/blog" },
-          { label: "Contact", href: "mailto:hello@seal.nyc" },
-        ],
-      },
-    ],
-  },
-});
+      note: "Free tier · No credit card · docs.seal.nyc",
+    },
+    footer: {
+      tagline: "Contract infrastructure for code and agents.",
+      columns: [
+        {
+          title: "Product",
+          links: [
+            { label: "API Documentation", href: "https://docs.seal.nyc" },
+            { label: "Pricing", href: "#pricing" },
+            { label: "MCP Server", href: "https://mcp.seal.nyc" },
+          ],
+        },
+        {
+          title: "Developers",
+          links: [
+            {
+              label: "TypeScript SDK",
+              href: "https://www.npmjs.com/package/@vortex-api/seal",
+            },
+            { label: "API Reference", href: "https://docs.seal.nyc" },
+            { label: "Status", href: "https://status.seal.nyc" },
+          ],
+        },
+        {
+          title: "Company",
+          links: [
+            { label: "App", href: "https://app.seal.nyc" },
+            { label: "Contact", href: "mailto:hello@seal.nyc" },
+          ],
+        },
+      ],
+    },
+  });

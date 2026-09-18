@@ -13,6 +13,14 @@
 
 /* ── Light mode (default) ─────────────────────────────────────────────────── */
 :root {
+  /* Font stacks — duplicated for non-Tailwind consumers (Astro, plain CSS).
+     @theme inline below emits the same values for Tailwind utilities. */
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --font-mono:
+    "JetBrains Mono", ui-monospace, "Cascadia Code", "Source Code Pro",
+    monospace;
+
   /* Shadcn/Radix semantic tokens */
   --background: oklch(0.982 0.002 90); /* #FAFAF9 — per board 02 */
   --foreground: oklch(0.138 0.01 65); /* #1A1714 — near-black, warm */

@@ -8,19 +8,19 @@ import { landing } from "../data/landing";
   <nav class="nav">
     <div class="container nav-inner">
       <a href="/" class="logo" aria-label="Seal home">
-        <svg viewBox="0 0 64 64" width="28" height="28" aria-hidden="true">
+        <svg viewBox="0 0 64 64" width="26" height="26" aria-hidden="true">
           <circle cx="32" cy="32" r="30" fill="var(--primary)"></circle>
           <circle cx="32" cy="32" r="24" fill="none" stroke="#fafaf9" stroke-width="1.5" opacity="0.6"></circle>
           <text x="32" y="42" text-anchor="middle" font-family="Georgia, serif" font-size="30" fill="#fafaf9">S</text>
         </svg>
-        <span class="logo-word serif">Seal</span>
+        <span class="logo-word">Seal</span>
       </a>
       <div class="nav-links">
         {landing.nav.links.map((l) => <a href={l.href}>{l.label}</a>)}
       </div>
       <div class="nav-actions">
-        <a class="btn-ghost" href={landing.nav.signIn.href}>{landing.nav.signIn.label}</a>
-        <a class="btn-primary" href={landing.nav.cta.href}>{landing.nav.cta.label}</a>
+        <a class="nav-signin" href={landing.nav.signIn.href}>{landing.nav.signIn.label}</a>
+        <a class="btn btn-ink" href={landing.nav.cta.href}>{landing.nav.cta.label}</a>
       </div>
     </div>
   </nav>
@@ -28,21 +28,29 @@ import { landing } from "../data/landing";
   <header class="hero">
     <div class="container">
       <p class="eyebrow">{landing.hero.eyebrow}</p>
-      <h1 class="serif">
-        {landing.hero.headline}<br />
-        <em>{landing.hero.headlineEmphasis}</em>
-      </h1>
+      <h1>{landing.hero.headline}</h1>
       <p class="sub">{landing.hero.subheadline}</p>
       <div class="hero-ctas">
-        <a class="btn-primary btn-lg" href={landing.hero.primaryCta.href}>{landing.hero.primaryCta.label}</a>
-        <a class="btn-ghost btn-lg" href={landing.hero.secondaryCta.href}>{landing.hero.secondaryCta.label}</a>
+        <a class="btn btn-ink btn-lg" href={landing.hero.primaryCta.href}>{landing.hero.primaryCta.label}</a>
+        <a class="btn btn-line btn-lg" href={landing.hero.secondaryCta.href}>{landing.hero.secondaryCta.label}</a>
       </div>
-      <ul class="proof">
-        {landing.hero.proof.map((p) => <li>{p}</li>)}
-      </ul>
+
+      <div class="install" role="group" aria-label="Install Seal">
+        <div class="install-tabs">
+          {landing.hero.installTabs.map((t, i) => (
+            <button class={`mono install-tab ${i === 0 ? "active" : ""}`} data-install={i} type="button">
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <div class="install-cmd">
+          <span class="mono install-prompt" aria-hidden="true">$</span>
+          <code class="mono" id="install-command">{landing.hero.installTabs[0].command}</code>
+        </div>
+      </div>
+
       <div class="code-window">
         <div class="code-titlebar">
-          <span class="code-dots" aria-hidden="true"><i /><i /><i /></span>
           <span class="mono">{landing.hero.codeFile}</span>
           <span class="mono code-host">api.seal.nyc</span>
         </div>
@@ -51,11 +59,14 @@ import { landing } from "../data/landing";
     </div>
   </header>
 
-  <section id="api" class="api">
+  <section id="api" class="section">
     <div class="container">
-      <p class="eyebrow">{landing.api.eyebrow}</p>
-      <h2 class="serif">{landing.api.title}</h2>
-      <p class="api-body">{landing.api.body}</p>
+      <div class="section-head">
+        <p class="eyebrow">{landing.api.eyebrow}</p>
+        <span class="mono section-index">( {landing.api.index} )</span>
+      </div>
+      <h2>{landing.api.title}</h2>
+      <p class="section-body">{landing.api.body}</p>
       <div class="endpoint-table">
         {
           landing.api.endpoints.map((e) => (
@@ -67,22 +78,38 @@ import { landing } from "../data/landing";
           ))
         }
       </div>
-      <p class="api-footer">{landing.api.footer}</p>
+      <p class="section-footer mono">{landing.api.footer}</p>
     </div>
   </section>
 
-  <section id="pricing" class="pricing">
+  <section class="section manifesto">
     <div class="container">
-      <p class="eyebrow">{landing.pricing.eyebrow}</p>
-      <h2 class="serif">{landing.pricing.title}</h2>
-      <p class="pricing-sub">{landing.pricing.subtitle}</p>
+      <div class="section-head">
+        <p class="eyebrow">{landing.manifesto.eyebrow}</p>
+        <span class="mono section-index">( {landing.manifesto.index} )</span>
+      </div>
+      <h2>{landing.manifesto.title}</h2>
+      <div class="manifesto-lines">
+        {landing.manifesto.lines.map((line) => <p class="serif">{line}</p>)}
+      </div>
+    </div>
+  </section>
+
+  <section id="pricing" class="section">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">{landing.pricing.eyebrow}</p>
+        <span class="mono section-index">( {landing.pricing.index} )</span>
+      </div>
+      <h2>{landing.pricing.title}</h2>
+      <p class="section-body">{landing.pricing.subtitle}</p>
       <div class="tiers">
         {
           landing.pricing.tiers.map((t) => (
             <div class={`tier ${t.featured ? "tier-featured" : ""}`}>
-              <h3 class="tier-name">{t.name}</h3>
+              <h3 class="mono tier-name">{t.name}</h3>
               <div class="tier-price">
-                <span class="serif">{t.price}</span>
+                <span class="tier-amount">{t.price}</span>
                 <span class="mono tier-unit">{t.unit}</span>
               </div>
               <p class="tier-blurb">{t.blurb}</p>
@@ -91,44 +118,42 @@ import { landing } from "../data/landing";
                   <li>{f}</li>
                 ))}
               </ul>
-              <a
-                class={t.featured ? "btn-primary tier-cta" : "btn-ghost tier-cta"}
-                href={t.cta.href}
-              >
+              <a class={t.featured ? "btn btn-ink tier-cta" : "btn btn-line tier-cta"} href={t.cta.href}>
                 {t.cta.label}
               </a>
             </div>
           ))
         }
       </div>
-      <p class="pricing-note mono">{landing.pricing.note}</p>
+      <p class="section-footer mono">{landing.pricing.note}</p>
     </div>
   </section>
 
-  <section id="developers" class="developer">
-    <div class="container dev-inner">
-      <div class="dev-copy">
-        <p class="eyebrow">{landing.developer.eyebrow}</p>
-        <h2 class="serif">{landing.developer.title}</h2>
-        <p>{landing.developer.body}</p>
-        <ul class="endpoints">
-          {landing.developer.endpoints.map((e) => <li class="mono">{e}</li>)}
+  <section class="developer">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow eyebrow-dark">{landing.developer.eyebrow}</p>
+        <span class="mono section-index section-index-dark">( {landing.developer.index} )</span>
+      </div>
+      <div class="dev-grid">
+        <div>
+          <h2 class="dev-title">{landing.developer.title}</h2>
+          <p class="dev-body">{landing.developer.body}</p>
+        </div>
+        <ul class="dev-points">
+          {landing.developer.points.map((p) => <li class="mono">{p}</li>)}
         </ul>
       </div>
-      <div class="dev-panel" aria-hidden="true">
-        <div class="mcp-card">
-          <div class="mcp-row"><span class="mono mcp-method">MCP</span><span class="mono">mcp.seal.nyc</span></div>
-          <div class="mcp-msg">documents.send({`{ title: "Mutual NDA", … }`})</div>
-          <div class="mcp-msg mcp-ok">→ sent · signing link emailed to jane@acme.com</div>
-        </div>
-      </div>
     </div>
   </section>
 
-  <section class="comparison">
+  <section class="section comparison">
     <div class="container">
-      <h2 class="serif">{landing.comparison.title}</h2>
-      <p class="comparison-sub">{landing.comparison.subtitle}</p>
+      <div class="section-head">
+        <p class="eyebrow">The alternative</p>
+      </div>
+      <h2>{landing.comparison.title}</h2>
+      <p class="section-body">{landing.comparison.subtitle}</p>
       <div class="compare-table">
         <div class="compare-head">
           <span class="mono">Them</span>
@@ -148,14 +173,9 @@ import { landing } from "../data/landing";
 
   <section class="final-cta">
     <div class="container final-inner">
-      <svg viewBox="0 0 64 64" width="56" height="56" aria-hidden="true">
-        <circle cx="32" cy="32" r="30" fill="var(--primary)"></circle>
-        <circle cx="32" cy="32" r="24" fill="none" stroke="#fafaf9" stroke-width="1.5" opacity="0.6"></circle>
-        <text x="32" y="42" text-anchor="middle" font-family="Georgia, serif" font-size="30" fill="#fafaf9">S</text>
-      </svg>
-      <h2 class="serif">{landing.finalCta.headline}</h2>
+      <h2>{landing.finalCta.headline}</h2>
       <p>{landing.finalCta.sub}</p>
-      <a class="btn-primary btn-lg" href={landing.finalCta.cta.href}>{landing.finalCta.cta.label}</a>
+      <a class="btn btn-ink btn-lg" href={landing.finalCta.cta.href}>{landing.finalCta.cta.label}</a>
       <p class="final-note mono">{landing.finalCta.note}</p>
     </div>
   </section>
@@ -163,7 +183,7 @@ import { landing } from "../data/landing";
   <footer class="footer">
     <div class="container footer-inner">
       <div class="footer-brand">
-        <span class="logo-word serif">Seal</span>
+        <span class="logo-word">Seal</span>
         <p>{landing.footer.tagline}</p>
       </div>
       <div class="footer-cols">
@@ -180,12 +200,98 @@ import { landing } from "../data/landing";
       </div>
     </div>
     <div class="container footer-legal">
-      <span class="mono">© 2026 Seal · Made in New York City</span>
+      <span class="mono">© 2026 Seal · New York City</span>
     </div>
   </footer>
 </Base>
 
+<script define:vars={{ commands: landing.hero.installTabs.map((t) => t.command) }}>
+  const tabs = document.querySelectorAll(".install-tab");
+  const cmd = document.getElementById("install-command");
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      tabs.forEach((t) => t.classList.remove("active"));
+      tab.classList.add("active");
+      const i = Number(tab.getAttribute("data-install"));
+      if (cmd) cmd.textContent = commands[i];
+    });
+  });
+</script>
+
 <style>
+  /* ————— spec-sheet system ————— */
+
+  .container {
+    max-width: 1120px;
+  }
+
+  .eyebrow {
+    color: var(--foreground);
+  }
+
+  .section {
+    padding: 96px 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    border-top: 1px solid var(--foreground);
+    padding-top: 14px;
+    margin-bottom: 56px;
+    position: relative;
+  }
+
+  .section-head::before,
+  .section-head::after {
+    content: "+";
+    position: absolute;
+    top: -7px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--muted-foreground);
+  }
+  .section-head::before { left: -6px; }
+  .section-head::after { right: -5px; }
+
+  .section-index {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--muted-foreground);
+  }
+
+  h1,
+  h2,
+  .tier-amount {
+    font-family: var(--font-serif);
+    font-weight: 400;
+  }
+
+  h2 {
+    font-size: clamp(34px, 4.5vw, 52px);
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    max-width: 22ch;
+  }
+
+  .section-body {
+    max-width: 56ch;
+    margin-top: 20px;
+    color: var(--muted-foreground);
+    font-size: 17px;
+  }
+
+  .section-footer {
+    margin-top: 28px;
+    font-size: 12px;
+    color: var(--muted-foreground);
+    letter-spacing: 0.04em;
+  }
+
+  /* ————— nav ————— */
+
   .nav {
     border-bottom: 1px solid var(--border);
     position: sticky;
@@ -196,8 +302,8 @@ import { landing } from "../data/landing";
   .nav-inner {
     display: flex;
     align-items: center;
-    gap: 32px;
-    height: 64px;
+    gap: 40px;
+    height: 60px;
   }
   .logo {
     display: flex;
@@ -205,132 +311,164 @@ import { landing } from "../data/landing";
     gap: 10px;
   }
   .logo-word {
-    font-size: 24px;
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
   }
   .nav-links {
     display: flex;
-    gap: 28px;
-    font-size: 14px;
-    color: var(--muted-foreground);
+    gap: 26px;
     flex: 1;
+  }
+  .nav-links a {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
   }
   .nav-links a:hover {
     color: var(--foreground);
   }
   .nav-actions {
     display: flex;
-    gap: 12px;
+    gap: 20px;
     align-items: center;
   }
+  .nav-signin {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+  .nav-signin:hover {
+    color: var(--foreground);
+  }
 
-  .btn-primary,
-  .btn-ghost {
+  /* ————— buttons ————— */
+
+  .btn {
     display: inline-block;
-    border-radius: var(--radius);
-    font-size: 14px;
-    font-weight: 600;
-    padding: 9px 18px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 10px 20px;
+    border-radius: 4px;
     transition: opacity 0.15s;
     text-align: center;
   }
-  .btn-primary {
-    background: var(--primary);
-    color: var(--primary-foreground);
+  .btn-ink {
+    background: var(--foreground);
+    color: var(--background);
   }
-  .btn-primary:hover {
-    opacity: 0.9;
+  .btn-ink:hover {
+    opacity: 0.85;
   }
-  .btn-ghost {
-    border: 1px solid var(--border);
+  .btn-line {
+    border: 1px solid var(--foreground);
     color: var(--foreground);
-    background: var(--card);
   }
-  .btn-ghost:hover {
-    border-color: var(--muted-foreground);
+  .btn-line:hover {
+    background: var(--secondary);
   }
   .btn-lg {
-    padding: 13px 26px;
-    font-size: 15px;
+    padding: 14px 28px;
+    font-size: 13px;
   }
 
+  /* ————— hero ————— */
+
   .hero {
-    padding: 104px 0 96px;
-    text-align: center;
+    padding: 120px 0 100px;
   }
   .hero h1 {
-    font-size: clamp(44px, 7vw, 76px);
-    line-height: 1.04;
-    margin: 24px auto 0;
-    max-width: 15ch;
-  }
-  .hero h1 em {
-    font-style: italic;
-    color: var(--primary);
+    font-size: clamp(52px, 8.5vw, 104px);
+    letter-spacing: -0.025em;
+    line-height: 1.0;
+    margin-top: 32px;
   }
   .hero .sub {
-    max-width: 58ch;
-    margin: 28px auto 0;
+    max-width: 52ch;
+    margin-top: 32px;
     font-size: 18px;
+    line-height: 1.65;
     color: var(--muted-foreground);
   }
   .hero-ctas {
     display: flex;
     gap: 14px;
-    justify-content: center;
-    margin-top: 40px;
+    margin-top: 44px;
   }
-  .proof {
+
+  /* ————— install tabs ————— */
+
+  .install {
+    margin-top: 56px;
+    max-width: 640px;
+    border: 1px solid var(--border);
+  }
+  .install-tabs {
     display: flex;
-    gap: 28px;
-    justify-content: center;
-    list-style: none;
-    margin-top: 32px;
-    font-size: 13px;
-    color: var(--muted-foreground);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
   }
-  .proof li::before {
-    content: "·";
+  .install-tab {
+    padding: 10px 18px;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+    background: none;
+    border: none;
+    border-right: 1px solid var(--border);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .install-tab:hover {
+    color: var(--foreground);
+  }
+  .install-tab.active {
+    color: var(--foreground);
+    background: var(--secondary);
+    box-shadow: inset 0 -2px 0 var(--foreground);
+  }
+  .install-cmd {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    font-size: 13px;
+    overflow-x: auto;
+  }
+  .install-prompt {
     color: var(--primary);
-    margin-right: 8px;
     font-weight: 700;
   }
 
+  /* ————— code window ————— */
+
   .code-window {
-    margin: 56px auto 0;
+    margin-top: 24px;
     max-width: 720px;
     text-align: left;
-    border-radius: var(--radius);
-    overflow: hidden;
     border: 1px solid oklch(0.28 0.01 65);
     background: oklch(0.17 0.012 65);
-    box-shadow: 0 32px 80px -32px rgba(26, 23, 20, 0.45);
   }
   .code-titlebar {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 16px;
+    padding: 11px 16px;
     border-bottom: 1px solid oklch(0.28 0.01 65);
     font-size: 12px;
     color: oklch(0.65 0.01 80);
   }
-  .code-dots {
-    display: inline-flex;
-    gap: 6px;
-  }
-  .code-dots i {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: oklch(0.35 0.01 65);
-    display: block;
-  }
-  .code-dots i:first-child {
-    background: var(--primary);
-  }
   .code-host {
     margin-left: auto;
-    color: oklch(0.55 0.01 80);
+    color: oklch(0.5 0.01 80);
   }
   .code-window pre {
     padding: 24px !important;
@@ -342,40 +480,20 @@ import { landing } from "../data/landing";
     background: transparent !important;
   }
 
-  .api {
-    padding: 40px 0 96px;
-    text-align: center;
-  }
-  .api h2 {
-    font-size: clamp(30px, 4vw, 44px);
-    line-height: 1.1;
-    margin: 16px 0 20px;
-  }
-  .api-body {
-    max-width: 62ch;
-    margin: 0 auto;
-    color: var(--muted-foreground);
-    font-size: 17px;
-  }
+  /* ————— endpoint table ————— */
+
   .endpoint-table {
-    margin: 48px auto 0;
-    max-width: 860px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    background: var(--card);
+    margin-top: 48px;
+    border-top: 1px solid var(--foreground);
     text-align: left;
   }
   .endpoint-row {
     display: grid;
-    grid-template-columns: 64px 1fr 1fr;
+    grid-template-columns: 72px 1fr 1fr;
     gap: 16px;
     align-items: baseline;
-    padding: 14px 20px;
-    border-top: 1px solid var(--border);
-  }
-  .endpoint-row:first-child {
-    border-top: none;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--border);
   }
   .method {
     font-size: 11px;
@@ -398,52 +516,52 @@ import { landing } from "../data/landing";
     font-size: 14px;
     color: var(--muted-foreground);
   }
-  .api-footer {
-    margin-top: 24px;
-    font-size: 14px;
-    color: var(--muted-foreground);
+
+  /* ————— manifesto ————— */
+
+  .manifesto-lines {
+    margin-top: 56px;
+    display: grid;
+    gap: 40px;
+    max-width: 760px;
+  }
+  .manifesto-lines p {
+    font-size: clamp(22px, 3vw, 32px);
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+    color: var(--foreground);
+  }
+  .manifesto-lines p:last-child {
+    color: var(--primary);
+    font-style: italic;
   }
 
-  .pricing {
-    padding: 96px 0;
-    border-top: 1px solid var(--border);
-    text-align: center;
-  }
-  .pricing h2 {
-    font-size: clamp(30px, 4vw, 44px);
-    line-height: 1.1;
-    margin: 16px 0 20px;
-  }
-  .pricing-sub {
-    max-width: 56ch;
-    margin: 0 auto;
-    color: var(--muted-foreground);
-    font-size: 17px;
-  }
+  /* ————— pricing ————— */
+
   .tiers {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    max-width: 960px;
-    margin: 48px auto 0;
-    text-align: left;
+    margin-top: 56px;
+    border-top: 1px solid var(--foreground);
   }
   .tier {
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--card);
-    padding: 28px;
+    padding: 28px 28px 32px;
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
   }
+  .tier:first-child {
+    border-left: 1px solid var(--border);
+  }
   .tier-featured {
-    border-color: var(--primary);
-    box-shadow: 0 24px 60px -28px rgba(166, 61, 47, 0.35);
+    border-left: 1px solid var(--border);
+    box-shadow: inset 0 3px 0 var(--primary);
   }
   .tier-name {
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--muted-foreground);
   }
@@ -454,32 +572,34 @@ import { landing } from "../data/landing";
     display: flex;
     align-items: baseline;
     gap: 10px;
-    margin-top: 14px;
+    margin-top: 18px;
   }
-  .tier-price .serif {
-    font-size: 44px;
+  .tier-amount {
+    font-size: 40px;
+    letter-spacing: -0.02em;
     line-height: 1;
   }
   .tier-unit {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--muted-foreground);
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
   .tier-blurb {
     font-size: 14px;
     color: var(--muted-foreground);
-    margin-top: 10px;
+    margin-top: 12px;
   }
   .tier-features {
     list-style: none;
-    margin: 20px 0 24px;
+    margin: 22px 0 28px;
     display: grid;
     gap: 10px;
     font-size: 14px;
     flex: 1;
   }
   .tier-features li {
-    padding-left: 20px;
+    padding-left: 18px;
     position: relative;
   }
   .tier-features li::before {
@@ -491,104 +611,59 @@ import { landing } from "../data/landing";
   .tier-cta {
     width: 100%;
   }
-  .pricing-note {
-    margin-top: 28px;
-    font-size: 12px;
-    color: var(--muted-foreground);
-    letter-spacing: 0.04em;
-  }
+
+  /* ————— developer / dark band ————— */
 
   .developer {
     background: var(--foreground);
-    color: oklch(0.982 0.002 90);
+    color: var(--background);
     padding: 96px 0;
   }
-  .dev-inner {
+  .developer .section-head {
+    border-top-color: oklch(0.45 0.01 65);
+  }
+  .eyebrow-dark {
+    color: oklch(0.78 0.09 30);
+  }
+  .section-index-dark {
+    color: oklch(0.55 0.01 80);
+  }
+  .dev-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1.2fr 1fr;
     gap: 72px;
-    align-items: center;
+    align-items: start;
   }
-  .developer .eyebrow {
-    color: oklch(0.78 0.09 30);
+  .dev-title {
+    color: var(--background);
   }
-  .dev-copy h2 {
-    font-size: clamp(30px, 4vw, 44px);
-    line-height: 1.1;
-    margin: 16px 0 20px;
-  }
-  .dev-copy p {
-    color: oklch(0.8 0.01 80);
+  .dev-body {
+    margin-top: 20px;
+    color: oklch(0.75 0.01 80);
     font-size: 17px;
+    max-width: 48ch;
   }
-  .endpoints {
+  .dev-points {
     list-style: none;
-    margin-top: 28px;
     display: grid;
-    gap: 8px;
     font-size: 13px;
-    color: oklch(0.7 0.02 80);
+    border-top: 1px solid oklch(0.45 0.01 65);
   }
-  .endpoints li::before {
+  .dev-points li {
+    padding: 16px 0;
+    border-bottom: 1px solid oklch(0.3 0.01 65);
+    color: oklch(0.72 0.01 80);
+  }
+  .dev-points li::before {
     content: "→ ";
-    color: var(--brand-400);
-  }
-  .dev-panel {
-    display: flex;
-    justify-content: center;
-  }
-  .mcp-card {
-    width: 100%;
-    max-width: 440px;
-    background: oklch(0.19 0.01 65);
-    border: 1px solid oklch(0.28 0.01 65);
-    border-radius: var(--radius);
-    padding: 24px;
-    font-family: var(--font-mono);
-    font-size: 13px;
-    line-height: 1.8;
-    display: grid;
-    gap: 14px;
-  }
-  .mcp-row {
-    display: flex;
-    gap: 12px;
-    align-items: baseline;
-    color: oklch(0.7 0.02 80);
-  }
-  .mcp-method {
     color: oklch(0.78 0.09 30);
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    font-size: 11px;
-  }
-  .mcp-msg {
-    color: oklch(0.85 0.02 80);
-  }
-  .mcp-ok {
-    color: oklch(0.75 0.12 155);
   }
 
-  .comparison {
-    padding: 96px 0;
-  }
-  .comparison h2 {
-    font-size: clamp(30px, 4vw, 44px);
-    line-height: 1.1;
-    text-align: center;
-  }
-  .comparison-sub {
-    text-align: center;
-    color: var(--muted-foreground);
-    margin-top: 12px;
-  }
+  /* ————— comparison ————— */
+
   .compare-table {
-    margin: 56px auto 0;
-    max-width: 860px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    background: var(--card);
+    margin-top: 48px;
+    border-top: 1px solid var(--foreground);
   }
   .compare-head,
   .compare-row {
@@ -596,52 +671,60 @@ import { landing } from "../data/landing";
     grid-template-columns: 1fr 1fr;
   }
   .compare-head {
-    background: var(--secondary);
     font-size: 11px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--muted-foreground);
+    border-bottom: 1px solid var(--border);
   }
   .compare-head span,
   .compare-row span {
-    padding: 16px 24px;
+    padding: 16px 0;
+  }
+  .compare-head span:first-child,
+  .compare-row span:first-child {
+    padding-right: 32px;
+  }
+  .compare-head span:last-child,
+  .compare-row span:last-child {
+    padding-left: 32px;
+    border-left: 1px solid var(--border);
   }
   .compare-row {
-    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
     font-size: 15px;
   }
   .compare-row .them {
     color: var(--muted-foreground);
-    border-right: 1px solid var(--border);
   }
   .compare-row .seal {
     font-weight: 500;
   }
-  .compare-head span:first-child {
-    border-right: 1px solid var(--border);
-  }
+
+  /* ————— final cta + footer ————— */
 
   .final-cta {
-    padding: 96px 0;
+    padding: 120px 0;
     border-top: 1px solid var(--border);
-    text-align: center;
   }
   .final-inner h2 {
-    font-size: clamp(36px, 5vw, 56px);
-    margin: 24px 0 12px;
+    font-size: clamp(48px, 7vw, 88px);
+    letter-spacing: -0.025em;
+    max-width: none;
   }
   .final-inner > p {
     color: var(--muted-foreground);
     font-size: 17px;
+    margin-top: 16px;
   }
   .final-inner .btn-lg {
-    margin-top: 32px;
+    margin-top: 40px;
   }
   .final-note {
-    margin-top: 20px;
+    margin-top: 24px;
     font-size: 12px;
     color: var(--muted-foreground);
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
   }
 
   .footer {
@@ -670,6 +753,7 @@ import { landing } from "../data/landing";
     text-transform: uppercase;
     color: var(--muted-foreground);
     margin-bottom: 14px;
+    font-weight: 600;
   }
   .footer-col a {
     display: block;
@@ -686,42 +770,48 @@ import { landing } from "../data/landing";
     color: var(--muted-foreground);
   }
 
+  /* ————— responsive ————— */
+
   @media (max-width: 860px) {
     .nav-links {
       display: none;
     }
-    .dev-inner,
-    .tiers {
-      grid-template-columns: 1fr;
-      gap: 40px;
-    }
-    .dev-inner {
-      gap: 40px;
+    .hero {
+      padding: 80px 0 72px;
     }
     .endpoint-row {
-      grid-template-columns: 56px 1fr;
+      grid-template-columns: 60px 1fr;
     }
     .endpoint-desc {
       grid-column: 2;
+    }
+    .tiers,
+    .dev-grid {
+      grid-template-columns: 1fr;
+    }
+    .tier,
+    .tier:first-child,
+    .tier-featured {
+      border-left: 1px solid var(--border);
     }
     .compare-head,
     .compare-row {
       grid-template-columns: 1fr;
     }
+    .compare-head span:last-child,
+    .compare-row span:last-child {
+      border-left: none;
+      padding-left: 0;
+    }
     .compare-row .them {
-      border-right: none;
-      border-bottom: 1px dashed var(--border);
-      padding-bottom: 8px;
+      padding-bottom: 4px;
     }
     .compare-row .seal {
-      padding-top: 8px;
+      padding-top: 4px;
     }
     .footer-inner {
       grid-template-columns: 1fr;
       gap: 40px;
-    }
-    .hero {
-      padding: 72px 0 64px;
     }
   }
 </style>

@@ -1,7 +1,7 @@
 {
   "name": "@vortex-api/seal",
   "version": "0.1.0",
-  "description": "Seal SDK \u2014 typed API client, React signing components, and CLI",
+  "description": "Seal SDK — typed API client, React signing components, and CLI",
   "license": "MIT",
   "bin": {
     "seal": "./bin/seal.mjs"
@@ -22,6 +22,9 @@
       "types": "./dist/react/index.d.ts",
       "import": "./dist/react/index.js"
     }
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "generate": "openapi-typescript ../../apps/docs/openapi.yaml -o ./src/openapi.ts",
@@ -44,8 +47,5 @@
   },
   "peerDependencies": {
     "react": ">=18.0.0"
-  },
-  "publishConfig": {
-    "access": "public"
   }
 }
