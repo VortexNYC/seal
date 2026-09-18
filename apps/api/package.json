@@ -17,10 +17,14 @@
     "@orama/orama": "^3.1.18",
     "@seal/internal-auth": "workspace:*",
     "@seal/transactional": "workspace:*",
+    "@vortex-api/better-auth-ui": "0.1.4",
     "better-auth": "1.7.5",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.13.8",
     "jose": "^6.2.12",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-email": "5.1.0",
     "zod": "catalog:"
   },
   "devDependencies": {
