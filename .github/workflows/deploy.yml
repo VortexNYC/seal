@@ -18,19 +18,20 @@ jobs:
     uses: ./.github/workflows/migrate.yml
     secrets: inherit
 
-  deploy:
-    name: deploy
+  secrets:
+    name: Upload + verify API secrets
     needs: [migrate]
     runs-on: blacksmith-4vcpu-ubuntu-2204
-    timeout-minutes: 30
+    timeout-minutes: 10
     environment: production
     env:
       NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-      VITE_API_URL: "https://api.seal.nyc"
-      VITE_BETTER_AUTH_URL: "https://api.seal.nyc"
-      VITE_APP_URL: "https://app.seal.nyc"
+      INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY || secrets.SEAL_INTERNAL_API_KEY }}
+      BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET || secrets.SEAL_BETTER_AUTH_SECRET }}
+      TOKEN_HASH_SECRET: ${{ secrets.TOKEN_HASH_SECRET || secrets.SEAL_TOKEN_HASH_SECRET }}
+      MCP_SIGNING_KEY: ${{ secrets.MCP_SIGNING_KEY || secrets.SEAL_MCP_SIGNING_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -61,11 +62,6 @@ jobs:
 
       - name: Upload API secrets
         working-directory: apps/api
-        env:
-          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY || secrets.SEAL_INTERNAL_API_KEY }}
-          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET || secrets.SEAL_BETTER_AUTH_SECRET }}
-          TOKEN_HASH_SECRET: ${{ secrets.TOKEN_HASH_SECRET || secrets.SEAL_TOKEN_HASH_SECRET }}
-          MCP_SIGNING_KEY: ${{ secrets.MCP_SIGNING_KEY || secrets.SEAL_MCP_SIGNING_KEY }}
         run: |
           set -euo pipefail
           for var in INTERNAL_API_KEY BETTER_AUTH_SECRET TOKEN_HASH_SECRET MCP_SIGNING_KEY; do
@@ -73,14 +69,84 @@ jobs:
               echo "$var is not set."
               exit 1
             fi
+            printf '%s' "${!var}" | vp exec wrangler secret put "$var" --env production
           done
-          printf '%s' "$INTERNAL_API_KEY" | vp exec wrangler secret put INTERNAL_API_KEY --env production
-          printf '%s' "$BETTER_AUTH_SECRET" | vp exec wrangler secret put BETTER_AUTH_SECRET --env production
-          printf '%s' "$TOKEN_HASH_SECRET" | vp exec wrangler secret put TOKEN_HASH_SECRET --env production
-          printf '%s' "$MCP_SIGNING_KEY" | vp exec wrangler secret put MCP_SIGNING_KEY --env production
 
-      - name: Deploy
-        run: vp run deploy
+      - name: Verify secrets are bound
+        working-directory: apps/api
+        run: |
+          set -euo pipefail
+          SECRETS_JSON=$(vp exec wrangler secret list --env production --format json)
+          for var in INTERNAL_API_KEY BETTER_AUTH_SECRET TOKEN_HASH_SECRET MCP_SIGNING_KEY; do
+            if ! printf '%s' "$SECRETS_JSON" | grep -q "\"$var\""; then
+              echo "::error::$var missing from seal-api after upload"
+              exit 1
+            fi
+          done
+          echo "All 4 production secrets verified on seal-api."
+
+  deploy-workers:
+    name: Deploy workers (api, web, site, mcp, anydoc)
+    needs: [secrets]
+    runs-on: blacksmith-4vcpu-ubuntu-2204
+    timeout-minutes: 30
+    environment: production
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      VITE_API_URL: "https://api.seal.nyc"
+      VITE_BETTER_AUTH_URL: "https://api.seal.nyc"
+      VITE_APP_URL: "https://app.seal.nyc"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@d5616419e3a9637febec6da1475cee9d07a317fd # v1.20.0
+        with:
+          node-version: "24"
+          cache: true
+          registry-url: https://npm.pkg.github.com
+          scope: "@vortexnyc"
+          run-install: false
+
+      - name: Install
+        run: vp install --frozen-lockfile
+
+      - name: Deploy each worker independently
+        id: deploy
+        run: |
+          set +e
+          FAILED=""
+          for app in api web site mcp-worker anydoc-worker; do
+            echo ""
+            echo "=== Deploying @seal/$app ==="
+            if ! vp run -F "@seal/$app" deploy; then
+              FAILED="$FAILED $app"
+            fi
+          done
+          echo ""
+          echo "=== Deploying @seal/convert-worker (worker only — containers API rejects API tokens) ==="
+          if ! (cd apps/convert-worker && vp exec wrangler deploy -e production --containers-rollout none); then
+            FAILED="$FAILED convert-worker"
+          fi
+          if [ -n "$FAILED" ]; then
+            echo "::error::Deploy failed for:$FAILED"
+            exit 1
+          fi
+
+      - name: Smoke-check production surfaces
+        run: |
+          set -euo pipefail
+          for url in https://api.seal.nyc/health https://app.seal.nyc/ https://seal.nyc/ https://mcp.seal.nyc/; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$url")
+            echo "$url → $code"
+            if [ "$code" -ge 500 ]; then
+              echo "::error::$url returned $code"
+              exit 1
+            fi
+          done
 
       - name: Record release evidence
         if: always()
@@ -94,7 +160,7 @@ jobs:
             "ref": "${{ github.ref_name }}",
             "timestamp": "$TIMESTAMP",
             "ci_run_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-            "apps": ["anydoc-worker", "convert-worker", "api", "mcp-worker", "web"]
+            "apps": ["anydoc-worker", "convert-worker", "api", "mcp-worker", "web", "site"]
           }
           EOF
 
@@ -106,3 +172,36 @@ jobs:
           path: release-record.json
           if-no-files-found: error
           retention-days: 90
+
+  deploy-containers:
+    name: Deploy containers (convert-worker)
+    needs: [secrets]
+    runs-on: blacksmith-4vcpu-ubuntu-2204
+    timeout-minutes: 20
+    environment: production
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@d5616419e3a9637febec6da1475cee9d07a317fd # v1.20.0
+        with:
+          node-version: "24"
+          cache: true
+          registry-url: https://npm.pkg.github.com
+          scope: "@vortexnyc"
+          run-install: false
+
+      - name: Install
+        run: vp install --frozen-lockfile
+
+      - name: Deploy convert-worker (full, incl. container app)
+        run: |
+          if ! vp run -F @seal/convert-worker deploy; then
+            echo "::error::Container application deploy failed. The /containers/applications API currently rejects API tokens (only OAuth works — cloudflare/workers-sdk limitation). Deploy locally: cd apps/convert-worker && pnpm exec wrangler login && wrangler deploy -e production"
+            exit 1
+          fi
