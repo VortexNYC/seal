@@ -10,6 +10,7 @@ import {
   inArray,
   isNull,
   not,
+  sql,
   type SQL,
 } from "drizzle-orm";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
@@ -475,27 +476,38 @@ app.openapi(statsRouteDef, async (c) => {
     return result[0]?.value ?? 0;
   };
 
-  const total = await countDocuments();
-  const completed = await countDocuments(eq(documents.status, "completed"));
-  const sent = await countDocuments(eq(documents.status, "sent"));
-  const inProgress = await countDocuments(eq(documents.status, "in_progress"));
-  const cancelled = await countDocuments(eq(documents.status, "cancelled"));
-  const declined = await countDocuments(eq(documents.status, "declined"));
-  const expired = await countDocuments(eq(documents.status, "expired"));
-  const draftCount = await countDocuments(eq(documents.status, "draft"));
-  const uploadedCount = await countDocuments(eq(documents.status, "uploaded"));
-
   const now = new Date();
   const monthStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1);
 
-  const createdThisMonth = await countDocuments(
-    gte(documents.createdAt, new Date(monthStart))
-  );
-
-  const completedThisMonth = await countDocuments(
-    eq(documents.status, "completed"),
-    gte(documents.updatedAt, new Date(monthStart))
-  );
+  // Independent counts — run in parallel, not 11 serial D1 round trips.
+  const [
+    total,
+    completed,
+    sent,
+    inProgress,
+    cancelled,
+    declined,
+    expired,
+    draftCount,
+    uploadedCount,
+    createdThisMonth,
+    completedThisMonth,
+  ] = await Promise.all([
+    countDocuments(),
+    countDocuments(eq(documents.status, "completed")),
+    countDocuments(eq(documents.status, "sent")),
+    countDocuments(eq(documents.status, "in_progress")),
+    countDocuments(eq(documents.status, "cancelled")),
+    countDocuments(eq(documents.status, "declined")),
+    countDocuments(eq(documents.status, "expired")),
+    countDocuments(eq(documents.status, "draft")),
+    countDocuments(eq(documents.status, "uploaded")),
+    countDocuments(gte(documents.createdAt, new Date(monthStart))),
+    countDocuments(
+      eq(documents.status, "completed"),
+      gte(documents.updatedAt, new Date(monthStart))
+    ),
+  ]);
 
   const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
@@ -561,41 +573,47 @@ app.openapi(trendsRouteDef, async (c) => {
     dayRanges.push({ day, nextDay });
   }
 
-  const createdPromises = dayRanges.map(({ day, nextDay }) =>
+  // Two grouped reads instead of 2×days queries — trends/?days=90 was
+  // previously 180 D1 reads per request.
+  const startDay = dayRanges[0]?.day ?? now;
+  const dayExpr = sql<string>`date(${documents.createdAt} / 1000, 'unixepoch')`;
+  const completedDayExpr = sql<string>`date(${documents.updatedAt} / 1000, 'unixepoch')`;
+
+  const [createdRows, completedRows] = await Promise.all([
     db
-      .select({ value: count() })
+      .select({ day: dayExpr, value: count() })
       .from(documents)
       .where(
         and(
           eq(documents.organizationId, organizationId),
-          gte(documents.createdAt, day),
-          lt(documents.createdAt, nextDay)
+          gte(documents.createdAt, startDay)
         )
       )
-  );
-
-  const completedPromises = dayRanges.map(({ day, nextDay }) =>
+      .groupBy(dayExpr),
     db
-      .select({ value: count() })
+      .select({ day: completedDayExpr, value: count() })
       .from(documents)
       .where(
         and(
           eq(documents.organizationId, organizationId),
           eq(documents.status, "completed"),
-          gte(documents.updatedAt, day),
-          lt(documents.updatedAt, nextDay)
+          gte(documents.updatedAt, startDay)
         )
       )
-  );
+      .groupBy(completedDayExpr),
+  ]);
 
-  const createdRows = await Promise.all(createdPromises);
-  const completedRows = await Promise.all(completedPromises);
+  const createdByDay = new Map(createdRows.map((r) => [r.day, r.value]));
+  const completedByDay = new Map(completedRows.map((r) => [r.day, r.value]));
 
-  const results = dayRanges.map(({ day }, index) => ({
-    date: day.toISOString().slice(0, 10),
-    created: createdRows[index]?.[0]?.value ?? 0,
-    completed: completedRows[index]?.[0]?.value ?? 0,
-  }));
+  const results = dayRanges.map(({ day }) => {
+    const key = day.toISOString().slice(0, 10);
+    return {
+      date: key,
+      created: createdByDay.get(key) ?? 0,
+      completed: completedByDay.get(key) ?? 0,
+    };
+  });
 
   return c.json(results);
 });

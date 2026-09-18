@@ -69,10 +69,15 @@ export async function loadApiTokenContext<E extends CloudflareBindings>(
   }
 
   const now = new Date();
-  await db
-    .update(apiTokens)
-    .set({ lastUsedAt: now })
-    .where(eq(apiTokens.id, token.id));
+  // lastUsedAt is informational; writing it on every request doubles D1
+  // write volume on the hottest auth path. Refresh at most hourly.
+  const STALE_AFTER_MS = 60 * 60 * 1000;
+  if (!token.lastUsedAt || now.getTime() - token.lastUsedAt.getTime() > STALE_AFTER_MS) {
+    await db
+      .update(apiTokens)
+      .set({ lastUsedAt: now })
+      .where(eq(apiTokens.id, token.id));
+  }
 
   const [userRow, orgRow] = await Promise.all([
     db.select().from(user).where(eq(user.id, token.userId)).limit(1),

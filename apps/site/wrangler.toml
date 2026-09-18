@@ -28,7 +28,9 @@ id = "c3e1eedd1533466b8f589aed4d2e010e"
 binding = "LOADER"
 
 [triggers]
-crons = ["* * * * *"]
+# No cron: EmDash scheduled tasks only matter once the CMS holds content
+# (0 posts/pages/tasks today). Re-add an hourly cron if scheduled
+# publishing or plugin housekeeping becomes real.
 
 [env.production]
 name = "seal-site"
@@ -57,7 +59,7 @@ id = "9f7b0df19b0e409da75d20edf089836c"
 binding = "LOADER"
 
 [env.production.triggers]
-crons = ["* * * * *"]
+# See base [triggers] — no scheduled work exists yet.
 
 [[env.production.routes]]
 pattern = "seal.nyc"

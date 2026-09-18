@@ -2,6 +2,10 @@
 import { Code } from "astro:components";
 import Base from "../layouts/Base.astro";
 import { landing } from "../data/landing";
+
+// Static page — render at build so every landing hit is an asset serve,
+// not a worker invocation (and Shiki runs at build, not in the worker).
+export const prerender = true;
 ---
 
 <Base title={landing.title} description={landing.description}>

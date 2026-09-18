@@ -2,6 +2,8 @@
 import Base from "../layouts/Base.astro";
 import { landing } from "../data/landing";
 
+export const prerender = true;
+
 const ramp = [
   { step: "50", hex: "#FAFAF9" },
   { step: "100", hex: "#F5F5F4" },
