@@ -72,7 +72,10 @@ export async function loadApiTokenContext<E extends CloudflareBindings>(
   // lastUsedAt is informational; writing it on every request doubles D1
   // write volume on the hottest auth path. Refresh at most hourly.
   const STALE_AFTER_MS = 60 * 60 * 1000;
-  if (!token.lastUsedAt || now.getTime() - token.lastUsedAt.getTime() > STALE_AFTER_MS) {
+  if (
+    !token.lastUsedAt ||
+    now.getTime() - token.lastUsedAt.getTime() > STALE_AFTER_MS
+  ) {
     await db
       .update(apiTokens)
       .set({ lastUsedAt: now })
