@@ -2,7 +2,7 @@
 
 How to take a Vortex product from zero to a complete brand system + landing
 page in one pass. Proven on Seal (2026-09) after the Vortex brand package.
-Read across repos — copy the *convention*, never import a shared package.
+Read across repos — copy the _convention_, never import a shared package.
 Each product owns its tokens, mark, and palette; the structure is what
 replicates.
 

@@ -28,7 +28,9 @@
   --card-foreground: oklch(0.138 0.01 65);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.138 0.01 65);
-  --primary: oklch(0.345 0.012 60); /* #44403C — deep taupe (stone-700); the one warm accent */
+  --primary: oklch(
+    0.345 0.012 60
+  ); /* #44403C — deep taupe (stone-700); the one warm accent */
   --primary-foreground: oklch(0.982 0.002 90); /* #FAFAF9 — paper */
   --secondary: oklch(0.962 0.006 80); /* #F5F3F0 — elevated surface */
   --secondary-foreground: oklch(0.138 0.01 65);
@@ -77,7 +79,9 @@
   --info: oklch(0.489 0.22 254); /* #2563EB — per board 02 */
   --info-foreground: oklch(1 0 0);
   --info-surface: oklch(0.96 0.035 255);
-  --expired: oklch(0.449 0.206 22); /* #DC2626 — functional red, same as destructive */
+  --expired: oklch(
+    0.449 0.206 22
+  ); /* #DC2626 — functional red, same as destructive */
   --expired-foreground: oklch(1 0 0);
 
   /* ── Signer color slots (10 recipients) ────────────────────────────────── */
