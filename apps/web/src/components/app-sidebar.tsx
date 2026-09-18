@@ -251,13 +251,11 @@ function buildNavSections({
       visible:
         canView(permissionFlags?.canManageAPIKeys) ||
         canView(permissionFlags?.canManageWebhooks),
-      proGated: true,
     },
     {
       title: "Webhooks",
       url: buildOrganizationPath(slug, "/settings/developer/webhooks"),
       visible: canView(permissionFlags?.canManageWebhooks),
-      proGated: true,
     },
     {
       title: "Documentation",

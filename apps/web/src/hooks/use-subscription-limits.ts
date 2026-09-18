@@ -39,8 +39,8 @@ export function useSubscriptionLimits() {
     // Feature flags
     canCreateTemplates: isPro && features.templates,
     canBrand: isPro && features.branding,
-    canUseAPI: isPro && features.api,
-    canUseWebhooks: isPro && features.webhooks,
+    canUseAPI: features.api,
+    canUseWebhooks: features.webhooks,
     canUseSSO: isEnterprise && features.sso,
     maxSeats: features.maxSeats,
   };

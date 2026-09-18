@@ -17,7 +17,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { FeatureGate } from "@/components/feature-gate";
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
 import { useOrganization } from "@/hooks/use-organization";
@@ -111,12 +110,7 @@ function ApiKeysPage() {
       description="Manage API keys for programmatic access to Seal"
       title="API Keys"
     >
-      <FeatureGate
-        description="Create API keys to integrate Seal with your systems."
-        feature="API access"
-        tier="pro"
-      >
-        <LayerCard>
+      <LayerCard>
           <LayerCard.Secondary>
             <div className="flex items-center justify-between">
               <Text as="h2" variant="heading">
@@ -290,7 +284,6 @@ function ApiKeysPage() {
             </div>
           </Dialog>
         </Dialog.Root>
-      </FeatureGate>
     </PageWrapper>
   );
 }

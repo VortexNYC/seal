@@ -73,15 +73,15 @@ describe("useSubscriptionLimits", () => {
     expect(result.current.tier).toBe("free");
   });
 
-  test("free tier feature flags are all false", () => {
+  test("free tier includes api and webhooks per public pricing", () => {
     mockUseQuery.mockReturnValue({ data: { plan: "free" }, isLoading: false });
 
     const { result } = renderHook(() => useSubscriptionLimits());
 
     expect(result.current.canCreateTemplates).toBe(false);
     expect(result.current.canBrand).toBe(false);
-    expect(result.current.canUseAPI).toBe(false);
-    expect(result.current.canUseWebhooks).toBe(false);
+    expect(result.current.canUseAPI).toBe(true);
+    expect(result.current.canUseWebhooks).toBe(true);
     expect(result.current.canUseSSO).toBe(false);
     expect(result.current.maxSeats).toBe(1);
   });

@@ -8,8 +8,8 @@ export const PLAN_LIMITS = {
     maxSeats: 1,
     templates: false,
     branding: false,
-    api: false,
-    webhooks: false,
+    api: true,
+    webhooks: true,
     sso: false,
   },
   pro: {
