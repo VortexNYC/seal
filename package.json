@@ -24,7 +24,8 @@
     "fix": "vp lint --fix && vp fmt",
     "verify": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run knip",
     "verify:clean": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run knip",
-    "clean": "(cd apps/web && pnpm run clean) && git clean -xdf .cache dist node_modules"
+    "clean": "(cd apps/web && pnpm run clean) && git clean -xdf .cache dist node_modules",
+    "prepare": "vp config --no-agent"
   },
   "devDependencies": {
     "@seal/tsconfig": "workspace:*",
@@ -32,13 +33,9 @@
     "@shadcn/lint": "^0.1.0",
     "knip": "^6.35.1",
     "secretlint": "^13.0.5",
-    "simple-git-hooks": "^2.14.0",
     "tsx": "^4.23.13",
     "typescript": "~7.0.2",
     "vite-plus": "0.3.2"
-  },
-  "simple-git-hooks": {
-    "pre-commit": "pnpm run scan:secrets"
   },
   "packageManager": "pnpm@12.4.2"
 }

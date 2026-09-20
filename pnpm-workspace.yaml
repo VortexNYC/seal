@@ -29,7 +29,6 @@ allowBuilds:
   onnxruntime-node: true
   protobufjs: true
   sharp: true
-  simple-git-hooks: true
   workerd: true
 
 onlyBuiltDependencies:
@@ -41,7 +40,6 @@ onlyBuiltDependencies:
   - onnxruntime-node
   - protobufjs
   - sharp
-  - simple-git-hooks
   - workerd
 
 minimumReleaseAgeExclude:

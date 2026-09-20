@@ -1,0 +1,3 @@
+#!/bin/sh
+vp check
+vp run test

@@ -129,3 +129,4 @@ apps/convert-worker/.wrangler/
 
 # Vendored auth-ui dist is committed, not generated
 !packages/auth-ui/dist/
+.vite-hooks/_/
