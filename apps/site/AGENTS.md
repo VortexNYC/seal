@@ -28,7 +28,7 @@ pnpm run deploy          # CLOUDFLARE_ENV=production astro build && wrangler dep
 pnpm run preview-deploy  # same build, wrangler versions upload --preview-alias
 ```
 
-CI (`vortex-ci`) sets `CLOUDFLARE_ENV=production` in the repo `buildEnv` for the
+CI (`cloudflare-ci`) sets `CLOUDFLARE_ENV=production` in the repo `buildEnv` for the
 same reason.
 
 ## D1 migrations
