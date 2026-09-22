@@ -27,7 +27,7 @@ const uploadResponse = await fetch(
   {
     method: "POST",
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
     },
   }
 );
@@ -39,7 +39,7 @@ const { upload_url } = await uploadResponse.json();
 
 ```bash
 curl -X POST https://api.seal.nyc/api/v1/uploads/generate-url \
-  -H "Authorization: Bearer ak_your_api_key_here"
+  -H "Authorization: Bearer seal_your_api_key_here"
 ```
 
 ### Response
@@ -96,7 +96,7 @@ Create a document record, then add recipients separately via the Recipients API:
 const documentResponse = await fetch("https://api.seal.nyc/api/v1/documents", {
   method: "POST",
   headers: {
-    Authorization: "Bearer ak_your_api_key_here",
+    Authorization: "Bearer seal_your_api_key_here",
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
@@ -116,7 +116,7 @@ console.log("Document created:", document.id);
 
 ```bash
 curl -X POST https://api.seal.nyc/api/v1/documents \
-  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Authorization: Bearer seal_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Service Agreement",
@@ -160,7 +160,7 @@ for (const recipient of recipients) {
     {
       method: "POST",
       headers: {
-        Authorization: "Bearer ak_your_api_key_here",
+        Authorization: "Bearer seal_your_api_key_here",
         "Content-Type": "application/json",
       },
       body: JSON.stringify(recipient),
@@ -173,7 +173,7 @@ for (const recipient of recipients) {
 
 ```bash
 curl -X POST "https://api.seal.nyc/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v" \
-  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Authorization: Bearer seal_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
     "email": "john@example.com",
@@ -183,7 +183,7 @@ curl -X POST "https://api.seal.nyc/api/v1/recipients?document_id=jd7k8l9m0n1p2q3
   }'
 
 curl -X POST "https://api.seal.nyc/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v" \
-  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Authorization: Bearer seal_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
     "email": "jane@example.com",
@@ -205,7 +205,7 @@ const sendResponse = await fetch(
   {
     method: "POST",
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -223,7 +223,7 @@ console.log("Document sent:", result);
 
 ```bash
 curl -X POST "https://api.seal.nyc/api/v1/documents/send?id=jd7k8l9m0n1p2q3r4s5t6u7v" \
-  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Authorization: Bearer seal_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
     "message": "Please review and sign this service agreement at your earliest convenience."
@@ -260,7 +260,7 @@ const statusResponse = await fetch(
   `https://api.seal.nyc/api/v1/documents/get?id=${document.id}`,
   {
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
     },
   }
 );

@@ -17,9 +17,8 @@ An open-source, agent-native e-signature platform. Built and powered by Vortex.
 | **Status** | [seal.nyc/status](https://seal.nyc/status) |
 
 ```bash
-npm install @vortex-api/seal      # TypeScript — client + React + CLI
-pip install vortex-api-seal       # Python
-go get github.com/VortexNYC/seal/packages/sdk-go  # Go
+npm install @vortex-api/seal   # TypeScript — client + React + CLI
+# Python + Go SDKs ship in-repo under packages/sdk-python and packages/sdk-go
 ```
 
 ## Stack
@@ -51,6 +50,8 @@ go get github.com/VortexNYC/seal/packages/sdk-go  # Go
 | `tooling/typescript`     | Shared TypeScript configuration               | TypeScript                      |
 
 ## Development
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full local path.
 
 ```bash
 pnpm install

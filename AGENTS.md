@@ -8,25 +8,24 @@
 
 ## OVERVIEW
 
-Seal is a pnpm + Vite+ (VoidZero) monorepo with a React 19 product app, a blume (Astro) static docs site, a Cloudflare Workers backend, transactional email templates, an embeddable React SDK, and shared design tokens. Auth uses Better-Auth through Vortex Auth (`@vortexnyc/auth`); the product UI uses Tailwind v4 + Shadcn patterns. Product data lives in the Cloudflare Worker API (`apps/api`).
+Seal is a pnpm + Vite+ (VoidZero) monorepo with a React 19 product app, a blume (Astro) static docs site, a marketing site, a Cloudflare Workers backend, transactional email templates, an embeddable React SDK, and shared design tokens. Auth uses Better-Auth through Vortex Auth (`@vortexnyc/auth`); the product UI uses Cloudflare Kumo. Product data lives in the Cloudflare Worker API (`apps/api`).
 
 ## STRUCTURE
 
 ```text
 seal/
-├── apps/               # web, docs, api, mcp-worker, anydoc-worker, convert-worker
-├── packages/           # transactional, react-sdk, tokens
+├── apps/               # web, docs, site, api, mcp-worker, anydoc-worker, convert-worker
+├── packages/           # sdk, transactional, tokens, internal-auth
 ├── tooling/            # shared TypeScript config
-└── docs/               # planning, architecture, design notes (mostly archival)
+└── docs/               # ADRs, brand bootstrap, active specs only
 ```
 
 ## WHERE TO LOOK
 
 | Task                   | Location                                                       | Notes                                           |
 | ---------------------- | -------------------------------------------------------------- | ----------------------------------------------- |
-| Architecture overview  | `docs/archive/root/DOCUMENTATION_INDEX.md`                     | Current index lives under `archive/root`        |
-| Permissions & roles    | `docs/archive/root/ROLES_AND_PERMISSIONS.md`                   | Historical reference; verify live auth code too |
-| Cloudflare Worker API  | `apps/api/src/`                                                | Hono + Drizzle + wrangler backend                 |
+| Architecture overview  | `README.md`, `apps/api/src/`, `docs/decisions/`                | Live stack only                                 |
+| Cloudflare Worker API  | `apps/api/src/`                                                | Hono + Drizzle + wrangler backend               |
 | REST API routes        | `apps/api/src/api/`                                            | Public + internal API routes                      |
 | Product web routing    | `apps/web/src/routes/`                                         | TanStack file-based routes                      |
 | Product web entry      | `apps/web/src/main.tsx`                                        | Better-Auth + TanStack Query + Router setup     |
@@ -66,7 +65,7 @@ seal/
 
 - Large single-file route components exist in `apps/web/src/routes/` (avoid expanding unless refactoring).
 - MCP server returns text payloads via tools/resources and logs to stderr only.
-- Product/planning docs in `docs/` are mostly archival; published developer docs live in `apps/docs/docs/`.
+- Product ADRs / brand / active specs live in `docs/`; published developer docs live in `apps/docs/docs/`.
 - The docs site is a `blume` (Astro) static build with MDX content modules and an OpenAPI reference at `/reference`.
 
 ## COMMANDS

@@ -10,7 +10,7 @@ import {
   AuthProvider,
   OrganizationProfile,
   useAuth,
-} from "@vortexnyc/better-auth-ui";
+} from "@vortex-api/better-auth-ui";
 import { useEffect, useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";

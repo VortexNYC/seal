@@ -3,7 +3,7 @@
  * Production smoke test for the Seal API loop.
  *
  * Usage:
- *   SEAL_API_KEY=seal_tk_... node scripts/smoke-prod.mjs
+ *   SEAL_API_KEY=seal_... node scripts/smoke-prod.mjs
  *   SEAL_API_KEY=... node scripts/smoke-prod.mjs --api https://api.seal.nyc \
  *     --org seal-e2e-b --signer smoke+signer@example.com
  *
@@ -28,7 +28,7 @@ const SIGNER = flag("signer", "smoke+signer@seal.nyc");
 const KEY = process.env.SEAL_API_KEY;
 
 if (!KEY) {
-  console.error("SEAL_API_KEY is required (Bearer token, seal_tk_...)");
+  console.error("SEAL_API_KEY is required (Bearer token, seal_...)");
   process.exit(1);
 }
 
@@ -198,8 +198,7 @@ async function main() {
       `/api/v1/recipients?document_id=${encodeURIComponent(docId)}`
     );
     const rec = pickArray(data).find((r) => r?.id === recipientId) ?? data;
-    signingToken =
-      rec?.signing_token ?? rec?.signingToken ?? rec?.sign_token;
+    signingToken = rec?.signing_token ?? rec?.signingToken ?? rec?.sign_token;
     if (!signingToken && rec?.signing_url) {
       const m = /\/sign\/([A-Za-z0-9_-]+)/.exec(rec.signing_url);
       signingToken = m?.[1];
@@ -258,13 +257,18 @@ async function main() {
       const data = await res.json().catch(() => ({}));
       res.ok && data.success
         ? pass(`public submit ${submit.status}`)
-        : fail(`public submit ${submit.status}`, `HTTP ${res.status} ${JSON.stringify(data)}`);
+        : fail(
+            `public submit ${submit.status}`,
+            `HTTP ${res.status} ${JSON.stringify(data)}`
+          );
     }
     {
       const { data } = await api(
         `/api/v1/documents?id=${encodeURIComponent(docId)}`
       );
-      const after = data?.id ? data : pickArray(data).find((d) => d?.id === docId);
+      const after = data?.id
+        ? data
+        : pickArray(data).find((d) => d?.id === docId);
       after?.status === "completed"
         ? pass("document completed")
         : fail("document completed", `status=${after?.status}`);
