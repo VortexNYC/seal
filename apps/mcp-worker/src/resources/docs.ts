@@ -29,6 +29,7 @@ Seal is an intelligent document platform for signing, payment collection, and wo
 
 - **AI field detection**: Automatically detect where signature fields belong on uploaded PDFs.
 - **Agent field placement**: seal_create_document_field, seal_place_field_candidates, seal_get_field_suggestions / seal_apply_field_suggestions, and seal_apply_document_bindings let agents place and fill fields without the web UI.
+- **Agent document power**: seal_get_document_annotations / generate, seal_preview_document (markdown|structured|pdf|original), seal_split_document, seal_annotate_document_pdf (highlight/text/rect/redact).
 - **Sequential signing**: Route a document through signers in a specific order before the next group receives it.
 - **Payment collection**: Collect payments as part of the signing flow through Vortex Payments.
 - **ESIGN compliance**: Full U.S. ESIGN Act compliance with consent capture and audit trail.

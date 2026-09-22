@@ -48,6 +48,8 @@ import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import { recordUsageEvent } from "../../platform/usage-events.js";
 import { emitWebhookEvent } from "../../platform/webhook-events.js";
 import { sendDocumentForSigning } from "../document-send.js";
+import documentAgentRoutes from "./document-agent.js";
+import { materializeAnnotationsFromParsedText } from "./document-agent.js";
 import { createDownloadToken, verifyDownloadToken } from "./download-token.js";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -516,6 +518,10 @@ app.post("/", async (c) => {
   }
 
   const parsedDocument = await parseDocumentFromStorage(c.env, storage_id);
+  const originalStorageKey =
+    object.customMetadata?.originalKey ?? null;
+  const originalContentType =
+    object.customMetadata?.originalContentType ?? null;
   const db = createD1(c.env.D1);
   const docId = crypto.randomUUID();
   const inserted = await db
@@ -550,6 +556,8 @@ app.post("/", async (c) => {
       fieldCandidates: parsedDocument?.fieldCandidates.length
         ? JSON.stringify(parsedDocument.fieldCandidates)
         : null,
+      originalStorageKey,
+      originalContentType,
       deadline: parseDeadline(deadline),
     })
     .returning({
@@ -580,6 +588,13 @@ app.post("/", async (c) => {
       documentId: docId,
       organizationId,
       candidatesJson: JSON.stringify(parsedDocument.fieldCandidates),
+    });
+  }
+  if (parsedDocument?.markdown) {
+    await materializeAnnotationsFromParsedText(db, {
+      documentId: docId,
+      organizationId,
+      parsedText: parsedDocument.markdown,
     });
   }
 
@@ -2167,5 +2182,7 @@ app.post("/field-suggestions/apply", async (c) => {
   return c.json(result);
 });
 
+
+app.route("/", documentAgentRoutes);
 
 export default app;

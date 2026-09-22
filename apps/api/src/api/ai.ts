@@ -9,6 +9,7 @@ import {
   member,
   organization,
 } from "../global/schema.js";
+import { extractAnnotationsFromMarkdown } from "../platform/document-annotations.js";
 import {
   applySuggestionItems,
   materializeSuggestionsFromCandidates,
@@ -292,7 +293,59 @@ app.openapi(getAnnotationsRoute, async (c) => {
 
   const row = rows[0];
   if (!row) {
-    return c.json(null, 200);
+    const candidateRows = await db
+      .select({
+        id: documents.id,
+        parsedText: documents.parsedText,
+      })
+      .from(documents)
+      .where(
+        and(
+          eq(documents.publicId, publicId),
+          eq(documents.organizationId, organizationId)
+        )
+      )
+      .limit(1);
+    const candidateDoc = candidateRows[0];
+    if (!candidateDoc?.parsedText) {
+      return c.json(null, 200);
+    }
+    const items = extractAnnotationsFromMarkdown(candidateDoc.parsedText);
+    if (items.length === 0) {
+      return c.json(null, 200);
+    }
+    const id = crypto.randomUUID();
+    const suggestionPublicId = crypto.randomUUID();
+    const now = new Date();
+    await db.insert(aiDocumentAnnotations).values({
+      id,
+      publicId: suggestionPublicId,
+      documentId: candidateDoc.id,
+      organizationId,
+      annotations: JSON.stringify(items),
+      modelUsed: "anydoc-heuristics",
+      tokensUsed: 0,
+      processingTimeMs: 0,
+      status: "active",
+      createdAt: now,
+      updatedAt: now,
+    });
+    return c.json(
+      {
+        id,
+        publicId: suggestionPublicId,
+        documentId: candidateDoc.id,
+        organizationId,
+        annotations: items,
+        modelUsed: "anydoc-heuristics",
+        tokensUsed: 0,
+        processingTimeMs: 0,
+        status: "active",
+        createdAt: now.getTime(),
+        updatedAt: now.getTime(),
+      },
+      200
+    );
   }
 
   return c.json(
