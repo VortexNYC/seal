@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 /**
  * Email verification landing — linked from signup / change-email messages (?token=…).
  */
-import { AuthProvider, VerifyEmailForm } from "@vortexnyc/better-auth-ui";
+import { AuthProvider, VerifyEmailForm } from "@vortex-api/better-auth-ui";
 
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";

@@ -16,7 +16,7 @@ import { ArrowsLeftRight, FloppyDisk, Shield } from "@phosphor-icons/react";
  */
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AuthProvider, useAuth } from "@vortexnyc/better-auth-ui";
+import { AuthProvider, useAuth } from "@vortex-api/better-auth-ui";
 import { useEffect, useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";

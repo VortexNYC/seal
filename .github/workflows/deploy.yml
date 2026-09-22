@@ -9,7 +9,6 @@ concurrency:
 
 permissions:
   contents: write
-  packages: read
   actions: write
 
 jobs:
@@ -25,7 +24,6 @@ jobs:
     timeout-minutes: 10
     environment: production
     env:
-      NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
       INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY || secrets.SEAL_INTERNAL_API_KEY }}
@@ -41,8 +39,6 @@ jobs:
         with:
           node-version: "24"
           cache: true
-          registry-url: https://npm.pkg.github.com
-          scope: "@vortexnyc"
           run-install: false
 
       - name: Install
@@ -92,7 +88,6 @@ jobs:
     timeout-minutes: 30
     environment: production
     env:
-      NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
       VITE_API_URL: "https://api.seal.nyc"
@@ -107,8 +102,6 @@ jobs:
         with:
           node-version: "24"
           cache: true
-          registry-url: https://npm.pkg.github.com
-          scope: "@vortexnyc"
           run-install: false
 
       - name: Install
@@ -180,7 +173,6 @@ jobs:
     timeout-minutes: 20
     environment: production
     env:
-      NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
     steps:
@@ -211,8 +203,6 @@ jobs:
         with:
           node-version: "24"
           cache: true
-          registry-url: https://npm.pkg.github.com
-          scope: "@vortexnyc"
           run-install: false
 
       - name: Install
