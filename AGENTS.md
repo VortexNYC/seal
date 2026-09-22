@@ -94,6 +94,23 @@ pnpm --dir apps/docs run build
 `pnpm run dev` starts the main product stack: `@seal/api`, `@seal/web`, and `@seal/docs`.
 Use targeted `pnpm --filter ... run dev` commands for other workspaces; `@seal/transactional` defaults to port `3001`.
 
+## CI/CD — owned by cloudflare-ci
+
+Deploys run through the shared `cloudflare-ci` worker (`~/Projects/cloudflare-ci`),
+triggered by pushes to the `vortex` Artifacts namespace — not GitHub Actions.
+Pipeline: `deps → build → preview (branches) / migrate+deploy (main)`.
+
+- `pnpm run build:all` must emit `dist/` **and** `.wrangler/deploy/config.json`
+  per app (Astro/Vite wrangler redirect) — CI snapshots carry both forward;
+  preview/deploy only `wrangler versions upload`/`deploy`, never rebuild.
+- Checks/tests gate locally via the `vp` pre-push hook — they do not run in
+  CI containers. Keep `VP_GIT_HOOKS=0` behavior out of repo code.
+- If CI behavior is wrong (timeouts, caching, capacity, deploy shape), fix it
+  in `cloudflare-ci` — do not add workflow files, hook packages, or config
+  workarounds here.
+- `.github/workflows/` is legacy manual-dispatch only; the Artifacts path is
+  the real pipeline.
+
 ## NOTES
 
 - LSP codemap unavailable in this environment.
