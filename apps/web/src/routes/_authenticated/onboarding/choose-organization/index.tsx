@@ -79,18 +79,21 @@ function RouteComponent() {
               : undefined
           }
           onCreated={(slug) => {
-            if (next === "developer" && slug) {
-              void betterAuthClient?.organization
-                .setActive({ organizationSlug: slug })
-                .then(() => {
-                  void navigate({
-                    to: orgDestination(slug),
-                    replace: true,
-                  });
-                });
+            if (!slug) {
+              void navigate({ to: "/app", replace: true });
               return;
             }
-            void navigate({ to: "/app", replace: true });
+            void betterAuthClient?.organization
+              .setActive({ organizationSlug: slug })
+              .then(() => {
+                void navigate({
+                  to: orgDestination(slug),
+                  replace: true,
+                });
+              })
+              .catch(() => {
+                void navigate({ to: "/app", replace: true });
+              });
           }}
         />
       </div>
@@ -179,6 +182,23 @@ function OrganizationOption({
   );
 }
 
+function slugifyWorkspaceName(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+}
+
+function readCreatedSlug(data: unknown): string | undefined {
+  if (typeof data !== "object" || data === null || !("slug" in data)) {
+    return undefined;
+  }
+  const slug = Reflect.get(data, "slug");
+  return typeof slug === "string" && slug.length > 0 ? slug : undefined;
+}
+
 function CreateOrganizationCard({
   hasOrganizations,
   onCancel,
@@ -190,6 +210,7 @@ function CreateOrganizationCard({
 }) {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
+  const [slugTouched, setSlugTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const create = useMutation({
     mutationFn: async (input: { name: string; slug: string }) => {
@@ -208,20 +229,18 @@ function CreateOrganizationCard({
   });
 
   const handleCreate = () => {
-    if (!name.trim() || !slug.trim()) {
-      setError("Name and slug are required");
+    const trimmedName = name.trim();
+    const resolvedSlug = slugifyWorkspaceName(slug || trimmedName);
+    if (!trimmedName || !resolvedSlug) {
+      setError("Workspace name is required");
       return;
     }
     setError(null);
     create.mutate(
-      { name: name.trim(), slug: slug.trim() },
+      { name: trimmedName, slug: resolvedSlug },
       {
         onSuccess: (data) => {
-          onCreated(
-            typeof data === "object" && data !== null && "slug" in data
-              ? (data.slug as string)
-              : undefined
-          );
+          onCreated(readCreatedSlug(data) ?? resolvedSlug);
         },
         onError: (err) => {
           setError(
@@ -232,29 +251,39 @@ function CreateOrganizationCard({
     );
   };
 
-  const canCreate = name.trim().length > 0 && slug.trim().length > 0;
+  const canCreate =
+    name.trim().length > 0 && slugifyWorkspaceName(slug || name).length > 0;
 
   return (
     <LayerCard className="w-full">
       <LayerCard.Primary className="text-center">
         <Text as="h2" size="lg" variant="heading">
-          Create workspace
+          Create your workspace
+        </Text>
+        <Text as="p" size="sm" variant="secondary">
+          One name. Then upload a PDF and send it for signature.
         </Text>
       </LayerCard.Primary>
       <LayerCard.Primary className="space-y-4">
         <Input
           id="org-name"
-          label="Name"
+          label="Workspace name"
           onChange={(event) => {
-            setName(event.target.value);
+            const nextName = event.target.value;
+            setName(nextName);
+            if (!slugTouched) {
+              setSlug(slugifyWorkspaceName(nextName));
+            }
           }}
+          placeholder="Acme"
           value={name}
         />
         <Input
           id="org-slug"
-          label="Slug"
+          label="URL slug"
           onChange={(event) => {
-            setSlug(event.target.value);
+            setSlugTouched(true);
+            setSlug(slugifyWorkspaceName(event.target.value));
           }}
           value={slug}
         />
@@ -275,7 +304,7 @@ function CreateOrganizationCard({
             type="button"
             variant="primary"
           >
-            {create.isPending ? "Creating..." : "Create workspace"}
+            {create.isPending ? "Creating..." : "Continue"}
           </Button>
         </div>
       </LayerCard.Primary>

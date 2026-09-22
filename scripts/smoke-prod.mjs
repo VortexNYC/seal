@@ -3,7 +3,7 @@
  * Production smoke test for the Seal API loop.
  *
  * Usage:
- *   SEAL_API_KEY=seal_tk_... node scripts/smoke-prod.mjs
+ *   SEAL_API_KEY=seal_... node scripts/smoke-prod.mjs
  *   SEAL_API_KEY=... node scripts/smoke-prod.mjs --api https://api.seal.nyc \
  *     --org seal-e2e-b --signer smoke+signer@example.com
  *
@@ -28,7 +28,7 @@ const SIGNER = flag("signer", "smoke+signer@seal.nyc");
 const KEY = process.env.SEAL_API_KEY;
 
 if (!KEY) {
-  console.error("SEAL_API_KEY is required (Bearer token, seal_tk_...)");
+  console.error("SEAL_API_KEY is required (Bearer token, seal_...)");
   process.exit(1);
 }
 
