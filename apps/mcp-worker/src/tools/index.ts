@@ -9,9 +9,11 @@ import { registerDocumentExtraTools } from "./document_extra";
 import { registerDocumentTools } from "./documents";
 import { registerMemberTools } from "./members";
 import { registerRecipientTools } from "./recipients";
+import { registerSearchTools } from "./search";
 import { registerSettingsTools } from "./settings";
 import { registerSignatureTools } from "./signatures";
 import { registerTemplateTools } from "./templates";
+import { registerTokenTools } from "./tokens";
 import { registerUploadTools } from "./uploads";
 import { registerWebhookTools } from "./webhooks";
 
@@ -30,9 +32,11 @@ export function registerAllTools(
   registerDocumentExtraTools(server, client);
   registerMemberTools(server, client);
   registerRecipientTools(server, client);
+  registerSearchTools(server, client);
   registerSettingsTools(server, client);
   registerSignatureTools(server, client);
   registerTemplateTools(server, client);
+  registerTokenTools(server, client);
   registerUploadTools(server, client);
   registerWebhookTools(server, client);
 }
