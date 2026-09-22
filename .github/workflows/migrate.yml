@@ -24,7 +24,6 @@ jobs:
     runs-on: blacksmith-4vcpu-ubuntu-2204
     timeout-minutes: 10
     environment: production
-    env:
     outputs:
       d1-stamp: ${{ steps.stamp.outputs.sha }}
     steps:
