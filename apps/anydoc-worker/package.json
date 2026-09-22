@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@firecrawl/anydoc-wasm": "^0.2.4",
-    "@firecrawl/pdf-inspector-wasm": "1.17.0",
+    "@firecrawl/pdf-inspector-wasm": "1.19.0",
     "@seal/internal-auth": "workspace:*",
     "hono": "^4.13.8",
     "zod": "catalog:"

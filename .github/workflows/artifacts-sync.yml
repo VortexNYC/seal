@@ -31,8 +31,15 @@ jobs:
           fetch-depth: 0
 
       - name: Push to Artifacts
+        if: ${{ env.ARTIFACTS_TOKEN != '' }}
         run: |
           set -euo pipefail
           REMOTE="https://${ARTIFACTS_ACCOUNT_ID}.artifacts.cloudflare.net/git/vortex/seal.git"
           # Artifacts is a mirror: force-push so rebased/rewritten branches still sync.
           git -c http.extraHeader="Authorization: Bearer ${ARTIFACTS_TOKEN}" push --force "$REMOTE" "HEAD:refs/heads/${GITHUB_REF_NAME}"
+
+      - name: Skip Artifacts mirror
+        if: ${{ env.ARTIFACTS_TOKEN == '' }}
+        run: |
+          echo "ARTIFACTS_PUSH_TOKEN unset — skipping mirror (Dependabot / no-secret contexts)."
+          echo "Required check still reports success so PRs are not blocked on sync alone."
