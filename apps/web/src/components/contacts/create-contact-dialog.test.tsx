@@ -1,6 +1,6 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import type { ApiContact } from "@/lib/api-client";
 
@@ -56,6 +56,12 @@ describe("CreateContactDialog", () => {
     cleanup();
     mockCreateContact.mockReset();
     mockGetContactByEmail.mockReset();
+  });
+
+  // Default: no duplicate — never leave getContactByEmail as an unset mock
+  // that returns undefined (await undefined) or hits the network.
+  beforeEach(() => {
+    mockGetContactByEmail.mockResolvedValue(null);
   });
 
   describe("rendering", () => {

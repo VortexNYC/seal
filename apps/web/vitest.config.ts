@@ -30,6 +30,11 @@ export default defineConfig({
     setupFiles: ["./vitest.setup.ts"],
     include: ["src/**/*.test.{ts,tsx}", "e2e/**/*.test.ts"],
     globals: false,
+    // Safety net only — durable fix is the fetch stub + per-test API mocks.
+    // A hung open handle must fail the file in seconds, not ~17min of TCP wait.
+    testTimeout: 15_000,
+    hookTimeout: 10_000,
+    teardownTimeout: 5_000,
     server: {
       deps: {
         inline: ["zod"],

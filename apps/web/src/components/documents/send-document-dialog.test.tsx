@@ -1,13 +1,13 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { type Id, parseId } from "@/lib/ids";
 
-// Mock TanStack Query — must be hoisted before importing the component
-const mockUseMutation = vi.fn();
+const mockSendDocument = vi.hoisted(() => vi.fn());
 
-vi.mock("@tanstack/react-query", () => ({
-  useMutation: () => ({ mutateAsync: mockUseMutation }),
+vi.mock("@/lib/api-client", () => ({
+  sendDocument: mockSendDocument,
 }));
 
 vi.mock("@/lib/toast", () => ({
@@ -20,6 +20,15 @@ const FAKE_FIELD_ID_1 = parseId("signature_fields", "field_1");
 const FAKE_FIELD_ID_2 = parseId("signature_fields", "field_2");
 const FAKE_RECIPIENT_ID = parseId("document_recipients", "fake_recip");
 const FAKE_RECIPIENT_ID_2 = parseId("document_recipients", "fake_recip_2");
+
+function createQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+}
 
 interface BuildPropsOptions {
   open?: boolean;
@@ -72,62 +81,71 @@ function buildProps(overrides: BuildPropsOptions = {}) {
   };
 }
 
+function renderDialog(overrides: BuildPropsOptions = {}) {
+  const props = buildProps(overrides);
+  render(
+    <QueryClientProvider client={createQueryClient()}>
+      <SendDocumentDialog {...props} />
+    </QueryClientProvider>
+  );
+  return props;
+}
+
 describe("SendDocumentDialog", () => {
   afterEach(cleanup);
 
   beforeEach(() => {
-    mockUseMutation.mockReset();
+    mockSendDocument.mockReset();
+    mockSendDocument.mockResolvedValue(undefined);
   });
 
   test("does not render dialog content when open is false", () => {
-    render(<SendDocumentDialog {...buildProps({ open: false })} />);
+    renderDialog({ open: false });
     expect(screen.queryByText("Send Document")).not.toBeInTheDocument();
   });
 
   test("renders dialog title 'Send Document' when open is true", () => {
-    render(<SendDocumentDialog {...buildProps({ open: true })} />);
-    // The title is an <h2> with data-slot="dialog-title"; use heading role to distinguish
-    // it from the "Send Document" button text also present in the DOM.
+    renderDialog({ open: true });
     expect(
       screen.getByRole("heading", { name: "Send Document" })
     ).toBeInTheDocument();
   });
 
   test("shows error when signatureFieldCount is 0", () => {
-    render(<SendDocumentDialog {...buildProps({ signatureFieldCount: 0 })} />);
+    renderDialog({ signatureFieldCount: 0 });
     expect(
       screen.getByText("Cannot send document without signature fields.")
     ).toBeInTheDocument();
   });
 
   test("does not show signature field error when signatureFieldCount > 0", () => {
-    render(<SendDocumentDialog {...buildProps({ signatureFieldCount: 1 })} />);
+    renderDialog({ signatureFieldCount: 1 });
     expect(
       screen.queryByText("Cannot send document without signature fields.")
     ).not.toBeInTheDocument();
   });
 
   test("Send button text shows 'Send Document'", () => {
-    render(<SendDocumentDialog {...buildProps()} />);
+    renderDialog();
     expect(
       screen.getByRole("button", { name: /Send Document/i })
     ).toBeInTheDocument();
   });
 
   test("Send button is disabled when signatureFieldCount is 0", () => {
-    render(<SendDocumentDialog {...buildProps({ signatureFieldCount: 0 })} />);
+    renderDialog({ signatureFieldCount: 0 });
     const button = screen.getByRole("button", { name: /Send Document/i });
     expect(button).toBeDisabled();
   });
 
   test("Send button is enabled when signatureFieldCount > 0", () => {
-    render(<SendDocumentDialog {...buildProps({ signatureFieldCount: 2 })} />);
+    renderDialog({ signatureFieldCount: 2 });
     const button = screen.getByRole("button", { name: /Send Document/i });
     expect(button).not.toBeDisabled();
   });
 
   test("shows info box about email links when signatureFieldCount > 0", () => {
-    render(<SendDocumentDialog {...buildProps({ signatureFieldCount: 1 })} />);
+    renderDialog({ signatureFieldCount: 1 });
     expect(
       screen.getByText(
         /Recipients will receive an email with a link to sign the document/i
@@ -136,7 +154,7 @@ describe("SendDocumentDialog", () => {
   });
 
   test("does not show email info box when signatureFieldCount is 0", () => {
-    render(<SendDocumentDialog {...buildProps({ signatureFieldCount: 0 })} />);
+    renderDialog({ signatureFieldCount: 0 });
     expect(
       screen.queryByText(
         /Recipients will receive an email with a link to sign the document/i
@@ -145,69 +163,56 @@ describe("SendDocumentDialog", () => {
   });
 
   test("shows payment summary when paymentConfigs has items", () => {
-    render(
-      <SendDocumentDialog
-        {...buildProps({
-          paymentConfigs: [
-            {
-              fieldId: FAKE_FIELD_ID_1,
-              currency: "usd",
-              totalAmountCents: 5000,
-              paymentType: "one-time",
-            },
-          ],
-        })}
-      />
-    );
+    renderDialog({
+      paymentConfigs: [
+        {
+          fieldId: FAKE_FIELD_ID_1,
+          currency: "usd",
+          totalAmountCents: 5000,
+          paymentType: "one-time",
+        },
+      ],
+    });
     expect(screen.getByText("Payment will be included")).toBeInTheDocument();
   });
 
   test("shows correct singular payment text for a single payment config", () => {
-    render(
-      <SendDocumentDialog
-        {...buildProps({
-          paymentConfigs: [
-            {
-              fieldId: FAKE_FIELD_ID_1,
-              currency: "usd",
-              totalAmountCents: 10000,
-              paymentType: "one-time",
-            },
-          ],
-        })}
-      />
-    );
+    renderDialog({
+      paymentConfigs: [
+        {
+          fieldId: FAKE_FIELD_ID_1,
+          currency: "usd",
+          totalAmountCents: 10000,
+          paymentType: "one-time",
+        },
+      ],
+    });
     expect(screen.getByText("Payment will be included")).toBeInTheDocument();
-    // $100.00 USD formatted
     expect(screen.getByText("$100.00 USD")).toBeInTheDocument();
   });
 
   test("shows correct plural payment text for multiple payment configs", () => {
-    render(
-      <SendDocumentDialog
-        {...buildProps({
-          paymentConfigs: [
-            {
-              fieldId: FAKE_FIELD_ID_1,
-              currency: "usd",
-              totalAmountCents: 5000,
-              paymentType: "one-time",
-            },
-            {
-              fieldId: FAKE_FIELD_ID_2,
-              currency: "usd",
-              totalAmountCents: 2500,
-              paymentType: "one-time",
-            },
-          ],
-        })}
-      />
-    );
+    renderDialog({
+      paymentConfigs: [
+        {
+          fieldId: FAKE_FIELD_ID_1,
+          currency: "usd",
+          totalAmountCents: 5000,
+          paymentType: "one-time",
+        },
+        {
+          fieldId: FAKE_FIELD_ID_2,
+          currency: "usd",
+          totalAmountCents: 2500,
+          paymentType: "one-time",
+        },
+      ],
+    });
     expect(screen.getByText("2 payments will be included")).toBeInTheDocument();
   });
 
   test("does not show payment summary when paymentConfigs is empty", () => {
-    render(<SendDocumentDialog {...buildProps()} />);
+    renderDialog();
     expect(screen.queryByText(/payment.*included/i)).not.toBeInTheDocument();
   });
 
@@ -231,11 +236,9 @@ describe("SendDocumentDialog", () => {
       },
     ];
 
-    render(<SendDocumentDialog {...buildProps({ recipients })} />);
+    renderDialog({ recipients });
 
-    // Pending recipient should appear in the recipients list
     expect(screen.getByText("Pending User")).toBeInTheDocument();
-    // Signed recipient should NOT appear
     expect(screen.queryByText("Signed User")).not.toBeInTheDocument();
   });
 
@@ -259,7 +262,7 @@ describe("SendDocumentDialog", () => {
       },
     ];
 
-    render(<SendDocumentDialog {...buildProps({ recipients })} />);
+    renderDialog({ recipients });
 
     expect(screen.getByText("Pending User")).toBeInTheDocument();
     expect(screen.queryByText("Approved User")).not.toBeInTheDocument();
@@ -285,7 +288,7 @@ describe("SendDocumentDialog", () => {
       },
     ];
 
-    render(<SendDocumentDialog {...buildProps({ recipients })} />);
+    renderDialog({ recipients });
 
     expect(screen.getByText("Pending User")).toBeInTheDocument();
     expect(screen.queryByText("Declined User")).not.toBeInTheDocument();
@@ -303,12 +306,12 @@ describe("SendDocumentDialog", () => {
       },
     ];
 
-    render(<SendDocumentDialog {...buildProps({ recipients })} />);
+    renderDialog({ recipients });
     expect(screen.getByText("Viewed User")).toBeInTheDocument();
   });
 
   test("shows the document name in the description", () => {
-    render(<SendDocumentDialog {...buildProps({ open: true })} />);
+    renderDialog({ open: true });
     expect(screen.getByText(/"Test Document"/)).toBeInTheDocument();
   });
 
@@ -330,23 +333,22 @@ describe("SendDocumentDialog", () => {
       },
     ];
 
-    render(<SendDocumentDialog {...buildProps({ recipients })} />);
-    // Only 1 pending recipient — description should say "1 recipient"
+    renderDialog({ recipients });
     expect(screen.getByText(/1 recipient/i)).toBeInTheDocument();
   });
 
   test("shows 'No expiration' default in expiration dropdown", () => {
-    render(<SendDocumentDialog {...buildProps()} />);
+    renderDialog();
     expect(screen.getByText("No expiration")).toBeInTheDocument();
   });
 
   test("shows Cancel button in footer", () => {
-    render(<SendDocumentDialog {...buildProps()} />);
+    renderDialog();
     expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
   });
 
   test("Cancel button is not disabled by default", () => {
-    render(<SendDocumentDialog {...buildProps()} />);
+    renderDialog();
     expect(screen.getByRole("button", { name: "Cancel" })).not.toBeDisabled();
   });
 });
