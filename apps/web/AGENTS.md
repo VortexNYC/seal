@@ -101,7 +101,7 @@ into the active workspace slug (does not re-check auth).
 | `/{slug}/home`, `/documents`, `/settings`, …              | **Seal** product                            | `buildOrganizationPath` / `$slug` layout |
 | `/sign/$token`                                            | **Seal** (public)                           | Outside slug; recipient token flow       |
 | `/onboarding`, `/choose-organization`                     | Suite / Core chooser                        | Slug guard skips / redirects             |
-| `useCurrentUser`                                          | Thin Clerk-shaped adapter over `useAppUser` | Prefer `useAppUser` on new code          |
+| `useCurrentUser`                                          | Session adapter over Better Auth          | Prefer `useAppUser` on new code          |
 | `activeOrganizationId` + `activeVortexAuthOrganizationId` | Bridge until one canonical pointer          | Do not add a third                       |
 
 `EnforceOrganization` is gone — do not revive a parallel auth gate.
