@@ -1319,3 +1319,35 @@ export const importJobs = sqliteTable(
     index("importJobs_status_idx").on(table.status),
   ]
 );
+
+// -------------------------------------------------------------------------
+// Usage metering (SEA-10)
+// -------------------------------------------------------------------------
+
+export const usageEvents = sqliteTable(
+  "usage_events",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    eventType: text("event_type").notNull(),
+    quantity: integer("quantity").notNull().default(1),
+    period: text("period").notNull(),
+    metadata: text("metadata"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+  },
+  (table) => [
+    index("usageEvents_organizationId_idx").on(table.organizationId),
+    index("usageEvents_organizationPeriod_idx").on(
+      table.organizationId,
+      table.period
+    ),
+    index("usageEvents_organizationEventType_idx").on(
+      table.organizationId,
+      table.eventType
+    ),
+  ]
+);

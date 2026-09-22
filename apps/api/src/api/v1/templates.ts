@@ -25,6 +25,10 @@ import {
   getAuditRequestMeta,
   writeAuditLog,
 } from "../../platform/audit-log.js";
+import {
+  mergeFieldProperties,
+  parseFieldProperties,
+} from "../../platform/field-properties.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 
 const app = new OpenAPIHono<{
@@ -60,37 +64,14 @@ type ApiTemplateField = {
     placeholder?: string;
     default_value?: string;
     options?: string[];
+    binding_key?: string;
   };
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 function parseProperties(
   value: string | null
 ): ApiTemplateField["properties"] | undefined {
-  if (!value) return undefined;
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    if (!isRecord(parsed)) return undefined;
-    const properties: ApiTemplateField["properties"] = {};
-    if (typeof parsed.placeholder === "string") {
-      properties.placeholder = parsed.placeholder;
-    }
-    if (typeof parsed.default_value === "string") {
-      properties.default_value = parsed.default_value;
-    }
-    if (
-      Array.isArray(parsed.options) &&
-      parsed.options.every((o) => typeof o === "string")
-    ) {
-      properties.options = parsed.options;
-    }
-    return Object.keys(properties).length > 0 ? properties : undefined;
-  } catch {
-    return undefined;
-  }
+  return parseFieldProperties(value);
 }
 
 function toApiTemplate(row: {
@@ -368,6 +349,114 @@ app.get("/fields", async (c) => {
     .where(eq(templateFields.templateId, id));
 
   return c.json({ fields: fieldRows.map(toApiTemplateField) });
+});
+
+const updateTemplateFieldSchema = z.object({
+  template_id: z.string().min(1),
+  field_id: z.string().min(1),
+  properties: z
+    .object({
+      placeholder: z.string().optional(),
+      default_value: z.string().optional(),
+      options: z.array(z.string()).optional(),
+      binding_key: z.string().optional(),
+    })
+    .optional(),
+  label: z.string().min(1).optional(),
+  is_required: z.boolean().optional(),
+});
+
+app.put("/fields/update", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "templates:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const rawBody: unknown = await c.req.json();
+  const parsed = updateTemplateFieldSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return c.json({ error: "validation_error" }, 400);
+  }
+
+  const { template_id, field_id, properties, label, is_required } = parsed.data;
+  const db = createD1(c.env.D1);
+
+  const templateRows = await db
+    .select({ id: templates.id })
+    .from(templates)
+    .where(
+      and(
+        eq(templates.id, template_id),
+        eq(templates.organizationId, organizationId),
+        ne(templates.status, "deleted")
+      )
+    )
+    .limit(1);
+  if (!templateRows[0]) {
+    return c.json({ error: "not_found" }, 404);
+  }
+
+  const fieldRows = await db
+    .select({
+      id: templateFields.id,
+      properties: templateFields.properties,
+    })
+    .from(templateFields)
+    .where(
+      and(
+        eq(templateFields.id, field_id),
+        eq(templateFields.templateId, template_id)
+      )
+    )
+    .limit(1);
+  const field = fieldRows[0];
+  if (!field) {
+    return c.json({ error: "not_found" }, 404);
+  }
+
+  const updateValues: {
+    label?: string;
+    isRequired?: boolean;
+    properties?: string;
+  } = {};
+  if (label !== undefined) updateValues.label = label;
+  if (is_required !== undefined) updateValues.isRequired = is_required;
+  if (properties !== undefined) {
+    updateValues.properties = mergeFieldProperties(field.properties, properties);
+  }
+
+  if (Object.keys(updateValues).length === 0) {
+    return c.json({ error: "validation_error" }, 400);
+  }
+
+  await db
+    .update(templateFields)
+    .set(updateValues)
+    .where(eq(templateFields.id, field_id));
+
+  const updated = await db
+    .select({
+      id: templateFields.id,
+      fieldType: templateFields.fieldType,
+      label: templateFields.label,
+      isRequired: templateFields.isRequired,
+      page: templateFields.page,
+      x: templateFields.x,
+      y: templateFields.y,
+      width: templateFields.width,
+      height: templateFields.height,
+      properties: templateFields.properties,
+    })
+    .from(templateFields)
+    .where(eq(templateFields.id, field_id))
+    .limit(1);
+
+  return c.json({ field: toApiTemplateField(updated[0]!) });
 });
 
 const createTemplateSchema = z.object({

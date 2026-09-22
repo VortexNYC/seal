@@ -18,6 +18,7 @@ import {
   sendDocumentViewedEmail,
   sendSigningCompleteEmail,
 } from "../platform/email.js";
+import { recordUsageEvent } from "../platform/usage-events.js";
 import { emitWebhookEvent } from "../platform/webhook-events.js";
 
 const app = new OpenAPIHono<{
@@ -834,6 +835,12 @@ app.openapi(submitRouteDef, async (c) => {
         metadata: { publicId: doc.publicId },
         ipAddress: input.ipAddress,
         userAgent: input.userAgent,
+      });
+
+      await recordUsageEvent(db, {
+        organizationId: doc.organizationId,
+        eventType: "document.completed",
+        metadata: { documentId: doc.id, publicId: doc.publicId },
       });
 
       const emitPromise = emitWebhookEvent(c.env, {

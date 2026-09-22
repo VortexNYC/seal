@@ -9,10 +9,12 @@ import {
   member,
   organization,
   subscriptions,
+  usageEvents,
   user,
 } from "../../global/schema.js";
 import app from "../../index.js";
 import { hashToken } from "../../platform/api-token-auth.js";
+import { currentUsagePeriod } from "../../platform/usage-events.js";
 
 async function seedBillingContext({
   tokenScopes = ["admin"],
@@ -100,6 +102,72 @@ describe("api v1 billing", () => {
     expect(body.totalDocuments).toBe(1);
     expect(body.plan).toBe("pro");
     expect(body.storageUsedBytes).toBe(1024);
+  });
+
+  it("returns usage metrics from usage_events and accepts write POST", async () => {
+    const { db, slug, orgId, plaintext } = await seedBillingContext({
+      tokenScopes: ["admin"],
+    });
+
+    await db.insert(usageEvents).values({
+      id: crypto.randomUUID(),
+      organizationId: orgId,
+      eventType: "document.sent",
+      quantity: 2,
+      period: currentUsagePeriod(),
+    });
+
+    const getRes = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/v1/organizations/${encodeURIComponent(
+          slug
+        )}/usage`,
+        { headers: { authorization: `Bearer ${plaintext}` } }
+      ),
+      env
+    );
+    expect(getRes.status).toBe(200);
+    const getBody = (await getRes.json()) as {
+      period: string;
+      metrics: Record<string, number>;
+    };
+    expect(getBody.period).toBe(currentUsagePeriod());
+    expect(getBody.metrics["document.sent"]).toBe(2);
+
+    const postRes = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/v1/organizations/${encodeURIComponent(
+          slug
+        )}/usage`,
+        {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${plaintext}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            event_type: "document.completed",
+            quantity: 1,
+          }),
+        }
+      ),
+      env
+    );
+    expect(postRes.status).toBe(201);
+
+    const getRes2 = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/v1/organizations/${encodeURIComponent(
+          slug
+        )}/usage`,
+        { headers: { authorization: `Bearer ${plaintext}` } }
+      ),
+      env
+    );
+    const getBody2 = (await getRes2.json()) as {
+      metrics: Record<string, number>;
+    };
+    expect(getBody2.metrics["document.completed"]).toBe(1);
   });
 
   it("rejects a write-scoped API token from usage read", async () => {
