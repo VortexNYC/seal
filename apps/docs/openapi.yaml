@@ -626,6 +626,10 @@ tags:
     description: Cross-resource search across documents, contacts, and templates
   - name: Tokens
     description: Workspace-scoped API tokens (create / list / revoke)
+  - name: Billing
+    description: Organization plan, subscription, and invoice summary
+  - name: Usage
+    description: Organization document/storage usage for the current period
 
 paths:
   # ──────────────────────────────────────────────────────────────────────────
@@ -2251,3 +2255,139 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Billing + usage
+  # ──────────────────────────────────────────────────────────────────────────
+
+  /organizations/{organizationSlug}/billing:
+    get:
+      tags: [Billing]
+      operationId: getOrganizationBilling
+      summary: Get billing summary for an organization
+      description: >
+        Returns the current plan, active subscription (if any), and recent invoices.
+        Requires the `billing:read` scope.
+      parameters:
+        - name: organizationSlug
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Billing summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [plan, subscription, invoices]
+                properties:
+                  plan: { type: string }
+                  subscription:
+                    type: object
+                    nullable: true
+                    properties:
+                      id: { type: string }
+                      status: { type: string }
+                      currentPeriodStart:
+                        type: string
+                        format: date-time
+                        nullable: true
+                      currentPeriodEnd:
+                        type: string
+                        format: date-time
+                        nullable: true
+                      cancelAtPeriodEnd: { type: boolean }
+                      canceledAt:
+                        type: string
+                        format: date-time
+                        nullable: true
+                      pastDueSince:
+                        type: string
+                        format: date-time
+                        nullable: true
+                  invoices:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        status: { type: string }
+                        amountDue: { type: integer }
+                        currency: { type: string }
+                        hostedInvoiceUrl:
+                          type: string
+                          nullable: true
+                        paidAt:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        createdAt:
+                          type: string
+                          format: date-time
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Forbidden (insufficient scope or org mismatch)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /organizations/{organizationSlug}/usage:
+    get:
+      tags: [Usage]
+      operationId: getOrganizationUsage
+      summary: Get usage summary for an organization
+      description: >
+        Returns document workflow counts, monthly send/complete totals, and
+        storage usage against plan limits. Derived from live document rows
+        (not a separate `usage_events` ledger yet). Requires `usage:read`.
+      parameters:
+        - name: organizationSlug
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Usage summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  [
+                    totalDocuments,
+                    workflowCounts,
+                    documentsThisMonth,
+                    sentThisMonth,
+                    completedThisMonth,
+                    storageUsedBytes,
+                    storageLimitBytes,
+                    storagePercentUsed,
+                    plan,
+                    documentsLimit,
+                    documentsPercentUsed,
+                    completionRate,
+                  ]
+                properties:
+                  totalDocuments: { type: integer }
+                  workflowCounts:
+                    type: object
+                    additionalProperties: { type: integer }
+                  documentsThisMonth: { type: integer }
+                  sentThisMonth: { type: integer }
+                  completedThisMonth: { type: integer }
+                  storageUsedBytes: { type: integer }
+                  storageLimitBytes: { type: integer }
+                  storagePercentUsed: { type: number }
+                  plan: { type: string }
+                  documentsLimit: { type: integer }
+                  documentsPercentUsed: { type: number }
+                  completionRate: { type: integer }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Forbidden (insufficient scope or org mismatch)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }

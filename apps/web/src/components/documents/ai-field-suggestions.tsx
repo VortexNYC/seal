@@ -157,7 +157,7 @@ function SuggestionOverlay({
         {getFieldIcon(field.fieldType)}
       </div>
       {isSelected && (
-        <div className="bg-kumo-info absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full text-white shadow-sm">
+        <div className="bg-kumo-info text-primary-foreground absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full shadow-sm">
           <Check className="h-2.5 w-2.5" />
         </div>
       )}
@@ -387,7 +387,7 @@ export function AIFieldReviewBar({
       className="bg-kumo-elevated/95 border-kumo-hairline flex items-center justify-between gap-3 rounded-xl border px-4 py-3 shadow-lg backdrop-blur-sm"
     >
       <div className="flex items-center gap-2">
-        <div className="bg-kumo-info flex h-7 w-7 items-center justify-center rounded-lg text-white shadow-sm">
+        <div className="bg-kumo-info text-primary-foreground flex h-7 w-7 items-center justify-center rounded-lg shadow-sm">
           <Sparkle className="h-3.5 w-3.5" />
         </div>
         <div className="font-sans text-sm">
