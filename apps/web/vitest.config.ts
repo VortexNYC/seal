@@ -30,6 +30,12 @@ export default defineConfig({
     setupFiles: ["./vitest.setup.ts"],
     include: ["src/**/*.test.{ts,tsx}", "e2e/**/*.test.ts"],
     globals: false,
+    // A test that can't finish in 30s is hung (usually an unmocked network
+    // call retrying) — fail it fast instead of burning ~17min to vitest's
+    // internal cutoff. Applies equally to the pre-push hook and CI.
+    testTimeout: 30_000,
+    hookTimeout: 15_000,
+    teardownTimeout: 10_000,
     server: {
       deps: {
         inline: ["zod"],

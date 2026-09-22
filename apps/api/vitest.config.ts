@@ -88,5 +88,10 @@ export default defineConfig({
   test: {
     globals: true,
     setupFiles: ["./test/apply-migrations.ts"],
+    // Bounded so a hung test (unmocked binding, retrying fetch) fails fast
+    // instead of burning minutes to vitest's internal cutoff.
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
+    teardownTimeout: 10_000,
   },
 });
