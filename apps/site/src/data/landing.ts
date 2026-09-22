@@ -110,6 +110,7 @@ export const landing = z
       links: [
         { label: "API", href: "#api" },
         { label: "Docs", href: "https://docs.seal.nyc" },
+        { label: "Changelog", href: "/changelog" },
         { label: "Pricing", href: "#pricing" },
       ],
       signIn: { label: "Sign in", href: "https://app.seal.nyc" },
@@ -365,6 +366,7 @@ await seal.request("POST", \`/documents/send?id=\${id}\`);`,
           title: "Company",
           links: [
             { label: "App", href: "https://app.seal.nyc" },
+            { label: "Changelog", href: "/changelog" },
             { label: "Contact", href: "mailto:hello@seal.nyc" },
           ],
         },

@@ -1,6 +1,15 @@
 # apps/site — @seal/site
 
-Astro 7 + EmDash CMS on a Cloudflare Worker. Owns `seal.nyc` / `www.seal.nyc`.
+Astro 7 on a Cloudflare Worker. Owns `seal.nyc` / `www.seal.nyc`.
+
+## Content
+
+Marketing copy lives in typed Zod data under `src/data/` (`landing.ts`,
+`changelog.ts`). Edit those files — components stay dumb renderers.
+
+EmDash CMS is wired for optional admin workflows but is **not** the source of
+truth for the public landing/changelog. Do not block site content on EmDash
+collections being populated.
 
 ## Brand
 
