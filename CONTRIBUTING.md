@@ -6,9 +6,11 @@ Seal is an open-source, agent-native e-signature platform on Cloudflare Workers.
 
 - Node.js 24+
 - [pnpm](https://pnpm.io) 10+ (Vite+ / `vp` is fine too)
-- A Cloudflare account (for D1, R2, Workers) when you leave pure unit tests
+- Cloudflare account only when deploying your own Workers/D1/R2
 
 No GitHub Packages token is required. Install uses the public npm registry only.
+A Cloudflare account is optional for pure local `wrangler dev` (simulated D1/R2).
+You need one to deploy your own instance.
 
 ## Install
 
@@ -16,13 +18,31 @@ No GitHub Packages token is required. Install uses the public npm registry only.
 pnpm install
 ```
 
-## Develop
+## Develop (local Workers)
 
 ```bash
+# 1. API secrets (local only — never commit)
+cp apps/api/.dev.vars.example apps/api/.dev.vars
+# edit values, or: openssl rand -base64 32
+
+# 2. Web env
+cp apps/web/.env.example apps/web/.env.local
+
+# 3. Run API + web + docs
 pnpm run dev
 ```
 
-That starts the API Worker, product web app, and docs. Targeted workspaces:
+- API: `http://localhost:8787` (`wrangler dev` — local D1/R2 by default)
+- Web: `http://localhost:5180` (Vite `PORT` default)
+- Docs: blume site from `@seal/docs`
+
+First run applies D1 migrations from `apps/api/migrations/` into the local D1.
+
+PDF upload/sign works without convert-worker. DOCX→PDF and anydoc parsing need the sibling workers (`pnpm --filter @seal/anydoc-worker run dev`, `pnpm --filter @seal/convert-worker run dev`) — optional for the core signing loop.
+
+Cloudflare Email binding is simulated locally; auth emails may only log unless you configure a real sender.
+
+Targeted workspaces:
 
 ```bash
 pnpm --filter @seal/api run dev
@@ -53,7 +73,6 @@ Fastest path today (no local Workers required):
    - **API/MCP:** follow [docs.seal.nyc quick start](https://docs.seal.nyc/docs/getting-started/quick-start) or point an MCP client at `mcp.seal.nyc`
 5. Optional proof: `SEAL_API_KEY=seal_… node scripts/smoke-prod.mjs`
 
-Local Worker wiring (wrangler D1/R2 secrets, convert-worker container) is next.
 Do not invent a Docker compose story the repo does not ship yet.
 
 ## Code rules

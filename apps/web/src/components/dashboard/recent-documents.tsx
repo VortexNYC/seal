@@ -65,11 +65,32 @@ export function RecentDocuments({
       </LayerCard.Secondary>
       <LayerCard.Primary>
         {recentDocs.length === 0 ? (
-          <div className="text-muted-foreground flex h-32 flex-col items-center justify-center gap-2 text-sm">
+          <div className="text-muted-foreground flex h-40 flex-col items-center justify-center gap-3 text-sm">
             <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-full">
               <FileTextIcon className="text-muted-foreground/60 h-5 w-5" />
             </div>
-            <span>No documents yet</span>
+            <div className="space-y-1 text-center">
+              <p className="text-foreground text-sm font-medium">
+                Send your first document
+              </p>
+              <p className="text-muted-foreground max-w-xs text-xs">
+                Upload a PDF, add recipients, and send it for signature.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              type="button"
+              variant="primary"
+              onClick={() =>
+                router.navigate({
+                  to: "/$slug/documents",
+                  params: { slug },
+                  search: { folderId: undefined },
+                })
+              }
+            >
+              Upload a PDF
+            </Button>
           </div>
         ) : (
           <div className="space-y-1">

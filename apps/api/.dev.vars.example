@@ -1,0 +1,11 @@
+# Local secrets for `wrangler dev` (apps/api).
+# Copy to `.dev.vars` in this directory. Never commit `.dev.vars`.
+#
+# Generate with: openssl rand -base64 32
+
+BETTER_AUTH_SECRET=dev-better-auth-secret-change-me
+TOKEN_HASH_SECRET=dev-token-hash-secret-change-me
+INTERNAL_API_KEY=dev-internal-api-key-change-me
+
+# Optional — only needed for MCP signing locally
+# MCP_SIGNING_KEY=dev-mcp-signing-key-change-me
