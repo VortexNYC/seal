@@ -1732,6 +1732,9 @@ const FieldPropertiesSchema = z
     minLength: z.number().optional(),
     pattern: z.string().optional(),
     helpText: z.string().optional(),
+    /** External structured-data key (GitHub #604 / proposal field binding). */
+    bindingKey: z.string().optional(),
+    binding_key: z.string().optional(),
   })
   .partial()
   .passthrough()

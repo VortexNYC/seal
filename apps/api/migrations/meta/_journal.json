@@ -211,6 +211,13 @@
       "when": 1789769393752,
       "tag": "0029_first_meteorite",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "6",
+      "when": 1789770000000,
+      "tag": "0030_usage_events",
+      "breakpoints": true
     }
   ]
 }

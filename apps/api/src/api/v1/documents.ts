@@ -15,7 +15,12 @@ import type { Context } from "hono";
 import { z } from "zod";
 
 import { createD1 } from "../../global/db.js";
-import { documents, organization, recipients } from "../../global/schema.js";
+import {
+  documents,
+  organization,
+  recipients,
+  signatureFields,
+} from "../../global/schema.js";
 import {
   fieldCandidateSchema,
   parseDocumentFromStorage,
@@ -25,7 +30,13 @@ import {
   getAuditRequestMeta,
   writeAuditLog,
 } from "../../platform/audit-log.js";
+import {
+  mergeFieldProperties,
+  parseFieldProperties,
+  readBindingKey,
+} from "../../platform/field-properties.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
+import { recordUsageEvent } from "../../platform/usage-events.js";
 import { emitWebhookEvent } from "../../platform/webhook-events.js";
 import { sendDocumentForSigning } from "../document-send.js";
 import { createDownloadToken, verifyDownloadToken } from "./download-token.js";
@@ -866,6 +877,12 @@ async function handleSendDocument(
     notify,
   });
 
+  await recordUsageEvent(db, {
+    organizationId,
+    eventType: "document.sent",
+    metadata: { documentId: row.id, publicId: row.publicId },
+  });
+
   const actor = getAuditActor({ mcp: c.get("mcp") });
   if (actor) {
     await writeAuditLog(db, {
@@ -1386,6 +1403,153 @@ app.get("/download-file", async (c) => {
   headers.set("content-disposition", `attachment; filename="${safeName}"`);
 
   return c.body(object.body, { headers });
+});
+
+const applyBindingsSchema = z.object({
+  id: z.string().min(1),
+  bindings: z.record(z.string(), z.string()),
+});
+
+/**
+ * Apply structured values onto document fields by `properties.binding_key`.
+ * Sets `default_value` so the deal writes the document (GitHub #604) without OCR.
+ */
+app.post("/apply-bindings", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const rawBody: unknown = await c.req.json();
+  const parsed = applyBindingsSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return c.json({ error: "validation_error" }, 400);
+  }
+
+  const { id, bindings } = parsed.data;
+  const db = createD1(c.env.D1);
+
+  const docRows = await db
+    .select({ id: documents.id, status: documents.status })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.id, id),
+        eq(documents.organizationId, organizationId),
+        ne(documents.documentStatus, "deleted")
+      )
+    )
+    .limit(1);
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+
+  const fields = await db
+    .select({
+      id: signatureFields.id,
+      properties: signatureFields.properties,
+    })
+    .from(signatureFields)
+    .where(eq(signatureFields.documentId, id));
+
+  let updated = 0;
+  const unmatched = new Set(Object.keys(bindings));
+
+  for (const field of fields) {
+    const key = readBindingKey(field.properties);
+    if (!key || !(key in bindings)) continue;
+    unmatched.delete(key);
+    const next = mergeFieldProperties(field.properties, {
+      default_value: bindings[key],
+    });
+    await db
+      .update(signatureFields)
+      .set({ properties: next })
+      .where(eq(signatureFields.id, field.id));
+    updated += 1;
+  }
+
+  return c.json({
+    updated,
+    unmatched_keys: Array.from(unmatched),
+  });
+});
+
+app.get("/fields", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:read")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const id = c.req.query("id");
+  if (!id) {
+    return c.json({ error: "missing_document_id" }, 400);
+  }
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select({ id: documents.id })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.id, id),
+        eq(documents.organizationId, organizationId),
+        ne(documents.documentStatus, "deleted")
+      )
+    )
+    .limit(1);
+  if (!docRows[0]) {
+    return c.json({ error: "not_found" }, 404);
+  }
+
+  const fields = await db
+    .select({
+      id: signatureFields.id,
+      fieldType: signatureFields.fieldType,
+      label: signatureFields.label,
+      isRequired: signatureFields.isRequired,
+      page: signatureFields.page,
+      x: signatureFields.x,
+      y: signatureFields.y,
+      width: signatureFields.width,
+      height: signatureFields.height,
+      properties: signatureFields.properties,
+    })
+    .from(signatureFields)
+    .where(eq(signatureFields.documentId, id));
+
+  return c.json({
+    fields: fields.map((field) => {
+      const properties = parseFieldProperties(field.properties) ?? {};
+      return {
+        id: field.id,
+        field_type: field.fieldType,
+        label: field.label,
+        is_required: field.isRequired,
+        page: field.page,
+        x: field.x,
+        y: field.y,
+        width: field.width,
+        height: field.height,
+        properties,
+        binding_key: properties.binding_key ?? null,
+      };
+    }),
+  });
 });
 
 export default app;

@@ -842,6 +842,65 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /documents/apply-bindings:
+    post:
+      tags: [Documents]
+      operationId: applyDocumentBindings
+      summary: Apply structured values by binding_key
+      description: >
+        For each document field with `properties.binding_key`, set
+        `default_value` from the provided map. Draft documents only. This is
+        the Seal-side of proposal→document sync (GitHub #604) without OCR.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, bindings]
+              properties:
+                id: { type: string }
+                bindings:
+                  type: object
+                  additionalProperties: { type: string }
+      responses:
+        "200":
+          description: Applied
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [updated, unmatched_keys]
+                properties:
+                  updated: { type: integer }
+                  unmatched_keys:
+                    type: array
+                    items: { type: string }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /documents/fields:
+    get:
+      tags: [Documents]
+      operationId: listDocumentFields
+      summary: List document fields (with binding_key)
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Fields
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /documents/send:
     post:
       tags: [Documents]
@@ -1313,6 +1372,50 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/TemplateField"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /templates/fields/update:
+    put:
+      tags: [Templates]
+      operationId: updateTemplateField
+      summary: Update a template field (including binding_key)
+      description: >
+        Patch label/required/properties on a template field. Set
+        `properties.binding_key` to bind the field to an external proposal key
+        (GitHub #604).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [template_id, field_id]
+              properties:
+                template_id: { type: string }
+                field_id: { type: string }
+                label: { type: string }
+                is_required: { type: boolean }
+                properties:
+                  type: object
+                  properties:
+                    placeholder: { type: string }
+                    default_value: { type: string }
+                    options:
+                      type: array
+                      items: { type: string }
+                    binding_key: { type: string }
+      responses:
+        "200":
+          description: Updated field
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  field: { $ref: "#/components/schemas/TemplateField" }
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -2398,14 +2501,20 @@ paths:
       operationId: getOrganizationUsage
       summary: Get usage summary for an organization
       description: >
-        Returns document workflow counts, monthly send/complete totals, and
-        storage usage against plan limits. Derived from live document rows
-        (not a separate `usage_events` ledger yet). Requires `usage:read`.
+        Returns document workflow counts, monthly send/complete totals, storage
+        usage against plan limits, and metered `metrics` aggregated from the
+        `usage_events` ledger for the requested `period` (default current UTC
+        YYYY-MM). Requires `usage:read` (or a `read` API token).
       parameters:
         - name: organizationSlug
           in: path
           required: true
           schema: { type: string }
+        - name: period
+          in: query
+          required: false
+          schema: { type: string }
+          description: Usage period key, e.g. `2026-09` (UTC). Defaults to current month.
       responses:
         "200":
           description: Usage summary
@@ -2415,6 +2524,7 @@ paths:
                 type: object
                 required:
                   [
+                    period,
                     totalDocuments,
                     workflowCounts,
                     documentsThisMonth,
@@ -2427,8 +2537,10 @@ paths:
                     documentsLimit,
                     documentsPercentUsed,
                     completionRate,
+                    metrics,
                   ]
                 properties:
+                  period: { type: string }
                   totalDocuments: { type: integer }
                   workflowCounts:
                     type: object
@@ -2443,6 +2555,10 @@ paths:
                   documentsLimit: { type: integer }
                   documentsPercentUsed: { type: number }
                   completionRate: { type: integer }
+                  metrics:
+                    type: object
+                    additionalProperties: { type: integer }
+                    description: Summed quantities by event_type for the period
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -2450,3 +2566,45 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+    post:
+      tags: [Usage]
+      operationId: recordOrganizationUsage
+      summary: Record a usage event
+      description: >
+        Appends a row to `usage_events`. Document send/complete already records
+        automatically; this endpoint is for explicit agent metering. Requires
+        `usage:write` (or a `write`/`admin` API token).
+      parameters:
+        - name: organizationSlug
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [event_type]
+              properties:
+                event_type: { type: string }
+                quantity: { type: integer, minimum: 1, default: 1 }
+                period: { type: string }
+                metadata:
+                  type: object
+                  additionalProperties: true
+      responses:
+        "201":
+          description: Recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, period]
+                properties:
+                  success: { type: boolean }
+                  period: { type: string }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Forbidden

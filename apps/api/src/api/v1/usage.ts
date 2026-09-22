@@ -1,17 +1,30 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
+import { z } from "zod";
 
 import { createD1 } from "../../global/db.js";
 import {
   documents as documentsTable,
   organization,
+  usageEvents,
 } from "../../global/schema.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
+import {
+  currentUsagePeriod,
+  recordUsageEvent,
+} from "../../platform/usage-events.js";
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
   Variables: { mcp: McpAccessToken };
 }>();
+
+const recordUsageBodySchema = z.object({
+  event_type: z.string().min(1),
+  quantity: z.number().int().min(1).default(1),
+  period: z.string().min(1).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
 
 app.get("/", async (c) => {
   const mcp = c.get("mcp");
@@ -29,6 +42,7 @@ app.get("/", async (c) => {
     return c.json({ error: "organization_required" }, 403);
   }
 
+  const period = c.req.query("period") ?? currentUsagePeriod();
   const db = createD1(c.env.D1);
 
   const [orgRow] = await db
@@ -109,7 +123,27 @@ app.get("/", async (c) => {
   const totalSent =
     workflowCounts.sent + workflowCounts.in_progress + workflowCounts.completed;
 
+  const eventRows = await db
+    .select({
+      eventType: usageEvents.eventType,
+      quantity: sql<number>`sum(${usageEvents.quantity})`.mapWith(Number),
+    })
+    .from(usageEvents)
+    .where(
+      and(
+        eq(usageEvents.organizationId, organizationId),
+        eq(usageEvents.period, period)
+      )
+    )
+    .groupBy(usageEvents.eventType);
+
+  const metrics: Record<string, number> = {};
+  for (const row of eventRows) {
+    metrics[row.eventType] = row.quantity ?? 0;
+  }
+
   return c.json({
+    period,
     totalDocuments: docs.length,
     workflowCounts,
     documentsThisMonth: documentsThisMonth.length,
@@ -131,7 +165,43 @@ app.get("/", async (c) => {
       totalSent > 0
         ? Math.round((completedThisMonth.length / totalSent) * 100)
         : 0,
+    metrics,
   });
+});
+
+app.post("/", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "usage:write") && !mcpHasScope(mcp, "admin")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+
+  const routeSlug = c.req.param("organizationSlug");
+  if (mcp.organizationSlug && mcp.organizationSlug !== routeSlug) {
+    return c.json({ error: "organization_mismatch" }, 403);
+  }
+
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const rawBody: unknown = await c.req.json();
+  const parsed = recordUsageBodySchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return c.json({ error: "validation_error" }, 400);
+  }
+
+  const db = createD1(c.env.D1);
+  const period = parsed.data.period ?? currentUsagePeriod();
+  await recordUsageEvent(db, {
+    organizationId,
+    eventType: parsed.data.event_type,
+    quantity: parsed.data.quantity,
+    period,
+    metadata: parsed.data.metadata,
+  });
+
+  return c.json({ success: true, period }, 201);
 });
 
 export default app;
