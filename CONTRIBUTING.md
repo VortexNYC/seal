@@ -77,6 +77,20 @@ Do not invent a Docker compose story the repo does not ship yet.
 
 ## Deploy your own (Cloudflare)
 
+Fast path (script):
+
+```bash
+chmod +x scripts/selfhost.sh
+./scripts/selfhost.sh
+```
+
+The script verifies `wrangler` login, refuses shared Vortex/dev resource IDs
+unless `SEAL_SELFHOST_FORCE=1`, prompts for missing secrets, applies D1
+migrations, and deploys `apps/api` + `apps/web`. There is no Deploy-to-Cloudflare
+button — this script *is* the self-host path.
+
+Manual path below if you prefer step-by-step.
+
 Vortex production IDs in `wrangler` configs are **not** yours. Replace them before
 `wrangler deploy`, or you will try to bind Vortex D1/R2.
 

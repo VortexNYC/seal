@@ -21,6 +21,7 @@
     "check": "vp check",
     "knip": "vp run -r knip",
     "scan:secrets": "secretlint . --no-gitignore --secretlintignore .secretlintignore",
+    "selfhost": "bash scripts/selfhost.sh",
     "fix": "vp lint --fix && vp fmt",
     "verify": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run knip",
     "verify:clean": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run knip",
