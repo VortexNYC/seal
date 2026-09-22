@@ -53,9 +53,21 @@ function makeNotificationList(items: ApiNotification[] = []) {
   return items;
 }
 
+/** Pending queryFns registered here are rejected on cleanup so workers never hang. */
+const pendingQueryCancels: Array<(reason: Error) => void> = [];
+
+function pendingUntilCleanup<T>(): Promise<T> {
+  return new Promise<T>((_resolve, reject) => {
+    pendingQueryCancels.push(reject);
+  });
+}
+
 function createQueryClient() {
   return new QueryClient({
-    defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+    defaultOptions: {
+      queries: { retry: false, staleTime: Infinity, gcTime: Infinity },
+      mutations: { retry: false },
+    },
   });
 }
 
@@ -73,9 +85,10 @@ function renderPopover(
   const isLoading = queryReturn.notifications === undefined;
 
   if (isLoading) {
-    mockGetNotifications.mockImplementation(() => new Promise(() => {}));
-    mockGetUnreadNotificationCount.mockImplementation(
-      () => new Promise(() => {})
+    // Stay pending without a forever-orphaned promise — cleanup rejects these.
+    mockGetNotifications.mockImplementation(() => pendingUntilCleanup());
+    mockGetUnreadNotificationCount.mockImplementation(() =>
+      pendingUntilCleanup()
     );
   } else {
     mockGetNotifications.mockResolvedValue(queryReturn.notifications ?? []);
@@ -111,6 +124,10 @@ function renderPopover(
 describe("NotificationsPopover", () => {
   afterEach(() => {
     cleanup();
+    const cancelError = new Error("test cleanup");
+    for (const cancel of pendingQueryCancels.splice(0)) {
+      cancel(cancelError);
+    }
   });
 
   beforeEach(() => {

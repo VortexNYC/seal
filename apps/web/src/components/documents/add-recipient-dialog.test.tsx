@@ -1,13 +1,20 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-const mockUseMutation = vi.fn();
-const mockUseQuery = vi.fn();
+const mockUseOrganizationMembers = vi.hoisted(() => vi.fn());
+const mockAddRecipients = vi.hoisted(() => vi.fn());
+const mockGetContacts = vi.hoisted(() => vi.fn());
 
-vi.mock("@tanstack/react-query", () => ({
-  useQuery: (...args: unknown[]) => ({ data: mockUseQuery(...args) }),
-  useMutation: () => ({ mutateAsync: mockUseMutation }),
+vi.mock("@/hooks/use-organization-members", () => ({
+  useOrganizationMembers: (...args: unknown[]) =>
+    mockUseOrganizationMembers(...args),
+}));
+
+vi.mock("@/lib/api-client", () => ({
+  addRecipients: mockAddRecipients,
+  getContacts: mockGetContacts,
 }));
 
 vi.mock("@/lib/toast", () => ({
@@ -40,6 +47,15 @@ function makeMembers(overrides: Partial<Member>[] = []): Member[] {
   }));
 }
 
+function createQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, staleTime: Infinity },
+      mutations: { retry: false },
+    },
+  });
+}
+
 interface RenderOptions {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -60,36 +76,43 @@ function renderDialog(overrides: RenderOptions = {}) {
     currentUserEmail: undefined as string | undefined,
     ...overrides,
   };
-  render(<AddRecipientDialog {...props} />);
+  const queryClient = createQueryClient();
+  render(
+    <QueryClientProvider client={queryClient}>
+      <AddRecipientDialog {...props} />
+    </QueryClientProvider>
+  );
   return props;
 }
 
 describe("AddRecipientDialog", () => {
-  afterEach(cleanup);
+  afterEach(() => {
+    cleanup();
+  });
 
   beforeEach(() => {
-    mockUseMutation.mockReset();
-    mockUseQuery.mockReset();
+    mockAddRecipients.mockReset();
+    mockGetContacts.mockReset();
+    mockUseOrganizationMembers.mockReset();
+    mockAddRecipients.mockResolvedValue(undefined);
+    mockGetContacts.mockResolvedValue([]);
+    mockUseOrganizationMembers.mockReturnValue({ data: [] });
   });
 
   describe("open / closed visibility", () => {
     test("does not render dialog content when open is false", () => {
-      mockUseQuery.mockReturnValue([]);
       renderDialog({ open: false });
       expect(screen.queryByText("Add Recipient")).not.toBeInTheDocument();
     });
 
     test("renders 'Add Recipient' title when open is true", () => {
-      mockUseQuery.mockReturnValue([]);
       renderDialog({ open: true });
-      // Use role=heading to distinguish the dialog title from the submit button text
       expect(
         screen.getByRole("heading", { name: "Add Recipient" })
       ).toBeInTheDocument();
     });
 
     test("renders description when open", () => {
-      mockUseQuery.mockReturnValue([]);
       renderDialog();
       expect(
         screen.getByText(
@@ -101,14 +124,14 @@ describe("AddRecipientDialog", () => {
 
   describe("Team tab — loading state", () => {
     test("shows a loading spinner when members query returns undefined", () => {
-      mockUseQuery.mockReturnValue(undefined);
+      mockUseOrganizationMembers.mockReturnValue({ data: undefined });
       renderDialog();
       const spinner = document.querySelector(".animate-spin");
       expect(spinner).toBeTruthy();
     });
 
     test("does not show the member list while loading", () => {
-      mockUseQuery.mockReturnValue(undefined);
+      mockUseOrganizationMembers.mockReturnValue({ data: undefined });
       renderDialog();
       expect(
         screen.queryByRole("button", { name: /member/i })
@@ -118,14 +141,15 @@ describe("AddRecipientDialog", () => {
 
   describe("Team tab — empty state", () => {
     test("shows 'No team members available' when member list is empty and no existing recipients", () => {
-      mockUseQuery.mockReturnValue([]);
+      mockUseOrganizationMembers.mockReturnValue({ data: [] });
       renderDialog({ existingRecipientEmails: [] });
       expect(screen.getByText("No team members available")).toBeInTheDocument();
     });
 
     test("shows 'All team members have been added' when members are non-empty but all filtered out", () => {
-      const members = makeMembers([{ email: "alice@example.com" }]);
-      mockUseQuery.mockReturnValue(members);
+      mockUseOrganizationMembers.mockReturnValue({
+        data: makeMembers([{ email: "alice@example.com" }]),
+      });
       renderDialog({ existingRecipientEmails: ["alice@example.com"] });
       expect(
         screen.getByText("All team members have been added")
@@ -133,56 +157,69 @@ describe("AddRecipientDialog", () => {
     });
 
     test("filters out current user from team list", () => {
-      const members = makeMembers([
-        { email: "self@example.com", name: "Self" },
-        { email: "other@example.com", name: "Other" },
-      ]);
-      mockUseQuery.mockReturnValue(members);
+      mockUseOrganizationMembers.mockReturnValue({
+        data: makeMembers([
+          { email: "self@example.com", name: "Self" },
+          { email: "other@example.com", name: "Other" },
+        ]),
+      });
       renderDialog({ currentUserEmail: "self@example.com" });
       expect(screen.queryByText("Self")).not.toBeInTheDocument();
       expect(screen.getByText("Other")).toBeInTheDocument();
     });
 
     test("filters out existing recipients from team list", () => {
-      const members = makeMembers([
-        { email: "added@example.com", name: "Already Added" },
-        { email: "new@example.com", name: "New Person" },
-      ]);
-      mockUseQuery.mockReturnValue(members);
+      mockUseOrganizationMembers.mockReturnValue({
+        data: makeMembers([
+          { email: "added@example.com", name: "Already Added" },
+          { email: "new@example.com", name: "New Person" },
+        ]),
+      });
       renderDialog({ existingRecipientEmails: ["added@example.com"] });
       expect(screen.queryByText("Already Added")).not.toBeInTheDocument();
       expect(screen.getByText("New Person")).toBeInTheDocument();
     });
 
     test("filters out inactive members", () => {
-      const members = makeMembers([
-        {
-          email: "inactive@example.com",
-          name: "Inactive User",
-          status: "inactive",
-        },
-        { email: "active@example.com", name: "Active User", status: "active" },
-      ]);
-      mockUseQuery.mockReturnValue(members);
+      mockUseOrganizationMembers.mockReturnValue({
+        data: makeMembers([
+          {
+            email: "inactive@example.com",
+            name: "Inactive User",
+            status: "inactive",
+          },
+          {
+            email: "active@example.com",
+            name: "Active User",
+            status: "active",
+          },
+        ]),
+      });
       renderDialog();
       expect(screen.queryByText("Inactive User")).not.toBeInTheDocument();
       expect(screen.getByText("Active User")).toBeInTheDocument();
     });
 
     test("shows 'All team members have been added' when all remaining members are filtered out by existing recipients", () => {
-      const members = makeMembers([
-        { email: "self@example.com", name: "Self", status: "active" },
-        { email: "added@example.com", name: "Already Added", status: "active" },
-        { email: "inactive@example.com", name: "Inactive", status: "inactive" },
-      ]);
-      mockUseQuery.mockReturnValue(members);
+      mockUseOrganizationMembers.mockReturnValue({
+        data: makeMembers([
+          { email: "self@example.com", name: "Self", status: "active" },
+          {
+            email: "added@example.com",
+            name: "Already Added",
+            status: "active",
+          },
+          {
+            email: "inactive@example.com",
+            name: "Inactive",
+            status: "inactive",
+          },
+        ]),
+      });
       renderDialog({
         currentUserEmail: "self@example.com",
         existingRecipientEmails: ["added@example.com"],
       });
-      // "self" filtered by currentUserEmail, "added" filtered by existingRecipientEmails,
-      // "inactive" filtered by status. existingRecipientEmails.length > 0 so message is
-      // "All team members have been added".
       expect(
         screen.getByText("All team members have been added")
       ).toBeInTheDocument();
@@ -191,11 +228,12 @@ describe("AddRecipientDialog", () => {
 
   describe("Team tab — member list", () => {
     test("renders eligible member names and emails", () => {
-      const members = makeMembers([
-        { email: "alice@example.com", name: "Alice Smith" },
-        { email: "bob@example.com", name: "Bob Jones" },
-      ]);
-      mockUseQuery.mockReturnValue(members);
+      mockUseOrganizationMembers.mockReturnValue({
+        data: makeMembers([
+          { email: "alice@example.com", name: "Alice Smith" },
+          { email: "bob@example.com", name: "Bob Jones" },
+        ]),
+      });
       renderDialog();
       expect(screen.getByText("Alice Smith")).toBeInTheDocument();
       expect(screen.getByText("alice@example.com")).toBeInTheDocument();
@@ -204,48 +242,49 @@ describe("AddRecipientDialog", () => {
     });
 
     test("shows member count in the Team tab trigger", () => {
-      const members = makeMembers([
-        { email: "a@example.com" },
-        { email: "b@example.com" },
-      ]);
-      mockUseQuery.mockReturnValue(members);
+      mockUseOrganizationMembers.mockReturnValue({
+        data: makeMembers([
+          { email: "a@example.com" },
+          { email: "b@example.com" },
+        ]),
+      });
       renderDialog();
       expect(screen.getByText("Team (2)")).toBeInTheDocument();
     });
 
     test("renders avatar initials for a member with two-word name", () => {
-      const members = makeMembers([
-        { email: "alice@example.com", name: "Alice Smith" },
-      ]);
-      mockUseQuery.mockReturnValue(members);
+      mockUseOrganizationMembers.mockReturnValue({
+        data: makeMembers([
+          { email: "alice@example.com", name: "Alice Smith" },
+        ]),
+      });
       renderDialog();
       expect(screen.getByText("AS")).toBeInTheDocument();
     });
 
     test("renders avatar initials for a member with single-word name", () => {
-      const members = makeMembers([
-        { email: "alice@example.com", name: "Alice" },
-      ]);
-      mockUseQuery.mockReturnValue(members);
+      mockUseOrganizationMembers.mockReturnValue({
+        data: makeMembers([{ email: "alice@example.com", name: "Alice" }]),
+      });
       renderDialog();
       expect(screen.getByText("A")).toBeInTheDocument();
     });
 
     test("renders '?' as avatar fallback when member name is null/undefined", () => {
-      const members = makeMembers([
-        { email: "anon@example.com", name: undefined },
-      ]);
-      mockUseQuery.mockReturnValue(members);
+      mockUseOrganizationMembers.mockReturnValue({
+        data: makeMembers([{ email: "anon@example.com", name: undefined }]),
+      });
       renderDialog();
       expect(screen.getByText("?")).toBeInTheDocument();
     });
 
     test("selecting a member enables the submit button", async () => {
       const user = userEvent.setup();
-      const members = makeMembers([
-        { email: "alice@example.com", name: "Alice Smith" },
-      ]);
-      mockUseQuery.mockReturnValue(members);
+      mockUseOrganizationMembers.mockReturnValue({
+        data: makeMembers([
+          { email: "alice@example.com", name: "Alice Smith" },
+        ]),
+      });
       renderDialog();
 
       const addButton = screen.getByRole("button", { name: "Add Recipient" });
@@ -259,17 +298,16 @@ describe("AddRecipientDialog", () => {
 
     test("shows check icon next to selected member", async () => {
       const user = userEvent.setup();
-      const members = makeMembers([
-        { email: "alice@example.com", name: "Alice Smith" },
-      ]);
-      mockUseQuery.mockReturnValue(members);
+      mockUseOrganizationMembers.mockReturnValue({
+        data: makeMembers([
+          { email: "alice@example.com", name: "Alice Smith" },
+        ]),
+      });
       renderDialog();
 
       const memberRow = screen.getByRole("button", { name: /Alice Smith/i });
       await user.click(memberRow);
 
-      // The check icon is rendered as an SVG alongside the member row; verify the member row
-      // receives the selected highlight class
       expect(memberRow.className).toContain("bg-accent");
     });
   });
@@ -277,7 +315,7 @@ describe("AddRecipientDialog", () => {
   describe("External tab", () => {
     async function switchToExternal() {
       const user = userEvent.setup();
-      mockUseQuery.mockReturnValue([]);
+      mockUseOrganizationMembers.mockReturnValue({ data: [] });
       renderDialog();
       await user.click(screen.getByRole("tab", { name: "External" }));
       return user;
@@ -318,15 +356,12 @@ describe("AddRecipientDialog", () => {
 
   describe("Role selector", () => {
     test("renders a role label and combobox trigger", () => {
-      mockUseQuery.mockReturnValue([]);
       renderDialog();
       expect(screen.getByLabelText("Role")).toBeInTheDocument();
-      // The Radix Select renders as a combobox
       expect(screen.getByRole("combobox")).toBeInTheDocument();
     });
 
     test("shows role description for signer by default", () => {
-      mockUseQuery.mockReturnValue([]);
       renderDialog();
       expect(
         screen.getByText("This person must sign the document.")
@@ -337,7 +372,6 @@ describe("AddRecipientDialog", () => {
   describe("Cancel button", () => {
     test("calls onOpenChange(false) when Cancel is clicked", async () => {
       const user = userEvent.setup();
-      mockUseQuery.mockReturnValue([]);
       const onOpenChange = vi.fn();
       renderDialog({ onOpenChange });
 
@@ -349,31 +383,33 @@ describe("AddRecipientDialog", () => {
   describe("Form submission — team tab", () => {
     test("calls addRecipients mutation with selected member details on submit", async () => {
       const user = userEvent.setup();
-      mockUseMutation.mockResolvedValue(undefined);
-      const members = makeMembers([
-        { email: "alice@example.com", name: "Alice Smith" },
-      ]);
-      mockUseQuery.mockReturnValue(members);
+      mockUseOrganizationMembers.mockReturnValue({
+        data: makeMembers([
+          { email: "alice@example.com", name: "Alice Smith" },
+        ]),
+      });
       const onSuccess = vi.fn();
       renderDialog({ onSuccess });
 
       await user.click(screen.getByRole("button", { name: /Alice Smith/i }));
       await user.click(screen.getByRole("button", { name: "Add Recipient" }));
 
-      expect(mockUseMutation).toHaveBeenCalledWith({
-        email: "alice@example.com",
-        name: "Alice Smith",
-        role: "signer",
-      });
+      expect(mockAddRecipients).toHaveBeenCalledWith(FAKE_SLUG, FAKE_DOC_ID, [
+        {
+          email: "alice@example.com",
+          name: "Alice Smith",
+          role: "signer",
+        },
+      ]);
     });
 
     test("calls onSuccess after successful submission", async () => {
       const user = userEvent.setup();
-      mockUseMutation.mockResolvedValue(undefined);
-      const members = makeMembers([
-        { email: "alice@example.com", name: "Alice Smith" },
-      ]);
-      mockUseQuery.mockReturnValue(members);
+      mockUseOrganizationMembers.mockReturnValue({
+        data: makeMembers([
+          { email: "alice@example.com", name: "Alice Smith" },
+        ]),
+      });
       const onSuccess = vi.fn();
       renderDialog({ onSuccess });
 
@@ -385,11 +421,11 @@ describe("AddRecipientDialog", () => {
 
     test("calls onOpenChange(false) after successful submission", async () => {
       const user = userEvent.setup();
-      mockUseMutation.mockResolvedValue(undefined);
-      const members = makeMembers([
-        { email: "alice@example.com", name: "Alice Smith" },
-      ]);
-      mockUseQuery.mockReturnValue(members);
+      mockUseOrganizationMembers.mockReturnValue({
+        data: makeMembers([
+          { email: "alice@example.com", name: "Alice Smith" },
+        ]),
+      });
       const onOpenChange = vi.fn();
       renderDialog({ onOpenChange });
 
@@ -403,8 +439,6 @@ describe("AddRecipientDialog", () => {
   describe("Form submission — external tab", () => {
     test("calls addRecipients mutation with typed email and name on submit", async () => {
       const user = userEvent.setup();
-      mockUseMutation.mockResolvedValue(undefined);
-      mockUseQuery.mockReturnValue([]);
       renderDialog();
 
       await user.click(screen.getByRole("tab", { name: "External" }));
@@ -415,18 +449,21 @@ describe("AddRecipientDialog", () => {
       await user.type(screen.getByLabelText("Name (Optional)"), "Jane Doe");
       await user.click(screen.getByRole("button", { name: "Add Recipient" }));
 
-      expect(mockUseMutation).toHaveBeenCalledWith({
-        email: "external@example.com",
-        name: "Jane Doe",
-        role: "signer",
-      });
+      expect(mockAddRecipients).toHaveBeenCalledWith(FAKE_SLUG, FAKE_DOC_ID, [
+        {
+          email: "external@example.com",
+          name: "Jane Doe",
+          role: "signer",
+        },
+      ]);
     });
   });
 
   describe("getInitials — via rendered avatars", () => {
     function renderWithName(name: string | undefined) {
-      const members = makeMembers([{ email: "test@example.com", name }]);
-      mockUseQuery.mockReturnValue(members);
+      mockUseOrganizationMembers.mockReturnValue({
+        data: makeMembers([{ email: "test@example.com", name }]),
+      });
       renderDialog();
     }
 
@@ -453,18 +490,18 @@ describe("AddRecipientDialog", () => {
     });
 
     test("returns '?' for empty string name", () => {
-      // Empty string trims to nothing, split gives [""] — getInitials returns "?"
-      // Achieved by setting name to empty string via member override
-      const members = [
-        {
-          userId: "member_0",
-          email: "test@example.com",
-          name: "",
-          avatarUrl: null,
-          status: "active",
-        },
-      ];
-      mockUseQuery.mockReturnValue(members);
+      mockUseOrganizationMembers.mockReturnValue({
+        data: [
+          {
+            userId: "member_0",
+            email: "test@example.com",
+            name: "",
+            avatarUrl: null,
+            status: "active",
+            role: "member",
+          },
+        ],
+      });
       renderDialog();
       expect(screen.getByText("?")).toBeInTheDocument();
     });
