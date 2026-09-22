@@ -190,6 +190,7 @@ overrides:
   wrangler: ^4.133.0
   react: 19.3.0
   react-dom: 19.3.0
+  adm-zip: '>=0.6.1'
   '@tanstack/router-core': 1.171.16
   '@tanstack/react-router@1.163.2>@tanstack/router-core': 1.163.2
   '@modelcontextprotocol/sdk': 1.30.0

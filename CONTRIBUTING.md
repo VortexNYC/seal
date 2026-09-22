@@ -112,6 +112,8 @@ cd apps/api
 pnpm exec wrangler secret put BETTER_AUTH_SECRET --env production
 pnpm exec wrangler secret put TOKEN_HASH_SECRET --env production
 pnpm exec wrangler secret put INTERNAL_API_KEY --env production
+# ≥32 chars. `/internal/*` is blocked on api.seal.nyc / *.workers.dev —
+# other Workers must call the `InternalApi` service-binding entrypoint.
 # optional
 pnpm exec wrangler secret put MCP_SIGNING_KEY --env production
 ```
