@@ -11,7 +11,72 @@ export type FieldCandidate = {
   label: string;
   page: number;
   line: number;
+  /** Suggested page-percent geometry (0–100) for agent/human placement */
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  confidence: number;
 };
+
+
+const LINES_PER_PAGE = 50;
+const LEFT_MARGIN = 10;
+
+const DEFAULT_SIZE: Record<FieldType, { width: number; height: number }> = {
+  signature: { width: 33, height: 6 },
+  initials: { width: 10, height: 5 },
+  date: { width: 23, height: 5 },
+  name: { width: 30, height: 5 },
+  checkbox: { width: 5, height: 4 },
+  text: { width: 30, height: 5 },
+};
+
+function geometryFor(type: FieldType, line: number): {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+} {
+  const size = DEFAULT_SIZE[type];
+  const y = Math.min(
+    100 - size.height,
+    Math.round((Math.max(0, line) / LINES_PER_PAGE) * 90 * 10) / 10
+  );
+  return { x: LEFT_MARGIN, y, width: size.width, height: size.height };
+}
+
+function confidenceFor(type: FieldType): number {
+  switch (type) {
+    case "signature":
+      return 0.85;
+    case "date":
+      return 0.8;
+    case "checkbox":
+      return 0.75;
+    case "name":
+    case "initials":
+      return 0.7;
+    default:
+      return 0.55;
+  }
+}
+
+function withGeometry(
+  type: FieldType,
+  label: string,
+  page: number,
+  line: number
+): FieldCandidate {
+  return {
+    type,
+    label,
+    page,
+    line,
+    ...geometryFor(type, line),
+    confidence: confidenceFor(type),
+  };
+}
 
 const CHECKBOX_MARKERS = ["☐", "☑", "[ ]", "[x]", "[X]"] as const;
 
@@ -40,12 +105,12 @@ function detectField(
   const hasCheckbox = CHECKBOX_MARKERS.some((m) => trimmed.includes(m));
   if (hasCheckbox) {
     const label = normalizeLabel(trimmed);
-    return {
-      type: "checkbox",
-      label: label || "Checkbox",
+    return withGeometry(
+      "checkbox",
+      label || "Checkbox",
       page,
-      line: lineIndex,
-    };
+      lineIndex
+    );
   }
 
   const hasUnderscore = /_{3,}/.test(trimmed);
@@ -57,21 +122,21 @@ function detectField(
     lower.includes("signed by") ||
     (lower.includes("sign") && hasUnderscore)
   ) {
-    return {
-      type: "signature",
-      label: normalizeLabel(trimmed),
+    return withGeometry(
+      "signature",
+      normalizeLabel(trimmed),
       page,
-      line: lineIndex,
-    };
+      lineIndex
+    );
   }
 
   if (lower.includes("initial") || lower.includes("initials")) {
-    return {
-      type: "initials",
-      label: normalizeLabel(trimmed),
+    return withGeometry(
+      "initials",
+      normalizeLabel(trimmed),
       page,
-      line: lineIndex,
-    };
+      lineIndex
+    );
   }
 
   if (
@@ -81,12 +146,12 @@ function detectField(
       lower.includes("yyyy-mm-dd") ||
       lower.includes("dd/mm/yyyy"))
   ) {
-    return {
-      type: "date",
-      label: normalizeLabel(trimmed),
+    return withGeometry(
+      "date",
+      normalizeLabel(trimmed),
       page,
-      line: lineIndex,
-    };
+      lineIndex
+    );
   }
 
   if (
@@ -96,16 +161,16 @@ function detectField(
       (lower.includes("name") && hasUnderscore)) &&
     !lower.includes("signature")
   ) {
-    return {
-      type: "name",
-      label: normalizeLabel(trimmed),
+    return withGeometry(
+      "name",
+      normalizeLabel(trimmed),
       page,
-      line: lineIndex,
-    };
+      lineIndex
+    );
   }
 
   if (hasUnderscore) {
-    return { type: "text", label: "Text field", page, line: lineIndex };
+    return withGeometry("text", "Text field", page, lineIndex);
   }
 
   return null;

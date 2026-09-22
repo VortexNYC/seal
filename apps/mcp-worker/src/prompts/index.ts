@@ -105,8 +105,10 @@ Please:
 1. Use seal_list_templates to show available templates
 2. Once I pick one, use seal_get_template_fields to show what fields and signing zones it has
 3. Create a new document from the template using seal_use_template
-4. Add recipients with seal_add_recipient or seal_add_recipients_bulk — match recipients to the template's defined signing roles
-5. Send with seal_send_document
+4. If building from upload (not template), place fields with seal_place_field_candidates or seal_create_document_field; review suggestions via seal_get_field_suggestions then seal_apply_field_suggestions.
+5. Optionally set binding_key via seal_update_document_field / seal_update_template_field and fill with seal_apply_document_bindings.
+6. Add recipients with seal_add_recipient or seal_add_recipients_bulk — match recipients to the template's defined signing roles
+7. Send with seal_send_document
 
 Walk me through each step.`);
     }

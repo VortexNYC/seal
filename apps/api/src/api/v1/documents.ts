@@ -16,6 +16,7 @@ import { z } from "zod";
 
 import { createD1 } from "../../global/db.js";
 import {
+  aiFieldSuggestions,
   documents,
   organization,
   recipients,
@@ -30,11 +31,19 @@ import {
   getAuditRequestMeta,
   writeAuditLog,
 } from "../../platform/audit-log.js";
+import { validateFieldGeometry } from "../../platform/field-geometry.js";
 import {
   mergeFieldProperties,
   parseFieldProperties,
   readBindingKey,
 } from "../../platform/field-properties.js";
+import {
+  applySuggestionItems,
+  candidatesToSuggestionItems,
+  createDocumentField,
+  materializeSuggestionsFromCandidates,
+  suggestionItemSchema,
+} from "../../platform/field-suggestions.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import { recordUsageEvent } from "../../platform/usage-events.js";
 import { emitWebhookEvent } from "../../platform/webhook-events.js";
@@ -564,6 +573,14 @@ app.post("/", async (c) => {
   const row = inserted[0];
   if (!row) {
     return c.json({ error: "server_error" }, 500);
+  }
+
+  if (parsedDocument?.fieldCandidates.length) {
+    await materializeSuggestionsFromCandidates(db, {
+      documentId: docId,
+      organizationId,
+      candidatesJson: JSON.stringify(parsedDocument.fieldCandidates),
+    });
   }
 
   const actor = getAuditActor({ mcp: c.get("mcp") });
@@ -1551,5 +1568,604 @@ app.get("/fields", async (c) => {
     }),
   });
 });
+
+
+const placeableFieldTypeSchema = z.enum([
+  "signature",
+  "text",
+  "number",
+  "date",
+  "checkbox",
+  "dropdown",
+  "radio",
+  "attachment",
+  "payment",
+]);
+
+const createFieldSchema = z.object({
+  id: z.string().min(1),
+  field_type: placeableFieldTypeSchema,
+  label: z.string().min(1),
+  is_required: z.boolean().optional().default(true),
+  page: z.number().int().min(1),
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+  recipient_id: z.string().optional(),
+  binding_key: z.string().optional(),
+  properties: z.record(z.string(), z.unknown()).optional(),
+});
+
+/**
+ * Create a signature/data field on a draft document (agent placement).
+ * Coordinates are percent-of-page (0–100), same as the web editor.
+ */
+app.post("/fields", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const rawBody: unknown = await c.req.json();
+  const parsed = createFieldSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return c.json({ error: "validation_error" }, 400);
+  }
+
+  const input = parsed.data;
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select({
+      id: documents.id,
+      status: documents.status,
+      pageCount: documents.pageCount,
+    })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.id, input.id),
+        eq(documents.organizationId, organizationId),
+        ne(documents.documentStatus, "deleted")
+      )
+    )
+    .limit(1);
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+
+  let recipientId: string | null = null;
+  if (input.recipient_id) {
+    const recipientRows = await db
+      .select({ id: recipients.id })
+      .from(recipients)
+      .where(
+        and(
+          eq(recipients.id, input.recipient_id),
+          eq(recipients.documentId, doc.id)
+        )
+      )
+      .limit(1);
+    if (!recipientRows[0]) {
+      return c.json({ error: "recipient_not_found" }, 404);
+    }
+    recipientId = recipientRows[0].id;
+  }
+
+  const properties: Record<string, unknown> = {
+    ...(input.properties ?? {}),
+  };
+  if (input.binding_key) {
+    properties.binding_key = input.binding_key;
+  }
+  const propertiesJson =
+    Object.keys(properties).length > 0 ? JSON.stringify(properties) : null;
+
+  const created = await createDocumentField(db, {
+    documentId: doc.id,
+    pageCount: doc.pageCount,
+    fieldType: input.field_type,
+    label: input.label,
+    isRequired: input.is_required,
+    page: input.page,
+    x: input.x,
+    y: input.y,
+    width: input.width,
+    height: input.height,
+    recipientId,
+    propertiesJson,
+  });
+  if ("error" in created) {
+    return c.json({ error: created.error }, created.status);
+  }
+
+  return c.json(
+    {
+      id: created.id,
+      public_id: created.publicId,
+      field_type: input.field_type,
+      label: input.label,
+      is_required: input.is_required,
+      page: input.page,
+      x: input.x,
+      y: input.y,
+      width: input.width,
+      height: input.height,
+      binding_key: input.binding_key ?? null,
+    },
+    201
+  );
+});
+
+const updateFieldSchema = z.object({
+  id: z.string().min(1),
+  field_id: z.string().min(1),
+  label: z.string().min(1).optional(),
+  is_required: z.boolean().optional(),
+  page: z.number().int().min(1).optional(),
+  x: z.number().optional(),
+  y: z.number().optional(),
+  width: z.number().optional(),
+  height: z.number().optional(),
+  recipient_id: z.string().nullable().optional(),
+  binding_key: z.string().nullable().optional(),
+  properties: z.record(z.string(), z.unknown()).optional(),
+});
+
+app.put("/fields/update", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const rawBody: unknown = await c.req.json();
+  const parsed = updateFieldSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return c.json({ error: "validation_error" }, 400);
+  }
+  const input = parsed.data;
+  const db = createD1(c.env.D1);
+
+  const docRows = await db
+    .select({ id: documents.id, status: documents.status })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.id, input.id),
+        eq(documents.organizationId, organizationId),
+        ne(documents.documentStatus, "deleted")
+      )
+    )
+    .limit(1);
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+
+  const fieldRows = await db
+    .select()
+    .from(signatureFields)
+    .where(
+      and(
+        eq(signatureFields.id, input.field_id),
+        eq(signatureFields.documentId, doc.id)
+      )
+    )
+    .limit(1);
+  const field = fieldRows[0];
+  if (!field) {
+    return c.json({ error: "field_not_found" }, 404);
+  }
+
+  const nextX = input.x ?? field.x;
+  const nextY = input.y ?? field.y;
+  const nextW = input.width ?? field.width;
+  const nextH = input.height ?? field.height;
+  const geo = {
+    x: nextX,
+    y: nextY,
+    width: nextW,
+    height: nextH,
+  };
+  // reuse createDocumentField geometry check via candidates helper
+  const check = validateFieldGeometry(geo);
+  if (!check.valid) {
+    return c.json({ error: check.error }, 400);
+  }
+
+  let properties = field.properties;
+  if (input.properties || input.binding_key !== undefined) {
+    const base = parseFieldProperties(field.properties) ?? {};
+    const merged = {
+      ...base,
+      ...(input.properties ?? {}),
+    };
+    if (input.binding_key === null) {
+      delete merged.binding_key;
+    } else if (typeof input.binding_key === "string") {
+      merged.binding_key = input.binding_key;
+    }
+    properties = JSON.stringify(merged);
+  }
+
+  let recipientId = field.recipientId;
+  if (input.recipient_id === null) {
+    recipientId = null;
+  } else if (typeof input.recipient_id === "string") {
+    const recipientRows = await db
+      .select({ id: recipients.id })
+      .from(recipients)
+      .where(
+        and(
+          eq(recipients.id, input.recipient_id),
+          eq(recipients.documentId, doc.id)
+        )
+      )
+      .limit(1);
+    if (!recipientRows[0]) {
+      return c.json({ error: "recipient_not_found" }, 404);
+    }
+    recipientId = recipientRows[0].id;
+  }
+
+  await db
+    .update(signatureFields)
+    .set({
+      label: input.label ?? field.label,
+      isRequired: input.is_required ?? field.isRequired,
+      page: input.page ?? field.page,
+      x: nextX,
+      y: nextY,
+      width: nextW,
+      height: nextH,
+      recipientId,
+      properties,
+      updatedAt: new Date(),
+    })
+    .where(eq(signatureFields.id, field.id));
+
+  return c.json({ success: true });
+});
+
+const deleteFieldSchema = z.object({
+  id: z.string().min(1),
+  field_id: z.string().min(1),
+});
+
+app.post("/fields/delete", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const rawBody: unknown = await c.req.json();
+  const parsed = deleteFieldSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return c.json({ error: "validation_error" }, 400);
+  }
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select({ id: documents.id, status: documents.status })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.id, parsed.data.id),
+        eq(documents.organizationId, organizationId),
+        ne(documents.documentStatus, "deleted")
+      )
+    )
+    .limit(1);
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+
+  await db
+    .delete(signatureFields)
+    .where(
+      and(
+        eq(signatureFields.id, parsed.data.field_id),
+        eq(signatureFields.documentId, doc.id)
+      )
+    );
+
+  return c.json({ success: true });
+});
+
+const placeCandidatesSchema = z.object({
+  id: z.string().min(1),
+  indices: z.array(z.number().int()).optional(),
+  recipient_id: z.string().optional(),
+});
+
+/**
+ * Place fields from stored `field_candidates` (anydoc heuristics with bbox).
+ * Extend-inspired: agents apply detected zones without a UI click loop.
+ */
+app.post("/place-candidates", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const rawBody: unknown = await c.req.json();
+  const parsed = placeCandidatesSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return c.json({ error: "validation_error" }, 400);
+  }
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select({
+      id: documents.id,
+      status: documents.status,
+      pageCount: documents.pageCount,
+      fieldCandidates: documents.fieldCandidates,
+    })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.id, parsed.data.id),
+        eq(documents.organizationId, organizationId),
+        ne(documents.documentStatus, "deleted")
+      )
+    )
+    .limit(1);
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.fieldCandidates) {
+    return c.json({ error: "no_candidates" }, 400);
+  }
+
+  let raw: unknown;
+  try {
+    raw = JSON.parse(doc.fieldCandidates) as unknown;
+  } catch {
+    return c.json({ error: "invalid_candidates" }, 400);
+  }
+  if (!Array.isArray(raw)) {
+    return c.json({ error: "invalid_candidates" }, 400);
+  }
+
+  const items = candidatesToSuggestionItems(
+    raw as Parameters<typeof candidatesToSuggestionItems>[0]
+  );
+  const result = await applySuggestionItems(db, {
+    documentId: doc.id,
+    pageCount: doc.pageCount,
+    items,
+    selectedFieldIndices: parsed.data.indices,
+  });
+
+  if (parsed.data.recipient_id && result.fieldIds.length > 0) {
+    const recipientRows = await db
+      .select({ id: recipients.id })
+      .from(recipients)
+      .where(
+        and(
+          eq(recipients.id, parsed.data.recipient_id),
+          eq(recipients.documentId, doc.id)
+        )
+      )
+      .limit(1);
+    if (recipientRows[0]) {
+      for (const fieldId of result.fieldIds) {
+        await db
+          .update(signatureFields)
+          .set({ recipientId: recipientRows[0].id, updatedAt: new Date() })
+          .where(eq(signatureFields.id, fieldId));
+      }
+    }
+  }
+
+  return c.json(result);
+});
+
+app.get("/field-suggestions", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:read")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const id = c.req.query("id");
+  if (!id) {
+    return c.json({ error: "missing_document_id" }, 400);
+  }
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select({
+      id: documents.id,
+      fieldCandidates: documents.fieldCandidates,
+    })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.id, id),
+        eq(documents.organizationId, organizationId),
+        ne(documents.documentStatus, "deleted")
+      )
+    )
+    .limit(1);
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "not_found" }, 404);
+  }
+
+  const rows = await db
+    .select()
+    .from(aiFieldSuggestions)
+    .where(
+      and(
+        eq(aiFieldSuggestions.documentId, doc.id),
+        eq(aiFieldSuggestions.status, "pending")
+      )
+    )
+    .orderBy(desc(aiFieldSuggestions.createdAt))
+    .limit(1);
+
+  let row = rows[0];
+  if (!row) {
+    const materialized = await materializeSuggestionsFromCandidates(db, {
+      documentId: doc.id,
+      organizationId,
+      candidatesJson: doc.fieldCandidates,
+    });
+    if (!materialized) {
+      return c.json({ suggestions: null });
+    }
+    return c.json({
+      suggestions: {
+        id: materialized.id,
+        public_id: materialized.publicId,
+        fields: materialized.fields,
+        model_used: materialized.modelUsed,
+        status: materialized.status,
+      },
+    });
+  }
+
+  let fields: unknown;
+  try {
+    fields = JSON.parse(row.fields) as unknown;
+  } catch {
+    fields = [];
+  }
+
+  return c.json({
+    suggestions: {
+      id: row.id,
+      public_id: row.publicId,
+      fields,
+      model_used: row.modelUsed,
+      status: row.status,
+    },
+  });
+});
+
+const applySuggestionsSchema = z.object({
+  id: z.string().min(1),
+  suggestion_id: z.string().min(1),
+  selected_indices: z.array(z.number().int()).optional(),
+});
+
+app.post("/field-suggestions/apply", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const rawBody: unknown = await c.req.json();
+  const parsed = applySuggestionsSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return c.json({ error: "validation_error" }, 400);
+  }
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select({
+      id: documents.id,
+      status: documents.status,
+      pageCount: documents.pageCount,
+    })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.id, parsed.data.id),
+        eq(documents.organizationId, organizationId),
+        ne(documents.documentStatus, "deleted")
+      )
+    )
+    .limit(1);
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+
+  const suggestionRows = await db
+    .select()
+    .from(aiFieldSuggestions)
+    .where(
+      and(
+        eq(aiFieldSuggestions.publicId, parsed.data.suggestion_id),
+        eq(aiFieldSuggestions.documentId, doc.id),
+        eq(aiFieldSuggestions.status, "pending")
+      )
+    )
+    .limit(1);
+  const suggestion = suggestionRows[0];
+  if (!suggestion) {
+    return c.json({ error: "suggestion_not_found" }, 404);
+  }
+
+  let rawFields: unknown;
+  try {
+    rawFields = JSON.parse(suggestion.fields) as unknown;
+  } catch {
+    return c.json({ error: "invalid_suggestion" }, 400);
+  }
+  const fieldsParsed = suggestionItemSchema.array().safeParse(rawFields);
+  if (!fieldsParsed.success) {
+    return c.json({ error: "invalid_suggestion" }, 400);
+  }
+
+  const result = await applySuggestionItems(db, {
+    documentId: doc.id,
+    pageCount: doc.pageCount,
+    items: fieldsParsed.data,
+    selectedFieldIndices: parsed.data.selected_indices,
+  });
+
+  await db
+    .update(aiFieldSuggestions)
+    .set({ status: "applied", updatedAt: new Date() })
+    .where(eq(aiFieldSuggestions.id, suggestion.id));
+
+  return c.json(result);
+});
+
 
 export default app;

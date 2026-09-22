@@ -5,6 +5,11 @@ export const fieldCandidateSchema = z.object({
   label: z.string(),
   page: z.number().optional(),
   line: z.number(),
+  x: z.number().optional(),
+  y: z.number().optional(),
+  width: z.number().optional(),
+  height: z.number().optional(),
+  confidence: z.number().optional(),
 });
 
 const parseResultSchema = z.object({

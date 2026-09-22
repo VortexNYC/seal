@@ -9,6 +9,11 @@ import {
   member,
   organization,
 } from "../global/schema.js";
+import {
+  applySuggestionItems,
+  materializeSuggestionsFromCandidates,
+  suggestionItemSchema,
+} from "../platform/field-suggestions.js";
 import type { Variables } from "../platform/types.js";
 
 const app = new OpenAPIHono<{
@@ -66,18 +71,6 @@ app.use("/*", async (c, next) => {
 
   c.set("organization", orgRow[0]);
   return next();
-});
-
-const suggestionItemSchema = z.object({
-  fieldType: z.string(),
-  page: z.number().int(),
-  x: z.number(),
-  y: z.number(),
-  width: z.number(),
-  height: z.number(),
-  label: z.string(),
-  confidence: z.number(),
-  isRequired: z.boolean(),
 });
 
 const fieldSuggestionSchema = z
@@ -153,7 +146,47 @@ app.openapi(getFieldSuggestionsRoute, async (c) => {
 
   const row = rows[0];
   if (!row) {
-    return c.json(null, 200);
+    const candidateRows = await db
+      .select({
+        id: documents.id,
+        fieldCandidates: documents.fieldCandidates,
+      })
+      .from(documents)
+      .where(
+        and(
+          eq(documents.publicId, publicId),
+          eq(documents.organizationId, organizationId)
+        )
+      )
+      .limit(1);
+    const candidateDoc = candidateRows[0];
+    if (!candidateDoc) {
+      return c.json(null, 200);
+    }
+    const materialized = await materializeSuggestionsFromCandidates(db, {
+      documentId: candidateDoc.id,
+      organizationId,
+      candidatesJson: candidateDoc.fieldCandidates,
+    });
+    if (!materialized) {
+      return c.json(null, 200);
+    }
+    return c.json(
+      {
+        id: materialized.id,
+        publicId: materialized.publicId,
+        documentId: candidateDoc.id,
+        organizationId,
+        fields: materialized.fields,
+        modelUsed: materialized.modelUsed,
+        tokensUsed: materialized.tokensUsed,
+        processingTimeMs: materialized.processingTimeMs,
+        status: materialized.status,
+        createdAt: materialized.createdAt.getTime(),
+        updatedAt: materialized.updatedAt.getTime(),
+      },
+      200
+    );
   }
 
   return c.json(
@@ -373,10 +406,78 @@ const applyFieldSuggestionsRoute = createRoute({
 });
 
 app.openapi(applyFieldSuggestionsRoute, async (c) => {
+  const organizationId = c.get("organization").id;
+  const { publicId, suggestionId } = c.req.valid("param");
   const { selectedFieldIndices } = c.req.valid("json");
-  void selectedFieldIndices;
 
-  return c.json({ fieldIds: [] as string[], count: 0 }, 200);
+  const db = createD1(c.env.D1);
+
+  const docRows = await db
+    .select({
+      id: documents.id,
+      status: documents.status,
+      pageCount: documents.pageCount,
+    })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ fieldIds: [] as string[], count: 0 }, 200);
+  }
+  if (doc.status !== "draft") {
+    return c.json({ fieldIds: [] as string[], count: 0 }, 200);
+  }
+
+  const suggestionRows = await db
+    .select()
+    .from(aiFieldSuggestions)
+    .where(
+      and(
+        eq(aiFieldSuggestions.publicId, suggestionId),
+        eq(aiFieldSuggestions.documentId, doc.id),
+        eq(aiFieldSuggestions.organizationId, organizationId),
+        eq(aiFieldSuggestions.status, "pending")
+      )
+    )
+    .limit(1);
+
+  const suggestion = suggestionRows[0];
+  if (!suggestion) {
+    return c.json({ fieldIds: [] as string[], count: 0 }, 200);
+  }
+
+  let rawFields: unknown;
+  try {
+    rawFields = JSON.parse(suggestion.fields) as unknown;
+  } catch {
+    return c.json({ fieldIds: [] as string[], count: 0 }, 200);
+  }
+
+  const parsedFields = z.array(suggestionItemSchema).safeParse(rawFields);
+  if (!parsedFields.success) {
+    return c.json({ fieldIds: [] as string[], count: 0 }, 200);
+  }
+
+  const result = await applySuggestionItems(db, {
+    documentId: doc.id,
+    pageCount: doc.pageCount,
+    items: parsedFields.data,
+    selectedFieldIndices,
+  });
+
+  await db
+    .update(aiFieldSuggestions)
+    .set({ status: "applied", updatedAt: new Date() })
+    .where(eq(aiFieldSuggestions.id, suggestion.id));
+
+  return c.json(result, 200);
 });
 
 const dismissFieldSuggestionsRoute = createRoute({

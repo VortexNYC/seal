@@ -6,6 +6,7 @@ import { registerAnalyticsTools } from "./analytics";
 import { registerAuditTools } from "./audit";
 import { registerContactTools } from "./contacts";
 import { registerDocumentExtraTools } from "./document_extra";
+import { registerFieldTools } from "./fields";
 import { registerDocumentTools } from "./documents";
 import { registerMemberTools } from "./members";
 import { registerRecipientTools } from "./recipients";
@@ -30,6 +31,7 @@ export function registerAllTools(
   registerContactTools(server, client);
   registerDocumentTools(server, client);
   registerDocumentExtraTools(server, client);
+  registerFieldTools(server, client);
   registerMemberTools(server, client);
   registerRecipientTools(server, client);
   registerSearchTools(server, client);
