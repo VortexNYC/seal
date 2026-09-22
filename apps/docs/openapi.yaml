@@ -190,6 +190,10 @@ components:
           description: Height as a fraction of page height (0–1)
         properties:
           type: object
+          description: >
+            Free-form field properties. Use `binding_key` to bind a fillable
+            field to an external proposal/deal key (programmatic sync instead
+            of agentic OCR reconstruction — see GitHub #604).
           properties:
             placeholder:
               type: string
@@ -199,6 +203,12 @@ components:
               type: array
               items:
                 type: string
+            binding_key:
+              type: string
+              description: >
+                External structured-data key (e.g. a Vortex Payments proposal
+                field). When set, agents/integrations write this field from the
+                bound source instead of guessing via OCR.
 
     Signature:
       type: object
@@ -1546,9 +1556,12 @@ paths:
       operationId: generateUploadUrl
       summary: Generate upload URL
       description: >
-        Returns a short-lived upload URL for uploading a PDF to Seal's storage.
-        Upload the file with a `POST` request using `Content-Type: application/pdf`,
-        then pass the returned `storage_id` to `POST /documents`.
+        Returns a short-lived upload URL. `POST` the file bytes to that URL with
+        the matching `Content-Type`. Accepted types: `application/pdf`, DOCX,
+        XLSX, PPTX, and CSV. Non-PDF office/CSV uploads are converted to a
+        fixed-layout PDF via the convert worker before storage; the original is
+        retained under an `originals/` key. Pass the returned `storageId` to
+        `POST /documents`.
       responses:
         "200":
           description: Upload URL generated
@@ -1564,6 +1577,52 @@ paths:
                     description: Pre-signed URL — expires in 60 seconds
         "401":
           $ref: "#/components/responses/Unauthorized"
+
+
+  /uploads:
+    post:
+      tags: [Uploads]
+      operationId: uploadFile
+      summary: Upload a document file
+      description: >
+        Upload file bytes to the URL from `POST /uploads/generate-url` (pass the
+        token as a query param). PDFs are stored as-is. DOCX/XLSX/PPTX/CSV are
+        converted to PDF via the convert worker; originals are kept. Requires a
+        valid upload token (not a normal API key on this path).
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/pdf:
+            schema: { type: string, format: binary }
+          application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+            schema: { type: string, format: binary }
+          application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+            schema: { type: string, format: binary }
+          application/vnd.openxmlformats-officedocument.presentationml.presentation:
+            schema: { type: string, format: binary }
+          text/csv:
+            schema: { type: string, format: binary }
+      responses:
+        "200":
+          description: Stored (PDF bytes available at storageId)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [storageId]
+                properties:
+                  storageId: { type: string }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "502":
+          description: Conversion failed
 
   # ──────────────────────────────────────────────────────────────────────────
   # Contacts
