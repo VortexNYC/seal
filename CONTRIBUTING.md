@@ -94,13 +94,13 @@ Put the returned D1 `database_id` into `apps/api/wrangler.toml` under
 
 Repeat for sibling workers you plan to run:
 
-| Worker | Config | Notes |
-| --- | --- | --- |
-| API | `apps/api/wrangler.toml` | D1 + R2 + Email + service bindings |
-| Web | `apps/web/wrangler.jsonc` | Assets / `app` hostname |
-| MCP | `apps/mcp-worker/wrangler.jsonc` | Points at your API origin |
-| Anydoc | `apps/anydoc-worker/wrangler.jsonc` | Optional enrichment |
-| Convert | `apps/convert-worker/wrangler.jsonc` | Optional DOCX→PDF (Containers) |
+| Worker  | Config                               | Notes                              |
+| ------- | ------------------------------------ | ---------------------------------- |
+| API     | `apps/api/wrangler.toml`             | D1 + R2 + Email + service bindings |
+| Web     | `apps/web/wrangler.jsonc`            | Assets / `app` hostname            |
+| MCP     | `apps/mcp-worker/wrangler.jsonc`     | Points at your API origin          |
+| Anydoc  | `apps/anydoc-worker/wrangler.jsonc`  | Optional enrichment                |
+| Convert | `apps/convert-worker/wrangler.jsonc` | Optional DOCX→PDF (Containers)     |
 
 Update `[[env.production.services]]` worker names so API binds to **your**
 anydoc/convert worker names (or remove those bindings until you need them).
@@ -140,6 +140,7 @@ SEAL_API_KEY=seal_… node scripts/smoke-prod.mjs --api https://<your-api>
 
 Email in production needs Cloudflare Email Routing / a verified `EMAIL_FROM`
 sender — local/dev will not send real mail by default.
+
 ## Code rules
 
 - TypeScript strict: no `any`, no `@ts-ignore` / `@ts-expect-error`
