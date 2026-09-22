@@ -1,5 +1,8 @@
 name: Artifacts Sync
 
+# Mirrors every push into the vortex Artifacts git remote that triggers
+# cloudflare-ci. This is the sync bridge — not a deploy / quality pipeline.
+
 on:
   push:
     branches:

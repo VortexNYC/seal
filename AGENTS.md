@@ -97,19 +97,27 @@ Use targeted `pnpm --filter ... run dev` commands for other workspaces; `@seal/t
 ## CI/CD — owned by cloudflare-ci
 
 Deploys run through the shared `cloudflare-ci` worker (`~/Projects/cloudflare-ci`),
-triggered by pushes to the `vortex` Artifacts namespace — not GitHub Actions.
-Pipeline: `deps → build → preview (branches) / migrate+deploy (main)`.
+triggered by pushes to the `vortex` Artifacts namespace — not by a GitHub Actions
+deploy pipeline. Pipeline: `deps → build → preview (branches) / migrate+deploy (main)`.
+
+GitHub Actions kept here (narrow roles only):
+
+- `artifacts-sync.yml` — mirrors every push into the Artifacts git remote that
+  triggers cloudflare-ci. This is the sync bridge, not a deploy.
+- `secrets.yml` — manual-dispatch upload/verify of Worker secrets
+  (`wrangler secret put`). cloudflare-ci has no secrets path yet; when it does,
+  delete this workflow.
+
+Do not reintroduce `deploy.yml` / `migrate.yml` / `ci.yml`. Checks/tests gate
+locally via the `vp` pre-push hook.
 
 - `pnpm run build:all` must emit `dist/` **and** `.wrangler/deploy/config.json`
   per app (Astro/Vite wrangler redirect) — CI snapshots carry both forward;
   preview/deploy only `wrangler versions upload`/`deploy`, never rebuild.
-- Checks/tests gate locally via the `vp` pre-push hook — they do not run in
-  CI containers. Keep `VP_GIT_HOOKS=0` behavior out of repo code.
+- Keep `VP_GIT_HOOKS=0` behavior out of repo code.
 - If CI behavior is wrong (timeouts, caching, capacity, deploy shape), fix it
   in `cloudflare-ci` — do not add workflow files, hook packages, or config
   workarounds here.
-- `.github/workflows/` is legacy manual-dispatch only; the Artifacts path is
-  the real pipeline.
 
 ## NOTES
 
