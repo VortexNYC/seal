@@ -209,20 +209,20 @@ await clickButton(page, "Save");
 
 ## 📊 CI/CD Integration
 
-Tests run automatically on:
+E2E is not gated in GitHub Actions. Run locally (and before merge) via:
 
-- Push to `main` or `develop` branches
-- Pull requests to `main` or `develop`
+```bash
+pnpm --dir apps/web run test:e2e
+```
 
-See `.github/workflows/ci.yml` for CI configuration.
+Unit/type/lint gates run through the `vp` pre-push hook. Deploys run through
+Artifacts → cloudflare-ci (see root `AGENTS.md`).
 
-### Required Secrets
+### Required env for local E2E
 
-Configure these in GitHub repository settings:
-
-- `E2E_TEST_USER_EMAIL`
-- `E2E_TEST_USER_PASSWORD`
-- `E2E_TEST_EMAIL_CODE`
+- `E2E_TEST_USER_EMAIL` (or `TEST_USER_EMAIL`)
+- `E2E_TEST_USER_PASSWORD` (or `TEST_USER_PASSWORD`)
+- `E2E_TEST_EMAIL_CODE` (when the flow requires it)
 - `VITE_API_URL`
 
 ### Setup artifacts
