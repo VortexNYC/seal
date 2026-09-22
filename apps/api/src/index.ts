@@ -1,5 +1,9 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { verifyInternalApiKey } from "@seal/internal-auth";
+import {
+  authorizeInternalRequest,
+  isInternetFacingHostname,
+} from "@seal/internal-auth";
+import { WorkerEntrypoint } from "cloudflare:workers";
 import { and, desc, eq, not, or } from "drizzle-orm";
 import { cors } from "hono/cors";
 import { z } from "zod";
@@ -78,8 +82,9 @@ app.use(async (c, next) => {
 });
 
 app.use("/internal/*", async (c, next) => {
-  if (!verifyInternalApiKey(c)) {
-    return c.json({ error: "unauthorized" }, 401);
+  const decision = authorizeInternalRequest(c, c.req.url);
+  if (!decision.ok) {
+    return c.json({ error: decision.error }, decision.status);
   }
   return next();
 });
@@ -628,11 +633,6 @@ app.post("/internal/webhooks/vortex-billing/subscription", async (c) => {
 app.get(
   "/internal/organizations/:organizationId/subscription-plan",
   async (c) => {
-    const key = c.req.header("x-internal-api-key");
-    if (key !== c.env.INTERNAL_API_KEY) {
-      return c.json({ error: "unauthorized" }, 401);
-    }
-
     const organizationId = c.req.param("organizationId");
     const db = createD1(c.env.D1);
 
@@ -688,11 +688,6 @@ app.get(
 app.get(
   "/internal/organizations/:organizationId/has-active-non-vortex-provider-subscription",
   async (c) => {
-    const key = c.req.header("x-internal-api-key");
-    if (key !== c.env.INTERNAL_API_KEY) {
-      return c.json({ error: "unauthorized" }, 401);
-    }
-
     const organizationId = c.req.param("organizationId");
     const db = createD1(c.env.D1);
 
@@ -805,6 +800,23 @@ app.route("/api/v1/organizations/:organizationSlug/billing", billingV1);
 app.route("/api/v1/organizations/:organizationSlug/usage", usageV1);
 
 export default app;
+
+/**
+ * Service-binding-only entrypoint for `/internal/*`.
+ * Bind as `entrypoint = "InternalApi"` from other Workers on this account.
+ * Rewrites internet-facing hostnames so callers may pass the public URL
+ * shape without the public hostname gate rejecting the request.
+ */
+export class InternalApi extends WorkerEntrypoint<CloudflareBindings> {
+  override async fetch(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+    if (isInternetFacingHostname(url.hostname)) {
+      url.hostname = "internal";
+      request = new Request(url, request);
+    }
+    return app.fetch(request, this.env, this.ctx);
+  }
+}
 
 export const scheduled: ExportedHandlerScheduledHandler<
   CloudflareBindings
