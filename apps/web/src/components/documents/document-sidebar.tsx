@@ -2,6 +2,7 @@ import { Button } from "@cloudflare/kumo/components/button";
 import { Collapsible } from "@cloudflare/kumo/components/collapsible";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Label } from "@cloudflare/kumo/components/label";
+import { useMutation } from "@tanstack/react-query";
 import {
   ActivityIcon,
   ChevronDownIcon,
@@ -12,14 +13,22 @@ import {
   PlusIcon,
   SaveIcon,
   ScanSearchIcon,
+  ScissorsIcon,
   SendIcon,
   SettingsIcon,
   UserIcon,
   UserPlusIcon,
   UsersIcon,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
+import {
+  CitationReviewPanel,
+  DocumentSplitsPanel,
+  createInitialSplits,
+  type DocumentSplitGroup,
+} from "@/components/kumo-docs";
+import { splitDocument } from "@/lib/api-client";
 import type { ActivityEvent, ActivityEventType } from "@/lib/document-activity";
 import {
   formatDate,
@@ -28,6 +37,7 @@ import {
   getInitials,
 } from "@/lib/formatting";
 import { parseId } from "@/lib/ids";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 import { AIInsightsPanel } from "./ai-annotation-overlays";
@@ -50,6 +60,7 @@ type FieldListRecipient = Parameters<typeof FieldList>[0]["recipients"][number];
 
 interface DocumentSidebarProps {
   documentId: string;
+  documentPublicId: string;
   slug: string;
 
   // Document metadata
@@ -516,7 +527,7 @@ function AIInsightsSection({
         />
       </Collapsible.Trigger>
       <Collapsible.Panel className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
-        <div className="mt-3">
+        <div className="mt-3 space-y-4">
           <AIInsightsPanel
             annotations={documentAnnotations.annotations}
             enabledCategories={documentAnnotations.enabledCategories}
@@ -524,7 +535,115 @@ function AIInsightsSection({
             onDismiss={documentAnnotations.handleDismiss}
             onPageJump={onPageJump}
           />
+          <CitationReviewPanel
+            className="border-border max-h-80 overflow-hidden rounded-lg border"
+            fields={documentAnnotations.annotations.annotations.map(
+              (annotation, index) => ({
+                id: `${annotation.page}-${index}`,
+                label: annotation.summary || annotation.category,
+                value: annotation.text,
+                category: annotation.category,
+                severity: annotation.severity,
+                bbox: {
+                  page: annotation.page,
+                  x: annotation.x,
+                  y: annotation.y,
+                  width: annotation.width,
+                  height: annotation.height,
+                },
+              })
+            )}
+            onJumpToCitation={(field) => {
+              if (field.bbox) onPageJump(field.bbox.page);
+            }}
+            onFocus={(field) => {
+              if (field.bbox) onPageJump(field.bbox.page);
+            }}
+            onDismiss={documentAnnotations.handleDismiss}
+          />
         </div>
+      </Collapsible.Panel>
+    </Collapsible.Root>
+  );
+}
+
+
+function DocumentSplitsSection({
+  slug,
+  documentPublicId,
+  pageCount,
+  canEdit,
+  open,
+  onOpenChange,
+  onPageJump,
+}: {
+  slug: string;
+  documentPublicId: string;
+  pageCount: number;
+  canEdit: boolean;
+  open: boolean;
+  onOpenChange: () => void;
+  onPageJump: (page: number) => void;
+}) {
+  const [splits, setSplits] = useState<DocumentSplitGroup[]>(() =>
+    createInitialSplits(pageCount)
+  );
+
+  const applyMutation = useMutation({
+    mutationFn: () =>
+      splitDocument(
+        slug,
+        documentPublicId,
+        splits
+          .filter((s) => s.pages.length > 0 && s.title.trim().length > 0)
+          .map((s) => ({ title: s.title.trim(), pages: s.pages }))
+      ),
+    onSuccess: (result) => {
+      toast.success(
+        `Created ${result.documents.length} document${result.documents.length === 1 ? "" : "s"}`
+      );
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to split document"
+      );
+    },
+  });
+
+  if (!canEdit || pageCount < 2) return null;
+
+  return (
+    <Collapsible.Root
+      open={open}
+      onOpenChange={onOpenChange}
+      className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
+    >
+      <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
+        <div className="flex items-center gap-3">
+          <div className="bg-muted text-foreground flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
+            <ScissorsIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
+          </div>
+          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
+            Splits
+          </span>
+        </div>
+        <ChevronDownIcon
+          className={cn(
+            "text-muted-foreground h-4 w-4 transition-transform duration-200",
+            open && "rotate-180"
+          )}
+        />
+      </Collapsible.Trigger>
+      <Collapsible.Panel className="border-border/50 border-t">
+        <DocumentSplitsPanel
+          className="max-h-96"
+          splits={splits}
+          pageCount={pageCount}
+          onChange={setSplits}
+          onSelectPage={onPageJump}
+          onApply={() => applyMutation.mutate()}
+          applying={applyMutation.isPending}
+        />
       </Collapsible.Panel>
     </Collapsible.Root>
   );

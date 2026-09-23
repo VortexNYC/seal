@@ -43,6 +43,7 @@ import {
 import { organizationMiddleware } from "../platform/organization-middleware.js";
 import type { Variables } from "../platform/types.js";
 import ai from "./ai.js";
+import documentPower from "./document-power.js";
 import {
   generateSigningToken,
   sendDocumentForSigning,
@@ -4942,5 +4943,6 @@ app.openapi(saveAsTemplateRouteDef, async (c) => {
 });
 
 app.route("/:slug/:publicId/ai", ai);
+app.route("/:slug/:publicId/power", documentPower);
 
 export default app;
