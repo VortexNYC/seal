@@ -97,8 +97,10 @@ The pattern that beat generic SaaS twice now:
 
 - Hairline rules + `+` registration ticks framing sections; numbered blocks
   `( 01 / 04 )`; mono micro-labels; zero shadows, zero rounded card grids.
-- Hero = headline + **install tabs** (real package commands per SDK
-  language) + one real code artifact — the product is the artifact.
+- Hero = **brand wordmark** (hero-level) + one thesis line + one sentence +
+  CTAs above the fold. Install tabs + one real code artifact sit in the
+  first section below — the product is still the artifact, not buried in
+  the hero chrome.
 - A manifesto/thesis section in display type, not marketing bullets.
 - A literal table of real API routes (verify against the OpenAPI spec —
   never invent paths).
