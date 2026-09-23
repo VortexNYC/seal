@@ -258,16 +258,13 @@ export function ShareDocumentDialog({
         {/* Dialog Content */}
         <DialogPrimitive.Content className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] fixed top-1/2 left-1/2 z-50 w-[calc(100%-32px)] max-w-[520px] -translate-x-1/2 -translate-y-1/2 duration-200">
           {/* Card with layered shadow for depth */}
-          <div className="bg-card ring-border/40 relative overflow-hidden rounded-2xl shadow-2xl ring-1">
-            {/* Decorative top accent - blue for sharing */}
-            <div className="from-info/80 via-info/90 to-primary/80 absolute top-0 right-0 left-0 h-1 bg-gradient-to-r" />
-
+          <div className="bg-card border-border relative overflow-hidden rounded-xl border shadow-sm">
             {/* Header */}
             <div className="border-border border-b px-6 pt-6 pb-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="bg-info-surface flex h-10 w-10 items-center justify-center rounded-xl">
-                    <Share2Icon className="text-info h-5 w-5" />
+                  <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-lg">
+                    <Share2Icon className="text-foreground h-5 w-5" />
                   </div>
                   <div>
                     <DialogPrimitive.Title className="text-foreground font-['Newsreader',Georgia,serif] text-lg font-medium">
@@ -334,10 +331,10 @@ export function ShareDocumentDialog({
                             onClick={() => handleSharingModeChange(mode)}
                             disabled={isUpdating || isDisabled}
                             className={cn(
-                              "relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-colors",
+                              "relative flex flex-col items-center gap-2 rounded-xl border p-3 transition-colors",
                               isSelected
-                                ? "border-info bg-info-surface"
-                                : "border-border hover:border-border hover:bg-muted",
+                                ? "border-foreground bg-muted"
+                                : "border-border hover:bg-muted/60",
                               (isUpdating || isDisabled) &&
                                 "cursor-not-allowed opacity-50"
                             )}
@@ -346,7 +343,7 @@ export function ShareDocumentDialog({
                               !documentAccess.canUseTeamSharing && (
                                 <Badge
                                   variant="outline"
-                                  className="from-info to-primary text-primary-foreground absolute -top-2 -right-2 border-0 bg-gradient-to-r px-1.5 py-0.5 text-[10px]"
+                                  className="border-border bg-card text-muted-foreground absolute -top-2 -right-2 px-1.5 py-0.5 text-[10px]"
                                 >
                                   Pro
                                 </Badge>
@@ -355,7 +352,7 @@ export function ShareDocumentDialog({
                               className={cn(
                                 "rounded-lg p-2",
                                 isSelected
-                                  ? "bg-info-surface text-info"
+                                  ? "bg-card text-foreground"
                                   : "bg-muted text-muted-foreground"
                               )}
                             >
@@ -365,7 +362,7 @@ export function ShareDocumentDialog({
                               className={cn(
                                 "text-xs font-medium",
                                 isSelected
-                                  ? "text-info"
+                                  ? "text-foreground"
                                   : "text-muted-foreground"
                               )}
                             >
@@ -402,7 +399,7 @@ export function ShareDocumentDialog({
                               <div className="flex items-center gap-2">
                                 <span>{member.name ?? member.email}</span>
                                 {member.name && (
-                                  <span className="text-kumo-secondary text-xs">
+                                  <span className="text-muted-foreground text-xs">
                                     {member.email}
                                   </span>
                                 )}
@@ -458,7 +455,7 @@ export function ShareDocumentDialog({
                         className="bg-muted flex items-center justify-between rounded-xl p-3"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="from-warning to-warning/70 text-primary-foreground flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br text-xs">
+                          <div className="bg-warning-surface text-warning-foreground flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium">
                             {getInitials(
                               documentAccess.owner.name ??
                                 documentAccess.owner.email
@@ -498,7 +495,7 @@ export function ShareDocumentDialog({
                           className="bg-muted flex items-center justify-between rounded-xl p-3"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="from-primary to-primary/70 text-primary-foreground flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br text-xs">
+                            <div className="bg-muted text-foreground flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium">
                               {getInitials(access.userName ?? access.userEmail)}
                             </div>
                             <div>

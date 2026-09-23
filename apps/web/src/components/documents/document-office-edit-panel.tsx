@@ -1,11 +1,10 @@
 import type { JSX } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 
 import { DocxEditor } from "@/components/kumo-docs/docx-editor";
 import { XlsxEditor, type XlsxSheet } from "@/components/kumo-docs/xlsx-editor";
-import { CsvViewer } from "@/components/kumo-docs/csv-viewer";
 import {
   getDocumentPreview,
   replaceDocumentOriginal,
@@ -16,6 +15,10 @@ import {
 } from "@/lib/html-to-docx";
 import { toast } from "@/lib/toast";
 
+const XLSX_CONTENT_TYPE =
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+const CSV_CONTENT_TYPE = "text/csv";
+
 function bytesToBase64(bytes: Uint8Array): string {
   let binary = "";
   const chunk = 0x8000;
@@ -23,6 +26,10 @@ function bytesToBase64(bytes: Uint8Array): string {
     binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
   }
   return btoa(binary);
+}
+
+function textToBase64(text: string): string {
+  return bytesToBase64(new TextEncoder().encode(text));
 }
 
 function sheetsToXlsxBase64(sheets: XlsxSheet[]): string {
@@ -36,6 +43,26 @@ function sheetsToXlsxBase64(sheets: XlsxSheet[]): string {
     bookType: "xlsx",
   }) as Uint8Array;
   return bytesToBase64(array);
+}
+
+function csvToSheets(content: string): XlsxSheet[] {
+  const workbook = XLSX.read(content, { type: "string", raw: false });
+  const name = workbook.SheetNames[0] ?? "Sheet1";
+  const sheet = workbook.Sheets[name];
+  const rows = sheet
+    ? (XLSX.utils.sheet_to_json<string[]>(sheet, {
+        header: 1,
+        defval: "",
+        raw: false,
+      }) as string[][])
+    : [[""]];
+  return [{ name, rows: rows.length > 0 ? rows : [[""]] }];
+}
+
+function sheetsToCsv(sheets: XlsxSheet[]): string {
+  const sheet = sheets[0] ?? { name: "Sheet1", rows: [[""]] };
+  const worksheet = XLSX.utils.aoa_to_sheet(sheet.rows);
+  return XLSX.utils.sheet_to_csv(worksheet);
 }
 
 /**
@@ -55,7 +82,6 @@ export function DocumentOfficeEditPanel({
   const [format, setFormat] = useState<"docx" | "xlsx" | "csv" | "unsupported">(
     "unsupported"
   );
-  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [csvContent, setCsvContent] = useState<string | null>(null);
   const [buffer, setBuffer] = useState<ArrayBuffer | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,7 +105,6 @@ export function DocumentOfficeEditPanel({
         } else {
           setFormat("unsupported");
         }
-        setDownloadUrl(preview.download_url);
         setCsvContent(preview.content);
         if (
           preview.download_url &&
@@ -89,6 +114,15 @@ export function DocumentOfficeEditPanel({
           if (!response.ok) throw new Error("download failed");
           const data = await response.arrayBuffer();
           if (!cancelled) setBuffer(data);
+        } else if (
+          preview.format === "csv" &&
+          !preview.content &&
+          preview.download_url
+        ) {
+          const response = await fetch(preview.download_url);
+          if (!response.ok) throw new Error("download failed");
+          const text = await response.text();
+          if (!cancelled) setCsvContent(text);
         }
       } catch {
         if (!cancelled) setFormat("unsupported");
@@ -115,6 +149,11 @@ export function DocumentOfficeEditPanel({
     },
   });
 
+  const csvSheets = useMemo(
+    () => (csvContent !== null ? csvToSheets(csvContent) : null),
+    [csvContent]
+  );
+
   if (loading) {
     return (
       <p className="text-muted-foreground p-4 text-sm">Loading original…</p>
@@ -128,22 +167,22 @@ export function DocumentOfficeEditPanel({
       </p>
     );
   }
-  if (format === "csv") {
+  if (format === "csv" && csvSheets) {
     return (
-      <div className="space-y-2">
-        <p className="text-muted-foreground text-xs">
-          CSV is viewable here. Upload a replacement file to edit cell data.
-        </p>
-        {csvContent ? <CsvViewer content={csvContent} /> : null}
-        {downloadUrl ? (
-          <a
-            href={downloadUrl}
-            className="text-foreground text-sm underline underline-offset-2"
-          >
-            Download CSV
-          </a>
-        ) : null}
-      </div>
+      <XlsxEditor
+        sheets={csvSheets}
+        saving={saveMutation.isPending}
+        onSave={
+          canEdit
+            ? (sheets) => {
+                saveMutation.mutate({
+                  contentBase64: textToBase64(sheetsToCsv(sheets)),
+                  contentType: CSV_CONTENT_TYPE,
+                });
+              }
+            : undefined
+        }
+      />
     );
   }
   if (format === "docx" && buffer) {
@@ -175,8 +214,7 @@ export function DocumentOfficeEditPanel({
             ? (sheets) => {
                 saveMutation.mutate({
                   contentBase64: sheetsToXlsxBase64(sheets),
-                  contentType:
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                  contentType: XLSX_CONTENT_TYPE,
                 });
               }
             : undefined

@@ -16,7 +16,7 @@ Agents and humans share the same capabilities. Seal is a document platform
 | Excel Viewer | `XlsxViewer` | Original preview | preview |
 | Excel Editor | `XlsxEditor` | Document detail **Edit original** | `seal_replace_document_original` |
 | PowerPoint Viewer | `PptxViewer` | Original preview (PDF slide rasters) | preview |
-| CSV Viewer | `CsvViewer` | Original preview / Edit original | preview |
+| CSV Viewer | `CsvViewer` | Original preview / **Edit original** (editable + save) | `seal_replace_document_original` |
 | File Upload | `FileUpload` | Upload dialog | upload tools |
 | File System (Finder) | `FileSystem` | Documents **Finder** view | folder/list tools |
 | Bounding Box Citations | `CitationReviewPanel` | Document sidebar | annotation tools |
@@ -31,7 +31,7 @@ Agents and humans share the same capabilities. Seal is a document platform
 
 - **PDF tools** (default) — EmbedPDF annotate / redact / forms / signatures / page organize / export → Save to Seal
 - **Fields** — signature field placement (PDFium page raster + Konva e-sign canvas)
-- **Edit original** — DOCX/XLSX/CSV editors (DOCX saves real OpenXML + reconvert)
+- **Edit original** — DOCX/XLSX/CSV editors (real OpenXML/CSV write-back + reconvert)
 - **Structure** — anydoc field candidates + annotation layout blocks + extraction schema
 
 PDF engine policy: EmbedPDF/PDFium for all product PDF surfaces (viewer, editor,

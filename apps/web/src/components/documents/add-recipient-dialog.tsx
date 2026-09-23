@@ -215,7 +215,7 @@ export function AddRecipientDialog({
                         selectedMember?.id === member.userId && "bg-accent"
                       )}
                     >
-                      <div className="from-primary to-primary/70 text-primary-foreground flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br text-xs">
+                      <div className="bg-muted text-foreground flex h-8 w-8 items-center justify-center overflow-hidden rounded-full text-xs font-medium">
                         {member.avatarUrl ? (
                           <img
                             src={member.avatarUrl}
