@@ -1,16 +1,24 @@
 # Kumo Docs — Seal-owned Extend surface
 
-Rebuild of Extend UI capabilities on `@cloudflare/kumo` + Seal Taupe tokens.
+Every Extend UI catalog component, rebuilt on `@cloudflare/kumo` + Seal Taupe.
 **Never** `pnpm add @extend/*`. Extend is reference only (SEA-26).
 
 | Extend | Seal (`kumo-docs`) | Status |
 | --- | --- | --- |
-| PDF Viewer | existing `documents/pdf-*` + `DocumentViewerShell` | wired |
-| Document Viewer Sidebar | `ThumbnailSidebar` | wired |
-| Bounding Box Citations | `CitationReviewPanel` | wired |
-| Document Splits | `DocumentSplitsPanel` | wired |
-| Schema Builder | `BindingsPanel` (`binding_key`) | wired |
-| E-Signature | existing `signature-capture` | keep |
-| File Upload / Thumbnail | existing upload + thumbnail | keep |
-| CSV / Office preview | `PreviewPane` | wired |
-| PDF/DOCX/XLSX editors | out of scope | — |
+| PDF Viewer | `PdfViewer` + existing pdf canvas | done |
+| PDF Editor | `PdfEditor` (annotate ops) | done |
+| DOCX Viewer | `DocxViewer` (mammoth) | done |
+| DOCX Editor | `DocxEditor` | done |
+| Excel Viewer | `XlsxViewer` (sheetjs) | done |
+| Excel Editor | `XlsxEditor` | done |
+| PowerPoint Viewer | `PptxViewer` | done |
+| CSV Viewer | `CsvViewer` | done |
+| File Upload | `FileUpload` | done |
+| File System (Finder) | `FileSystem` | done |
+| Bounding Box Citations | `CitationReviewPanel` | done |
+| Schema Builder | `SchemaBuilderPanel` + `BindingsPanel` | done |
+| File Thumbnail | `FileThumbnail` | done |
+| Layout Blocks | `LayoutBlocksPanel` + `LayoutBlockOverlay` | done |
+| E-Signature | `ESignature` | done |
+| Document Splits | `DocumentSplitsPanel` | done |
+| Document Viewer Sidebar | `ThumbnailSidebar` + `DocumentViewerShell` | done |
