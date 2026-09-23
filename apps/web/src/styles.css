@@ -1,12 +1,13 @@
 @import "@seal/tokens/seal-fonts-web.css";
 @import "@seal/tokens/seal-theme-web.css";
+@import "@cloudflare/kumo/styles";
 @import "tailwindcss";
 
 /* Fumadocs: scan component files so Tailwind generates their utilities (md:hidden, etc.) */
 @source "../../../node_modules/fumadocs-ui/dist/**/*.js";
 @source "../../../node_modules/@fumadocs/ui/dist/**/*.js";
 
-/* Kumo components ship their own styles; no extra Tailwind source needed. */
+/* Kumo styles imported above so @vortex-api/better-auth-ui kumo-* utilities resolve. */
 
 /* Fumadocs: layout variant used by docs components */
 @variant layout {

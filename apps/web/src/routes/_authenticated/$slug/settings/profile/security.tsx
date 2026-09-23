@@ -8,7 +8,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   AuthProvider,
   ChangePasswordForm,
+  DisableTwoFactorForm,
   EnableTwoFactorForm,
+  GenerateBackupCodesForm,
   SessionList,
 } from "@vortex-api/better-auth-ui";
 
@@ -41,6 +43,16 @@ function SecuritySettings() {
           issuer="Seal"
           onSuccess={() => {
             toast.success("Two-factor authentication enabled");
+          }}
+        />
+        <GenerateBackupCodesForm
+          onSuccess={() => {
+            toast.success("Backup codes regenerated");
+          }}
+        />
+        <DisableTwoFactorForm
+          onSuccess={() => {
+            toast.success("Two-factor authentication disabled");
           }}
         />
         <ChangePasswordForm

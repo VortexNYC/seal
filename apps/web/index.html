@@ -16,7 +16,7 @@
       content="document signing, e-signature, digital signatures, document management, workflow, contracts"
     />
     <meta name="author" content="Seal" />
-    <meta name="theme-color" content="#0d9488" />
+    <meta name="theme-color" content="#2C271F" />
 
     <!-- SEO: Allow AI crawlers to process this page -->
     <meta
@@ -86,7 +86,7 @@
     <!-- Avoid dark-mode flash before React hydrates -->
     <script>
       (function () {
-        const THEME_KEY = "catapult.theme";
+        const THEME_KEY = "seal.theme";
         let storedTheme = null;
         try {
           storedTheme = window.localStorage.getItem(THEME_KEY);
@@ -102,7 +102,7 @@
             ? "dark"
             : "light";
         const fallbackBackground =
-          nextResolvedTheme === "dark" ? "#09090b" : "#f8fafc";
+          nextResolvedTheme === "dark" ? "#17130E" : "#FBFAF9";
 
         const root = document.documentElement;
         root.classList.toggle("dark", nextResolvedTheme === "dark");

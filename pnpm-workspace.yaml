@@ -72,7 +72,7 @@ minimumReleaseAgeExclude:
   - '@astrojs/cloudflare@14.3.2'
   - '@astrojs/react@6.0.6'
   - astro@7.3.3
-  - '@vortex-api/better-auth-ui@0.1.4'
+  - '@vortex-api/better-auth-ui@0.1.4 || 0.2.1 || 0.2.2 || 0.2.3'
 
 overrides:
   "wrangler": "^4.133.0"
