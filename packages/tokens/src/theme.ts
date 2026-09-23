@@ -2,69 +2,63 @@
  * @module tokens/theme
  * @since 1.0.0
  *
- * Seal Design System — TypeScript token exports (Vortex Midday feel)
+ * Seal Design System — TypeScript token exports (Taupe + Hedvig)
  *
  * Use these hex values anywhere CSS variables aren't available:
  *   - React Email templates (inline styles)
  *   - Canvas / SVG rendering
  *   - Programmatic color manipulation
  *
- * validation:1776634915808
- *
  * These values mirror the OKLCH values in seal-theme-web.css exactly.
  * When updating a color, change both files.
  *
- * Visual language: Vortex Midday + Seal red accent (#E0463D). Owned in Seal —
- * do not import @vortexnyc/brand.
+ * Visual language: Taupe 50–950. Owned in Seal — do not import
+ * @vortexnyc/brand. No product hue; red is functional only.
  */
 
-/** Brand color scale — Midday graphite (paper → ink) */
+/** Brand color scale — Taupe 50→950 */
 export const brand = {
-  50: "#f0ede8", // paper
-  100: "#ebe7e0",
-  200: "#e2ddd3",
-  300: "#d4cfc4",
-  400: "#a8a39a",
-  500: "#6b665d",
-  600: "#3a3735",
-  700: "#1a1a1a",
-  800: "#0a0a0a", // ink
-  900: "#000000",
-} as const;
-
-/** Seal product accent — Vortex accents table */
-export const accent = {
-  seal: "#e0463d",
+  50: "#fbfaf9",
+  100: "#f5f3f0",
+  200: "#e7e2dc",
+  300: "#d3cbc0",
+  400: "#aa9e8d",
+  500: "#867865",
+  600: "#6c6050",
+  700: "#554b3e",
+  800: "#40382d",
+  900: "#2c271f",
+  950: "#17130e",
 } as const;
 
 export const light = {
-  background: "#f0ede8",
-  foreground: "#0a0a0a",
+  background: "#fbfaf9",
+  foreground: "#2c271f",
   card: "#ffffff",
-  cardForeground: "#0a0a0a",
-  surface: "#ebe7e0",
-  border: "#e2ddd3",
-  input: "#e2ddd3",
-  muted: "#ebe7e0",
-  mutedForeground: "#6b665d",
-  primary: "#e0463d",
-  primaryForeground: "#f0ede8",
-  ring: "#a8a39a",
+  cardForeground: "#2c271f",
+  surface: "#f5f3f0",
+  border: "#e7e2dc",
+  input: "#e7e2dc",
+  muted: "#f5f3f0",
+  mutedForeground: "#867865",
+  primary: "#2c271f",
+  primaryForeground: "#fbfaf9",
+  ring: "#aa9e8d",
 } as const;
 
 export const dark = {
-  background: "#000000",
-  foreground: "#e0e0e0",
-  card: "#141414",
-  cardForeground: "#e0e0e0",
-  surface: "#1c1c1c",
-  border: "#252525",
-  input: "#252525",
-  muted: "#1c1c1c",
-  mutedForeground: "#8a8a8a",
-  primary: "#e0463d",
-  primaryForeground: "#f0ede8",
-  ring: "#5a5a5a",
+  background: "#17130e",
+  foreground: "#f5f3f0",
+  card: "#2c271f",
+  cardForeground: "#f5f3f0",
+  surface: "#40382d",
+  border: "#40382d",
+  input: "#40382d",
+  muted: "#40382d",
+  mutedForeground: "#aa9e8d",
+  primary: "#f5f3f0",
+  primaryForeground: "#17130e",
+  ring: "#6c6050",
 } as const;
 
 export const status = {
@@ -222,15 +216,15 @@ export const canvas = {
   },
 } as const;
 
-/** Email-safe palette — inline styles for React Email templates (no CSS variables available) */
+/** Email-safe palette — Taupe (no CSS variables in React Email) */
 export const email = {
   background: "#f5f3f0",
   card: "#ffffff",
-  border: "#e8e4df",
-  foreground: "#1a1714",
-  mutedForeground: "#8a8279",
-  primary: "#44403c",
-  primaryForeground: "#fafaf9",
+  border: "#e7e2dc",
+  foreground: "#2c271f",
+  mutedForeground: "#867865",
+  primary: "#2c271f",
+  primaryForeground: "#fbfaf9",
   success: "#1f8f5c",
   warning: "#c97f00",
   warningSurface: "#fef7e0",

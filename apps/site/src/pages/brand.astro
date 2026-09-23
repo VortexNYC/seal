@@ -5,32 +5,32 @@ import { landing } from "../data/landing";
 export const prerender = true;
 
 const ramp = [
-  { step: "50", hex: "#FAFAF9" },
-  { step: "100", hex: "#F5F5F4" },
-  { step: "200", hex: "#E7E5E4" },
-  { step: "300", hex: "#D6D3D1" },
-  { step: "400", hex: "#A8A29E" },
-  { step: "500", hex: "#78716C" },
-  { step: "600", hex: "#57534E" },
-  { step: "700", hex: "#44403C" },
-  { step: "800", hex: "#292524" },
-  { step: "900", hex: "#1C1917" },
+  { step: "50", hex: "#FBFAF9" },
+  { step: "100", hex: "#F5F3F0" },
+  { step: "200", hex: "#E7E2DC" },
+  { step: "300", hex: "#D3CBC0" },
+  { step: "400", hex: "#AA9E8D" },
+  { step: "500", hex: "#867865" },
+  { step: "600", hex: "#6C6050" },
+  { step: "700", hex: "#554B3E" },
+  { step: "800", hex: "#40382D" },
+  { step: "900", hex: "#2C271F" },
+  { step: "950", hex: "#17130E" },
 ];
 
 const surfaces = [
-  { name: "Paper", hex: "#FAFAF9", note: "background — light" },
+  { name: "Paper", hex: "#FBFAF9", note: "background — light (taupe-50)" },
   { name: "Raised", hex: "#FFFFFF", note: "card — light" },
-  { name: "Ink", hex: "#1A1714", note: "foreground — light / primary" },
-  { name: "Muted", hex: "#8A8279", note: "secondary text — light" },
-  { name: "Taupe", hex: "#44403C", note: "the accent — primary" },
-  { name: "Void", hex: "#0A0A0A", note: "background — dark" },
-  { name: "Surface", hex: "#141414", note: "card — dark" },
-  { name: "Bright", hex: "#F0ECE8", note: "foreground — dark / primary" },
+  { name: "Ink", hex: "#2C271F", note: "foreground / primary (taupe-900)" },
+  { name: "Muted", hex: "#867865", note: "secondary text (taupe-500)" },
+  { name: "Void", hex: "#17130E", note: "background — dark (taupe-950)" },
+  { name: "Surface", hex: "#2C271F", note: "card — dark (taupe-900)" },
+  { name: "Bright", hex: "#F5F3F0", note: "foreground — dark (taupe-100)" },
 ];
 
 const fonts = [
-  { name: "Instrument Serif", role: "display, headlines, wordmark", className: "font-serif" },
-  { name: "Plus Jakarta Sans", role: "product UI, body, labels", className: "font-sans" },
+  { name: "Hedvig Letters Serif", role: "display, headlines, wordmark", className: "font-serif" },
+  { name: "Hedvig Letters Sans", role: "product UI, body, labels", className: "font-sans" },
   { name: "JetBrains Mono", role: "code, endpoints, micro-labels", className: "font-mono" },
 ];
 ---
@@ -62,8 +62,8 @@ const fonts = [
       <h1>The quill, mid-stroke.</h1>
       <p class="lede">
         Two rings, offset, converging to a pool of wax — a stamp that landed the way real stamps
-        land: slightly askew. Seal is monochrome by design. Identity lives in the mark and the
-        type, not in a hue.
+        land: slightly askew. Seal is Taupe: warm graphite, no product hue. Identity lives in the
+        mark, the type, and this ramp.
       </p>
     </header>
 
@@ -88,11 +88,11 @@ const fonts = [
           </span>
         </div>
       </div>
-      <p class="note mono">SINGLE-COLOR VIA currentColor — RENDER IN TAUPE, INK, OR PAPER. CLEAR SPACE = ONE BLADE WIDTH.</p>
+      <p class="note mono">SINGLE-COLOR VIA currentColor — RENDER IN INK OR PAPER. CLEAR SPACE = ONE BLADE WIDTH.</p>
     </section>
 
     <section class="block">
-      <div class="block-head"><span class="mono block-index">02</span><h2 class="mono">STONE RAMP</h2></div>
+      <div class="block-head"><span class="mono block-index">02</span><h2 class="mono">TAUPE RAMP</h2></div>
       <div class="ramp">
         {ramp.map((s) => (
           <div class="swatch" style={`background:${s.hex}`}>
@@ -110,7 +110,7 @@ const fonts = [
           </div>
         ))}
       </div>
-      <p class="note mono">TAILWIND STONE RAMP. STATUS COLORS — SUCCESS, WARNING, DESTRUCTIVE — ARE FUNCTIONAL, NOT BRAND.</p>
+      <p class="note mono">TAUPE 50→950. STATUS COLORS — SUCCESS, WARNING, DESTRUCTIVE — ARE FUNCTIONAL, NOT BRAND.</p>
     </section>
 
     <section class="block">
@@ -131,7 +131,7 @@ const fonts = [
     <section class="block">
       <div class="block-head"><span class="mono block-index">04</span><h2 class="mono">RULES</h2></div>
       <ul class="rules">
-        <li>One accent: deep taupe (#44403C). Everything else is paper and ink.</li>
+        <li>No product hue. Primary is taupe-900 (#2C271F) on taupe-50 (#FBFAF9).</li>
         <li>The mark is always one color. Never fill the blade or add a second barb color.</li>
         <li>The quill may watermark surfaces at 4–6% taupe, bleeding off the edge — never behind body text.</li>
         <li>Serif for display, sans for product, mono for anything that looks like it came from a terminal.</li>

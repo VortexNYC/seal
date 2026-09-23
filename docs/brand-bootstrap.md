@@ -45,10 +45,9 @@ Everything else is derivative; get this right first.
 
 ### 2. Palette — one accent, always
 
-- Neutral ramp: map Midday/graphite 50→900 onto `--brand-*`. Vortex hub =
-  monochrome Midday; Seal inherits Midday surfaces + one product accent.
-- ONE accent: Seal red `#E0463D` on `--primary` (Vortex accents table). If
-  everything is colored, nothing is.
+- Neutral ramp: Taupe 50→950 on `--brand-*` (the only Seal palette).
+- Primary is taupe-900 (`#2C271F`) on taupe-50 (`#FBFAF9`). Red is functional
+  only (destructive / expired). If everything is colored, nothing is.
 - Status hues (success/warning/destructive) are **functional**, never brand.
 - Light + dark `:root` blocks in the theme CSS; dark inverts the accent.
 

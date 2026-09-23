@@ -1,14 +1,13 @@
 /*
  * Seal Design System — single source of truth for all web apps.
  *
- * Visual language: Vortex Midday monochrome (paper/ink) + Hedvig Letters,
- * owned in-repo. Do NOT import @vortexnyc/brand — copy the convention, own
- * the values. Seal's one product accent is Vortex accents Seal red (#E0463D).
+ * Visual language: Taupe 50–950 + Hedvig Letters (Vortex type pairing).
+ * Owned in-repo. Do NOT import @vortexnyc/brand. No product hue —
+ * primary is taupe-900. Red is functional only (destructive / expired).
  *
  * Color space: OKLCH throughout.
  */
-
-/* ── Light mode (default) — Vortex Midday ─────────────────────────────────── */
+/* ── Light mode (default) — Taupe ──────────────────────────────────────────── */
 :root {
   /* Font stacks — duplicated for non-Tailwind consumers (Astro, plain CSS). */
   --font-sans: "Hedvig Letters Sans", ui-sans-serif, system-ui, sans-serif;
@@ -17,51 +16,52 @@
     "JetBrains Mono", ui-monospace, "Cascadia Code", "Source Code Pro",
     monospace;
 
-  /* Semantic tokens — Midday warm inverse */
-  --background: oklch(0.947 0.0074 80.72); /* #F0EDE8 — paper */
-  --foreground: oklch(0.1448 0 0); /* #0A0A0A — ink */
+  /* Semantic tokens — Taupe */
+  --background: oklch(0.98 0 75); /* #FBFAF9 — taupe-50 */
+  --foreground: oklch(0.28 0.02 75); /* #2C271F — taupe-900 */
   --card: oklch(1 0 0); /* #FFFFFF — raised */
-  --card-foreground: oklch(0.1448 0 0);
+  --card-foreground: oklch(0.28 0.02 75);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.1448 0 0);
-  --primary: oklch(0.58 0.19 25); /* #E0463D — Seal product accent */
-  --primary-foreground: oklch(0.947 0.0074 80.72); /* paper on accent */
-  --secondary: oklch(0.914 0.0145 84.58); /* Midday base */
-  --secondary-foreground: oklch(0.1448 0 0);
-  --muted: oklch(0.914 0.0145 84.58);
-  --muted-foreground: oklch(0.54 0.0151 82.38); /* Midday secondary */
-  --accent: oklch(0.8987 0.0145 84.59); /* border-warm hover */
-  --accent-foreground: oklch(0.1448 0 0);
+  --popover-foreground: oklch(0.28 0.02 75);
+  --primary: oklch(0.28 0.02 75); /* taupe-900 */
+  --primary-foreground: oklch(0.98 0 75); /* taupe-50 */
+  --secondary: oklch(0.96 0.01 75); /* taupe-100 */
+  --secondary-foreground: oklch(0.28 0.02 75);
+  --muted: oklch(0.96 0.01 75);
+  --muted-foreground: oklch(0.58 0.03 75); /* taupe-500 */
+  --accent: oklch(0.92 0.01 75); /* taupe-200 */
+  --accent-foreground: oklch(0.28 0.02 75);
   --destructive: oklch(0.449 0.206 22);
   --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.8987 0.0145 84.59); /* #E2DDD3 */
-  --input: oklch(0.8987 0.0145 84.59);
-  --ring: oklch(0.7622 0.0169 82.79);
+  --border: oklch(0.92 0.01 75); /* taupe-200 */
+  --input: oklch(0.92 0.01 75);
+  --ring: oklch(0.70 0.03 75); /* taupe-400 */
 
   /* Sidebar */
-  --sidebar: oklch(0.9291 0.0144 84.58);
-  --sidebar-foreground: oklch(0.1448 0 0);
-  --sidebar-primary: oklch(0.58 0.19 25);
-  --sidebar-primary-foreground: oklch(0.947 0.0074 80.72);
-  --sidebar-accent: oklch(0.8987 0.0145 84.59);
-  --sidebar-accent-foreground: oklch(0.1448 0 0);
-  --sidebar-border: oklch(0.8987 0.0145 84.59);
-  --sidebar-ring: oklch(0.7622 0.0169 82.79);
+  --sidebar: oklch(0.96 0.01 75); /* taupe-100 */
+  --sidebar-foreground: oklch(0.28 0.02 75);
+  --sidebar-primary: oklch(0.28 0.02 75);
+  --sidebar-primary-foreground: oklch(0.98 0 75);
+  --sidebar-accent: oklch(0.92 0.01 75);
+  --sidebar-accent-foreground: oklch(0.28 0.02 75);
+  --sidebar-border: oklch(0.92 0.01 75);
+  --sidebar-ring: oklch(0.70 0.03 75);
 
   /* Border radius — tighter, closer to Vortex hub */
   --radius: 0.375rem; /* 6px */
 
-  /* ── Brand scale — Midday graphite (paper → ink) ──────────────────────── */
-  --brand-50: oklch(0.947 0.0074 80.72); /* paper */
-  --brand-100: oklch(0.9291 0.0144 84.58);
-  --brand-200: oklch(0.914 0.0145 84.58);
-  --brand-300: oklch(0.8987 0.0145 84.59);
-  --brand-400: oklch(0.7622 0.0169 82.79);
-  --brand-500: oklch(0.54 0.0151 82.38);
-  --brand-600: oklch(0.4 0.01 80);
-  --brand-700: oklch(0.25 0.005 0);
-  --brand-800: oklch(0.1448 0 0); /* ink */
-  --brand-900: oklch(0.08 0 0);
+  /* ── Brand scale — Taupe 50→950 ─────────────────────────────────────────── */
+  --brand-50: oklch(0.98 0 75); /* #FBFAF9 */
+  --brand-100: oklch(0.96 0.01 75); /* #F5F3F0 */
+  --brand-200: oklch(0.92 0.01 75); /* #E7E2DC */
+  --brand-300: oklch(0.84 0.02 75); /* #D3CBC0 */
+  --brand-400: oklch(0.70 0.03 75); /* #AA9E8D */
+  --brand-500: oklch(0.58 0.03 75); /* #867865 */
+  --brand-600: oklch(0.49 0.03 75); /* #6C6050 */
+  --brand-700: oklch(0.42 0.03 75); /* #554B3E */
+  --brand-800: oklch(0.34 0.02 75); /* #40382D */
+  --brand-900: oklch(0.28 0.02 75); /* #2C271F */
+  --brand-950: oklch(0.19 0.01 75); /* #17130E */
 
   /* ── Semantic status colors ─────────────────────────────────────────────── */
   --success: oklch(0.527 0.167 155); /* #16A34A — per board 02 */
@@ -193,38 +193,38 @@
   --space-10: 4rem; /* 64px */
 }
 
-/* ── Dark mode ────────────────────────────────────────────────────────────── */
+/* ── Dark mode — Taupe void ───────────────────────────────────────────────── */
 .dark {
-  /* Vortex void ramp */
-  --background: oklch(0 0 0); /* void */
-  --foreground: oklch(0.9067 0 0); /* #E0E0E0 */
-  --card: oklch(0.1913 0 0); /* #141414 surface */
-  --card-foreground: oklch(0.9067 0 0);
-  --popover: oklch(0.1913 0 0);
-  --popover-foreground: oklch(0.9067 0 0);
-  --primary: oklch(0.62 0.19 25); /* Seal red lifted for void */
-  --primary-foreground: oklch(0.947 0.0074 80.72); /* bright/paper */
-  --secondary: oklch(0.2264 0 0); /* elevated */
-  --secondary-foreground: oklch(0.9067 0 0);
-  --muted: oklch(0.2264 0 0);
-  --muted-foreground: oklch(0.6334 0 0);
-  --accent: oklch(0.2264 0 0);
-  --accent-foreground: oklch(0.947 0.0074 80.72);
+  /* Taupe void */
+  --background: oklch(0.19 0.01 75); /* taupe-950 */
+  --foreground: oklch(0.96 0.01 75); /* taupe-100 */
+  --card: oklch(0.28 0.02 75); /* taupe-900 */
+  --card-foreground: oklch(0.96 0.01 75);
+  --popover: oklch(0.28 0.02 75);
+  --popover-foreground: oklch(0.96 0.01 75);
+  --primary: oklch(0.96 0.01 75); /* taupe-100 */
+  --primary-foreground: oklch(0.19 0.01 75); /* taupe-950 */
+  --secondary: oklch(0.34 0.02 75); /* taupe-800 */
+  --secondary-foreground: oklch(0.96 0.01 75);
+  --muted: oklch(0.34 0.02 75);
+  --muted-foreground: oklch(0.70 0.03 75); /* taupe-400 */
+  --accent: oklch(0.34 0.02 75);
+  --accent-foreground: oklch(0.98 0 75);
   --destructive: oklch(0.577 0.245 27);
   --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.2645 0 0); /* #252525 */
-  --input: oklch(0.2645 0 0);
-  --ring: oklch(0.4676 0 0);
+  --border: oklch(0.34 0.02 75); /* taupe-800 */
+  --input: oklch(0.34 0.02 75);
+  --ring: oklch(0.49 0.03 75); /* taupe-600 */
 
   /* Sidebar */
-  --sidebar: oklch(0.1221 0 0); /* deep */
-  --sidebar-foreground: oklch(0.9067 0 0);
-  --sidebar-primary: oklch(0.62 0.19 25);
-  --sidebar-primary-foreground: oklch(0.947 0.0074 80.72);
-  --sidebar-accent: oklch(0.2264 0 0);
-  --sidebar-accent-foreground: oklch(0.947 0.0074 80.72);
-  --sidebar-border: oklch(0.2645 0 0);
-  --sidebar-ring: oklch(0.4676 0 0);
+  --sidebar: oklch(0.19 0.01 75);
+  --sidebar-foreground: oklch(0.96 0.01 75);
+  --sidebar-primary: oklch(0.96 0.01 75);
+  --sidebar-primary-foreground: oklch(0.19 0.01 75);
+  --sidebar-accent: oklch(0.34 0.02 75);
+  --sidebar-accent-foreground: oklch(0.98 0 75);
+  --sidebar-border: oklch(0.34 0.02 75);
+  --sidebar-ring: oklch(0.49 0.03 75);
 
   /* ── Signer color slots — dark mode (lightened for dark bg) ────────────── */
   --signer-1: oklch(0.7 0.15 255); /* Blue */
@@ -402,6 +402,7 @@
   --color-brand-700: var(--brand-700);
   --color-brand-800: var(--brand-800);
   --color-brand-900: var(--brand-900);
+  --color-brand-950: var(--brand-950);
 
   /* Status colors */
   --color-success: var(--success);
