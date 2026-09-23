@@ -17,6 +17,7 @@ export { DocxEditor, type DocxEditorProps } from "./docx-editor";
 export { DocxViewer, type DocxViewerProps } from "./docx-viewer";
 export {
   ESignature,
+  type ESignatureFont,
   type ESignatureMethod,
   type ESignatureProps,
   type ESignatureResult,

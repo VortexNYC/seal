@@ -154,10 +154,37 @@ app.get("/preview", async (c) => {
   if (!object) return c.json({ error: "storage_missing" }, 404);
 
   const lower = contentType.toLowerCase();
-  let format: "pdf" | "csv" | "text" | "html" | "unknown" = "unknown";
-  if (lower.includes("pdf")) format = "pdf";
+  let format:
+    | "pdf"
+    | "csv"
+    | "text"
+    | "html"
+    | "docx"
+    | "xlsx"
+    | "pptx"
+    | "unknown" = "unknown";
+  if (lower.includes("pdf") || key.endsWith(".pdf")) format = "pdf";
   else if (lower.includes("csv") || key.endsWith(".csv")) format = "csv";
   else if (lower.includes("html")) format = "html";
+  else if (
+    lower.includes("wordprocessingml") ||
+    lower.includes("msword") ||
+    key.endsWith(".docx")
+  )
+    format = "docx";
+  else if (
+    lower.includes("spreadsheetml") ||
+    lower.includes("ms-excel") ||
+    key.endsWith(".xlsx") ||
+    key.endsWith(".xls")
+  )
+    format = "xlsx";
+  else if (
+    lower.includes("presentationml") ||
+    lower.includes("ms-powerpoint") ||
+    key.endsWith(".pptx")
+  )
+    format = "pptx";
   else if (lower.includes("text") || lower.includes("json")) format = "text";
 
   const origin = new URL(c.req.url).origin;

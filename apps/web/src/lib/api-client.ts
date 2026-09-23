@@ -1818,7 +1818,16 @@ export async function splitDocument(
   );
 }
 const documentPreviewSchema = z.object({
-  format: z.enum(["pdf", "csv", "text", "html", "unknown"]),
+  format: z.enum([
+    "pdf",
+    "csv",
+    "text",
+    "html",
+    "docx",
+    "xlsx",
+    "pptx",
+    "unknown",
+  ]),
   content_type: z.string(),
   content: z.string().nullable(),
   page_count: z.number().int().nullable().optional(),

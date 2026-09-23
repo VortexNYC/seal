@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useDropzone } from "react-dropzone";
+import { useDropzone, type FileRejection } from "react-dropzone";
 import { Upload } from "lucide-react";
 
 import {
@@ -22,7 +22,11 @@ export type FileUploadProps = {
   description?: string;
   multiple?: boolean;
   accept?: Record<string, string[]>;
+  disabled?: boolean;
+  /** When false, parent owns the selected-file list. */
+  showFileList?: boolean;
   onFilesAccepted?: (files: File[]) => void;
+  onFilesRejected?: (rejections: FileRejection[]) => void;
   onFilesChange?: (items: FileUploadItem[]) => void;
 };
 
@@ -35,7 +39,10 @@ export function FileUpload({
   description,
   multiple = true,
   accept = DROPZONE_ACCEPT_TYPES,
+  disabled = false,
+  showFileList = true,
   onFilesAccepted,
+  onFilesRejected,
   onFilesChange,
 }: FileUploadProps): JSX.Element {
   const [items, setItems] = useState<FileUploadItem[]>([]);
@@ -50,7 +57,10 @@ export function FileUpload({
   }, []);
 
   const commit = useCallback(
-    (files: File[]) => {
+    (files: File[], rejections: FileRejection[]) => {
+      if (rejections.length > 0) {
+        onFilesRejected?.(rejections);
+      }
       const accepted: File[] = [];
       for (const file of files) {
         const result = validateFileForUpload(file);
@@ -76,13 +86,14 @@ export function FileUpload({
         return next;
       });
     },
-    [multiple, onFilesAccepted, onFilesChange]
+    [multiple, onFilesAccepted, onFilesChange, onFilesRejected]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept,
     multiple,
-    onDrop: (files) => commit(files),
+    disabled,
+    onDrop: (files, rejections) => commit(files, rejections),
   });
 
   return (
@@ -91,7 +102,8 @@ export function FileUpload({
         {...getRootProps()}
         className={cn(
           "border-border bg-background flex min-h-48 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-dashed px-6 py-10 text-center transition-colors",
-          isDragActive && "border-foreground/40 bg-accent"
+          isDragActive && "border-foreground/40 bg-accent",
+          disabled && "cursor-not-allowed opacity-50"
         )}
       >
         <input {...getInputProps()} />
@@ -104,7 +116,7 @@ export function FileUpload({
         </div>
       </div>
       {error ? <p className="text-destructive text-xs">{error}</p> : null}
-      {items.length > 0 ? (
+      {showFileList && items.length > 0 ? (
         <ul className="space-y-1">
           {items.map((item) => (
             <li

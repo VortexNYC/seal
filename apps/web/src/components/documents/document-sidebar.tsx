@@ -893,11 +893,14 @@ function OriginalPreviewSection({
     preview &&
     (preview.format === "csv" ||
       preview.format === "text" ||
-      preview.format === "html") &&
-    Boolean(preview.content);
+      preview.format === "html" ||
+      preview.format === "docx" ||
+      preview.format === "xlsx" ||
+      preview.format === "pptx") &&
+    (Boolean(preview.content) || Boolean(preview.download_url));
 
   if (previewQuery.isLoading) return null;
-  if (!show || !preview?.content) return null;
+  if (!show || !preview) return null;
 
   return (
     <Collapsible.Root
@@ -927,6 +930,7 @@ function OriginalPreviewSection({
           format={preview.format}
           title="Source file"
           content={preview.content}
+          downloadUrl={preview.download_url}
         />
       </Collapsible.Panel>
     </Collapsible.Root>

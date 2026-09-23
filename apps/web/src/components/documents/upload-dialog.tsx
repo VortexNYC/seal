@@ -4,23 +4,22 @@ import { Input } from "@cloudflare/kumo/components/input";
 import { Label } from "@cloudflare/kumo/components/label";
 import { Meter } from "@cloudflare/kumo/components/meter";
 import { useMutation } from "@tanstack/react-query";
-import { AlertCircle, CheckCircle2, FileIcon, Upload, X } from "lucide-react";
+import { AlertCircle, CheckCircle2, FileIcon, X } from "lucide-react";
 import { useState } from "react";
-import { type FileRejection, useDropzone } from "react-dropzone";
+import { type FileRejection } from "react-dropzone";
 
+import { FileUpload } from "@/components/kumo-docs/file-upload";
 import { toast } from "@/lib/toast";
 
 import { useAnalytics } from "../../hooks/use-analytics";
 import { createDocument, uploadDocument } from "../../lib/api-client";
 import { extractPdfMetadata } from "../../lib/pdf-utils";
 import {
-  DROPZONE_ACCEPT_TYPES,
   formatFileSize,
   getMaxFileSizeDisplay,
   getSupportedFileTypesDisplay,
   validateFileForUpload,
 } from "../../lib/upload-validation";
-import { cn } from "../../lib/utils";
 
 interface UploadDialogProps {
   organizationId: string;
@@ -73,10 +72,8 @@ type UploadController = {
   readonly showCancelConfirm: boolean;
   readonly usageStats: UsageStats | null | undefined;
   readonly atDocumentLimit: boolean;
-  readonly handleDrop: (
-    acceptedFiles: File[],
-    rejectedFiles: FileRejection[]
-  ) => Promise<void>;
+  readonly handleFilesAccepted: (acceptedFiles: File[]) => Promise<void>;
+  readonly handleFilesRejected: (rejectedFiles: FileRejection[]) => void;
   readonly handleSubmit: (event: React.FormEvent) => Promise<void>;
   readonly removeFile: (index: number) => void;
   readonly requestClose: () => void;
@@ -127,13 +124,6 @@ export function UploadDialog({
     onOpenChange,
     onSuccess,
   });
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop: controller.handleDrop,
-    accept: DROPZONE_ACCEPT_TYPES,
-    disabled: controller.uploading,
-    multiple: false,
-    maxFiles: 1,
-  });
 
   return (
     <>
@@ -148,10 +138,7 @@ export function UploadDialog({
               atDocumentLimit={controller.atDocumentLimit}
               usageStats={controller.usageStats}
             />
-            <UploadDialogBody
-              controller={controller}
-              dropzone={{ getRootProps, getInputProps, isDragActive }}
-            />
+            <UploadDialogBody controller={controller} />
             <UploadDialogFooter controller={controller} />
           </form>
         </Dialog>
@@ -230,13 +217,14 @@ function useUploadController({
     );
   };
 
-  const handleDrop = async (
-    acceptedFiles: File[],
-    rejectedFiles: FileRejection[]
-  ) => {
-    showRejectedFileErrors(rejectedFiles);
+  const handleFilesAccepted = async (acceptedFiles: File[]) => {
     const validatedFiles = await buildUploadFiles(acceptedFiles);
-    state.setFiles((prev) => [...prev, ...validatedFiles]);
+    // Product upload is single-file — replace, don't accumulate.
+    state.setFiles(validatedFiles);
+  };
+
+  const handleFilesRejected = (rejectedFiles: FileRejection[]) => {
+    showRejectedFileErrors(rejectedFiles);
   };
 
   const uploadFile = (fileWithStatus: FileWithStatus, index: number) =>
@@ -284,7 +272,8 @@ function useUploadController({
     showCancelConfirm: state.showCancelConfirm,
     usageStats,
     atDocumentLimit,
-    handleDrop,
+    handleFilesAccepted,
+    handleFilesRejected,
     handleSubmit,
     removeFile: (index) =>
       state.setFiles((prev) =>
@@ -361,65 +350,24 @@ function DocumentLimitAlert({
 
 function UploadDialogBody({
   controller,
-  dropzone,
 }: {
   readonly controller: UploadController;
-  readonly dropzone: {
-    readonly getRootProps: ReturnType<typeof useDropzone>["getRootProps"];
-    readonly getInputProps: ReturnType<typeof useDropzone>["getInputProps"];
-    readonly isDragActive: boolean;
-  };
 }) {
   return (
     <div className="flex-1 space-y-4 overflow-y-auto py-4">
-      <DropzoneArea
-        getInputProps={dropzone.getInputProps}
-        getRootProps={dropzone.getRootProps}
-        isDragActive={dropzone.isDragActive}
-        uploading={controller.uploading}
+      <FileUpload
+        multiple={false}
+        disabled={controller.uploading}
+        showFileList={false}
+        title="Drag & drop a document here, or click to select"
+        description="PDF, DOCX, XLSX, PPTX, or CSV — one file at a time"
+        onFilesAccepted={(files) => {
+          void controller.handleFilesAccepted(files);
+        }}
+        onFilesRejected={controller.handleFilesRejected}
       />
       <DescriptionField controller={controller} />
       <SelectedFileList controller={controller} />
-    </div>
-  );
-}
-
-function DropzoneArea({
-  getInputProps,
-  getRootProps,
-  isDragActive,
-  uploading,
-}: {
-  readonly getInputProps: ReturnType<typeof useDropzone>["getInputProps"];
-  readonly getRootProps: ReturnType<typeof useDropzone>["getRootProps"];
-  readonly isDragActive: boolean;
-  readonly uploading: boolean;
-}) {
-  return (
-    <div
-      {...getRootProps()}
-      className={cn(
-        "cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors",
-        isDragActive
-          ? "border-primary bg-primary/5"
-          : "border-muted-foreground/25 hover:border-primary/50",
-        uploading && "cursor-not-allowed opacity-50"
-      )}
-    >
-      <input {...getInputProps()} />
-      <Upload className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
-      {isDragActive ? (
-        <p className="text-primary text-sm font-medium">Drop files here...</p>
-      ) : (
-        <>
-          <p className="mb-1 text-sm font-medium">
-            Drag & drop a document here, or click to select
-          </p>
-          <p className="text-muted-foreground text-xs">
-            PDF, DOCX, XLSX, PPTX, or CSV — one file at a time
-          </p>
-        </>
-      )}
     </div>
   );
 }

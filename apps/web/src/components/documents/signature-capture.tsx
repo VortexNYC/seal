@@ -1,11 +1,5 @@
 /**
- * Signature Capture Component
- *
- * Provides multiple methods for capturing signatures:
- * 1. Saved - Select from saved signature library (authenticated users only)
- * 2. Draw - Hand-drawn signature using canvas
- * 3. Type - Typed name with signature font selection
- * 4. Upload - Upload existing signature image (PNG/JPG only)
+ * Signature Capture — product shell over kumo-docs ESignature + saved library.
  *
  * SEA-104/105/106/107: Signature Capture Interface
  */
@@ -16,10 +10,8 @@ import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Label } from "@cloudflare/kumo/components/label";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
-import { Select } from "@cloudflare/kumo/components/select";
 import { Tabs } from "@cloudflare/kumo/components/tabs";
 import {
-  ArrowCounterClockwise,
   Bookmark,
   Check,
   Image,
@@ -28,12 +20,15 @@ import {
   Star,
   TextT,
   Trash,
-  X,
 } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useRef, useState } from "react";
-import SignatureCanvas from "react-signature-canvas";
+import { useState, type JSX } from "react";
 
+import {
+  ESignature,
+  type ESignatureMethod,
+  type ESignatureResult,
+} from "@/components/kumo-docs/e-signature";
 import {
   createSavedSignature,
   deleteSavedSignature,
@@ -46,7 +41,7 @@ import { parseSelectValue } from "@/lib/select-values";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
-type SignatureType = "drawn" | "typed" | "uploaded";
+type SignatureType = ESignatureMethod;
 type TabType = SignatureType | "saved";
 
 const TAB_TYPES = [
@@ -55,31 +50,6 @@ const TAB_TYPES = [
   "uploaded",
   "saved",
 ] as const satisfies readonly TabType[];
-
-// Available signature fonts
-const SIGNATURE_FONTS = [
-  {
-    name: "Dancing Script",
-    value: "dancing-script",
-    cssFamily: "'Dancing Script', cursive",
-  },
-  {
-    name: "Great Vibes",
-    value: "great-vibes",
-    cssFamily: "'Great Vibes', cursive",
-  },
-  { name: "Pacifico", value: "pacifico", cssFamily: "'Pacifico', cursive" },
-  { name: "Caveat", value: "caveat", cssFamily: "'Caveat', cursive" },
-  {
-    name: "Sacramento",
-    value: "sacramento",
-    cssFamily: "'Sacramento', cursive",
-  },
-] as const;
-
-type SignatureFont = (typeof SIGNATURE_FONTS)[number]["value"];
-
-const SIGNATURE_FONT_VALUES = SIGNATURE_FONTS.map((font) => font.value);
 
 interface SignatureCaptureProps {
   recipientName?: string;
@@ -97,8 +67,7 @@ export function SignatureCapture({
   onCancel,
   showLibrary = false,
   allowedSignatureTypes,
-}: SignatureCaptureProps) {
-  // Map org-level types ("draw"/"type"/"upload") to internal tab types ("drawn"/"typed"/"uploaded")
+}: SignatureCaptureProps): JSX.Element {
   const ORG_TO_TAB: Record<string, SignatureType> = {
     draw: "drawn",
     type: "typed",
@@ -113,55 +82,13 @@ export function SignatureCapture({
     ? "saved"
     : (allowedTabs[0] ?? "drawn");
   const [activeTab, setActiveTab] = useState<TabType>(defaultTab);
-  const [typedName, setTypedName] = useState(recipientName || "");
-  const [selectedFont, setSelectedFont] =
-    useState<SignatureFont>("dancing-script");
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const signaturePadRef = useRef<SignatureCanvas>(null);
-  const canvasContainerRef = useRef<HTMLDivElement>(null);
+  const [pendingCapture, setPendingCapture] =
+    useState<ESignatureResult | null>(null);
 
-  // SEA-116: Responsive canvas width for mobile
-  const [canvasWidth, setCanvasWidth] = useState(600);
-
-  // SEA-116: Update canvas width on mount and resize
-  useEffect(() => {
-    const updateCanvasWidth = () => {
-      if (canvasContainerRef.current) {
-        // Get container width minus padding (16px on each side)
-        const containerWidth = canvasContainerRef.current.offsetWidth - 4;
-        // Clamp between 280px (mobile min) and 600px (desktop max)
-        setCanvasWidth(Math.max(280, Math.min(600, containerWidth)));
-      }
-    };
-
-    updateCanvasWidth();
-
-    // Throttled resize and orientation change handler
-    let rafId: number;
-    const handleResize = () => {
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(updateCanvasWidth);
-    };
-
-    window.addEventListener("resize", handleResize);
-    window.addEventListener("orientationchange", handleResize);
-
-    return () => {
-      cancelAnimationFrame(rafId);
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("orientationchange", handleResize);
-    };
-  }, []);
-
-  // Undo history for drawn signatures
-  const [signatureHistory, setSignatureHistory] = useState<string[]>([]);
-
-  // Selected saved signature
   const [selectedSavedSignature, setSelectedSavedSignature] = useState<
     string | null
   >(null);
 
-  // Save signature dialog
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [saveSignatureName, setSaveSignatureName] = useState("");
   const [saveAsDefault, setSaveAsDefault] = useState(false);
@@ -172,7 +99,6 @@ export function SignatureCapture({
 
   const queryClient = useQueryClient();
 
-  // Signature library queries and mutations (only if showLibrary is true)
   const { data: savedSignatures = [] } = useQuery({
     queryKey: ["saved-signatures"],
     queryFn: listSavedSignatures,
@@ -202,126 +128,7 @@ export function SignatureCapture({
     mutationFn: incrementSavedSignatureUsage,
   });
 
-  // Get the current font's CSS family
-  const currentFontFamily =
-    SIGNATURE_FONTS.find((f) => f.value === selectedFont)?.cssFamily ||
-    "'Dancing Script', cursive";
-
-  // Save current state to history before drawing
-  const saveToHistory = useCallback(() => {
-    if (signaturePadRef.current && !signaturePadRef.current.isEmpty()) {
-      const dataUrl = signaturePadRef.current.toDataURL();
-      setSignatureHistory((prev) => [...prev, dataUrl]);
-    }
-  }, []);
-
-  // Handle drawn signature
-  const handleDrawnSignature = () => {
-    if (!signaturePadRef.current) return;
-
-    if (signaturePadRef.current.isEmpty()) {
-      toast.error("Please provide a signature first");
-      return;
-    }
-
-    const dataUrl = signaturePadRef.current.toDataURL();
-    handleSubmitWithSaveOption(dataUrl, "drawn");
-  };
-
-  const handleClearDrawn = () => {
-    // Save current state before clearing
-    saveToHistory();
-    signaturePadRef.current?.clear();
-  };
-
-  // Redo/Undo - restore the last saved state
-  const handleUndoDrawn = () => {
-    if (signatureHistory.length === 0) {
-      toast.info("Nothing to undo");
-      return;
-    }
-
-    const lastState = signatureHistory[signatureHistory.length - 1];
-    setSignatureHistory((prev) => prev.slice(0, -1));
-
-    if (signaturePadRef.current && lastState) {
-      signaturePadRef.current.fromDataURL(lastState);
-    }
-  };
-
-  // Handle typed signature
-  const handleTypedSignature = () => {
-    if (!typedName.trim()) {
-      toast.error("Please enter your name");
-      return;
-    }
-
-    // Create canvas with typed name in selected signature font
-    const canvas = document.createElement("canvas");
-    canvas.width = 500;
-    canvas.height = 120;
-    const ctx = canvas.getContext("2d");
-
-    if (!ctx) return;
-
-    // Clear canvas with transparent background
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Style the signature
-    // vortex-allow-color: Canvas signature rendering requires a concrete ink color.
-    ctx.fillStyle = "#000000";
-    ctx.font = `52px ${currentFontFamily}`;
-    ctx.textBaseline = "middle";
-
-    // Measure text to center it
-    const textWidth = ctx.measureText(typedName).width;
-    const x = Math.max(10, (canvas.width - textWidth) / 2);
-    ctx.fillText(typedName, x, 60);
-
-    const dataUrl = canvas.toDataURL();
-    handleSubmitWithSaveOption(dataUrl, "typed");
-  };
-
-  // Handle uploaded signature - PNG/JPG only
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type - only PNG and JPG allowed
-    const allowedTypes = ["image/png", "image/jpeg", "image/jpg"];
-    if (!allowedTypes.includes(file.type)) {
-      toast.error("Please upload a PNG or JPG image only");
-      e.target.value = ""; // Reset file input
-      return;
-    }
-
-    // Validate file size (max 5MB as per acceptance criteria)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image must be smaller than 5MB");
-      e.target.value = "";
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.addEventListener("load", (event) => {
-      const dataUrl = event.target?.result;
-      if (typeof dataUrl === "string") {
-        setUploadedImage(dataUrl);
-      }
-    });
-    reader.readAsDataURL(file);
-  };
-
-  const handleUploadedSignature = () => {
-    if (!uploadedImage) {
-      toast.error("Please upload a signature image first");
-      return;
-    }
-    handleSubmitWithSaveOption(uploadedImage, "uploaded");
-  };
-
-  // Handle selecting a saved signature
-  const handleSavedSignature = async () => {
+  const handleSavedSignature = async (): Promise<void> => {
     if (!selectedSavedSignature) {
       toast.error("Please select a signature from your library");
       return;
@@ -335,20 +142,16 @@ export function SignatureCapture({
       return;
     }
 
-    // Increment usage count
     try {
-      if (selectedSavedSignature) {
-        await incrementUsageMutation.mutateAsync(selectedSavedSignature);
-      }
+      await incrementUsageMutation.mutateAsync(selectedSavedSignature);
     } catch {
-      // Non-critical error, don't block the signature
+      // Non-critical
     }
 
     onSignatureCapture(signature.signatureImageUrl, signature.signatureType);
   };
 
-  // Handle saving a new signature to library
-  const handleSaveToLibrary = async () => {
+  const handleSaveToLibrary = async (): Promise<void> => {
     if (!pendingSignatureData) return;
 
     if (!saveSignatureName.trim()) {
@@ -361,8 +164,6 @@ export function SignatureCapture({
         name: saveSignatureName.trim(),
         signatureImageUrl: pendingSignatureData.data,
         signatureType: pendingSignatureData.type,
-        fontFamily:
-          pendingSignatureData.type === "typed" ? currentFontFamily : undefined,
         setAsDefault: saveAsDefault,
       });
 
@@ -370,8 +171,6 @@ export function SignatureCapture({
       setShowSaveDialog(false);
       setSaveSignatureName("");
       setSaveAsDefault(false);
-
-      // Now submit the signature
       onSignatureCapture(pendingSignatureData.data, pendingSignatureData.type);
     } catch (error) {
       toast.error("Failed to save signature", {
@@ -380,8 +179,9 @@ export function SignatureCapture({
     }
   };
 
-  // Handle deleting a saved signature
-  const handleDeleteSavedSignature = async (signatureId: string) => {
+  const handleDeleteSavedSignature = async (
+    signatureId: string
+  ): Promise<void> => {
     try {
       await deleteSignatureMutation.mutateAsync(signatureId);
       toast.success("Signature deleted");
@@ -395,8 +195,7 @@ export function SignatureCapture({
     }
   };
 
-  // Handle setting a signature as default
-  const handleSetDefault = async (signatureId: string) => {
+  const handleSetDefault = async (signatureId: string): Promise<void> => {
     try {
       await setDefaultMutation.mutateAsync({
         id: signatureId,
@@ -410,25 +209,36 @@ export function SignatureCapture({
     }
   };
 
-  // Modified submit handler that offers to save to library
-  const handleSubmitWithSaveOption = (data: string, type: SignatureType) => {
+  const handleSubmitWithSaveOption = (
+    data: string,
+    type: SignatureType
+  ): void => {
     if (showLibrary && savedSignatures.length < 10) {
-      // Offer to save to library
       setPendingSignatureData({ data, type });
       setShowSaveDialog(true);
-    } else {
-      // Just submit directly
-      onSignatureCapture(data, type);
+      return;
     }
+    onSignatureCapture(data, type);
   };
 
-  // Direct submit without saving (from dialog)
-  const handleSubmitWithoutSaving = () => {
+  const handleSubmitWithoutSaving = (): void => {
     if (pendingSignatureData) {
       onSignatureCapture(pendingSignatureData.data, pendingSignatureData.type);
     }
     setShowSaveDialog(false);
     setPendingSignatureData(null);
+  };
+
+  const handleAccept = (): void => {
+    if (activeTab === "saved") {
+      void handleSavedSignature();
+      return;
+    }
+    if (!pendingCapture) {
+      toast.error("Please provide a signature first");
+      return;
+    }
+    handleSubmitWithSaveOption(pendingCapture.dataUrl, pendingCapture.method);
   };
 
   if (!hasAvailableMethods) {
@@ -507,6 +317,9 @@ export function SignatureCapture({
       : []),
   ];
 
+  const captureMethod: SignatureType =
+    activeTab === "saved" ? (allowedTabs[0] ?? "drawn") : activeTab;
+
   return (
     <LayerCard className="mx-auto w-full max-w-2xl">
       <LayerCard.Primary>
@@ -519,13 +332,14 @@ export function SignatureCapture({
         <Tabs
           tabs={tabs}
           value={activeTab}
-          onValueChange={(v) =>
-            setActiveTab(parseSelectValue(v, TAB_TYPES) ?? activeTab)
-          }
+          onValueChange={(v) => {
+            const next = parseSelectValue(v, TAB_TYPES) ?? activeTab;
+            setActiveTab(next);
+            setPendingCapture(null);
+          }}
         />
 
-        {/* Saved Tab (only shown if showLibrary is true) */}
-        {showLibrary && activeTab === "saved" && (
+        {showLibrary && activeTab === "saved" ? (
           <div className="space-y-4">
             {savedSignatures.length === 0 ? (
               <div className="text-kumo-secondary py-8 text-center">
@@ -570,9 +384,9 @@ export function SignatureCapture({
                           <span className="truncate text-sm font-medium">
                             {sig.name}
                           </span>
-                          {sig.isDefault && (
-                            <Star className="fill-kumo-warning text-kumo-warning h-3 w-3 flex-shrink-0" />
-                          )}
+                          {sig.isDefault ? (
+                            <Star className="fill-kumo-warning text-kumo-warning h-3 w-3 shrink-0" />
+                          ) : null}
                         </div>
                         <div className="text-kumo-secondary mt-1 text-xs">
                           {sig.signatureType} · Used {sig.usageCount} times
@@ -585,7 +399,7 @@ export function SignatureCapture({
                         className="h-12 w-24 rounded border bg-white object-contain"
                       />
                       <div className="flex flex-col gap-1">
-                        {!sig.isDefault && (
+                        {!sig.isDefault ? (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -599,7 +413,7 @@ export function SignatureCapture({
                           >
                             <Star className="h-3.5 w-3.5" />
                           </Button>
-                        )}
+                        ) : null}
                         <Button
                           variant="ghost"
                           size="sm"
@@ -623,158 +437,19 @@ export function SignatureCapture({
               {savedSignatures.length}/10 signatures saved
             </p>
           </div>
-        )}
+        ) : null}
 
-        {/* Draw Tab */}
-        {allowedTabs.includes("drawn") && activeTab === "drawn" && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Draw your signature</Label>
-              {/* SEA-116: Responsive container for signature canvas */}
-              <div
-                ref={canvasContainerRef}
-                // vortex-allow-color: signature capture pad represents white paper in both themes
-                className="border-kumo-hairline overflow-hidden rounded-lg border-2 border-dashed bg-white"
-              >
-                {/* vortex-allow-color: SignatureCanvas forwards colors to canvas and cannot resolve CSS tokens. */}
-                <SignatureCanvas
-                  ref={signaturePadRef}
-                  canvasProps={{
-                    width: canvasWidth,
-                    height: 200,
-                    className:
-                      "w-full h-[200px] cursor-crosshair touch-none select-none",
-                    style: { touchAction: "none" },
-                  }}
-                  // vortex-allow-color: signature capture pad represents white paper in both themes
-                  backgroundColor="rgb(255, 255, 255)"
-                  // vortex-allow-color: signature capture ink must stay physically black on white paper
-                  penColor="rgb(0, 0, 0)"
-                />
-              </div>
-              {/* SEA-116: Larger touch targets for mobile */}
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="base"
-                  onClick={handleUndoDrawn}
-                  className="h-11 min-h-[44px] flex-1"
-                  disabled={signatureHistory.length === 0}
-                >
-                  <ArrowCounterClockwise className="mr-2 h-4 w-4" />
-                  Undo
-                </Button>
-                <Button
-                  variant="outline"
-                  size="base"
-                  onClick={handleClearDrawn}
-                  className="h-11 min-h-[44px] flex-1"
-                >
-                  <X className="mr-2 h-4 w-4" />
-                  Clear
-                </Button>
-              </div>
-              <p className="text-kumo-secondary text-xs">
-                Use your mouse or finger to draw your signature above
-              </p>
-            </div>
-          </div>
-        )}
+        {activeTab !== "saved" ? (
+          <ESignature
+            key={captureMethod}
+            methods={[captureMethod]}
+            showTabs={false}
+            showActions={false}
+            defaultTypedName={recipientName}
+            onPendingChange={setPendingCapture}
+          />
+        ) : null}
 
-        {/* Type Tab */}
-        {allowedTabs.includes("typed") && activeTab === "typed" && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="typed-name">Type your full name</Label>
-              {/* SEA-116: Larger input for mobile with proper virtual keyboard handling */}
-              <Input
-                id="typed-name"
-                value={typedName}
-                onChange={(e) => setTypedName(e.target.value)}
-                placeholder="John Doe"
-                className="h-12 text-lg sm:h-10"
-                autoComplete="name"
-                autoCapitalize="words"
-                enterKeyHint="done"
-                aria-label="Type your full name"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="font-select">Select signature style</Label>
-              <Select
-                id="font-select"
-                value={selectedFont}
-                onValueChange={(v) =>
-                  setSelectedFont(
-                    parseSelectValue(v ?? "", SIGNATURE_FONT_VALUES) ??
-                      selectedFont
-                  )
-                }
-                placeholder="Select a font"
-              >
-                {SIGNATURE_FONTS.map((font) => (
-                  <Select.Option key={font.value} value={font.value}>
-                    <span style={{ fontFamily: font.cssFamily }}>
-                      {font.name}
-                    </span>
-                  </Select.Option>
-                ))}
-              </Select>
-            </div>
-            {typedName && (
-              <div
-                // vortex-allow-color: signature preview represents white paper in both themes
-                className="border-kumo-hairline overflow-hidden rounded-lg border-2 bg-white p-4 sm:p-8"
-              >
-                {/* SEA-116: Responsive font size for mobile */}
-                <p
-                  className="truncate text-center text-3xl sm:text-5xl"
-                  style={{ fontFamily: currentFontFamily }}
-                >
-                  {typedName}
-                </p>
-              </div>
-            )}
-            <p className="text-kumo-secondary text-sm">
-              Your typed name will be converted to a signature style using the
-              selected font
-            </p>
-          </div>
-        )}
-
-        {/* Upload Tab */}
-        {allowedTabs.includes("uploaded") && activeTab === "uploaded" && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="signature-upload">
-                Upload your signature image
-              </Label>
-              <input
-                id="signature-upload"
-                type="file"
-                accept=".png,.jpg,.jpeg"
-                onChange={handleFileUpload}
-                className="file:text-kumo-primary text-kumo-secondary border-kumo-hairline w-full rounded border bg-transparent p-2 text-sm"
-              />
-            </div>
-            {uploadedImage && (
-              <div
-                // vortex-allow-color: uploaded signature preview represents white paper in both themes
-                className="border-kumo-hairline rounded-lg border-2 bg-white p-4"
-              >
-                <img
-                  src={uploadedImage}
-                  alt="Uploaded signature"
-                  className="mx-auto max-h-[200px]"
-                />
-              </div>
-            )}
-            <p className="text-kumo-secondary text-sm">
-              Upload a PNG or JPG image file (max 5MB)
-            </p>
-          </div>
-        )}
-        {/* SEA-116: Mobile-optimized action buttons with proper touch targets */}
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:gap-4">
           <Button
             variant="outline"
@@ -784,12 +459,7 @@ export function SignatureCapture({
             Cancel
           </Button>
           <Button
-            onClick={() => {
-              if (activeTab === "saved") void handleSavedSignature();
-              else if (activeTab === "drawn") handleDrawnSignature();
-              else if (activeTab === "typed") handleTypedSignature();
-              else handleUploadedSignature();
-            }}
+            onClick={handleAccept}
             className="h-12 min-h-[44px] flex-1 sm:h-11"
           >
             <Check className="mr-2 h-4 w-4" />
@@ -797,14 +467,12 @@ export function SignatureCapture({
           </Button>
         </div>
 
-        {/* Legal Text */}
         <p className="text-kumo-secondary mt-4 text-center text-xs">
           By clicking "Accept & Sign", you agree that this is a legal
           representation of your signature.
         </p>
       </div>
 
-      {/* Save to Library Dialog */}
       <Dialog.Root open={showSaveDialog} onOpenChange={setShowSaveDialog}>
         <Dialog>
           <Dialog.Title>Save to Signature Library?</Dialog.Title>
@@ -813,7 +481,7 @@ export function SignatureCapture({
             documents?
           </Dialog.Description>
           <div className="space-y-4 py-4">
-            {pendingSignatureData && (
+            {pendingSignatureData ? (
               <div
                 // vortex-allow-color: signature library preview represents white paper in both themes
                 className="border-kumo-hairline rounded-lg border bg-white p-4"
@@ -824,7 +492,7 @@ export function SignatureCapture({
                   className="mx-auto max-h-[100px]"
                 />
               </div>
-            )}
+            ) : null}
             <div className="space-y-2">
               <Label htmlFor="signature-name">Signature name</Label>
               <Input
@@ -850,7 +518,9 @@ export function SignatureCapture({
               Skip & Sign
             </Button>
             <Button
-              onClick={handleSaveToLibrary}
+              onClick={() => {
+                void handleSaveToLibrary();
+              }}
               disabled={!saveSignatureName.trim()}
               className="flex-1"
             >
