@@ -45,10 +45,10 @@ Everything else is derivative; get this right first.
 
 ### 2. Palette — one accent, always
 
-- Neutral ramp: pick a Tailwind family (`stone`, `zinc`, `neutral`) and map
-  it 50→900 onto `--brand-*`. Vortex = monochrome graphite; Seal = stone.
-- ONE accent: a single mid-dark step of the ramp or one hue (Seal: stone-700
-  `#44403C` on `--primary`). If everything is colored, nothing is.
+- Neutral ramp: map Midday/graphite 50→900 onto `--brand-*`. Vortex hub =
+  monochrome Midday; Seal inherits Midday surfaces + one product accent.
+- ONE accent: Seal red `#E0463D` on `--primary` (Vortex accents table). If
+  everything is colored, nothing is.
 - Status hues (success/warning/destructive) are **functional**, never brand.
 - Light + dark `:root` blocks in the theme CSS; dark inverts the accent.
 

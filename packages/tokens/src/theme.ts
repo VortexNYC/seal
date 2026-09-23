@@ -2,7 +2,7 @@
  * @module tokens/theme
  * @since 1.0.0
  *
- * Seal Design System — TypeScript token exports
+ * Seal Design System — TypeScript token exports (Vortex Midday feel)
  *
  * Use these hex values anywhere CSS variables aren't available:
  *   - React Email templates (inline styles)
@@ -13,50 +13,58 @@
  *
  * These values mirror the OKLCH values in seal-theme-web.css exactly.
  * When updating a color, change both files.
+ *
+ * Visual language: Vortex Midday + Seal red accent (#E0463D). Owned in Seal —
+ * do not import @vortexnyc/brand.
  */
 
-/** Brand color scale — Tailwind stone, paper to ink. Accent is deep taupe (700) */
+/** Brand color scale — Midday graphite (paper → ink) */
 export const brand = {
-  50: "#fafaf9",
-  100: "#f5f5f4",
-  200: "#e7e5e4",
-  300: "#d6d3d1",
-  400: "#a8a29e",
-  500: "#78716c",
-  600: "#57534e",
-  700: "#44403c", // taupe — the accent / --brand-700
-  800: "#292524",
-  900: "#1c1917", // ink
+  50: "#f0ede8", // paper
+  100: "#ebe7e0",
+  200: "#e2ddd3",
+  300: "#d4cfc4",
+  400: "#a8a39a",
+  500: "#6b665d",
+  600: "#3a3735",
+  700: "#1a1a1a",
+  800: "#0a0a0a", // ink
+  900: "#000000",
+} as const;
+
+/** Seal product accent — Vortex accents table */
+export const accent = {
+  seal: "#e0463d",
 } as const;
 
 export const light = {
-  background: "#fafaf9",
-  foreground: "#1a1714",
+  background: "#f0ede8",
+  foreground: "#0a0a0a",
   card: "#ffffff",
-  cardForeground: "#1a1714",
-  surface: "#f5f3f0",
-  border: "#e8e4df",
-  input: "#e8e4df",
-  muted: "#f5f3f0",
-  mutedForeground: "#8a8279",
-  primary: "#44403c",
-  primaryForeground: "#fafaf9",
-  ring: "#a8a29e",
+  cardForeground: "#0a0a0a",
+  surface: "#ebe7e0",
+  border: "#e2ddd3",
+  input: "#e2ddd3",
+  muted: "#ebe7e0",
+  mutedForeground: "#6b665d",
+  primary: "#e0463d",
+  primaryForeground: "#f0ede8",
+  ring: "#a8a39a",
 } as const;
 
 export const dark = {
-  background: "#0a0a0a",
-  foreground: "#f0ece8",
+  background: "#000000",
+  foreground: "#e0e0e0",
   card: "#141414",
-  cardForeground: "#f0ece8",
-  surface: "#202020",
+  cardForeground: "#e0e0e0",
+  surface: "#1c1c1c",
   border: "#252525",
   input: "#252525",
-  muted: "#202020",
+  muted: "#1c1c1c",
   mutedForeground: "#8a8a8a",
-  primary: "#e7e5e4",
-  primaryForeground: "#1c1917",
-  ring: "#78716c",
+  primary: "#e0463d",
+  primaryForeground: "#f0ede8",
+  ring: "#5a5a5a",
 } as const;
 
 export const status = {
