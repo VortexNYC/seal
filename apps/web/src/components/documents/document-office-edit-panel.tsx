@@ -10,6 +10,10 @@ import {
   getDocumentPreview,
   replaceDocumentOriginal,
 } from "@/lib/api-client";
+import {
+  DOCX_CONTENT_TYPE,
+  htmlToDocxBase64,
+} from "@/lib/html-to-docx";
 import { toast } from "@/lib/toast";
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -149,11 +153,11 @@ export function DocumentOfficeEditPanel({
         saving={saveMutation.isPending}
         onSave={
           canEdit
-            ? (html) => {
-                const encoded = btoa(unescape(encodeURIComponent(html)));
-                saveMutation.mutate({
-                  contentBase64: encoded,
-                  contentType: "text/html",
+            ? async (html) => {
+                const contentBase64 = await htmlToDocxBase64(html);
+                await saveMutation.mutateAsync({
+                  contentBase64,
+                  contentType: DOCX_CONTENT_TYPE,
                 });
               }
             : undefined

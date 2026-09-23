@@ -19,6 +19,7 @@ import {
   convertBytesToPdf,
   isConvertibleFileType,
 } from "../../platform/document-conversion.js";
+import { buildDocumentLayoutBlocks } from "../../platform/document-layout-blocks.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import {
   annotatePdf,
@@ -600,28 +601,10 @@ app.get("/layout-blocks", async (c) => {
   const doc = await loadOrgDocument(db, organizationId, id);
   if (!doc) return c.json({ error: "not_found" }, 404);
 
-  const annotations = extractAnnotationsFromMarkdown(doc.parsedText ?? "");
-  const blocks = annotations.map((item, index) => ({
-    id: `layout-${item.page}-${index}`,
-    type:
-      item.category === "dates" || item.category === "terms"
-        ? "heading"
-        : item.category === "payment"
-          ? "table"
-          : "text",
-    page: item.page,
-    x: item.x / 100,
-    y: item.y / 100,
-    width: item.width / 100,
-    height: item.height / 100,
-    text: item.text,
-    confidence:
-      item.severity === "critical"
-        ? 0.95
-        : item.severity === "important"
-          ? 0.8
-          : 0.6,
-  }));
+  const blocks = buildDocumentLayoutBlocks({
+    parsedText: doc.parsedText,
+    fieldCandidatesJson: doc.fieldCandidates,
+  });
 
   return c.json({ blocks });
 });

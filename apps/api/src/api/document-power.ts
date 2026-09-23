@@ -7,11 +7,11 @@ import { and, eq, ne } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import { documents } from "../global/schema.js";
-import { extractAnnotationsFromMarkdown } from "../platform/document-annotations.js";
 import {
   convertBytesToPdf,
   isConvertibleFileType,
 } from "../platform/document-conversion.js";
+import { buildDocumentLayoutBlocks } from "../platform/document-layout-blocks.js";
 import {
   annotatePdf,
   mergePdfs,
@@ -356,28 +356,10 @@ app.get("/layout-blocks", async (c) => {
   const doc = await loadOrgDocByPublicId(db, organizationId, publicId);
   if (!doc) return c.json({ error: "not_found" }, 404);
 
-  const annotations = extractAnnotationsFromMarkdown(doc.parsedText ?? "");
-  const blocks = annotations.map((item, index) => ({
-    id: `layout-${item.page}-${index}`,
-    type:
-      item.category === "dates" || item.category === "terms"
-        ? ("heading" as const)
-        : item.category === "payment"
-          ? ("table" as const)
-          : ("text" as const),
-    page: item.page,
-    x: item.x / 100,
-    y: item.y / 100,
-    width: item.width / 100,
-    height: item.height / 100,
-    text: item.text,
-    confidence:
-      item.severity === "critical"
-        ? 0.95
-        : item.severity === "important"
-          ? 0.8
-          : 0.6,
-  }));
+  const blocks = buildDocumentLayoutBlocks({
+    parsedText: doc.parsedText,
+    fieldCandidatesJson: doc.fieldCandidates,
+  });
 
   return c.json({ blocks });
 });
