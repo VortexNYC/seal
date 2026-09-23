@@ -8,6 +8,16 @@ Where deals get done — upload, send, sign, audit, all API-first. Signing is fr
 
 An open-source, agent-native e-signature platform. Built and powered by Vortex.
 
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/VortexNYC/seal)
+
+Deploy on your Cloudflare account (D1 + R2 auto-provisioned). Or from a clone:
+
+```bash
+pnpm install && pnpm exec wrangler login && pnpm selfhost
+```
+
+Details: [CONTRIBUTING.md — Deploy your own](./CONTRIBUTING.md#deploy-your-own-cloudflare).
+
 |            |                                            |
 | ---------- | ------------------------------------------ |
 | **Site**   | [seal.nyc](https://seal.nyc)               |
