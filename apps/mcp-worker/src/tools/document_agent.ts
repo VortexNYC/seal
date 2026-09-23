@@ -175,7 +175,7 @@ export function registerDocumentAgentTools(
 
   server.tool(
     "seal_get_document_layout_blocks",
-    "Get layout/OCR-style blocks (page, bbox 0–1, text, type) derived from document annotations for structure review.",
+    "Get layout/OCR-style blocks (page, bbox 0–1, text, type) from anydoc field candidates plus annotation heuristics over parsed text.",
     { id: z.string().describe("Document ID") },
     async (args, extra) => {
       const authToken = getAuthToken(extra);

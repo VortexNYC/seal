@@ -1989,6 +1989,7 @@ const documentLayoutBlocksSchema = z.object({
       height: z.number(),
       text: z.string().optional(),
       confidence: z.number().optional(),
+      source: z.enum(["anydoc", "annotation"]).optional(),
     })
   ),
 });

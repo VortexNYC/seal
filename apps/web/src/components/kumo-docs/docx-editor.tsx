@@ -11,13 +11,13 @@ export type DocxEditorProps = {
   html?: string | null;
   className?: string;
   onChange?: (html: string) => void;
-  onSave?: (html: string) => void;
+  /** Persist edited HTML — parent converts to real .docx before upload. */
+  onSave?: (html: string) => void | Promise<void>;
   saving?: boolean;
 };
 
 /**
- * DOCX HTML editor — Extend docx-editor capability.
- * Edits the mammoth HTML surface; parent owns persistence (Seal has no DOCX write API yet).
+ * DOCX editor — mammoth → HTML for editing; parent writes real .docx on save.
  */
 export function DocxEditor({
   file,
@@ -67,9 +67,11 @@ export function DocxEditor({
             type="button"
             size="sm"
             disabled={saving || loading}
-            onClick={() => onSave(html)}
+            onClick={() => {
+              void onSave(html);
+            }}
           >
-            {saving ? "Saving…" : "Save"}
+            {saving ? "Saving…" : "Save as DOCX"}
           </Button>
         ) : null}
       </div>
@@ -88,6 +90,10 @@ export function DocxEditor({
           dangerouslySetInnerHTML={{ __html: html }}
         />
       )}
+      <p className="text-muted-foreground text-[11px]">
+        Saves a real .docx (OpenXML). Seal reconverts to PDF for signing
+        preview.
+      </p>
     </div>
   );
 }
