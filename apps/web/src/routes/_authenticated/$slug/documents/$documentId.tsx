@@ -711,8 +711,8 @@ function DocumentDetailPage() {
                     </div>
                   )}
                   <div className="mb-3 flex flex-col gap-2 sm:mb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                    <div className="text-foreground flex items-center gap-2 font-serif text-base font-medium sm:gap-3 sm:text-lg">
-                      <span>Document Preview</span>
+                    <div className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
+                      <span>Field placement</span>
                     </div>
                     <PdfViewerControls
                       currentZoom={pdfViewer.currentZoom}
@@ -953,6 +953,10 @@ function DocumentDetailPage() {
               }}
               activityEvents={activityEvents}
               onPageJump={pdfViewer.setCurrentPage}
+              currentPage={pdfViewer.currentPage}
+              onPdfChanged={() => {
+                setPdfReloadKey((key) => key + 1);
+              }}
             />
           </div>
         </div>
