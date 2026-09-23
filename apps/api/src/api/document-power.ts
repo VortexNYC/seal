@@ -1,13 +1,17 @@
 /**
  * Session-auth document power routes (human UI for SEA-26).
- * Mirrors agent MCP surface in document-agent.ts — split + original preview.
+ * Mirrors agent MCP surface in document-agent.ts — split, preview, annotate.
  */
 import { OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, eq, ne } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import { documents } from "../global/schema.js";
-import { splitPdfPages } from "../platform/pdf-ops.js";
+import {
+  annotatePdf,
+  pdfAnnotateOpSchema,
+  splitPdfPages,
+} from "../platform/pdf-ops.js";
 import type { Variables } from "../platform/types.js";
 import { createDownloadToken } from "./v1/download-token.js";
 
@@ -216,6 +220,63 @@ app.get("/preview", async (c) => {
     download_url: token
       ? `${origin}/api/v1/documents/download-file?token=${encodeURIComponent(token)}`
       : null,
+  });
+});
+
+const annotateBodySchema = z.object({
+  operations: z.array(pdfAnnotateOpSchema).min(1).max(100),
+});
+
+app.post("/annotate", async (c) => {
+  const user = c.get("user");
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+  const organizationId = c.get("organization").id;
+  const publicId = publicIdFromPath(new URL(c.req.url).pathname);
+  if (!publicId) return c.json({ error: "not_found" }, 404);
+
+  const parsed = annotateBodySchema.safeParse(await c.req.json());
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocByPublicId(db, organizationId, publicId);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  const annotated = await annotatePdf(
+    await object.arrayBuffer(),
+    parsed.data.operations
+  );
+
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, annotated, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: user.user.id,
+      annotatedFrom: doc.storageKey,
+    },
+  });
+
+  await db
+    .update(documents)
+    .set({
+      storageKey: storageId,
+      size: annotated.byteLength,
+      contentType: "application/pdf",
+      updatedAt: new Date(),
+    })
+    .where(eq(documents.id, doc.id));
+
+  return c.json({
+    success: true,
+    storageId,
+    operationsApplied: parsed.data.operations.length,
   });
 });
 

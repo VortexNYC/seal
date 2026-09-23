@@ -56,6 +56,7 @@ import {
   useAIFieldSuggestions,
 } from "../../../../components/documents/ai-field-suggestions";
 import { DeleteFieldDialog } from "../../../../components/documents/delete-field-dialog";
+import { DocumentPdfAnnotatePanel } from "../../../../components/documents/document-pdf-annotate-panel";
 import { DocumentPresence } from "../../../../components/documents/document-presence";
 import { DocumentSidebar } from "../../../../components/documents/document-sidebar";
 import { FieldOptionsDialog } from "../../../../components/documents/field-options-dialog";
@@ -236,7 +237,11 @@ function DocumentDetailPage() {
     : false;
 
   // ── Custom hooks ────────────────────────────────────────────────────────
-  const pdfViewer = usePdfViewer(slug, documentPublicId);
+  const [viewerMode, setViewerMode] = useState<"fields" | "annotate">(
+    "fields"
+  );
+  const [pdfReloadKey, setPdfReloadKey] = useState(0);
+  const pdfViewer = usePdfViewer(slug, documentPublicId, pdfReloadKey);
   const pageThumbnails = usePdfPageThumbnails(
     pdfViewer.pdfUrl,
     pdfViewer.numPages
@@ -615,7 +620,42 @@ function DocumentDetailPage() {
               ref={pdfViewer.pdfWrapperRef}
               className="bg-muted/80 dark:bg-background relative min-h-[600px] p-4 sm:min-h-[400px] sm:p-3 md:p-4"
             >
-              {pdfViewer.pdfUrl ? (
+              {canEdit ? (
+                <div className="mb-3 flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={viewerMode === "fields" ? "primary" : "outline"}
+                    onClick={() => setViewerMode("fields")}
+                  >
+                    Fields
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={viewerMode === "annotate" ? "primary" : "outline"}
+                    onClick={() => setViewerMode("annotate")}
+                  >
+                    Annotate
+                  </Button>
+                </div>
+              ) : null}
+
+              {viewerMode === "annotate" && canEdit && pdfViewer.pdfUrl ? (
+                <DocumentPdfAnnotatePanel
+                  organizationSlug={slug}
+                  documentPublicId={documentPublicId}
+                  pdfUrl={pdfViewer.pdfUrl}
+                  page={pdfViewer.currentPage}
+                  numPages={pdfViewer.numPages}
+                  width={pdfViewer.pdfWidth}
+                  onPageChange={pdfViewer.handlePageChange}
+                  onLoadSuccess={pdfViewer.onDocumentLoadSuccess}
+                  onApplied={() => {
+                    setPdfReloadKey((key) => key + 1);
+                  }}
+                />
+              ) : pdfViewer.pdfUrl ? (
                 <TransformWrapper
                   initialScale={1}
                   minScale={0.5}

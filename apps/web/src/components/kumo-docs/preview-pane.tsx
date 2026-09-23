@@ -1,10 +1,13 @@
 import type { JSX } from "react";
 import { useEffect, useState } from "react";
 
+import { downloadDocument } from "@/lib/api-client";
+import { generatePageThumbnailsFromUrl } from "@/lib/pdf-utils";
 import { cn } from "@/lib/utils";
 
 import { CsvViewer } from "./csv-viewer";
 import { DocxViewer } from "./docx-viewer";
+import { PptxViewer, type PptxSlide } from "./pptx-viewer";
 import { XlsxViewer } from "./xlsx-viewer";
 
 export type PreviewFormat =
@@ -19,19 +22,25 @@ export type PreviewFormat =
 
 /**
  * Original-file preview pane — routes format to Seal office viewers.
- * Not a DOCX/XLSX editor — view-only.
+ * PPTX slides come from the upload convert pipeline (LibreOffice → PDF → page images).
  */
 export function PreviewPane({
   format,
   title,
   content,
   downloadUrl,
+  organizationSlug,
+  documentPublicId,
+  pageCount,
   className,
 }: {
   format: PreviewFormat;
   title?: string;
   content: string | null;
   downloadUrl?: string | null;
+  organizationSlug?: string;
+  documentPublicId?: string;
+  pageCount?: number | null;
   className?: string;
 }): JSX.Element {
   return (
@@ -50,6 +59,9 @@ export function PreviewPane({
           format={format}
           content={content}
           downloadUrl={downloadUrl}
+          organizationSlug={organizationSlug}
+          documentPublicId={documentPublicId}
+          pageCount={pageCount}
         />
       </div>
     </div>
@@ -60,10 +72,16 @@ function PreviewBody({
   format,
   content,
   downloadUrl,
+  organizationSlug,
+  documentPublicId,
+  pageCount,
 }: {
   format: PreviewFormat;
   content: string | null;
   downloadUrl?: string | null;
+  organizationSlug?: string;
+  documentPublicId?: string;
+  pageCount?: number | null;
 }): JSX.Element {
   if (format === "csv" && content) {
     return <CsvViewer content={content} className="max-h-full" />;
@@ -83,16 +101,27 @@ function PreviewBody({
       </pre>
     );
   }
-  if (
-    (format === "docx" || format === "xlsx") &&
-    downloadUrl
-  ) {
+  if ((format === "docx" || format === "xlsx") && downloadUrl) {
     return <BinaryOfficePreview format={format} downloadUrl={downloadUrl} />;
+  }
+  if (
+    format === "pptx" &&
+    organizationSlug &&
+    documentPublicId
+  ) {
+    return (
+      <PptxSlidePreview
+        organizationSlug={organizationSlug}
+        documentPublicId={documentPublicId}
+        pageCount={pageCount}
+        downloadUrl={downloadUrl}
+      />
+    );
   }
   if (format === "pptx") {
     return (
       <p className="text-muted-foreground text-sm">
-        PowerPoint preview needs converted slide images.{" "}
+        PowerPoint preview needs the converted PDF.{" "}
         {downloadUrl ? (
           <a
             href={downloadUrl}
@@ -100,9 +129,7 @@ function PreviewBody({
           >
             Download original
           </a>
-        ) : (
-          "Upload conversion is not available for this file."
-        )}
+        ) : null}
       </p>
     );
   }
@@ -120,6 +147,81 @@ function PreviewBody({
     );
   }
   return <p className="text-muted-foreground text-sm">No preview available.</p>;
+}
+
+/**
+ * PPTX → LibreOffice PDF (at upload) → page raster slides for PptxViewer.
+ */
+function PptxSlidePreview({
+  organizationSlug,
+  documentPublicId,
+  pageCount,
+  downloadUrl,
+}: {
+  organizationSlug: string;
+  documentPublicId: string;
+  pageCount?: number | null;
+  downloadUrl?: string | null;
+}): JSX.Element {
+  const [slides, setSlides] = useState<PptxSlide[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    setLoading(true);
+    setError(null);
+
+    void (async () => {
+      try {
+        const blob = await downloadDocument(organizationSlug, documentPublicId);
+        objectUrl = URL.createObjectURL(blob);
+        const thumbs = await generatePageThumbnailsFromUrl(objectUrl, {
+          maxPages: pageCount ?? 40,
+          maxWidth: 960,
+          maxHeight: 540,
+        });
+        if (cancelled) return;
+        setSlides(
+          thumbs.map((thumb) => ({
+            id: `slide-${thumb.page}`,
+            title: `Slide ${thumb.page}`,
+            imageUrl: thumb.src,
+          }))
+        );
+      } catch {
+        if (!cancelled) setError("Failed to build slide previews");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [organizationSlug, documentPublicId, pageCount]);
+
+  if (loading) {
+    return <p className="text-muted-foreground text-sm">Building slides…</p>;
+  }
+  if (error) {
+    return (
+      <div className="space-y-2">
+        <p className="text-destructive text-sm">{error}</p>
+        {downloadUrl ? (
+          <a
+            href={downloadUrl}
+            className="text-foreground text-sm underline underline-offset-2"
+          >
+            Download original PPTX
+          </a>
+        ) : null}
+      </div>
+    );
+  }
+  return <PptxViewer slides={slides} className="max-h-full" />;
 }
 
 function BinaryOfficePreview({

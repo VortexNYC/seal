@@ -6,12 +6,12 @@ Every Extend UI catalog component, rebuilt on `@cloudflare/kumo` + Seal Taupe.
 | Extend | Seal (`kumo-docs`) | Status |
 | --- | --- | --- |
 | PDF Viewer | `PdfViewer` + existing pdf canvas | done |
-| PDF Editor | `PdfEditor` (annotate ops) | done — catalog; product field placement stays on canvas |
+| PDF Editor | `PdfEditor` (annotate ops) | done — Fields / Annotate mode on document detail |
 | DOCX Viewer | `DocxViewer` (mammoth) | done — wired into original preview |
 | DOCX Editor | `DocxEditor` | done |
 | Excel Viewer | `XlsxViewer` (sheetjs) | done — wired into original preview |
 | Excel Editor | `XlsxEditor` | done |
-| PowerPoint Viewer | `PptxViewer` | done — preview shows download until slide convert |
+| PowerPoint Viewer | `PptxViewer` | done — slides from convert PDF page rasters |
 | CSV Viewer | `CsvViewer` | done — wired into `PreviewPane` |
 | File Upload | `FileUpload` | done — wired into `UploadDialog` |
 | File System (Finder) | `FileSystem` | done |
@@ -30,5 +30,5 @@ Every Extend UI catalog component, rebuilt on `@cloudflare/kumo` + Seal Taupe.
 | Citations / splits / bindings / thumbnails / shell | live in document routes |
 | Upload dialog | uses `FileUpload` |
 | Signature capture | uses `ESignature` (+ saved library shell) |
-| Original preview (CSV / DOCX / XLSX) | uses `CsvViewer` / `DocxViewer` / `XlsxViewer` via power preview |
-| PPTX slide images / PDF annotate editor mode | catalog ready — convert pipeline / annotate mode next |
+| Original preview (CSV / DOCX / XLSX / PPTX) | uses office viewers; PPTX slides from upload convert PDF |
+| PDF annotate editor mode | Fields / Annotate toggle → `PdfEditor` + `power/annotate` |
