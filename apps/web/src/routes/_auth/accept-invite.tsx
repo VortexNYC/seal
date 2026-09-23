@@ -35,6 +35,12 @@ function AcceptInviteRoute() {
             search: { token },
           });
         }}
+        onSignUp={() => {
+          void navigate({
+            to: "/sign-up",
+            search: { token },
+          });
+        }}
       />
     </AuthProvider>
   );
