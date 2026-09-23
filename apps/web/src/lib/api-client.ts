@@ -1054,7 +1054,7 @@ export async function getDocuments(
     query.set("filter", options.filter);
   }
   if (options.workflowStatus) {
-    query.set("status", options.workflowStatus);
+    query.set("workflowStatus", options.workflowStatus);
   }
   if (options.folderId) {
     query.set("folderId", options.folderId);
