@@ -1,17 +1,69 @@
 /**
- * PDF utilities for extracting metadata and generating thumbnails
- * SEA-64: PDF Preview & Metadata
+ * PDF utilities — PDFium (EmbedPDF engines). SEA-64 + ThumbnailSidebar.
  */
 
-import * as pdfjsLib from "pdfjs-dist";
-import PdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+import {
+  createPdfiumWorkerEngine,
+  type PdfEngine,
+} from "@embedpdf/engines/pdfium";
+import pdfiumWasmUrl from "@embedpdf/pdfium/pdfium.wasm?url";
 
-// Configure PDF.js worker using local build
-pdfjsLib.GlobalWorkerOptions.workerSrc = PdfWorker;
+let engineSingleton: PdfEngine<Blob> | null = null;
+
+function getEngine(): PdfEngine<Blob> {
+  if (!engineSingleton) {
+    engineSingleton = createPdfiumWorkerEngine(pdfiumWasmUrl);
+  }
+  return engineSingleton;
+}
+
+async function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") resolve(reader.result);
+      else reject(new Error("Failed to encode thumbnail"));
+    };
+    reader.onerror = () =>
+      reject(reader.error ?? new Error("Failed to encode thumbnail"));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function renderPageDataUrl(
+  engine: PdfEngine<Blob>,
+  content: ArrayBuffer,
+  pageIndex: number,
+  maxWidth: number,
+  maxHeight: number
+): Promise<string | null> {
+  const doc = await engine
+    .openDocumentBuffer({
+      id: `seal-thumb-${crypto.randomUUID()}`,
+      content,
+    })
+    .toPromise();
+  try {
+    const page = doc.pages[pageIndex];
+    if (!page) return null;
+    const scale = Math.min(
+      maxWidth / page.size.width,
+      maxHeight / page.size.height
+    );
+    const blob = await engine
+      .renderPage(doc, page, {
+        scaleFactor: scale,
+        dpr: typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1,
+      })
+      .toPromise();
+    return blobToDataUrl(blob);
+  } finally {
+    await engine.closeDocument(doc).toPromise();
+  }
+}
 
 /**
- * Generate thumbnail from PDF URL
- * Fetches the PDF from a URL and generates a thumbnail
+ * Generate thumbnail from PDF URL (first page).
  */
 export async function generateThumbnailFromUrl(
   url: string,
@@ -23,39 +75,14 @@ export async function generateThumbnailFromUrl(
     if (!response.ok) {
       throw new Error(`Failed to fetch PDF: ${response.status}`);
     }
-
     const arrayBuffer = await response.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-
-    // Get first page
-    const page = await pdf.getPage(1);
-
-    // Calculate viewport scale to fit within maxWidth x maxHeight
-    const viewport = page.getViewport({ scale: 1 });
-    const scale = Math.min(
-      maxWidth / viewport.width,
-      maxHeight / viewport.height
+    return renderPageDataUrl(
+      getEngine(),
+      arrayBuffer,
+      0,
+      maxWidth,
+      maxHeight
     );
-    const scaledViewport = page.getViewport({ scale });
-
-    // Create canvas
-    const canvas = document.createElement("canvas");
-    const context = canvas.getContext("2d");
-    if (!context) {
-      throw new Error("Could not get canvas context");
-    }
-
-    canvas.width = scaledViewport.width;
-    canvas.height = scaledViewport.height;
-
-    // Render page to canvas
-    await page.render({
-      canvas,
-      viewport: scaledViewport,
-    }).promise;
-
-    // Convert canvas to data URL
-    return canvas.toDataURL("image/png");
   } catch (error) {
     console.error("Error generating PDF thumbnail from URL:", error);
     return null;
@@ -63,42 +90,37 @@ export async function generateThumbnailFromUrl(
 }
 
 /**
- * Extract both page count and thumbnail from PDF
- * Returns metadata object with pageCount and thumbnail
+ * Extract page count + first-page thumbnail from a File (upload).
  */
 export async function extractPdfMetadata(file: File): Promise<{
   pageCount: number;
   thumbnail: string | null;
 }> {
   try {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-
-    const pageCount = pdf.numPages;
-
-    // Generate thumbnail from first page
-    const page = await pdf.getPage(1);
-    const viewport = page.getViewport({ scale: 1 });
-    const scale = Math.min(200 / viewport.width, 300 / viewport.height);
-    const scaledViewport = page.getViewport({ scale });
-
-    const canvas = document.createElement("canvas");
-    const context = canvas.getContext("2d");
-    if (!context) {
-      return { pageCount, thumbnail: null };
+    const engine = getEngine();
+    const content = await file.arrayBuffer();
+    const doc = await engine
+      .openDocumentBuffer({
+        id: `seal-meta-${crypto.randomUUID()}`,
+        content,
+      })
+      .toPromise();
+    try {
+      const pageCount = doc.pages.length;
+      const page = doc.pages[0];
+      if (!page) return { pageCount, thumbnail: null };
+      const scale = Math.min(200 / page.size.width, 300 / page.size.height);
+      const blob = await engine
+        .renderPage(doc, page, {
+          scaleFactor: scale,
+          dpr: typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1,
+        })
+        .toPromise();
+      const thumbnail = await blobToDataUrl(blob);
+      return { pageCount, thumbnail };
+    } finally {
+      await engine.closeDocument(doc).toPromise();
     }
-
-    canvas.width = scaledViewport.width;
-    canvas.height = scaledViewport.height;
-
-    await page.render({
-      canvas,
-      viewport: scaledViewport,
-    }).promise;
-
-    const thumbnail = canvas.toDataURL("image/png");
-
-    return { pageCount, thumbnail };
   } catch (error) {
     console.error("Error extracting PDF metadata:", error);
     return { pageCount: 0, thumbnail: null };
@@ -127,40 +149,45 @@ export async function generatePageThumbnailsFromUrl(
       throw new Error(`Failed to fetch PDF: ${response.status}`);
     }
 
-    const arrayBuffer = await response.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    const pageLimit = Math.min(pdf.numPages, maxPages);
-    const results: Array<{ page: number; src: string }> = [];
+    const engine = getEngine();
+    const content = await response.arrayBuffer();
+    const doc = await engine
+      .openDocumentBuffer({
+        id: `seal-pages-${crypto.randomUUID()}`,
+        content,
+      })
+      .toPromise();
 
-    for (let pageNumber = 1; pageNumber <= pageLimit; pageNumber++) {
-      const page = await pdf.getPage(pageNumber);
-      const viewport = page.getViewport({ scale: 1 });
-      const scale = Math.min(
-        maxWidth / viewport.width,
-        maxHeight / viewport.height
-      );
-      const scaledViewport = page.getViewport({ scale });
-      const canvas = document.createElement("canvas");
-      const context = canvas.getContext("2d");
-      if (!context) continue;
+    try {
+      const pageLimit = Math.min(doc.pages.length, maxPages);
+      const results: Array<{ page: number; src: string }> = [];
 
-      canvas.width = scaledViewport.width;
-      canvas.height = scaledViewport.height;
-      await page.render({
-        canvas,
-        viewport: scaledViewport,
-      }).promise;
+      for (let i = 0; i < pageLimit; i++) {
+        const page = doc.pages[i];
+        if (!page) continue;
+        const scale = Math.min(
+          maxWidth / page.size.width,
+          maxHeight / page.size.height
+        );
+        const blob = await engine
+          .renderPage(doc, page, {
+            scaleFactor: scale,
+            dpr:
+              typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1,
+          })
+          .toPromise();
+        results.push({
+          page: page.index + 1,
+          src: await blobToDataUrl(blob),
+        });
+      }
 
-      results.push({
-        page: pageNumber,
-        src: canvas.toDataURL("image/png"),
-      });
+      return results;
+    } finally {
+      await engine.closeDocument(doc).toPromise();
     }
-
-    return results;
   } catch (error) {
     console.error("Error generating page thumbnails:", error);
     return [];
   }
 }
-

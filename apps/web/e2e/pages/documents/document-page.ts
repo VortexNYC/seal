@@ -29,8 +29,8 @@ export class DocumentPage {
     this.page = page;
     this.documentTitle = page.locator('[data-testid="document-title"]');
     this.documentCanvas = page.locator("canvas");
-    this.documentDropTarget = page.locator(".react-pdf__Page").first();
-    this.documentPreview = page.getByText("Document Preview").first();
+    this.documentDropTarget = page.locator("[data-engine='pdfium']").first();
+    this.documentPreview = page.getByText("Field placement").first();
     this.backButton = page.getByRole("button", { name: /^Back$/ });
     this.zoomInButton = page.getByRole("button", { name: "Zoom in" });
     this.zoomOutButton = page.getByRole("button", { name: "Zoom out" });
