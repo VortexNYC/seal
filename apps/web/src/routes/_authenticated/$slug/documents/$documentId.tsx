@@ -771,6 +771,7 @@ function DocumentDetailPage() {
           <div>
             <DocumentSidebar
               documentId={documentId}
+              documentPublicId={documentPublicId}
               slug={slug}
               workflowStatus={
                 documentData.workflowStatus &&

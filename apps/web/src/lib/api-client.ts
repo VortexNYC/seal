@@ -1793,6 +1793,48 @@ export async function deleteSignatureField(
   );
 }
 // ---------------------------------------------------------------------------
+// Document power (SEA-26 — human UI for split / preview)
+// ---------------------------------------------------------------------------
+const documentSplitResultSchema = z.object({
+  parentPublicId: z.string(),
+  documents: z.array(
+    z.object({
+      publicId: z.string(),
+      title: z.string(),
+      pageCount: z.number().int(),
+    })
+  ),
+});
+export type ApiDocumentSplitResult = z.infer<typeof documentSplitResultSchema>;
+export async function splitDocument(
+  organizationSlug: string,
+  publicId: string,
+  splits: Array<{ title: string; pages: number[] }>
+): Promise<ApiDocumentSplitResult> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/split`,
+    documentSplitResultSchema,
+    { method: "POST", body: JSON.stringify({ splits }) }
+  );
+}
+const documentPreviewSchema = z.object({
+  format: z.enum(["pdf", "csv", "text", "html", "unknown"]),
+  content_type: z.string(),
+  content: z.string().nullable(),
+  page_count: z.number().int().nullable().optional(),
+  download_url: z.string().nullable(),
+});
+export type ApiDocumentPreview = z.infer<typeof documentPreviewSchema>;
+export async function getDocumentPreview(
+  organizationSlug: string,
+  publicId: string
+): Promise<ApiDocumentPreview> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/preview`,
+    documentPreviewSchema
+  );
+}
+// ---------------------------------------------------------------------------
 // AI
 // ---------------------------------------------------------------------------
 const annotationItemSchema = z.object({

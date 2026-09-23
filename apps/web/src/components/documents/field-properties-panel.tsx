@@ -65,6 +65,8 @@ interface FieldData {
     minLength?: number;
     pattern?: string;
     helpText?: string;
+    bindingKey?: string;
+    binding_key?: string;
   };
   validationRules?: {
     required?: boolean;
@@ -143,6 +145,9 @@ function useFieldPropertiesState(field: FieldData, recipients: Recipient[]) {
     field.properties?.placeholder ?? ""
   );
   const [helpText, setHelpText] = useState(field.properties?.helpText ?? "");
+  const [bindingKey, setBindingKey] = useState(
+    field.properties?.bindingKey ?? field.properties?.binding_key ?? ""
+  );
   const [maxLength, setMaxLength] = useState<number | undefined>(
     field.properties?.maxLength
   );
@@ -173,6 +178,9 @@ function useFieldPropertiesState(field: FieldData, recipients: Recipient[]) {
     setIsRequired(field.isRequired);
     setPlaceholder(field.properties?.placeholder ?? "");
     setHelpText(field.properties?.helpText ?? "");
+    setBindingKey(
+      field.properties?.bindingKey ?? field.properties?.binding_key ?? ""
+    );
     setMaxLength(field.properties?.maxLength);
     setMinLength(field.properties?.minLength);
     setValidationPattern(nextPattern.value);
@@ -192,6 +200,8 @@ function useFieldPropertiesState(field: FieldData, recipients: Recipient[]) {
     setPlaceholder,
     helpText,
     setHelpText,
+    bindingKey,
+    setBindingKey,
     maxLength,
     setMaxLength,
     minLength,
@@ -281,6 +291,8 @@ function useFieldPropertiesActions({
           pattern: patternToSave,
           options: field.properties?.options,
           defaultValue: field.properties?.defaultValue,
+          bindingKey: state.bindingKey.trim() || undefined,
+          binding_key: state.bindingKey.trim() || undefined,
         },
         validationRules: {
           required: state.isRequired,
@@ -474,6 +486,8 @@ function BasicFieldSettings({
   setPlaceholder,
   helpText,
   setHelpText,
+  bindingKey,
+  setBindingKey,
   showPlaceholder,
 }: {
   label: string;
@@ -484,6 +498,8 @@ function BasicFieldSettings({
   setPlaceholder: (value: string) => void;
   helpText: string;
   setHelpText: (value: string) => void;
+  bindingKey: string;
+  setBindingKey: (value: string) => void;
   showPlaceholder: boolean;
 }) {
   return (
@@ -531,6 +547,22 @@ function BasicFieldSettings({
           </p>
         </div>
       )}
+
+      <div className="space-y-2">
+        <Label htmlFor="field-binding-key">Binding key</Label>
+        <Input
+          id="field-binding-key"
+          aria-label="Binding key"
+          value={bindingKey}
+          onChange={(event) => setBindingKey(event.target.value)}
+          placeholder="e.g. counterparty.name"
+          className="font-mono text-xs"
+          spellCheck={false}
+        />
+        <p className="text-muted-foreground text-xs">
+          Structured key for agent apply-bindings
+        </p>
+      </div>
 
       <div className="space-y-2">
         <Label htmlFor="field-help">
@@ -794,6 +826,8 @@ export function FieldPropertiesPanel({
           setPlaceholder={form.setPlaceholder}
           helpText={form.helpText}
           setHelpText={form.setHelpText}
+          bindingKey={form.bindingKey}
+          setBindingKey={form.setBindingKey}
           showPlaceholder={form.showPlaceholder}
         />
         <ValidationSettings
