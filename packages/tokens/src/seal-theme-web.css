@@ -182,6 +182,32 @@
   --ai-warning-surface: oklch(0.97 0.03 80);
   --ai-warning-text: oklch(0.52 0.16 75);
 
+  /*
+   * Kumo utility bridge — product chrome uses bg/text/border-kumo-* classes.
+   * These alias Taupe semantic tokens so one language (Kumo) paints Seal.
+   * Do not invent a second palette; keep aliases pointed at --background/--card/etc.
+   */
+  --kumo-base: var(--background);
+  --kumo-background: var(--background);
+  --kumo-elevated: var(--card);
+  --kumo-surface: var(--muted);
+  --kumo-hairline: var(--border);
+  --kumo-line: var(--border);
+  --kumo-primary: var(--primary);
+  --kumo-secondary: var(--muted-foreground);
+  --kumo-default: var(--foreground);
+  --kumo-brand: var(--brand-900);
+  --kumo-danger: var(--destructive);
+  --kumo-danger-tint: var(--status-declined-surface);
+  --kumo-success: var(--success);
+  --kumo-success-tint: var(--success-surface);
+  --kumo-warning: var(--warning);
+  --kumo-warning-tint: var(--warning-surface);
+  --kumo-info: var(--info);
+  --kumo-info-tint: var(--info-surface);
+  --kumo-link: var(--info);
+  --kumo-tint: var(--accent);
+
   /* ── Spacing semantic tokens ────────────────────────────────────────────── */
   --space-1: 0.25rem; /* 4px */
   --space-2: 0.5rem; /* 8px */
@@ -519,4 +545,26 @@
   --color-ai-suggestion-text: var(--ai-suggestion-text);
   --color-ai-warning-surface: var(--ai-warning-surface);
   --color-ai-warning-text: var(--ai-warning-text);
+
+  /* Kumo → Taupe bridge (utilities: bg-kumo-*, text-kumo-*, border-kumo-*) */
+  --color-kumo-base: var(--kumo-base);
+  --color-kumo-background: var(--kumo-background);
+  --color-kumo-elevated: var(--kumo-elevated);
+  --color-kumo-surface: var(--kumo-surface);
+  --color-kumo-hairline: var(--kumo-hairline);
+  --color-kumo-line: var(--kumo-line);
+  --color-kumo-primary: var(--kumo-primary);
+  --color-kumo-secondary: var(--kumo-secondary);
+  --color-kumo-default: var(--kumo-default);
+  --color-kumo-brand: var(--kumo-brand);
+  --color-kumo-danger: var(--kumo-danger);
+  --color-kumo-danger-tint: var(--kumo-danger-tint);
+  --color-kumo-success: var(--kumo-success);
+  --color-kumo-success-tint: var(--kumo-success-tint);
+  --color-kumo-warning: var(--kumo-warning);
+  --color-kumo-warning-tint: var(--kumo-warning-tint);
+  --color-kumo-info: var(--kumo-info);
+  --color-kumo-info-tint: var(--kumo-info-tint);
+  --color-kumo-link: var(--kumo-link);
+  --color-kumo-tint: var(--kumo-tint);
 }
