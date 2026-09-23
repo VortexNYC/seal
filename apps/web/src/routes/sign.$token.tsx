@@ -38,10 +38,6 @@ import {
   createFileRoute,
   Link,
 } from "@tanstack/react-router";
-import PdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-
-import "react-pdf/dist/Page/AnnotationLayer.css";
-import "react-pdf/dist/Page/TextLayer.css";
 import {
   useCallback,
   useEffect,
@@ -50,11 +46,11 @@ import {
   useState,
   type ReactElement,
 } from "react";
-import { Document, Page, pdfjs } from "react-pdf";
 
 import { EsignConsentDialog } from "@/components/documents/esign-consent-dialog";
 import { FieldInputManager } from "@/components/documents/field-input-manager";
 import { FillableFieldOverlay } from "@/components/documents/fillable-field-overlay";
+import { PdfSigningDocumentSurface } from "@/components/documents/pdf-signing-document-surface";
 import { SignatureCapture } from "@/components/documents/signature-capture";
 import { SealLogo } from "@/components/seal-logo";
 import { DictateNextSignerDialog } from "@/components/signing/dictate-next-signer-dialog";
@@ -133,9 +129,6 @@ function asFieldValidationRules(
   if (min === undefined && max === undefined) return undefined;
   return { min, max };
 }
-
-// Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = PdfWorker;
 
 // ─── Embedded Signing (iFrame SDK) ──────────────────────────────────
 type SealEventType =
@@ -366,10 +359,6 @@ function SigningPage() {
   // PDF viewer state
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [pdfPageDimensions, setPdfPageDimensions] = useState<
-    Map<number, { width: number; height: number }>
-  >(new Map());
-
   // Field input state
   const [activeFieldId, setActiveFieldId] = useState<string | null>(null);
   const [showFieldInput, setShowFieldInput] = useState(false);
@@ -1680,119 +1669,60 @@ function SigningPage() {
                 {/* PDF Document */}
                 {pdfUrl ? (
                   <div className="space-y-4">
-                    <Document
-                      file={pdfUrl}
-                      onLoadSuccess={onDocumentLoadSuccess}
-                      loading={
-                        <div
-                          className="border-kumo-hairline/50 bg-kumo-elevated rounded-lg border p-16 text-center shadow-sm"
-                          role="status"
-                          aria-live="polite"
-                        >
-                          <div className="animate-pulse space-y-4">
-                            <div className="bg-kumo-elevated mx-auto h-4 w-1/3 rounded" />
-                            <div className="bg-kumo-elevated mx-auto h-4 w-1/2 rounded" />
-                            <div className="bg-kumo-elevated mx-auto h-4 w-2/5 rounded" />
-                          </div>
-                        </div>
-                      }
-                      error={
-                        <div
-                          className="border-kumo-danger/30 bg-kumo-elevated rounded-lg border p-16 text-center shadow-sm"
-                          role="alert"
-                        >
-                          <p className="text-kumo-danger font-medium">
-                            Failed to load PDF
-                          </p>
-                          <p className="text-kumo-secondary mt-1 text-sm">
-                            Please try refreshing the page
-                          </p>
-                        </div>
-                      }
-                    >
-                      {Array.from({ length: numPages ?? 0 }, (_el, index) => {
-                        const pageNumber = index + 1;
+                    <PdfSigningDocumentSurface
+                      src={pdfUrl}
+                      width={pdfWidth}
+                      onDocumentLoadSuccess={onDocumentLoadSuccess}
+                      renderPageOverlays={({
+                        pageNumber,
+                        pageWidth,
+                        pageHeight,
+                      }) => {
                         const fieldsOnPage = fields.filter(
                           (f) => f.page === pageNumber
                         );
-
                         return (
-                          <div
-                            key={`page_${pageNumber}`}
-                            className="border-kumo-hairline/50 bg-kumo-elevated relative mb-4 overflow-hidden rounded-lg border shadow-sm last:mb-0"
-                          >
-                            <Page
-                              pageNumber={pageNumber}
-                              width={pdfWidth}
-                              renderTextLayer={true}
-                              renderAnnotationLayer={true}
-                              className="mx-auto"
-                              onLoadSuccess={(page) => {
-                                setPdfPageDimensions((prev) => {
-                                  const newMap = new Map(prev);
-                                  newMap.set(pageNumber, {
-                                    width: page.width,
-                                    height: page.height,
-                                  });
-                                  return newMap;
-                                });
-                              }}
-                            />
-                            {/* Render field overlays on top of PDF */}
-                            {fieldsOnPage.map((field) => {
-                              const pageDims =
-                                pdfPageDimensions.get(pageNumber);
-                              if (!pageDims) return null;
-
-                              return (
-                                <FillableFieldOverlay
-                                  key={field._id}
-                                  ref={(el: HTMLButtonElement | null) => {
-                                    if (el) {
-                                      fieldRefs.current.set(field._id, el);
-                                    } else {
-                                      fieldRefs.current.delete(field._id);
-                                    }
-                                  }}
-                                  fieldId={field._id}
-                                  fieldType={field.fieldType}
-                                  label={field.label}
-                                  isRequired={field.isRequired}
-                                  isMainSignature={field.isMainSignature}
-                                  x={field.x}
-                                  y={field.y}
-                                  width={field.width}
-                                  height={field.height}
-                                  page={field.page}
-                                  currentPage={pageNumber}
-                                  pdfPageWidth={pageDims.width}
-                                  pdfPageHeight={pageDims.height}
-                                  isFilled={field.isFilled}
-                                  isActive={
-                                    !isCompleted && activeFieldId === field._id
+                          <>
+                            {fieldsOnPage.map((field) => (
+                              <FillableFieldOverlay
+                                key={field._id}
+                                ref={(el: HTMLButtonElement | null) => {
+                                  if (el) {
+                                    fieldRefs.current.set(field._id, el);
+                                  } else {
+                                    fieldRefs.current.delete(field._id);
                                   }
-                                  signatureDetails={field.signatureDetails}
-                                  paymentInfo={paymentInfoByFieldId.get(
-                                    field._id
-                                  )}
-                                  onClick={
-                                    isCompleted ? () => {} : handleFieldClick
-                                  }
-                                />
-                              );
-                            })}
-                            {/* Page number indicator */}
-                            {numPages &&
-                              numPages > 1 && (
-                                // vortex-allow-color: signing-view scrim dims content uniformly in both themes
-                                <div className="absolute right-3 bottom-3 rounded-md bg-black/60 px-2 py-1 text-xs text-white backdrop-blur-sm">
-                                  {pageNumber} / {numPages}
-                                </div>
-                              )}
-                          </div>
+                                }}
+                                fieldId={field._id}
+                                fieldType={field.fieldType}
+                                label={field.label}
+                                isRequired={field.isRequired}
+                                isMainSignature={field.isMainSignature}
+                                x={field.x}
+                                y={field.y}
+                                width={field.width}
+                                height={field.height}
+                                page={field.page}
+                                currentPage={pageNumber}
+                                pdfPageWidth={pageWidth}
+                                pdfPageHeight={pageHeight}
+                                isFilled={field.isFilled}
+                                isActive={
+                                  !isCompleted && activeFieldId === field._id
+                                }
+                                signatureDetails={field.signatureDetails}
+                                paymentInfo={paymentInfoByFieldId.get(
+                                  field._id
+                                )}
+                                onClick={
+                                  isCompleted ? () => {} : handleFieldClick
+                                }
+                              />
+                            ))}
+                          </>
                         );
-                      })}
-                    </Document>
+                      }}
+                    />
 
                     {/* Signature Stamp - shown when document is completed with no positioned fields */}
                     {isCompleted &&
