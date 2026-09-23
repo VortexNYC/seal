@@ -73,7 +73,17 @@ e2e/
 
 ### Environment Variables
 
-Create `.env.test` file (see `.env.test.example`):
+Create local secrets + web env (never commit these):
+
+```bash
+cp apps/api/.dev.vars.example apps/api/.dev.vars
+# edit secrets, or: openssl rand -base64 32
+
+cp apps/web/.env.example apps/web/.env.local
+cp apps/web/.env.test.example apps/web/.env.test
+```
+
+`.env.test` must include:
 
 ```bash
 E2E_TEST_USER_EMAIL=seal-e2e@seal.nyc
@@ -83,8 +93,11 @@ E2E_TEST_EMAIL_CODE=424242
 # E2E_TEST_ORGANIZATION_NAME="Seal E2E Workspace"
 # E2E_TEST_ORGANIZATION_SLUG=seal-e2e-test
 VITE_API_URL=http://localhost:8787
+VITE_BETTER_AUTH_URL=http://localhost:8787
 PLAYWRIGHT_BASE_URL=http://localhost:5180
 ```
+
+Playwright starts `@seal/api` (`:8787`) and `@seal/web` (`:5180`) via `webServer`.
 
 ### Playwright Configuration
 

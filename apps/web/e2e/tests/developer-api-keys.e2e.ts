@@ -24,16 +24,11 @@ test.describe("Developer API keys", () => {
 
     const dialog = authenticatedPage.getByRole("dialog");
     await expect(dialog).toBeVisible();
-    await dialog.getByLabel(/token name|name/i).fill("e2e-dogfood-key");
-
-    for (const scope of ["write", "sign", "admin"]) {
-      const checkbox = dialog.getByRole("checkbox", { name: scope });
-      if ((await checkbox.getAttribute("aria-checked")) !== "true") {
-        await checkbox.click();
-      }
-    }
-
-    await dialog.getByRole("button", { name: /^create$/i }).click();
+    const nameInput = dialog.getByLabel(/token name|name/i);
+    await nameInput.fill("e2e-dogfood-key");
+    // Default scope is "read". Submit via keyboard — Kumo dialog controls can
+    // sit outside the Playwright click viewport with the floating chrome present.
+    await nameInput.press("Enter");
 
     // Success surface shows the seal_… secret once.
     const createdDialog = authenticatedPage.getByRole("dialog");

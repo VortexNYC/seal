@@ -3,13 +3,28 @@ import path from "node:path";
 
 import { workspaceSlugPath } from "./paths";
 
+const RESERVED_ORG_SLUGS = new Set([
+  "app",
+  "onboarding",
+  "sign-in",
+  "sign-up",
+  "accept-invite",
+  "verify-email",
+  "forgot-password",
+  "reset-password",
+]);
+
 export function extractOrganizationSlugFromUrl(url: string): string | null {
   try {
     const pathname = new URL(url).pathname;
     const match = pathname.match(
-      /^\/([\w-]+)\/(?:home|documents|settings|templates|analytics|onboarding)(?:\/|$)/
+      /^\/([\w-]+)\/(?:home|documents|settings|templates|analytics)(?:\/|$)/
     );
-    return match?.[1] ?? null;
+    const slug = match?.[1] ?? null;
+    if (!slug || RESERVED_ORG_SLUGS.has(slug)) {
+      return null;
+    }
+    return slug;
   } catch {
     return null;
   }

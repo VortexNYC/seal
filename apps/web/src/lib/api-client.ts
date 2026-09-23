@@ -1360,12 +1360,27 @@ const recipientSchema = z.object({
   updatedAt: z.number(),
 });
 export type ApiRecipient = z.infer<typeof recipientSchema>;
+const recipientRoleProgressSchema = z.object({
+  total: z.number().int(),
+  completed: z.number().int(),
+});
 const recipientProgressSchema = z.object({
   total: z.number().int(),
   completed: z.number().int(),
-  percentage: z.number().int(),
-  byStatus: z.record(z.string(), z.number().int()),
-  byRole: z.record(z.string(), z.number().int()),
+  percentComplete: z.number().int(),
+  byStatus: z.object({
+    pending: z.number().int(),
+    viewed: z.number().int(),
+    signed: z.number().int(),
+    approved: z.number().int(),
+    declined: z.number().int(),
+    expired: z.number().int(),
+  }),
+  byRole: z.object({
+    signer: recipientRoleProgressSchema,
+    viewer: recipientRoleProgressSchema,
+    approver: recipientRoleProgressSchema,
+  }),
 });
 export type ApiRecipientProgress = z.infer<typeof recipientProgressSchema>;
 const fieldPropertiesSchema = z

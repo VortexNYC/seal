@@ -2,6 +2,9 @@ import { readFileSync } from "node:fs";
 
 import { type APIRequestContext, type APIResponse } from "@playwright/test";
 
+import { getTestWorkspaceConfig } from "./auth-helpers";
+import { readCachedWorkspaceSlug } from "./workspace-state";
+
 export function getApiBaseUrl(): string {
   const value = process.env.VITE_API_URL?.trim();
   if (!value) {
@@ -10,6 +13,16 @@ export function getApiBaseUrl(): string {
     );
   }
   return value.replace(/\/$/, "");
+}
+
+function organizationSlug(): string {
+  return (
+    readCachedWorkspaceSlug() ?? getTestWorkspaceConfig().organizationSlug
+  );
+}
+
+function documentsBasePath(): string {
+  return `/api/documents/${encodeURIComponent(organizationSlug())}`;
 }
 
 export type PdfFile = {
@@ -79,7 +92,7 @@ export async function createDocument(
     publicId: string;
     name: string;
     status: string;
-  }>(request, "post", "/api/documents", {
+  }>(request, "post", documentsBasePath(), {
     name: args.name,
     fileSize: args.pdfFile.size,
     contentType: args.pdfFile.contentType,
@@ -89,7 +102,7 @@ export async function createDocument(
   await apiRequest<{ storageKey: string; contentType: string; size: number }>(
     request,
     "post",
-    `/api/documents/${encodeURIComponent(created.publicId)}/upload`,
+    `${documentsBasePath()}/${encodeURIComponent(created.publicId)}/upload`,
     {
       contentBase64: args.pdfFile.contentBase64,
       contentType: args.pdfFile.contentType,
@@ -120,7 +133,7 @@ export async function addRecipient(
   const results = await apiRequest<ApiRecipient[]>(
     request,
     "post",
-    `/api/documents/${encodeURIComponent(documentPublicId)}/recipients`,
+    `${documentsBasePath()}/${encodeURIComponent(documentPublicId)}/recipients`,
     {
       recipients: [
         {
@@ -174,7 +187,7 @@ export async function createSignatureField(
   return apiRequest<ApiSignatureField>(
     request,
     "post",
-    `/api/documents/${encodeURIComponent(documentPublicId)}/signature-fields`,
+    `${documentsBasePath()}/${encodeURIComponent(documentPublicId)}/signature-fields`,
     {
       recipientPublicId,
       fieldType: field.fieldType ?? "signature",
@@ -196,7 +209,7 @@ export async function sendDocument(
   await apiRequest<{ success: boolean }>(
     request,
     "post",
-    `/api/documents/${encodeURIComponent(documentPublicId)}/send`,
+    `${documentsBasePath()}/${encodeURIComponent(documentPublicId)}/send`,
     {}
   );
 }
@@ -214,7 +227,7 @@ export async function getDocument(
   return apiRequest(
     request,
     "get",
-    `/api/documents/${encodeURIComponent(documentPublicId)}`
+    `${documentsBasePath()}/${encodeURIComponent(documentPublicId)}`
   );
 }
 
@@ -225,7 +238,7 @@ export async function listRecipients(
   return apiRequest(
     request,
     "get",
-    `/api/documents/${encodeURIComponent(documentPublicId)}/recipients`
+    `${documentsBasePath()}/${encodeURIComponent(documentPublicId)}/recipients`
   );
 }
 
@@ -256,7 +269,7 @@ export async function deleteDocument(
   await apiRequest(
     request,
     "delete",
-    `/api/documents/${encodeURIComponent(documentPublicId)}`
+    `${documentsBasePath()}/${encodeURIComponent(documentPublicId)}`
   );
 }
 
@@ -264,13 +277,17 @@ export async function listDocuments(
   request: APIRequestContext,
   filter: "all" | "owned" | "shared" = "all"
 ): Promise<Array<{ publicId: string; name: string }>> {
-  return apiRequest(request, "get", `/api/documents?filter=${filter}`);
+  return apiRequest(
+    request,
+    "get",
+    `${documentsBasePath()}?filter=${filter}`
+  );
 }
 
 export async function assertApiReachability(
   request: APIRequestContext
 ): Promise<void> {
-  const url = `${getApiBaseUrl()}/api/documents`;
+  const url = `${getApiBaseUrl()}/health`;
   const response = await request.get(url, {
     headers: { Accept: "application/json" },
   });
