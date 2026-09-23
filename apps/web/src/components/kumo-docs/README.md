@@ -5,12 +5,12 @@ Rebuild of Extend UI capabilities on `@cloudflare/kumo` + Seal Taupe tokens.
 
 | Extend | Seal (`kumo-docs`) | Status |
 | --- | --- | --- |
-| PDF Viewer | existing `documents/pdf-*` + `DocumentViewerShell` | shell |
-| Document Viewer Sidebar | `ThumbnailSidebar` | ship |
-| Bounding Box Citations | `CitationReviewPanel` | ship |
-| Document Splits | `DocumentSplitsPanel` | ship |
-| Schema Builder | `BindingsPanel` (`binding_key`) | ship |
+| PDF Viewer | existing `documents/pdf-*` + `DocumentViewerShell` | wired |
+| Document Viewer Sidebar | `ThumbnailSidebar` | wired |
+| Bounding Box Citations | `CitationReviewPanel` | wired |
+| Document Splits | `DocumentSplitsPanel` | wired |
+| Schema Builder | `BindingsPanel` (`binding_key`) | wired |
 | E-Signature | existing `signature-capture` | keep |
 | File Upload / Thumbnail | existing upload + thumbnail | keep |
-| CSV / Office preview | `PreviewPane` | ship |
+| CSV / Office preview | `PreviewPane` | wired |
 | PDF/DOCX/XLSX editors | out of scope | — |

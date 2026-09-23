@@ -21,16 +21,22 @@ import {
   UserPlusIcon,
   UsersIcon,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import {
+  BindingsPanel,
   CitationReviewPanel,
   DocumentSplitsPanel,
   PreviewPane,
   createInitialSplits,
+  type BindingRow,
   type DocumentSplitGroup,
 } from "@/components/kumo-docs";
-import { getDocumentPreview, splitDocument } from "@/lib/api-client";
+import {
+  getDocumentPreview,
+  splitDocument,
+  updateSignatureField,
+} from "@/lib/api-client";
 import type { ActivityEvent, ActivityEventType } from "@/lib/document-activity";
 import {
   formatDate,
@@ -99,6 +105,14 @@ interface DocumentSidebarProps {
 
   // Whether any recipient has the "signer" role (for FieldToolbar disabled state)
   hasSigners: boolean;
+
+  // Field bindings (SEA-26)
+  bindingFields: Array<{
+    publicId: string;
+    label: string;
+    bindingKey: string;
+  }>;
+  onBindingsSaved?: () => void;
 
   // Field placement callbacks (from useFieldPlacement)
   selectedFieldId: string | null;
@@ -758,6 +772,104 @@ function DetailMetric({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
+
+
+function FieldBindingsSection({
+  slug,
+  documentPublicId,
+  fields,
+  canEdit,
+  open,
+  onOpenChange,
+  onSaved,
+}: {
+  slug: string;
+  documentPublicId: string;
+  fields: Array<{ publicId: string; label: string; bindingKey: string }>;
+  canEdit: boolean;
+  open: boolean;
+  onOpenChange: () => void;
+  onSaved?: () => void;
+}) {
+  const [rows, setRows] = useState<BindingRow[]>([]);
+
+  useEffect(() => {
+    setRows(
+      fields.map((f) => ({
+        fieldId: f.publicId,
+        fieldLabel: f.label,
+        bindingKey: f.bindingKey,
+      }))
+    );
+  }, [fields]);
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const original = new Map(
+        fields.map((f) => [f.publicId, f.bindingKey] as const)
+      );
+      for (const row of rows) {
+        const prev = original.get(row.fieldId) ?? "";
+        if (prev === row.bindingKey) continue;
+        const key = row.bindingKey.trim();
+        await updateSignatureField(slug, documentPublicId, row.fieldId, {
+          properties: {
+            bindingKey: key || undefined,
+            binding_key: key || undefined,
+          },
+        });
+      }
+    },
+    onSuccess: () => {
+      toast.success("Bindings saved");
+      onSaved?.();
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save bindings"
+      );
+    },
+  });
+
+  if (!canEdit || fields.length === 0) return null;
+
+  return (
+    <Collapsible.Root
+      open={open}
+      onOpenChange={onOpenChange}
+      className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
+    >
+      <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
+        <div className="flex items-center gap-3">
+          <div className="bg-muted text-foreground flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
+            <LinkIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
+          </div>
+          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
+            Bindings
+          </span>
+          <span className="bg-muted text-muted-foreground ml-2 rounded-xl px-2 py-0.5 font-sans text-[0.6875rem] font-semibold">
+            {fields.length}
+          </span>
+        </div>
+        <ChevronDownIcon
+          className={cn(
+            "text-muted-foreground h-4 w-4 transition-transform duration-200",
+            open && "rotate-180"
+          )}
+        />
+      </Collapsible.Trigger>
+      <Collapsible.Panel className="border-border/50 border-t">
+        <BindingsPanel
+          className="max-h-96"
+          rows={rows}
+          onChange={setRows}
+          onSave={() => saveMutation.mutate()}
+          saving={saveMutation.isPending}
+        />
+      </Collapsible.Panel>
+    </Collapsible.Root>
+  );
+}
 
 function OriginalPreviewSection({
   slug,

@@ -79,6 +79,8 @@ export type DocumentDetailPaymentConfig = {
 };
 
 export type FieldProperties = {
+  bindingKey?: string;
+  binding_key?: string;
   placeholder?: string;
   defaultValue?: string;
   options?: string[];
@@ -155,6 +157,8 @@ function toFieldProperties(
     minLength: pickNumber("minLength"),
     pattern: pickString("pattern"),
     helpText: pickString("helpText"),
+    bindingKey: pickString("bindingKey") ?? pickString("binding_key"),
+    binding_key: pickString("binding_key") ?? pickString("bindingKey"),
   };
 }
 

@@ -338,6 +338,17 @@ function DocumentDetailPage() {
     [signatureFields, paymentConfigByFieldId]
   );
 
+  const bindingFields = useMemo(
+    () =>
+      signatureFields.map((f) => ({
+        publicId: f.publicId,
+        label: f.label,
+        bindingKey:
+          f.properties?.bindingKey ?? f.properties?.binding_key ?? "",
+      })),
+    [signatureFields]
+  );
+
   const sidebarRecipients = useMemo(
     () => recipients.map((r) => ({ ...r, name: r.name ?? undefined })),
     [recipients]
@@ -809,6 +820,10 @@ function DocumentDetailPage() {
               recipients={sidebarRecipients}
               progress={progress}
               signatureFields={sidebarFields}
+              bindingFields={bindingFields}
+              onBindingsSaved={() => {
+                void refetchFields();
+              }}
               hasSigners={recipients.some((r) => r.role === "signer")}
               currentUserRecipient={currentUserRecipient}
               currentUserFields={currentUserFields}
