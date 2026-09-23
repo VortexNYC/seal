@@ -3,7 +3,9 @@ import { FileIcon, FolderIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-export type FileSystemView = "icons" | "list";
+import { FileThumbnail } from "./file-thumbnail";
+
+export type FileSystemView = "icons" | "list" | "columns";
 
 export type FileSystemFolderItem = {
   id: string;
@@ -29,11 +31,19 @@ export type FileSystemProps = {
   className?: string;
   onSelect?: (item: FileSystemItem) => void;
   onOpenFolder?: (folder: FileSystemFolderItem) => void;
+  onOpenFile?: (file: FileSystemFileItem) => void;
 };
 
+function itemButtonClass(selected: boolean): string {
+  return cn(
+    "hover:bg-accent flex w-full items-center gap-2 px-2 py-2 text-left text-sm transition-colors",
+    selected && "bg-accent"
+  );
+}
+
 /**
- * Lean finder surface — Extend file-system capability, Kumo-owned.
- * Controlled: parent owns tree loading / navigation.
+ * Finder surface — Extend file-system capability, Kumo-owned.
+ * Icons / list / columns. Parent owns tree loading and navigation.
  */
 export function FileSystem({
   items,
@@ -42,7 +52,14 @@ export function FileSystem({
   className,
   onSelect,
   onOpenFolder,
+  onOpenFile,
 }: FileSystemProps): JSX.Element {
+  function activate(item: FileSystemItem): void {
+    onSelect?.(item);
+    if (item.kind === "folder") onOpenFolder?.(item);
+    else onOpenFile?.(item);
+  }
+
   return (
     <div
       data-kumo-docs="file-system"
@@ -51,25 +68,25 @@ export function FileSystem({
     >
       {items.length === 0 ? (
         <p className="text-muted-foreground text-sm">This folder is empty.</p>
-      ) : view === "list" ? (
-        <ul className="divide-border divide-y">
+      ) : view === "list" || view === "columns" ? (
+        <ul
+          className={cn(
+            "divide-border divide-y",
+            view === "columns" && "columns-2 gap-4 sm:columns-3"
+          )}
+        >
           {items.map((item) => {
             const selected = item.id === selectedId;
             return (
-              <li key={item.id}>
+              <li key={item.id} className={view === "columns" ? "break-inside-avoid" : undefined}>
                 <button
                   type="button"
                   role="listitem"
-                  className={cn(
-                    "hover:bg-accent flex w-full items-center gap-2 px-2 py-2 text-left text-sm",
-                    selected && "bg-accent"
-                  )}
-                  onClick={() => {
-                    onSelect?.(item);
-                    if (item.kind === "folder") onOpenFolder?.(item);
-                  }}
+                  className={itemButtonClass(selected)}
+                  onClick={() => activate(item)}
                   onDoubleClick={() => {
                     if (item.kind === "folder") onOpenFolder?.(item);
+                    else onOpenFile?.(item);
                   }}
                 >
                   {item.kind === "folder" ? (
@@ -98,24 +115,23 @@ export function FileSystem({
                 type="button"
                 role="listitem"
                 className={cn(
-                  "hover:bg-accent flex flex-col items-center gap-2 rounded-lg p-2 text-center",
+                  "hover:bg-accent flex flex-col items-center gap-2 rounded-lg p-2 text-center transition-colors",
                   selected && "bg-accent ring-ring ring-2"
                 )}
-                onClick={() => {
-                  onSelect?.(item);
-                  if (item.kind === "folder") onOpenFolder?.(item);
-                }}
+                onClick={() => activate(item)}
               >
                 {item.kind === "folder" ? (
                   <FolderIcon className="text-muted-foreground size-10" />
-                ) : item.previewUrl ? (
-                  <img
-                    src={item.previewUrl}
-                    alt=""
-                    className="border-border h-16 w-12 rounded border object-cover"
-                  />
                 ) : (
-                  <FileIcon className="text-muted-foreground size-10" />
+                  <FileThumbnail
+                    file={{
+                      name: item.name,
+                      type: item.mimeType ?? "application/octet-stream",
+                    }}
+                    previewImageUrl={item.previewUrl}
+                    showLabel={false}
+                    className="w-full border-0 shadow-none"
+                  />
                 )}
                 <span className="line-clamp-2 w-full text-[11px]">{item.name}</span>
               </button>

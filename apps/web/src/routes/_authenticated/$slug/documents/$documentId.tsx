@@ -57,6 +57,8 @@ import {
 } from "../../../../components/documents/ai-field-suggestions";
 import { DeleteFieldDialog } from "../../../../components/documents/delete-field-dialog";
 import { DocumentPdfAnnotatePanel } from "../../../../components/documents/document-pdf-annotate-panel";
+import { DocumentOfficeEditPanel } from "../../../../components/documents/document-office-edit-panel";
+import { DocumentStructurePanel } from "../../../../components/documents/document-structure-panel";
 import { DocumentPresence } from "../../../../components/documents/document-presence";
 import { DocumentSidebar } from "../../../../components/documents/document-sidebar";
 import { FieldOptionsDialog } from "../../../../components/documents/field-options-dialog";
@@ -237,9 +239,9 @@ function DocumentDetailPage() {
     : false;
 
   // ── Custom hooks ────────────────────────────────────────────────────────
-  const [viewerMode, setViewerMode] = useState<"fields" | "annotate">(
-    "fields"
-  );
+  const [viewerMode, setViewerMode] = useState<
+    "fields" | "annotate" | "edit" | "structure"
+  >("annotate");
   const [pdfReloadKey, setPdfReloadKey] = useState(0);
   const pdfViewer = usePdfViewer(slug, documentPublicId, pdfReloadKey);
   const pageThumbnails = usePdfPageThumbnails(
@@ -621,11 +623,19 @@ function DocumentDetailPage() {
               className="bg-muted/80 dark:bg-background relative min-h-[600px] p-4 sm:min-h-[400px] sm:p-3 md:p-4"
             >
               {canEdit ? (
-                <div className="mb-3 flex flex-wrap gap-2">
+                <div className="border-border bg-muted/40 mb-3 flex flex-wrap gap-1 rounded-lg border p-1">
                   <Button
                     type="button"
                     size="sm"
-                    variant={viewerMode === "fields" ? "primary" : "outline"}
+                    variant={viewerMode === "annotate" ? "primary" : "ghost"}
+                    onClick={() => setViewerMode("annotate")}
+                  >
+                    PDF tools
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={viewerMode === "fields" ? "primary" : "ghost"}
                     onClick={() => setViewerMode("fields")}
                   >
                     Fields
@@ -633,10 +643,20 @@ function DocumentDetailPage() {
                   <Button
                     type="button"
                     size="sm"
-                    variant={viewerMode === "annotate" ? "primary" : "outline"}
-                    onClick={() => setViewerMode("annotate")}
+                    variant={viewerMode === "edit" ? "primary" : "ghost"}
+                    onClick={() => setViewerMode("edit")}
                   >
-                    Annotate
+                    Edit original
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={
+                      viewerMode === "structure" ? "primary" : "ghost"
+                    }
+                    onClick={() => setViewerMode("structure")}
+                  >
+                    Structure
                   </Button>
                 </div>
               ) : null}
@@ -646,14 +666,27 @@ function DocumentDetailPage() {
                   organizationSlug={slug}
                   documentPublicId={documentPublicId}
                   pdfUrl={pdfViewer.pdfUrl}
-                  page={pdfViewer.currentPage}
-                  numPages={pdfViewer.numPages}
-                  width={pdfViewer.pdfWidth}
-                  onPageChange={pdfViewer.handlePageChange}
-                  onLoadSuccess={pdfViewer.onDocumentLoadSuccess}
                   onApplied={() => {
                     setPdfReloadKey((key) => key + 1);
                   }}
+                />
+              ) : viewerMode === "edit" && canEdit ? (
+                <DocumentOfficeEditPanel
+                  organizationSlug={slug}
+                  documentPublicId={documentPublicId}
+                  canEdit={canEdit}
+                  onSaved={() => {
+                    setPdfReloadKey((key) => key + 1);
+                  }}
+                />
+              ) : viewerMode === "structure" && canEdit ? (
+                <DocumentStructurePanel
+                  organizationSlug={slug}
+                  documentPublicId={documentPublicId}
+                  canEdit={canEdit}
+                  currentPage={pdfViewer.currentPage}
+                  pageWidth={pdfViewer.pdfWidth}
+                  pageHeight={pdfViewer.pdfHeight}
                 />
               ) : pdfViewer.pdfUrl ? (
                 <TransformWrapper
@@ -678,8 +711,8 @@ function DocumentDetailPage() {
                     </div>
                   )}
                   <div className="mb-3 flex flex-col gap-2 sm:mb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                    <div className="text-foreground flex items-center gap-2 font-serif text-base font-medium sm:gap-3 sm:text-lg">
-                      <span>Document Preview</span>
+                    <div className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
+                      <span>Field placement</span>
                     </div>
                     <PdfViewerControls
                       currentZoom={pdfViewer.currentZoom}
@@ -920,6 +953,10 @@ function DocumentDetailPage() {
               }}
               activityEvents={activityEvents}
               onPageJump={pdfViewer.setCurrentPage}
+              currentPage={pdfViewer.currentPage}
+              onPdfChanged={() => {
+                setPdfReloadKey((key) => key + 1);
+              }}
             />
           </div>
         </div>

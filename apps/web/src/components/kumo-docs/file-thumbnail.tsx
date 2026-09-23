@@ -15,6 +15,7 @@ export type FileThumbnailProps = {
   previewContent?: ReactNode;
   isLoading?: boolean;
   hasError?: boolean;
+  showLabel?: boolean;
 };
 
 export function FileThumbnailLoadingOverlay(): JSX.Element {
@@ -38,6 +39,7 @@ export function FileThumbnail({
   previewContent,
   isLoading = false,
   hasError = false,
+  showLabel = true,
 }: FileThumbnailProps): JSX.Element {
   const name = "name" in file ? file.name : "file";
   const showFallback = hasError || (!previewImageUrl && !previewContent);
@@ -50,7 +52,7 @@ export function FileThumbnail({
         className
       )}
     >
-      <div className="bg-muted relative aspect-[3/4] w-full">
+      <div className="bg-muted relative aspect-[3/4] h-full w-full">
         {isLoading ? <FileThumbnailLoadingOverlay /> : null}
         {previewImageUrl && !hasError ? (
           <img
@@ -69,7 +71,9 @@ export function FileThumbnail({
           </div>
         ) : null}
       </div>
-      <div className="truncate px-2 py-1.5 text-[11px]">{name}</div>
+      {showLabel ? (
+        <div className="truncate px-2 py-1.5 text-[11px]">{name}</div>
+      ) : null}
     </div>
   );
 }

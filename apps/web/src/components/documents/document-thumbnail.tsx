@@ -1,12 +1,11 @@
 /**
- * DocumentThumbnail component
- * Displays a document thumbnail with lazy generation for documents without thumbnails
+ * DocumentThumbnail — Seal FileThumbnail with lazy PDF generation.
  */
 
 import { useMutation } from "@tanstack/react-query";
-import { FileIcon, Loader2Icon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type JSX } from "react";
 
+import { FileThumbnail } from "@/components/kumo-docs/file-thumbnail";
 import { downloadDocument, updateDocumentThumbnail } from "@/lib/api-client";
 import { generateThumbnailFromUrl } from "@/lib/pdf-utils";
 import { cn } from "@/lib/utils";
@@ -25,7 +24,7 @@ export function DocumentThumbnail({
   name,
   className = "w-12 h-16 sm:w-16 sm:h-20",
   organizationSlug,
-}: DocumentThumbnailProps) {
+}: DocumentThumbnailProps): JSX.Element {
   const [isGenerating, setIsGenerating] = useState(false);
   const [localThumbnail, setLocalThumbnail] = useState<string | null>(
     thumbnailDataUrl ?? null
@@ -66,8 +65,7 @@ export function DocumentThumbnail({
         } else {
           setGenerationFailed(true);
         }
-      } catch (error) {
-        console.error("Failed to generate thumbnail:", error);
+      } catch {
         setGenerationFailed(true);
       } finally {
         if (objectUrl) {
@@ -84,6 +82,7 @@ export function DocumentThumbnail({
     localThumbnail,
     generationFailed,
     updateThumbnail,
+    organizationSlug,
   ]);
 
   useEffect(() => {
@@ -95,25 +94,13 @@ export function DocumentThumbnail({
   const thumbnail = localThumbnail || thumbnailDataUrl;
 
   return (
-    <div
-      className={cn(
-        "bg-muted border-border flex items-center justify-center overflow-hidden rounded border",
-        className
-      )}
-    >
-      {thumbnail ? (
-        <img
-          src={thumbnail}
-          alt={`${name} thumbnail`}
-          className="h-full w-full object-cover"
-          loading="lazy"
-          decoding="async"
-        />
-      ) : isGenerating ? (
-        <Loader2Icon className="text-muted-foreground h-6 w-6 animate-spin sm:h-8 sm:w-8" />
-      ) : (
-        <FileIcon className="text-muted-foreground h-6 w-6 sm:h-8 sm:w-8" />
-      )}
-    </div>
+    <FileThumbnail
+      file={{ name, type: "application/pdf" }}
+      previewImageUrl={thumbnail}
+      isLoading={isGenerating}
+      hasError={generationFailed && !thumbnail}
+      showLabel={false}
+      className={cn("border-0 bg-transparent shadow-none", className)}
+    />
   );
 }

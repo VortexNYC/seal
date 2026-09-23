@@ -20,12 +20,15 @@ import {
   UserIcon,
   UserPlusIcon,
   UsersIcon,
+  RotateCwIcon,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
+import { useNavigate } from "@tanstack/react-router";
 
 import {
   BindingsPanel,
   CitationReviewPanel,
+  DocumentPdfOpsPanel,
   DocumentSplitsPanel,
   PreviewPane,
   createInitialSplits,
@@ -34,6 +37,9 @@ import {
 } from "@/components/kumo-docs";
 import {
   getDocumentPreview,
+  getDocuments,
+  mergeDocumentPdf,
+  rotateDocumentPdf,
   splitDocument,
   updateSignatureField,
 } from "@/lib/api-client";
@@ -141,6 +147,11 @@ interface DocumentSidebarProps {
 
   // Page navigation from insights panel
   onPageJump: (page: number) => void;
+
+  /** Current PDF page (for rotate-current-page). */
+  currentPage?: number;
+  /** Called after rotate rewrites the stored PDF. */
+  onPdfChanged?: () => void;
 }
 
 function getActivityIcon(type: ActivityEventType) {
@@ -583,6 +594,108 @@ function AIInsightsSection({
   );
 }
 
+
+function DocumentPdfOpsSection({
+  slug,
+  documentPublicId,
+  pageCount,
+  currentPage,
+  canEdit,
+  open,
+  onOpenChange,
+  onPdfChanged,
+}: {
+  slug: string;
+  documentPublicId: string;
+  pageCount: number;
+  currentPage: number;
+  canEdit: boolean;
+  open: boolean;
+  onOpenChange: () => void;
+  onPdfChanged?: () => void;
+}) {
+  const navigate = useNavigate();
+
+  const draftsQuery = useQuery({
+    queryKey: ["documents", slug, "drafts-for-merge"],
+    queryFn: () => getDocuments(slug, { workflowStatus: "draft" }),
+    enabled: canEdit && open,
+    staleTime: 30_000,
+  });
+
+  const mergeCandidates = (draftsQuery.data ?? [])
+    .filter((d) => d.publicId !== documentPublicId)
+    .map((d) => ({ publicId: d.publicId, name: d.name }));
+
+  const rotateMutation = useMutation({
+    mutationFn: (input: { degrees: 90 | 180 | 270; pages?: number[] }) =>
+      rotateDocumentPdf(slug, documentPublicId, input),
+    onSuccess: () => {
+      toast.success("PDF rotated");
+      onPdfChanged?.();
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to rotate PDF"
+      );
+    },
+  });
+
+  const mergeMutation = useMutation({
+    mutationFn: (input: { sourcePublicIds: string[]; title?: string }) =>
+      mergeDocumentPdf(slug, documentPublicId, input),
+    onSuccess: (result) => {
+      toast.success("Merged into a new draft");
+      void navigate({
+        to: "/$slug/documents/$documentId",
+        params: { slug, documentId: result.publicId },
+      });
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to merge PDFs"
+      );
+    },
+  });
+
+  if (!canEdit || pageCount < 1) return null;
+
+  return (
+    <Collapsible.Root
+      open={open}
+      onOpenChange={onOpenChange}
+      className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
+    >
+      <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
+        <div className="flex items-center gap-3">
+          <div className="bg-muted text-foreground flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
+            <RotateCwIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
+          </div>
+          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
+            PDF ops
+          </span>
+        </div>
+        <ChevronDownIcon
+          className={cn(
+            "text-muted-foreground h-4 w-4 transition-transform duration-200",
+            open && "rotate-180"
+          )}
+        />
+      </Collapsible.Trigger>
+      <Collapsible.Panel className="border-border/50 border-t">
+        <DocumentPdfOpsPanel
+          pageCount={pageCount}
+          currentPage={currentPage}
+          rotating={rotateMutation.isPending}
+          merging={mergeMutation.isPending}
+          mergeCandidates={mergeCandidates}
+          onRotate={(input) => rotateMutation.mutate(input)}
+          onMerge={(input) => mergeMutation.mutate(input)}
+        />
+      </Collapsible.Panel>
+    </Collapsible.Root>
+  );
+}
 
 function DocumentSplitsSection({
   slug,
@@ -1153,6 +1266,31 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
         onOpenChange={() => props.toggleSection("insights")}
         onPageJump={props.onPageJump}
       />
+      <OriginalPreviewSection
+        slug={props.slug}
+        documentPublicId={props.documentPublicId}
+        open={props.openSections.has("original-preview")}
+        onOpenChange={() => props.toggleSection("original-preview")}
+      />
+      <DocumentPdfOpsSection
+        slug={props.slug}
+        documentPublicId={props.documentPublicId}
+        pageCount={props.numPages ?? props.pageCount ?? 0}
+        currentPage={props.currentPage ?? 1}
+        canEdit={props.canEdit && normalizedWorkflowStatus === "draft"}
+        open={props.openSections.has("pdf-ops")}
+        onOpenChange={() => props.toggleSection("pdf-ops")}
+        onPdfChanged={props.onPdfChanged}
+      />
+      <DocumentSplitsSection
+        slug={props.slug}
+        documentPublicId={props.documentPublicId}
+        pageCount={props.numPages ?? props.pageCount ?? 0}
+        canEdit={props.canEdit && normalizedWorkflowStatus === "draft"}
+        open={props.openSections.has("splits")}
+        onOpenChange={() => props.toggleSection("splits")}
+        onPageJump={props.onPageJump}
+      />
       <SignatureFieldsSection
         documentId={props.documentId}
         recipients={props.recipients}
@@ -1168,6 +1306,15 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
         onFieldProperties={props.onFieldProperties}
         onFieldDragStart={props.onFieldDragStart}
         onFieldDragEnd={props.onFieldDragEnd}
+      />
+      <FieldBindingsSection
+        slug={props.slug}
+        documentPublicId={props.documentPublicId}
+        fields={props.bindingFields}
+        canEdit={props.canEdit && normalizedWorkflowStatus === "draft"}
+        open={props.openSections.has("bindings")}
+        onOpenChange={() => props.toggleSection("bindings")}
+        onSaved={props.onBindingsSaved}
       />
       <DocumentDetailsSection
         open={props.openSections.has("details")}

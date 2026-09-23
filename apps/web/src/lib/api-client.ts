@@ -1054,7 +1054,7 @@ export async function getDocuments(
     query.set("filter", options.filter);
   }
   if (options.workflowStatus) {
-    query.set("status", options.workflowStatus);
+    query.set("workflowStatus", options.workflowStatus);
   }
   if (options.folderId) {
     query.set("folderId", options.folderId);
@@ -1902,6 +1902,154 @@ export async function annotateDocumentPdf(
     {
       method: "POST",
       body: JSON.stringify({ operations }),
+    }
+  );
+}
+
+const replaceDocumentPdfResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  size: z.number().int(),
+});
+export type ApiReplaceDocumentPdfResult = z.infer<
+  typeof replaceDocumentPdfResultSchema
+>;
+export async function replaceDocumentPdf(
+  organizationSlug: string,
+  publicId: string,
+  input: { contentBase64: string }
+): Promise<ApiReplaceDocumentPdfResult> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/replace-pdf`,
+    replaceDocumentPdfResultSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+const rotateDocumentPdfResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  pageCount: z.number().int(),
+});
+export type ApiRotateDocumentPdfResult = z.infer<
+  typeof rotateDocumentPdfResultSchema
+>;
+export async function rotateDocumentPdf(
+  organizationSlug: string,
+  publicId: string,
+  input: { degrees: 90 | 180 | 270; pages?: number[] }
+): Promise<ApiRotateDocumentPdfResult> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/rotate-pdf`,
+    rotateDocumentPdfResultSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+const mergeDocumentPdfResultSchema = z.object({
+  success: z.boolean(),
+  id: z.string(),
+  publicId: z.string(),
+  storageId: z.string(),
+  pageCount: z.number().int(),
+});
+export type ApiMergeDocumentPdfResult = z.infer<
+  typeof mergeDocumentPdfResultSchema
+>;
+export async function mergeDocumentPdf(
+  organizationSlug: string,
+  publicId: string,
+  input: { sourcePublicIds: string[]; title?: string }
+): Promise<ApiMergeDocumentPdfResult> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/merge-pdf`,
+    mergeDocumentPdfResultSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+const documentLayoutBlocksSchema = z.object({
+  blocks: z.array(
+    z.object({
+      id: z.string(),
+      type: z.enum(["text", "table", "figure", "heading", "list", "other"]),
+      page: z.number().int(),
+      x: z.number(),
+      y: z.number(),
+      width: z.number(),
+      height: z.number(),
+      text: z.string().optional(),
+      confidence: z.number().optional(),
+    })
+  ),
+});
+export type ApiDocumentLayoutBlocks = z.infer<typeof documentLayoutBlocksSchema>;
+export async function getDocumentLayoutBlocks(
+  organizationSlug: string,
+  publicId: string
+): Promise<ApiDocumentLayoutBlocks> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/layout-blocks`,
+    documentLayoutBlocksSchema
+  );
+}
+
+const documentExtractionSchemaResultSchema = z.object({
+  schema: z.record(z.string(), z.unknown()),
+});
+export type ApiDocumentExtractionSchema = z.infer<
+  typeof documentExtractionSchemaResultSchema
+>;
+export async function getDocumentExtractionSchema(
+  organizationSlug: string,
+  publicId: string
+): Promise<ApiDocumentExtractionSchema> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/extraction-schema`,
+    documentExtractionSchemaResultSchema
+  );
+}
+export async function putDocumentExtractionSchema(
+  organizationSlug: string,
+  publicId: string,
+  schema: Record<string, unknown>
+): Promise<ApiDocumentExtractionSchema> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/extraction-schema`,
+    documentExtractionSchemaResultSchema,
+    {
+      method: "PUT",
+      body: JSON.stringify({ schema }),
+    }
+  );
+}
+
+const replaceOriginalResultSchema = z.object({
+  success: z.boolean(),
+  originalStorageKey: z.string(),
+  storageId: z.string().nullable(),
+  contentType: z.string(),
+});
+export async function replaceDocumentOriginal(
+  organizationSlug: string,
+  publicId: string,
+  input: { contentBase64: string; contentType: string }
+): Promise<z.infer<typeof replaceOriginalResultSchema>> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/replace-original`,
+    replaceOriginalResultSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
     }
   );
 }

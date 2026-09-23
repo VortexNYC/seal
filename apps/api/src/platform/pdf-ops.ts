@@ -1,5 +1,6 @@
 import {
   PDFDocument,
+  degrees,
   rgb,
   StandardFonts,
   type RGB,
@@ -167,5 +168,54 @@ export async function getPdfPageCount(
 ): Promise<number> {
   const doc = await PDFDocument.load(pdfBytes);
   return doc.getPageCount();
+}
+
+/**
+ * Merge multiple PDFs in order into one document.
+ */
+export async function mergePdfs(
+  pdfBuffers: Array<ArrayBuffer | Uint8Array>
+): Promise<{ bytes: Uint8Array; pageCount: number }> {
+  if (pdfBuffers.length === 0) {
+    throw new Error("no_pdfs");
+  }
+  const out = await PDFDocument.create();
+  for (const buffer of pdfBuffers) {
+    const src = await PDFDocument.load(buffer);
+    const pages = await out.copyPages(src, src.getPageIndices());
+    for (const page of pages) {
+      out.addPage(page);
+    }
+  }
+  const bytes = await out.save();
+  return { bytes, pageCount: out.getPageCount() };
+}
+
+/**
+ * Rotate selected 1-based pages by 90/180/270 degrees clockwise.
+ * Empty `pages` rotates every page.
+ */
+export async function rotatePdfPages(
+  pdfBytes: ArrayBuffer | Uint8Array,
+  amount: 90 | 180 | 270,
+  pages?: number[]
+): Promise<{ bytes: Uint8Array; pageCount: number }> {
+  const doc = await PDFDocument.load(pdfBytes);
+  const count = doc.getPageCount();
+  const targets =
+    pages && pages.length > 0
+      ? [...new Set(pages)].filter((p) => p >= 1 && p <= count)
+      : Array.from({ length: count }, (_, i) => i + 1);
+  if (targets.length === 0) {
+    throw new Error("no_valid_pages");
+  }
+  for (const pageNum of targets) {
+    const page = doc.getPage(pageNum - 1);
+    const current = page.getRotation().angle;
+    const next = ((current + amount) % 360) as 0 | 90 | 180 | 270;
+    page.setRotation(degrees(next));
+  }
+  const bytes = await doc.save();
+  return { bytes, pageCount: count };
 }
 

@@ -45,7 +45,7 @@ import {
   UploadIcon,
   XIcon,
 } from "lucide-react";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState, type JSX } from "react";
 import type { DateRange } from "react-day-picker";
 
 import { DocumentThumbnail } from "@/components/documents/document-thumbnail";
@@ -56,6 +56,10 @@ import { WorkflowStatusBadge } from "@/components/documents/workflow-status-badg
 import { CreateFolderDialog } from "@/components/folders/create-folder-dialog";
 import { FolderBreadcrumbs } from "@/components/folders/folder-breadcrumbs";
 import { MoveToFolderDialog } from "@/components/folders/move-to-folder-dialog";
+import {
+  FileSystem,
+  type FileSystemItem,
+} from "@/components/kumo-docs/file-system";
 import { PageWrapper } from "@/components/page-wrapper";
 import { CardSkeleton } from "@/components/skeletons/card-skeleton";
 import { useAnalytics } from "@/hooks/use-analytics";
@@ -105,7 +109,7 @@ type WorkflowStatusFilter =
   | "cancelled"
   | "expired";
 
-type ViewMode = "grid" | "table";
+type ViewMode = "grid" | "table" | "finder";
 type SortField = "name" | "createdAt" | "workflowStatus";
 type SortDirection = "asc" | "desc";
 
@@ -983,6 +987,13 @@ function DocumentsListContent({
           sortDirection={sortDirection}
           sortField={sortField}
         />
+      ) : viewMode === "finder" ? (
+        <DocumentsFinder
+          data={data}
+          documentActions={documentActions}
+          onFolderNavigate={onFolderNavigate}
+          searchQuery={searchQuery}
+        />
       ) : (
         <DocumentsGrid
           data={data}
@@ -1102,6 +1113,49 @@ function DocumentsTable({
           ))}
         </Table.Body>
       </Table>
+    </div>
+  );
+}
+
+function DocumentsFinder({
+  data,
+  documentActions,
+  onFolderNavigate,
+  searchQuery,
+}: {
+  readonly data: DocumentsListData;
+  readonly documentActions: DocumentListActions;
+  readonly onFolderNavigate: (folderId?: string) => void;
+  readonly searchQuery: string;
+}): JSX.Element {
+  const items: FileSystemItem[] = [
+    ...(!searchQuery.trim()
+      ? (data.subfolders ?? []).map((folder) => ({
+          id: folder._id,
+          kind: "folder" as const,
+          name: folder.name,
+        }))
+      : []),
+    ...data.paginatedDocuments.map((doc) => ({
+      id: doc._id,
+      kind: "file" as const,
+      name: doc.name,
+      mimeType: "application/pdf",
+      size: doc.fileSize,
+      previewUrl: doc.thumbnailDataUrl ?? null,
+    })),
+  ];
+
+  return (
+    <div className="border-border bg-card rounded-xl border">
+      <FileSystem
+        items={items}
+        view="icons"
+        onSelect={(item) => {
+          if (item.kind === "file") documentActions.openDocument(item.id);
+        }}
+        onOpenFolder={(folder) => onFolderNavigate(folder.id)}
+      />
     </div>
   );
 }
@@ -1648,6 +1702,16 @@ function DocumentsPage() {
                 onClick={() => setViewMode("grid")}
               >
                 <LayoutGridIcon className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === "finder" ? "primary" : "ghost"}
+                shape="square"
+                size="sm"
+                className="h-9 w-9"
+                aria-label="Finder view"
+                onClick={() => setViewMode("finder")}
+              >
+                <FolderIcon className="h-4 w-4" />
               </Button>
             </div>
           </div>

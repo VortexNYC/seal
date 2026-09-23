@@ -225,6 +225,13 @@
       "when": 1740000000031,
       "tag": "0031_document_agent_power",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1740000000032,
+      "tag": "0032_extraction_schema",
+      "breakpoints": true
     }
   ]
 }

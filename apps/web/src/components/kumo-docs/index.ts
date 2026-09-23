@@ -13,6 +13,10 @@ export {
   createInitialSplits,
   type DocumentSplitGroup,
 } from "./document-splits-panel";
+export {
+  DocumentPdfOpsPanel,
+  type DocumentPdfOpsPanelProps,
+} from "./document-pdf-ops-panel";
 export { DocxEditor, type DocxEditorProps } from "./docx-editor";
 export { DocxViewer, type DocxViewerProps } from "./docx-viewer";
 export {
