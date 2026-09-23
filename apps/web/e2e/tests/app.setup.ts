@@ -15,6 +15,7 @@ setup.use({ storageState: authStatePath });
 setup.describe.configure({ mode: "serial" });
 
 setup("resolve active workspace slug", async ({ page }) => {
+  setup.setTimeout(90_000);
   assertAppEnv();
 
   await page.goto("/app", { waitUntil: "domcontentloaded" });
@@ -38,7 +39,15 @@ setup("resolve active workspace slug", async ({ page }) => {
   };
 
   organizationSlug = (await resolveActiveSlug(0)) ?? organizationSlug;
+  if (!page.url().match(/\/[\w-]+\/home/)) {
+    throw new Error(
+      `[setup] Workspace home not reached after onboarding. url=${page.url()}`
+    );
+  }
 
   writeCachedWorkspaceSlug(organizationSlug);
+  // Workspace create updates the Better-Auth session (active org). Persist it
+  // so later projects don't re-land on onboarding with a stale storageState.
+  await page.context().storageState({ path: authStatePath });
   console.info(`[setup] Active workspace slug: ${organizationSlug}`);
 });

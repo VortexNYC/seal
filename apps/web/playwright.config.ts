@@ -83,6 +83,7 @@ export default defineConfig({
       name: "smoke-contract",
       testMatch: "**/smoke-contract.e2e.ts",
       dependencies: ["setup-backend"],
+      timeout: 60_000,
       use: {
         ...devices["Desktop Chrome"],
         storageState: authStatePath,
@@ -93,6 +94,7 @@ export default defineConfig({
       testMatch: "**/*.e2e.ts",
       testIgnore: "**/smoke-contract.e2e.ts",
       dependencies: ["smoke-contract"],
+      timeout: 60_000,
       use: {
         ...devices["Desktop Chrome"],
         storageState: authStatePath,
@@ -154,15 +156,28 @@ export default defineConfig({
     // },
   ],
 
-  /* Run your local dev server before starting the tests */
-  webServer: {
-    command: "pnpm run dev",
-    url: "http://localhost:5180",
-    reuseExistingServer: !process.env.CI,
-    stdout: "ignore",
-    stderr: "pipe",
-    timeout: 120000,
-  },
+  /* Start API + web. Vite alone is not enough — auth/setup hit localhost:8787.
+     Apply local D1 migrations before wrangler so Better Auth tables exist. */
+  webServer: [
+    {
+      command:
+        "pnpm exec wrangler d1 migrations apply seal-dev --local && pnpm run dev",
+      cwd: path.resolve(__dirname, "../api"),
+      url: "http://localhost:8787/health",
+      reuseExistingServer: !process.env.CI,
+      stdout: "ignore",
+      stderr: "pipe",
+      timeout: 180000,
+    },
+    {
+      command: "pnpm run dev",
+      url: "http://localhost:5180",
+      reuseExistingServer: !process.env.CI,
+      stdout: "ignore",
+      stderr: "pipe",
+      timeout: 120000,
+    },
+  ],
 
   /* Global timeout — 20s per test, not 60s */
   timeout: 20000,

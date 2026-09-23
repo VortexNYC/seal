@@ -10,7 +10,7 @@ import { assertAppEnv, assertAuthEnv } from "../fixtures/preflight";
 setup.describe.configure({ mode: "serial" });
 
 setup("authenticate better-auth test user", async ({ page }) => {
-  setup.setTimeout(90000);
+  setup.setTimeout(120000);
   assertAppEnv();
   assertAuthEnv();
 

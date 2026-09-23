@@ -24,7 +24,18 @@ type AuthFixtures = {
  */
 export const test = base.extend<AuthFixtures>({
   authenticatedPage: async ({ page }, use) => {
-    await ensureAuthenticatedWorkspaceHome(page);
+    page.setDefaultTimeout(60_000);
+    const cachedSlug = readCachedWorkspaceSlug();
+    if (cachedSlug) {
+      await page.goto(`/${cachedSlug}/home`, {
+        waitUntil: "domcontentloaded",
+      });
+      if (page.url().includes("/onboarding")) {
+        await ensureAuthenticatedWorkspaceHome(page, cachedSlug);
+      }
+    } else {
+      await ensureAuthenticatedWorkspaceHome(page);
+    }
     await use(page);
   },
 

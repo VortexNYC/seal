@@ -264,12 +264,12 @@ export function useDocumentDetail(
 
   const progress: DocumentDetailProgress | null = apiProgress
     ? {
-        percentComplete: apiProgress.percentage,
+        percentComplete: apiProgress.percentComplete,
         byStatus: {
-          signed: apiProgress.byStatus["signed"] ?? 0,
-          pending: apiProgress.byStatus["pending"] ?? 0,
-          viewed: apiProgress.byStatus["viewed"] ?? 0,
-          declined: apiProgress.byStatus["declined"] ?? 0,
+          signed: apiProgress.byStatus.signed,
+          pending: apiProgress.byStatus.pending,
+          viewed: apiProgress.byStatus.viewed,
+          declined: apiProgress.byStatus.declined,
         },
       }
     : null;
