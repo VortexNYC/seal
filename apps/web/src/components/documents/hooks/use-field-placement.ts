@@ -276,7 +276,9 @@ export function useFieldPlacement({
     if (!container) return;
 
     const targetPageNumber = currentPage;
-    const targetPageElement = container.querySelector(".react-pdf__Page");
+    const targetPageElement =
+      container.querySelector(`[data-page-number="${targetPageNumber}"]`) ??
+      container.querySelector("[data-engine='pdfium']");
     if (!targetPageElement) {
       toast.error("Could not determine drop location");
       setDraggingFieldType(null);

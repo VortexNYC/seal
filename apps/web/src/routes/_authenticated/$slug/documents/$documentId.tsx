@@ -13,13 +13,7 @@ import {
   SaveIcon,
   SendIcon,
 } from "lucide-react";
-import PdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-
-import "react-pdf/dist/Page/AnnotationLayer.css";
-import "react-pdf/dist/Page/TextLayer.css";
-import { Document } from "react-pdf";
-import { pdfjs } from "react-pdf";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 
 import { FIELD_TYPES } from "@/components/documents/field-toolbar";
@@ -76,15 +70,13 @@ import {
 } from "../../../../components/kumo-docs";
 import { useSectionState } from "../../../../components/documents/hooks/use-section-state";
 import { PaymentConfigModal } from "../../../../components/documents/payment-config-modal";
-import { PdfPageWithCanvas } from "../../../../components/documents/pdf-page-with-canvas";
+import { PdfFieldPlacementSurface } from "../../../../components/documents/pdf-field-placement-surface";
 import { PdfViewerControls } from "../../../../components/documents/pdf-viewer-controls";
 import { RecipientOptionsDialog } from "../../../../components/documents/recipient-options-dialog";
 import { RecipientSelectorDialog } from "../../../../components/documents/recipient-selector-dialog";
 import { RemoveRecipientDialog } from "../../../../components/documents/remove-recipient-dialog";
 import { SaveAsTemplateDialog } from "../../../../components/documents/save-as-template-dialog";
 import { SendDocumentDialog } from "../../../../components/documents/send-document-dialog";
-
-pdfjs.GlobalWorkerOptions.workerSrc = PdfWorker;
 
 export const Route = createFileRoute(
   "/_authenticated/$slug/documents/$documentId"
@@ -738,55 +730,35 @@ function DocumentDetailPage() {
                           "border-primary ring-primary/20 scale-[1.002] shadow-lg ring-4"
                       )}
                     >
-                      <Document
-                        file={pdfViewer.pdfUrl}
-                        onLoadSuccess={pdfViewer.onDocumentLoadSuccess}
-                        loading={
-                          <div className="text-muted-foreground p-16 text-center">
-                            <div className="animate-pulse">
-                              Loading document...
-                            </div>
-                          </div>
+                      <PdfFieldPlacementSurface
+                        key={`page_${pdfViewer.currentPage}`}
+                        src={pdfViewer.pdfUrl}
+                        pageNumber={pdfViewer.currentPage}
+                        width={pdfViewer.pdfWidth}
+                        fields={fieldPlacement.placedFields}
+                        selectedFieldId={
+                          canEdit ? fieldPlacement.selectedFieldId : null
                         }
-                        error={
-                          <div className="text-destructive p-16 text-center">
-                            Failed to load document
-                          </div>
+                        onFieldSelect={
+                          canEdit
+                            ? fieldPlacement.handleFieldSelect
+                            : undefined
                         }
-                      >
-                        <PdfPageWithCanvas
-                          key={`page_${pdfViewer.currentPage}`}
-                          pageNumber={pdfViewer.currentPage}
-                          width={pdfViewer.pdfWidth}
-                          renderTextLayer={true}
-                          renderAnnotationLayer={true}
-                          fields={fieldPlacement.placedFields}
-                          selectedFieldId={
-                            canEdit ? fieldPlacement.selectedFieldId : null
+                        onFieldUpdate={
+                          canEdit
+                            ? fieldPlacement.handleFieldUpdate
+                            : undefined
+                        }
+                        onDocumentLoadSuccess={pdfViewer.onDocumentLoadSuccess}
+                        onPageDimensions={pdfViewer.handlePageDimensions}
+                        onPageRef={(pageNumber, element) => {
+                          if (element) {
+                            pdfViewer.pageRefs.current.set(pageNumber, element);
+                          } else {
+                            pdfViewer.pageRefs.current.delete(pageNumber);
                           }
-                          onFieldSelect={
-                            canEdit
-                              ? fieldPlacement.handleFieldSelect
-                              : undefined
-                          }
-                          onFieldUpdate={
-                            canEdit
-                              ? fieldPlacement.handleFieldUpdate
-                              : undefined
-                          }
-                          onPageDimensions={pdfViewer.handlePageDimensions}
-                          onPageRef={(pageNumber, element) => {
-                            if (element) {
-                              pdfViewer.pageRefs.current.set(
-                                pageNumber,
-                                element
-                              );
-                            } else {
-                              pdfViewer.pageRefs.current.delete(pageNumber);
-                            }
-                          }}
-                        />
-                      </Document>
+                        }}
+                      />
 
                       {canEdit &&
                         showAiFeatures &&
