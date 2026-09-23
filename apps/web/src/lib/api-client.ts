@@ -2515,8 +2515,8 @@ const apiTokenSchema = z.object({
   publicId: z.string(),
   name: z.string(),
   scopes: z.array(z.string()),
-  lastUsedAt: z.string().nullable(),
-  revokedAt: z.string().nullable(),
+  lastUsedAt: z.string().nullish(),
+  revokedAt: z.string().nullish(),
   createdAt: z.string(),
 });
 export type ApiToken = z.infer<typeof apiTokenSchema>;

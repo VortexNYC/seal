@@ -117,6 +117,8 @@ app.post("/", async (c) => {
       name,
       scopes,
       token,
+      lastUsedAt: null,
+      revokedAt: null,
       createdAt: new Date().toISOString(),
     },
     201
