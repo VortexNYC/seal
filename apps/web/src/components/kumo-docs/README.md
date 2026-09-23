@@ -8,7 +8,7 @@ Agents and humans share the same capabilities. Seal is a document platform
 
 | Extend | Seal (`kumo-docs`) | Human workflow | Agent tool |
 | --- | --- | --- | --- |
-| PDF Viewer | `PdfViewer` (EmbedPDF) | Document detail (read) | preview |
+| PDF Viewer | `PdfViewer` / signing surface (PDFium) | Document detail + **public sign** | preview |
 | PDF Editor | `PdfEditor` (EmbedPDF) | Document detail **PDF tools** (default) | `seal_annotate_document_pdf`, `seal_replace_document_pdf`, `seal_rotate_document_pdf`, `seal_merge_documents_pdf` |
 | DOCX Viewer | `DocxViewer` | Original preview | preview original |
 | DOCX Editor | `DocxEditor` | Document detail **Edit original** | `seal_replace_document_original` |
