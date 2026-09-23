@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 import { PdfViewer } from "./pdf-viewer";
 
+/** Percent-of-page geometry (0–100), matching apps/api pdf-ops. */
 export type PdfAnnotateOp =
   | {
       op: "text";
@@ -17,6 +18,7 @@ export type PdfAnnotateOp =
       y: number;
       text: string;
       size?: number;
+      color?: string;
     }
   | {
       op: "highlight";
@@ -26,6 +28,23 @@ export type PdfAnnotateOp =
       width: number;
       height: number;
       color?: string;
+    }
+  | {
+      op: "rect";
+      page: number;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      color?: string;
+    }
+  | {
+      op: "redact";
+      page: number;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
     };
 
 export type PdfEditorProps = {
@@ -67,13 +86,32 @@ export function PdfEditor({
       {
         op: "text",
         page,
-        x: 72,
-        y: 72,
+        x: 10,
+        y: 10,
         text: draftText.trim(),
         size: 12,
       },
     ]);
     setDraftText("");
+  }
+
+  function addBoxOp(op: "highlight" | "rect" | "redact"): void {
+    onOperationsChange([
+      ...operations,
+      {
+        op,
+        page,
+        x: 10,
+        y: 20,
+        width: 40,
+        height: 8,
+        ...(op === "highlight"
+          ? { color: "#f5e642" }
+          : op === "rect"
+            ? { color: "#3366cc" }
+            : {}),
+      },
+    ]);
   }
 
   function removeOp(index: number): void {
@@ -111,6 +149,35 @@ export function PdfEditor({
               Place on page {page}
             </Button>
           </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => addBoxOp("highlight")}
+            >
+              Highlight
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => addBoxOp("rect")}
+            >
+              Rect
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => addBoxOp("redact")}
+            >
+              Redact
+            </Button>
+          </div>
+          <p className="text-muted-foreground text-[11px]">
+            Geometry is percent-of-page (0–100). Ops bake into the stored PDF.
+          </p>
           <ul className="max-h-64 space-y-1 overflow-y-auto">
             {operations.map((op, index) => (
               <li

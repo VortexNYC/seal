@@ -931,6 +931,9 @@ function OriginalPreviewSection({
           title="Source file"
           content={preview.content}
           downloadUrl={preview.download_url}
+          organizationSlug={slug}
+          documentPublicId={documentPublicId}
+          pageCount={preview.page_count}
         />
       </Collapsible.Panel>
     </Collapsible.Root>

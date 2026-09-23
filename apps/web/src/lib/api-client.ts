@@ -1843,6 +1843,68 @@ export async function getDocumentPreview(
     documentPreviewSchema
   );
 }
+
+const annotateOpSchema = z.discriminatedUnion("op", [
+  z.object({
+    op: z.literal("highlight"),
+    page: z.number().int(),
+    x: z.number(),
+    y: z.number(),
+    width: z.number(),
+    height: z.number(),
+    color: z.string().optional(),
+  }),
+  z.object({
+    op: z.literal("text"),
+    page: z.number().int(),
+    x: z.number(),
+    y: z.number(),
+    text: z.string().min(1),
+    size: z.number().optional(),
+    color: z.string().optional(),
+  }),
+  z.object({
+    op: z.literal("rect"),
+    page: z.number().int(),
+    x: z.number(),
+    y: z.number(),
+    width: z.number(),
+    height: z.number(),
+    color: z.string().optional(),
+  }),
+  z.object({
+    op: z.literal("redact"),
+    page: z.number().int(),
+    x: z.number(),
+    y: z.number(),
+    width: z.number(),
+    height: z.number(),
+  }),
+]);
+
+const annotateDocumentResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  operationsApplied: z.number().int(),
+});
+export type ApiAnnotateDocumentResult = z.infer<
+  typeof annotateDocumentResultSchema
+>;
+export type ApiPdfAnnotateOp = z.infer<typeof annotateOpSchema>;
+export async function annotateDocumentPdf(
+  organizationSlug: string,
+  publicId: string,
+  operations: ApiPdfAnnotateOp[]
+): Promise<ApiAnnotateDocumentResult> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/annotate`,
+    annotateDocumentResultSchema,
+    {
+      method: "POST",
+      body: JSON.stringify({ operations }),
+    }
+  );
+}
 // ---------------------------------------------------------------------------
 // AI
 // ---------------------------------------------------------------------------

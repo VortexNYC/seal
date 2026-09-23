@@ -9,7 +9,8 @@ import { toast } from "@/lib/toast";
  */
 export function usePdfViewer(
   organizationSlug: string,
-  documentPublicId: string
+  documentPublicId: string,
+  reloadKey = 0
 ) {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -21,26 +22,41 @@ export function usePdfViewer(
   const containerRef = useRef<HTMLDivElement>(null);
   const pdfWrapperRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const pdfUrlRef = useRef<string | null>(null);
 
   // Fetch PDF download URL from Worker storage
   useEffect(() => {
+    let cancelled = false;
     const fetchPdfUrl = async () => {
       try {
         const blob = await downloadDocument(organizationSlug, documentPublicId);
+        if (cancelled) return;
         const url = URL.createObjectURL(blob);
+        if (pdfUrlRef.current) {
+          URL.revokeObjectURL(pdfUrlRef.current);
+        }
+        pdfUrlRef.current = url;
         setPdfUrl(url);
+        setNumPages(null);
       } catch {
-        toast.error("Failed to load PDF");
+        if (!cancelled) toast.error("Failed to load PDF");
       }
     };
     void fetchPdfUrl();
 
     return () => {
-      if (pdfUrl) {
-        URL.revokeObjectURL(pdfUrl);
+      cancelled = true;
+    };
+  }, [documentPublicId, organizationSlug, reloadKey]);
+
+  useEffect(() => {
+    return () => {
+      if (pdfUrlRef.current) {
+        URL.revokeObjectURL(pdfUrlRef.current);
+        pdfUrlRef.current = null;
       }
     };
-  }, [documentPublicId]);
+  }, []);
 
   // SEA-84: Keep PDF width in sync with container size on window resize
   useEffect(() => {
