@@ -2,61 +2,63 @@
  * @module tokens/theme
  * @since 1.0.0
  *
- * Seal Design System — TypeScript token exports
+ * Seal Design System — TypeScript token exports (Taupe + Hedvig)
  *
  * Use these hex values anywhere CSS variables aren't available:
  *   - React Email templates (inline styles)
  *   - Canvas / SVG rendering
  *   - Programmatic color manipulation
  *
- * validation:1776634915808
- *
  * These values mirror the OKLCH values in seal-theme-web.css exactly.
  * When updating a color, change both files.
+ *
+ * Visual language: Taupe 50–950. Owned in Seal — do not import
+ * @vortexnyc/brand. No product hue; red is functional only.
  */
 
-/** Brand color scale — Tailwind stone, paper to ink. Accent is deep taupe (700) */
+/** Brand color scale — Taupe 50→950 */
 export const brand = {
-  50: "#fafaf9",
-  100: "#f5f5f4",
-  200: "#e7e5e4",
-  300: "#d6d3d1",
-  400: "#a8a29e",
-  500: "#78716c",
-  600: "#57534e",
-  700: "#44403c", // taupe — the accent / --brand-700
-  800: "#292524",
-  900: "#1c1917", // ink
+  50: "#fbfaf9",
+  100: "#f5f3f0",
+  200: "#e7e2dc",
+  300: "#d3cbc0",
+  400: "#aa9e8d",
+  500: "#867865",
+  600: "#6c6050",
+  700: "#554b3e",
+  800: "#40382d",
+  900: "#2c271f",
+  950: "#17130e",
 } as const;
 
 export const light = {
-  background: "#fafaf9",
-  foreground: "#1a1714",
+  background: "#fbfaf9",
+  foreground: "#2c271f",
   card: "#ffffff",
-  cardForeground: "#1a1714",
+  cardForeground: "#2c271f",
   surface: "#f5f3f0",
-  border: "#e8e4df",
-  input: "#e8e4df",
+  border: "#e7e2dc",
+  input: "#e7e2dc",
   muted: "#f5f3f0",
-  mutedForeground: "#8a8279",
-  primary: "#44403c",
-  primaryForeground: "#fafaf9",
-  ring: "#a8a29e",
+  mutedForeground: "#867865",
+  primary: "#2c271f",
+  primaryForeground: "#fbfaf9",
+  ring: "#aa9e8d",
 } as const;
 
 export const dark = {
-  background: "#0a0a0a",
-  foreground: "#f0ece8",
-  card: "#141414",
-  cardForeground: "#f0ece8",
-  surface: "#202020",
-  border: "#252525",
-  input: "#252525",
-  muted: "#202020",
-  mutedForeground: "#8a8a8a",
-  primary: "#e7e5e4",
-  primaryForeground: "#1c1917",
-  ring: "#78716c",
+  background: "#17130e",
+  foreground: "#f5f3f0",
+  card: "#2c271f",
+  cardForeground: "#f5f3f0",
+  surface: "#40382d",
+  border: "#40382d",
+  input: "#40382d",
+  muted: "#40382d",
+  mutedForeground: "#aa9e8d",
+  primary: "#f5f3f0",
+  primaryForeground: "#17130e",
+  ring: "#6c6050",
 } as const;
 
 export const status = {
@@ -214,15 +216,15 @@ export const canvas = {
   },
 } as const;
 
-/** Email-safe palette — inline styles for React Email templates (no CSS variables available) */
+/** Email-safe palette — Taupe (no CSS variables in React Email) */
 export const email = {
   background: "#f5f3f0",
   card: "#ffffff",
-  border: "#e8e4df",
-  foreground: "#1a1714",
-  mutedForeground: "#8a8279",
-  primary: "#44403c",
-  primaryForeground: "#fafaf9",
+  border: "#e7e2dc",
+  foreground: "#2c271f",
+  mutedForeground: "#867865",
+  primary: "#2c271f",
+  primaryForeground: "#fbfaf9",
   success: "#1f8f5c",
   warning: "#c97f00",
   warningSurface: "#fef7e0",

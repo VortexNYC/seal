@@ -16,8 +16,8 @@ export { email, status };
 
 /** CSS font stacks for React Email (inline styles only, no CSS variables) */
 export const fonts = {
-  sans: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-  serif: '"Instrument Serif", Georgia, "Times New Roman", serif',
+  sans: '"Hedvig Letters Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  serif: '"Hedvig Letters Serif", Georgia, "Times New Roman", serif',
   mono: '"JetBrains Mono", "Courier New", monospace',
 } as const;
 
@@ -27,7 +27,7 @@ export const containers = {
     backgroundColor: email.background,
     padding: "40px 0",
     fontFamily:
-      '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      '"Hedvig Letters Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   },
   card: {
     backgroundColor: email.card,

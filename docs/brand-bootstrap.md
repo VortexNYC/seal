@@ -45,10 +45,9 @@ Everything else is derivative; get this right first.
 
 ### 2. Palette — one accent, always
 
-- Neutral ramp: pick a Tailwind family (`stone`, `zinc`, `neutral`) and map
-  it 50→900 onto `--brand-*`. Vortex = monochrome graphite; Seal = stone.
-- ONE accent: a single mid-dark step of the ramp or one hue (Seal: stone-700
-  `#44403C` on `--primary`). If everything is colored, nothing is.
+- Neutral ramp: Taupe 50→950 on `--brand-*` (the only Seal palette).
+- Primary is taupe-900 (`#2C271F`) on taupe-50 (`#FBFAF9`). Red is functional
+  only (destructive / expired). If everything is colored, nothing is.
 - Status hues (success/warning/destructive) are **functional**, never brand.
 - Light + dark `:root` blocks in the theme CSS; dark inverts the accent.
 

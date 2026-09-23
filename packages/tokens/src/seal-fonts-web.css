@@ -1,38 +1,29 @@
 /*
  * Seal Design System — Web Font Declarations
  *
- * Three-typeface stack, self-hosted — no third-party font CDN at runtime:
- *   Instrument Serif  — display, marketing headlines, wordmark (static 400 + italic)
- *   Plus Jakarta Sans — all product UI, body text, labels (variable, wght 200–800)
- *   JetBrains Mono    — code blocks, API keys, monospaced data (variable, wght 100–800)
+ * Vortex-feel type pairing (Hedvig Letters), self-hosted — no CDN at runtime:
+ *   Hedvig Letters Serif — display, marketing headlines, wordmark
+ *   Hedvig Letters Sans  — all product UI, body text, labels
+ *   JetBrains Mono       — code blocks, API keys, monospaced data
  *
- * Files live in ./fonts and are latin-subset woff2. Import order matters: this
- * file must be imported before seal-theme-web.css so the font-family tokens
- * resolve correctly.
+ * Values mirror Vortex Midday brand (vortex.nyc/brand) owned inside Seal —
+ * we do not import @vortexnyc/brand.
  */
 
 @font-face {
-  font-family: "Instrument Serif";
+  font-family: "Hedvig Letters Serif";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("./fonts/instrument-serif-400.woff2") format("woff2");
+  src: url("./fonts/hedvig-letters-serif.woff2") format("woff2");
 }
 
 @font-face {
-  font-family: "Instrument Serif";
-  font-style: italic;
+  font-family: "Hedvig Letters Sans";
+  font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("./fonts/instrument-serif-400-italic.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "Plus Jakarta Sans";
-  font-style: normal;
-  font-weight: 200 800;
-  font-display: swap;
-  src: url("./fonts/plus-jakarta-sans-var.woff2") format("woff2");
+  src: url("./fonts/hedvig-letters-sans.woff2") format("woff2");
 }
 
 @font-face {

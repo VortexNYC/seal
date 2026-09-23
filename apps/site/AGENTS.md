@@ -16,11 +16,11 @@ collections being populated.
 Mark source: `packages/tokens/src/mark.svg` + `seal-mark.ts` (`MARK_SVG`,
 currentColor). The quill — blade, spine, two barbs — single-color only.
 
-Palette: Tailwind `stone` ramp on `--brand-*`; the one accent is deep taupe
-`#44403C` (`--primary`, stone-700). Everything else is paper `#FAFAF9` and ink
-`#1A1714`. Status hues (success/warning/destructive) are functional, not brand.
+Palette: Taupe 50–950 on `--brand-*`. Primary is taupe-900 `#2C271F` on
+taupe-50 `#FBFAF9` — no product hue. Status hues (success/warning/destructive)
+are functional, not brand.
 
-Brand kit page lives at `/brand`. Wordmark is Instrument Serif.
+Brand kit page lives at `/brand`. Wordmark is Hedvig Letters Serif.
 
 ## Deploying
 
