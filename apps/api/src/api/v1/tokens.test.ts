@@ -81,9 +81,24 @@ describe("api v1 tokens", () => {
       env
     );
     expect(createRes.status).toBe(201);
-    const created = (await createRes.json()) as { id: string; token: string };
+    const created = (await createRes.json()) as {
+      id: string;
+      token: string;
+      lastUsedAt: string | null;
+      revokedAt: string | null;
+      createdAt: string;
+    };
     expect(typeof created.token).toBe("string");
     expect(created.token.startsWith("seal_")).toBe(true);
+    // Create must include these keys as null — web Zod rejects `undefined`
+    // and the one-time plaintext token never reaches the UI (#696).
+    expect(created).toEqual(
+      expect.objectContaining({
+        lastUsedAt: null,
+        revokedAt: null,
+      })
+    );
+    expect(typeof created.createdAt).toBe("string");
 
     const listRes = await app.fetch(
       new Request(

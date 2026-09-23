@@ -2510,7 +2510,7 @@ export async function verifyDocumentByQrToken(
   );
 }
 
-const apiTokenSchema = z.object({
+export const apiTokenSchema = z.object({
   id: z.string(),
   publicId: z.string(),
   name: z.string(),
@@ -2521,7 +2521,7 @@ const apiTokenSchema = z.object({
 });
 export type ApiToken = z.infer<typeof apiTokenSchema>;
 
-const createdApiTokenSchema = apiTokenSchema.extend({
+export const createdApiTokenSchema = apiTokenSchema.extend({
   token: z.string(),
 });
 export type CreatedApiToken = z.infer<typeof createdApiTokenSchema>;
