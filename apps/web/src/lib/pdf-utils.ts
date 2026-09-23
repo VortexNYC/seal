@@ -104,3 +104,63 @@ export async function extractPdfMetadata(file: File): Promise<{
     return { pageCount: 0, thumbnail: null };
   }
 }
+
+/**
+ * Generate per-page thumbnails from a PDF object URL (lazy, bounded).
+ * Used by Kumo ThumbnailSidebar — keep small for sidebar density.
+ */
+export async function generatePageThumbnailsFromUrl(
+  url: string,
+  options?: {
+    maxPages?: number;
+    maxWidth?: number;
+    maxHeight?: number;
+  }
+): Promise<Array<{ page: number; src: string }>> {
+  const maxPages = options?.maxPages ?? 40;
+  const maxWidth = options?.maxWidth ?? 96;
+  const maxHeight = options?.maxHeight ?? 128;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch PDF: ${response.status}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const pageLimit = Math.min(pdf.numPages, maxPages);
+    const results: Array<{ page: number; src: string }> = [];
+
+    for (let pageNumber = 1; pageNumber <= pageLimit; pageNumber++) {
+      const page = await pdf.getPage(pageNumber);
+      const viewport = page.getViewport({ scale: 1 });
+      const scale = Math.min(
+        maxWidth / viewport.width,
+        maxHeight / viewport.height
+      );
+      const scaledViewport = page.getViewport({ scale });
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      if (!context) continue;
+
+      canvas.width = scaledViewport.width;
+      canvas.height = scaledViewport.height;
+      await page.render({
+        canvas,
+        viewport: scaledViewport,
+      }).promise;
+
+      results.push({
+        page: pageNumber,
+        src: canvas.toDataURL("image/png"),
+      });
+    }
+
+    return results;
+  } catch (error) {
+    console.error("Error generating page thumbnails:", error);
+    return [];
+  }
+}
+

@@ -2,7 +2,7 @@ import { Button } from "@cloudflare/kumo/components/button";
 import { Collapsible } from "@cloudflare/kumo/components/collapsible";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Label } from "@cloudflare/kumo/components/label";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   ActivityIcon,
   ChevronDownIcon,
@@ -12,6 +12,7 @@ import {
   Loader2Icon,
   PlusIcon,
   SaveIcon,
+  FileTextIcon,
   ScanSearchIcon,
   ScissorsIcon,
   SendIcon,
@@ -25,10 +26,11 @@ import { useState, type ReactNode } from "react";
 import {
   CitationReviewPanel,
   DocumentSplitsPanel,
+  PreviewPane,
   createInitialSplits,
   type DocumentSplitGroup,
 } from "@/components/kumo-docs";
-import { splitDocument } from "@/lib/api-client";
+import { getDocumentPreview, splitDocument } from "@/lib/api-client";
 import type { ActivityEvent, ActivityEventType } from "@/lib/document-activity";
 import {
   formatDate,
@@ -753,6 +755,69 @@ function DetailMetric({ label, value }: { label: string; value: ReactNode }) {
         {value}
       </div>
     </div>
+  );
+}
+
+
+function OriginalPreviewSection({
+  slug,
+  documentPublicId,
+  open,
+  onOpenChange,
+}: {
+  slug: string;
+  documentPublicId: string;
+  open: boolean;
+  onOpenChange: () => void;
+}) {
+  const previewQuery = useQuery({
+    queryKey: ["documents", documentPublicId, "power", "preview"],
+    queryFn: () => getDocumentPreview(slug, documentPublicId),
+    staleTime: 60_000,
+  });
+
+  const preview = previewQuery.data;
+  const show =
+    preview &&
+    (preview.format === "csv" ||
+      preview.format === "text" ||
+      preview.format === "html") &&
+    Boolean(preview.content);
+
+  if (previewQuery.isLoading) return null;
+  if (!show || !preview?.content) return null;
+
+  return (
+    <Collapsible.Root
+      open={open}
+      onOpenChange={onOpenChange}
+      className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
+    >
+      <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
+        <div className="flex items-center gap-3">
+          <div className="bg-muted text-foreground flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
+            <FileTextIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
+          </div>
+          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
+            Original preview
+          </span>
+        </div>
+        <ChevronDownIcon
+          className={cn(
+            "text-muted-foreground h-4 w-4 transition-transform duration-200",
+            open && "rotate-180"
+          )}
+        />
+      </Collapsible.Trigger>
+      <Collapsible.Panel className="border-border/50 border-t">
+        <PreviewPane
+          className="max-h-80"
+          format={preview.format}
+          title="Source file"
+          content={preview.content}
+        />
+      </Collapsible.Panel>
+    </Collapsible.Root>
   );
 }
 

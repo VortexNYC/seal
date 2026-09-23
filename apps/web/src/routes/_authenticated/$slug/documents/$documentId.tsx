@@ -65,7 +65,12 @@ import {
   useFieldPlacement,
   type SignatureData,
 } from "../../../../components/documents/hooks/use-field-placement";
+import { usePdfPageThumbnails } from "../../../../components/documents/hooks/use-pdf-page-thumbnails";
 import { usePdfViewer } from "../../../../components/documents/hooks/use-pdf-viewer";
+import {
+  DocumentViewerShell,
+  ThumbnailSidebar,
+} from "../../../../components/kumo-docs";
 import { useSectionState } from "../../../../components/documents/hooks/use-section-state";
 import { PaymentConfigModal } from "../../../../components/documents/payment-config-modal";
 import { PdfPageWithCanvas } from "../../../../components/documents/pdf-page-with-canvas";
@@ -232,6 +237,10 @@ function DocumentDetailPage() {
 
   // ── Custom hooks ────────────────────────────────────────────────────────
   const pdfViewer = usePdfViewer(slug, documentPublicId);
+  const pageThumbnails = usePdfPageThumbnails(
+    pdfViewer.pdfUrl,
+    pdfViewer.numPages
+  );
 
   const fieldPlacement = useFieldPlacement({
     organizationSlug: slug,
@@ -578,11 +587,22 @@ function DocumentDetailPage() {
     >
       <div className="space-y-6">
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Left column: PDF Preview */}
+          {/* Left column: PDF Preview — Kumo viewer shell + thumbnail rail */}
           <div className="lg:col-span-2">
+            <DocumentViewerShell
+              className="min-h-[600px] rounded-2xl sm:min-h-[400px] sm:rounded-xl"
+              left={
+                <ThumbnailSidebar
+                  pages={pageThumbnails.pages}
+                  currentPage={pdfViewer.currentPage}
+                  onSelectPage={pdfViewer.handlePageChange}
+                  loading={pageThumbnails.loading || !pdfViewer.numPages}
+                />
+              }
+              main={
             <div
               ref={pdfViewer.pdfWrapperRef}
-              className="bg-muted/80 dark:bg-background relative min-h-[600px] rounded-2xl p-6 sm:min-h-[400px] sm:rounded-xl sm:p-3 md:p-4"
+              className="bg-muted/80 dark:bg-background relative min-h-[600px] p-4 sm:min-h-[400px] sm:p-3 md:p-4"
             >
               {pdfViewer.pdfUrl ? (
                 <TransformWrapper
@@ -765,6 +785,8 @@ function DocumentDetailPage() {
                 </>
               )}
             </div>
+              }
+            />
           </div>
 
           {/* Right column: Document Sidebar */}
