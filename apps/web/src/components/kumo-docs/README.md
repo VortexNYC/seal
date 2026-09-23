@@ -30,6 +30,9 @@ Agents and humans share the same capabilities. Seal is a document platform
 ## Product modes (draft documents)
 
 - **PDF tools** (default) — EmbedPDF annotate / redact / forms / signatures / page organize / export → Save to Seal
-- **Fields** — signature field placement (e-sign canvas)
+- **Fields** — signature field placement (PDFium page raster + Konva e-sign canvas)
 - **Edit original** — DOCX/XLSX/CSV editors (persist + reconvert when possible)
 - **Structure** — layout blocks + extraction schema builder
+
+PDF engine policy: EmbedPDF/PDFium for all product PDF surfaces. Konva stays for Seal
+signature-field interaction (not PDF AcroForms). react-pdf is not used on document detail.

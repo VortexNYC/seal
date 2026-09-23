@@ -445,6 +445,15 @@ importers:
       '@cloudflare/kumo':
         specifier: 2.13.2
         version: 2.13.2(@date-fns/tz@1.5.0)(@phosphor-icons/react@2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@types/react@19.3.0)(date-fns@4.4.0)(echarts@6.1.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(zod@4.6.5)
+      '@embedpdf/engines':
+        specifier: 2.15.1
+        version: 2.15.1(preact@10.29.8)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(svelte@5.57.1(@typescript-eslint/types@8.70.0))(vue@3.5.43(typescript@7.0.2))
+      '@embedpdf/models':
+        specifier: 2.15.1
+        version: 2.15.1
+      '@embedpdf/pdfium':
+        specifier: 2.15.1
+        version: 2.15.1
       '@embedpdf/react-pdf-viewer':
         specifier: ^2.15.1
         version: 2.15.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(svelte@5.57.1(@typescript-eslint/types@8.70.0))(vue@3.5.43(typescript@7.0.2))
