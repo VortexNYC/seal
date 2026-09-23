@@ -7,7 +7,10 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 function manualChunks(moduleId: string): string | undefined {
-  if (moduleId.includes("react-pdf") || moduleId.includes("pdfjs-dist")) {
+  if (
+    moduleId.includes("@embedpdf") ||
+    moduleId.includes("pdfium")
+  ) {
     return "pdf-viewer";
   }
 
@@ -63,12 +66,8 @@ export default defineConfig(() => {
     resolve: {
       alias: {
         "@": path.resolve(import.meta.dirname, "./src"),
-        "pdfjs-dist": path.resolve(
-          import.meta.dirname,
-          "./node_modules/pdfjs-dist"
-        ),
       },
-      dedupe: ["react", "react-dom", "pdfjs-dist"],
+      dedupe: ["react", "react-dom"],
     },
 
     // PostHog reverse proxy to bypass ad blockers

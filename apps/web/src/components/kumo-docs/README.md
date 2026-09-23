@@ -34,5 +34,6 @@ Agents and humans share the same capabilities. Seal is a document platform
 - **Edit original** — DOCX/XLSX/CSV editors (persist + reconvert when possible)
 - **Structure** — layout blocks + extraction schema builder
 
-PDF engine policy: EmbedPDF/PDFium for all product PDF surfaces. Konva stays for Seal
-signature-field interaction (not PDF AcroForms). react-pdf is not used on document detail.
+PDF engine policy: EmbedPDF/PDFium for all product PDF surfaces (viewer, editor,
+Fields, Sign, thumbnails/upload metadata). Konva stays for Seal signature-field
+interaction. react-pdf / pdf.js are not used in the product app.
