@@ -31,23 +31,32 @@ export const prerender = true;
   </nav>
 
   <header class="hero">
-    <div class="hero-mark" aria-hidden="true">
-      <svg viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+    <div class="hero-plane" aria-hidden="true">
+      <svg class="hero-mark" viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
         <path d="M50 154 C58 108 88 62 152 40 C146 90 116 136 62 146 Z" stroke-width="9"/>
         <path d="M42 166 C84 124 120 78 152 40" stroke-width="6"/>
         <path d="M74 130 C84 127 92 122 98 114" stroke-width="5"/>
         <path d="M104 92 C114 89 122 84 128 76" stroke-width="5"/>
       </svg>
     </div>
-    <div class="container">
-      <p class="eyebrow">{landing.hero.eyebrow}</p>
-      <h1>{landing.hero.headline}</h1>
-      <p class="sub">{landing.hero.subheadline}</p>
-      <div class="hero-ctas">
+    <div class="container hero-copy">
+      <p class="eyebrow hero-in">{landing.hero.eyebrow}</p>
+      <p class="brand-word hero-in" style="animation-delay: 60ms">{landing.hero.brand}</p>
+      <h1 class="hero-in" style="animation-delay: 120ms">{landing.hero.headline}</h1>
+      <p class="sub hero-in" style="animation-delay: 180ms">{landing.hero.subheadline}</p>
+      <div class="hero-ctas hero-in" style="animation-delay: 240ms">
         <a class="btn btn-ink btn-lg" href={landing.hero.primaryCta.href}>{landing.hero.primaryCta.label}</a>
         <a class="btn btn-line btn-lg" href={landing.hero.secondaryCta.href}>{landing.hero.secondaryCta.label}</a>
       </div>
+    </div>
+  </header>
 
+  <section class="artifact" id="start" aria-label="Install Seal">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Start here</p>
+        <span class="mono section-index">( 00 )</span>
+      </div>
       <div class="install" role="group" aria-label="Install Seal">
         <div class="install-tabs">
           {landing.hero.installTabs.map((t, i) => (
@@ -70,7 +79,7 @@ export const prerender = true;
         <Code code={landing.hero.codeSnippet} lang="ts" theme="github-dark-default" />
       </div>
     </div>
-  </header>
+  </section>
 
   <section id="api" class="section">
     <div class="container">
@@ -327,38 +336,61 @@ export const prerender = true;
   /* ————— hero ————— */
 
   .hero {
-    padding: 120px 0 100px;
+    min-height: calc(100svh - 60px);
+    display: flex;
+    align-items: center;
+    padding: 72px 0 88px;
     position: relative;
     overflow: hidden;
+    background:
+      radial-gradient(
+        120% 80% at 88% 12%,
+        color-mix(in oklch, var(--brand-200) 55%, transparent),
+        transparent 58%
+      ),
+      var(--background);
+  }
+  .hero-plane {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
   }
   .hero-mark {
     position: absolute;
-    top: -14%;
-    right: -8%;
-    width: min(760px, 56vw);
-    color: var(--primary);
-    opacity: 0.055;
-    transform: rotate(10deg);
-    pointer-events: none;
-  }
-  .hero-mark svg {
-    width: 100%;
+    top: -8%;
+    right: -6%;
+    width: min(820px, 62vw);
     height: auto;
+    color: var(--primary);
+    opacity: 0.07;
+    transform: rotate(8deg);
     display: block;
   }
-  .hero .container {
+  .hero-copy {
     position: relative;
     z-index: 1;
+    max-width: 1120px;
+  }
+  .brand-word {
+    font-family: var(--font-serif);
+    font-size: clamp(72px, 14vw, 160px);
+    font-weight: 400;
+    letter-spacing: -0.04em;
+    line-height: 0.9;
+    margin-top: 28px;
+    color: var(--foreground);
   }
   .hero h1 {
-    font-size: clamp(52px, 8.5vw, 104px);
-    letter-spacing: -0.025em;
-    line-height: 1.0;
-    margin-top: 32px;
+    font-size: clamp(28px, 4.2vw, 44px);
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin-top: 28px;
+    max-width: 18ch;
+    font-weight: 400;
   }
   .hero .sub {
-    max-width: 52ch;
-    margin-top: 32px;
+    max-width: 42ch;
+    margin-top: 22px;
     font-size: 18px;
     line-height: 1.65;
     color: var(--muted-foreground);
@@ -366,8 +398,42 @@ export const prerender = true;
   .hero-ctas {
     display: flex;
     gap: 14px;
-    margin-top: 44px;
+    margin-top: 40px;
     flex-wrap: wrap;
+  }
+
+  @keyframes hero-in {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .hero-in {
+    animation: hero-in 700ms var(--ease-enter, cubic-bezier(0.16, 1, 0.3, 1)) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-in {
+      animation: none;
+    }
+  }
+
+  /* ————— artifact (install + code) ————— */
+
+  .artifact {
+    padding: 0 0 96px;
+    border-top: 1px solid var(--border);
+  }
+  .artifact .section-head {
+    margin-top: 56px;
+    margin-bottom: 36px;
+  }
+  .artifact .install {
+    margin-top: 0;
   }
 
   /* ————— install tabs ————— */
@@ -782,7 +848,11 @@ export const prerender = true;
 
   @media (max-width: 860px) {
     .hero {
-      padding: 80px 0 72px;
+      min-height: auto;
+      padding: 56px 0 64px;
+    }
+    .brand-word {
+      font-size: clamp(64px, 18vw, 96px);
     }
     .endpoint-row {
       grid-template-columns: 60px 1fr;

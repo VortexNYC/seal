@@ -267,7 +267,7 @@ export function ShareDocumentDialog({
                     <Share2Icon className="text-foreground h-5 w-5" />
                   </div>
                   <div>
-                    <DialogPrimitive.Title className="text-foreground font-['Newsreader',Georgia,serif] text-lg font-medium">
+                    <DialogPrimitive.Title className="text-foreground font-serif text-lg font-medium">
                       Share document
                     </DialogPrimitive.Title>
                     <DialogPrimitive.Description className="text-muted-foreground mt-0.5 text-sm">

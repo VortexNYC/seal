@@ -38,6 +38,7 @@ export const landing = z
       cta: linkSchema,
     }),
     hero: z.object({
+      brand: z.string(),
       eyebrow: z.string(),
       headline: z.string(),
       subheadline: z.string(),
@@ -120,10 +121,11 @@ export const landing = z
       },
     },
     hero: {
-      eyebrow: "Seal — Contract Infrastructure",
+      brand: "Seal",
+      eyebrow: "Contract infrastructure",
       headline: "Where deals get done.",
       subheadline:
-        "Seal is the contract API — upload, send, sign, audit. Built for your code, designed for your agents. And signing is free, because paying for a primitive is over.",
+        "Upload, send, sign, audit — for your code and your agents. Signing is free; the platform is the product.",
       primaryCta: {
         label: "Get an API key",
         href: "https://app.seal.nyc/sign-up?next=developer",
