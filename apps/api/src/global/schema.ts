@@ -330,6 +330,7 @@ export const documents = sqliteTable(
       .default(false),
     pagesNeedingOcr: text("pages_needing_ocr"),
     fieldCandidates: text("field_candidates"),
+    extractionSchema: text("extraction_schema"),
     parentDocumentId: text("parent_document_id"),
     originalStorageKey: text("original_storage_key"),
     originalContentType: text("original_content_type"),

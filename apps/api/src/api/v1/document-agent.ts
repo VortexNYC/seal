@@ -15,10 +15,16 @@ import {
   extractAnnotationsFromMarkdown,
   annotationItemSchema,
 } from "../../platform/document-annotations.js";
+import {
+  convertBytesToPdf,
+  isConvertibleFileType,
+} from "../../platform/document-conversion.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import {
   annotatePdf,
+  mergePdfs,
   pdfAnnotateOpSchema,
+  rotatePdfPages,
   splitPdfPages,
 } from "../../platform/pdf-ops.js";
 import { createDownloadToken } from "./download-token.js";
@@ -521,6 +527,376 @@ app.post("/pdf/annotate", async (c) => {
     success: true,
     storage_id: storageId,
     operations_applied: parsed.data.operations.length,
+  });
+});
+
+function base64ToBytes(contentBase64: string): Uint8Array {
+  const binary = atob(contentBase64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+app.post("/pdf/replace", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      id: z.string().min(1),
+      contentBase64: z.string().min(1),
+    })
+    .safeParse(await c.req.json());
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+
+  const bytes = base64ToBytes(parsed.data.contentBase64);
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, bytes, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: mcp.sub,
+      replacedFrom: doc.storageKey ?? "",
+    },
+  });
+
+  await db
+    .update(documents)
+    .set({
+      storageKey: storageId,
+      size: bytes.byteLength,
+      contentType: "application/pdf",
+      updatedAt: new Date(),
+    })
+    .where(eq(documents.id, doc.id));
+
+  return c.json({ success: true, storage_id: storageId, size: bytes.byteLength });
+});
+
+app.get("/layout-blocks", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:read")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+  const id = c.req.query("id");
+  if (!id) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+
+  const annotations = extractAnnotationsFromMarkdown(doc.parsedText ?? "");
+  const blocks = annotations.map((item, index) => ({
+    id: `layout-${item.page}-${index}`,
+    type:
+      item.category === "dates" || item.category === "terms"
+        ? "heading"
+        : item.category === "payment"
+          ? "table"
+          : "text",
+    page: item.page,
+    x: item.x / 100,
+    y: item.y / 100,
+    width: item.width / 100,
+    height: item.height / 100,
+    text: item.text,
+    confidence:
+      item.severity === "critical"
+        ? 0.95
+        : item.severity === "important"
+          ? 0.8
+          : 0.6,
+  }));
+
+  return c.json({ blocks });
+});
+
+app.get("/extraction-schema", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:read")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+  const id = c.req.query("id");
+  if (!id) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+
+  let schema: Record<string, unknown> = { type: "object", properties: {} };
+  if (doc.extractionSchema) {
+    try {
+      const parsedJson = JSON.parse(doc.extractionSchema) as unknown;
+      if (
+        parsedJson &&
+        typeof parsedJson === "object" &&
+        !Array.isArray(parsedJson)
+      ) {
+        schema = parsedJson as Record<string, unknown>;
+      }
+    } catch {
+      // empty
+    }
+  }
+  return c.json({ schema });
+});
+
+app.post("/extraction-schema", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      id: z.string().min(1),
+      schema: z.record(z.string(), z.unknown()),
+    })
+    .safeParse(await c.req.json());
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+
+  await db
+    .update(documents)
+    .set({
+      extractionSchema: JSON.stringify(parsed.data.schema),
+      updatedAt: new Date(),
+    })
+    .where(eq(documents.id, doc.id));
+
+  return c.json({ schema: parsed.data.schema });
+});
+
+app.post("/original/replace", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      id: z.string().min(1),
+      contentBase64: z.string().min(1),
+      contentType: z.string().min(1),
+    })
+    .safeParse(await c.req.json());
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+
+  const bytes = base64ToBytes(parsed.data.contentBase64);
+  const originalKey = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(originalKey, bytes, {
+    httpMetadata: { contentType: parsed.data.contentType },
+    customMetadata: { organizationId, uploadedBy: mcp.sub },
+  });
+
+  let pdfStorageId: string | null = null;
+  let pdfSize = bytes.byteLength;
+  if (isConvertibleFileType(parsed.data.contentType)) {
+    try {
+      const pdf = await convertBytesToPdf(c.env, {
+        contentType: parsed.data.contentType,
+        bytes,
+        name: doc.name,
+      });
+      pdfStorageId = `uploads/${crypto.randomUUID()}`;
+      await c.env.DOCUMENTS_BUCKET.put(pdfStorageId, pdf, {
+        httpMetadata: { contentType: "application/pdf" },
+        customMetadata: {
+          organizationId,
+          uploadedBy: mcp.sub,
+          convertedFrom: originalKey,
+        },
+      });
+      pdfSize = pdf.byteLength;
+    } catch {
+      return c.json({ error: "conversion_failed" }, 502);
+    }
+  } else if (parsed.data.contentType.includes("pdf")) {
+    pdfStorageId = originalKey;
+  }
+
+  await db
+    .update(documents)
+    .set({
+      originalStorageKey: originalKey,
+      originalContentType: parsed.data.contentType,
+      storageKey: pdfStorageId ?? doc.storageKey,
+      contentType: pdfStorageId ? "application/pdf" : parsed.data.contentType,
+      size: pdfSize,
+      updatedAt: new Date(),
+    })
+    .where(eq(documents.id, doc.id));
+
+  return c.json({
+    success: true,
+    original_storage_key: originalKey,
+    storage_id: pdfStorageId,
+    content_type: parsed.data.contentType,
+  });
+});
+
+app.post("/pdf/merge", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      ids: z.array(z.string().min(1)).min(2).max(20),
+      title: z.string().min(1).max(200).optional(),
+    })
+    .safeParse(await c.req.json());
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const buffers: Uint8Array[] = [];
+  for (const id of parsed.data.ids) {
+    const doc = await loadOrgDocument(db, organizationId, id);
+    if (!doc?.storageKey) return c.json({ error: "not_found", id }, 404);
+    const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+    if (!object) return c.json({ error: "storage_missing", id }, 404);
+    buffers.push(new Uint8Array(await object.arrayBuffer()));
+  }
+
+  const merged = await mergePdfs(buffers);
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, merged.bytes, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: mcp.sub,
+      mergedFrom: parsed.data.ids.join(","),
+    },
+  });
+
+  const now = new Date();
+  const id = crypto.randomUUID();
+  const publicId = crypto.randomUUID();
+  const title =
+    parsed.data.title ?? `Merged (${parsed.data.ids.length} docs)`;
+
+  await db.insert(documents).values({
+    id,
+    publicId,
+    organizationId,
+    ownerId: mcp.sub,
+    name: title,
+    description: `Merged from ${parsed.data.ids.length} documents`,
+    status: "draft",
+    documentStatus: "active",
+    sharingMode: "private",
+    storageKey: storageId,
+    contentType: "application/pdf",
+    size: merged.bytes.byteLength,
+    pageCount: merged.pageCount,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  return c.json({
+    success: true,
+    id,
+    public_id: publicId,
+    storage_id: storageId,
+    page_count: merged.pageCount,
+  });
+});
+
+app.post("/pdf/rotate", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      id: z.string().min(1),
+      degrees: z.union([z.literal(90), z.literal(180), z.literal(270)]),
+      pages: z.array(z.number().int().min(1)).optional(),
+    })
+    .safeParse(await c.req.json());
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  const rotated = await rotatePdfPages(
+    await object.arrayBuffer(),
+    parsed.data.degrees,
+    parsed.data.pages
+  );
+
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, rotated.bytes, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: mcp.sub,
+      rotatedFrom: doc.storageKey,
+    },
+  });
+
+  await db
+    .update(documents)
+    .set({
+      storageKey: storageId,
+      size: rotated.bytes.byteLength,
+      contentType: "application/pdf",
+      updatedAt: new Date(),
+    })
+    .where(eq(documents.id, doc.id));
+
+  return c.json({
+    success: true,
+    storage_id: storageId,
+    page_count: rotated.pageCount,
   });
 });
 

@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 
 import type { XlsxSheet } from "./xlsx-viewer";
 
+export type { XlsxSheet };
+
 export type XlsxEditorProps = {
   file?: File | ArrayBuffer | null;
   sheets?: XlsxSheet[];
