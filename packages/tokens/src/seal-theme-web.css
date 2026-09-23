@@ -207,6 +207,7 @@
   --kumo-info-tint: var(--info-surface);
   --kumo-link: var(--info);
   --kumo-tint: var(--accent);
+  --kumo-subtle: var(--muted-foreground);
 
   /* ── Spacing semantic tokens ────────────────────────────────────────────── */
   --space-1: 0.25rem; /* 4px */
@@ -567,4 +568,5 @@
   --color-kumo-info-tint: var(--kumo-info-tint);
   --color-kumo-link: var(--kumo-link);
   --color-kumo-tint: var(--kumo-tint);
+  --color-kumo-subtle: var(--kumo-subtle);
 }

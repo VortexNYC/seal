@@ -1,7 +1,7 @@
 import { PasswordResetEmail, render } from "@vortex-api/better-auth-ui/emails";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { betterAuth } from "better-auth/minimal";
-import { organization } from "better-auth/plugins";
+import { organization, twoFactor } from "better-auth/plugins";
 
 import { createD1 } from "../global/db.js";
 import * as schema from "../global/schema.js";
@@ -61,6 +61,9 @@ export function createAuth(env: CloudflareBindings) {
       organization({
         teams: { enabled: false },
         dynamicAccessControl: { enabled: false },
+      }),
+      twoFactor({
+        issuer: "Seal",
       }),
     ],
   });
