@@ -77,85 +77,92 @@ Do not invent a Docker compose story the repo does not ship yet.
 
 ## Deploy your own (Cloudflare)
 
-Fast path (script):
+### Friendly path — Deploy to Cloudflare
+
+Seal is a pnpm monorepo, so the button opens Workers Builds against the full
+repo. On the setup screen, set:
+
+| Field          | Value           |
+| -------------- | --------------- |
+| Root directory | `/` (repo root) |
+| Build command  | `pnpm install`  |
+| Deploy command | `pnpm selfhost` |
+
+Or click through and then run `pnpm selfhost` locally after `wrangler login` —
+same `selfhost` env either way.
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/VortexNYC/seal)
+
+What you get:
+
+- Auto-provisioned **D1** + **R2** (no Vortex resource IDs)
+- API + web on `*.workers.dev`
+- Secrets prompted once (`BETTER_AUTH_SECRET`, `TOKEN_HASH_SECRET`, `INTERNAL_API_KEY`)
+
+### CLI (recommended for monorepo)
 
 ```bash
-chmod +x scripts/selfhost.sh
-./scripts/selfhost.sh
+pnpm install
+pnpm exec wrangler login
+pnpm selfhost
 ```
 
-The script verifies `wrangler` login, refuses shared Vortex/dev resource IDs
-unless `SEAL_SELFHOST_FORCE=1`, prompts for missing secrets, applies D1
-migrations, and deploys `apps/api` + `apps/web`. There is no Deploy-to-Cloudflare
-button — this script *is* the self-host path.
+`scripts/selfhost.sh` deploys `[env.selfhost]` in `apps/api` + `apps/web`, runs
+D1 migrations by **binding name**, and wires `BETTER_AUTH_URL` /
+`ALLOWED_ORIGINS` / `APP_URL` to your real workers.dev URLs.
 
-Manual path below if you prefer step-by-step.
-
-Vortex production IDs in `wrangler` configs are **not** yours. Replace them before
-`wrangler deploy`, or you will try to bind Vortex D1/R2.
-
-### 1. Create resources in your Cloudflare account
+Non-interactive secrets:
 
 ```bash
-# From apps/api — names are examples
+BETTER_AUTH_SECRET=$(openssl rand -base64 32) \
+TOKEN_HASH_SECRET=$(openssl rand -base64 32) \
+INTERNAL_API_KEY=$(openssl rand -base64 32) \
+pnpm selfhost
+```
+
+### Manual path
+
+Vortex production IDs in the default/`production` wrangler blocks are **not**
+yours. Use `[env.selfhost]` (no account IDs) or create your own D1/R2 and point
+`production` at them.
+
+```bash
+# From apps/api — only if you are NOT using selfhost auto-provision
 pnpm exec wrangler d1 create seal-documents
 pnpm exec wrangler r2 bucket create seal-documents
 ```
 
-Put the returned D1 `database_id` into `apps/api/wrangler.toml` under
-`[env.production]` (and the local/dev block if you use remote dev). Set
-`database_name` / `bucket_name` to match.
-
-Repeat for sibling workers you plan to run:
-
 | Worker  | Config                               | Notes                              |
 | ------- | ------------------------------------ | ---------------------------------- |
-| API     | `apps/api/wrangler.toml`             | D1 + R2 + Email + service bindings |
-| Web     | `apps/web/wrangler.jsonc`            | Assets / `app` hostname            |
-| MCP     | `apps/mcp-worker/wrangler.jsonc`     | Points at your API origin          |
+| API     | `apps/api/wrangler.toml`             | Use `[env.selfhost]` or your D1/R2 |
+| Web     | `apps/web/wrangler.jsonc`            | `[env.selfhost]` → workers.dev     |
+| MCP     | `apps/mcp-worker/wrangler.jsonc`     | Optional                           |
 | Anydoc  | `apps/anydoc-worker/wrangler.jsonc`  | Optional enrichment                |
 | Convert | `apps/convert-worker/wrangler.jsonc` | Optional DOCX→PDF (Containers)     |
 
-Update `[[env.production.services]]` worker names so API binds to **your**
-anydoc/convert worker names (or remove those bindings until you need them).
-
-### 2. Secrets
-
 ```bash
 cd apps/api
-pnpm exec wrangler secret put BETTER_AUTH_SECRET --env production
-pnpm exec wrangler secret put TOKEN_HASH_SECRET --env production
-pnpm exec wrangler secret put INTERNAL_API_KEY --env production
-# ≥32 chars. `/internal/*` is blocked on api.seal.nyc / *.workers.dev —
-# other Workers must call the `InternalApi` service-binding entrypoint.
-# optional
-pnpm exec wrangler secret put MCP_SIGNING_KEY --env production
+pnpm exec wrangler secret put BETTER_AUTH_SECRET --env selfhost
+pnpm exec wrangler secret put TOKEN_HASH_SECRET --env selfhost
+pnpm exec wrangler secret put INTERNAL_API_KEY --env selfhost
+pnpm run deploy:selfhost
+
+cd ../web
+VITE_API_URL=https://seal-api.<account>.workers.dev \
+VITE_BETTER_AUTH_URL=https://seal-api.<account>.workers.dev \
+VITE_APP_URL=https://seal-web.<account>.workers.dev \
+pnpm run deploy:selfhost
 ```
 
-Set production `vars` (`BETTER_AUTH_URL`, `APP_URL`, `ALLOWED_ORIGINS`,
-`EMAIL_FROM`) to your domains.
-
-### 3. Migrate + deploy
+### Smoke
 
 ```bash
-cd apps/api
-pnpm exec wrangler d1 migrations apply <your-db-name> --env production --remote
-pnpm run deploy   # or: pnpm exec wrangler deploy -e production
+SEAL_API_KEY=seal_… node scripts/smoke-prod.mjs --api https://seal-api.<account>.workers.dev
 ```
 
-Then deploy web/mcp (and optional workers) the same way. Point custom domains
-at the Workers, or use `*.workers.dev` for a first spike.
-
-### 4. Smoke
-
-Create a user on your web origin → API key →:
-
-```bash
-SEAL_API_KEY=seal_… node scripts/smoke-prod.mjs --api https://<your-api>
-```
-
-Email in production needs Cloudflare Email Routing / a verified `EMAIL_FROM`
-sender — local/dev will not send real mail by default.
+Email needs Cloudflare Email Routing / a verified `EMAIL_FROM` — omitted from
+`selfhost` until you add an `[[env.selfhost.send_email]]` binding. Local/dev
+does not send real mail by default.
 
 ## Code rules
 

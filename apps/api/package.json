@@ -6,11 +6,34 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy -e production",
+    "deploy:selfhost": "wrangler d1 migrations apply D1 --remote --env selfhost && wrangler deploy --env selfhost",
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate"
+  },
+  "cloudflare": {
+    "bindings": {
+      "BETTER_AUTH_SECRET": {
+        "description": "Session signing secret. Generate with `openssl rand -base64 32` (≥32 chars)."
+      },
+      "TOKEN_HASH_SECRET": {
+        "description": "API token hashing secret. Generate with `openssl rand -base64 32`."
+      },
+      "INTERNAL_API_KEY": {
+        "description": "Shared key for Worker-to-Worker `/internal` calls. Generate with `openssl rand -base64 32`."
+      },
+      "MCP_SIGNING_KEY": {
+        "description": "Optional. Only needed if you deploy the MCP worker."
+      },
+      "D1": {
+        "description": "Primary Seal database (auto-provisioned on first selfhost deploy)."
+      },
+      "DOCUMENTS_BUCKET": {
+        "description": "R2 bucket for PDFs and signed artifacts (auto-provisioned)."
+      }
+    }
   },
   "dependencies": {
     "@hono/zod-openapi": "^0.19.10",

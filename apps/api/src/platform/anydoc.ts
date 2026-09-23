@@ -68,6 +68,7 @@ export async function parseDocumentFromStorage(
 ): Promise<ParsedDocument | null> {
   const object = await env.DOCUMENTS_BUCKET.get(storageKey);
   if (!object) return null;
+  if (!env.ANYDOC) return null;
 
   try {
     const response = await env.ANYDOC.fetch(

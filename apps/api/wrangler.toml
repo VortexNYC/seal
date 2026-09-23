@@ -92,3 +92,34 @@ crons = ["0 9 * * *"]
 [[env.production.routes]]
 pattern = "api.seal.nyc"
 custom_domain = true
+
+# ── Self-host (your Cloudflare account) ──────────────────────────────────────
+# Auto-provisions D1 + R2 on first `wrangler deploy --env selfhost` (wrangler ≥4.45).
+# No Vortex resource IDs. No custom domains. workers.dev only.
+# Optional Email / anydoc / convert bindings are omitted — PDF upload→sign works
+# without them. Add later when you need mail or DOCX conversion.
+[env.selfhost]
+name = "seal-api"
+workers_dev = true
+preview_urls = true
+
+[env.selfhost.vars]
+# Replaced by scripts/selfhost.sh after the first deploy with real *.workers.dev URLs.
+BETTER_AUTH_URL = "https://seal-api.workers.dev"
+ALLOWED_ORIGINS = "https://seal-web.workers.dev"
+EMAIL_FROM = "noreply@example.com"
+APP_URL = "https://seal-web.workers.dev"
+MCP_SIGNING_KEY_ID = "mcp-key-1"
+
+[env.selfhost.observability]
+enabled = true
+logs = { enabled = true }
+
+[[env.selfhost.d1_databases]]
+binding = "D1"
+database_name = "seal-documents"
+migrations_dir = "migrations"
+
+[[env.selfhost.r2_buckets]]
+binding = "DOCUMENTS_BUCKET"
+bucket_name = "seal-documents"

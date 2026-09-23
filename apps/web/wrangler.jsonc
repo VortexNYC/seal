@@ -29,5 +29,11 @@
         },
       ],
     },
+    // Self-host on your account — workers.dev, no Vortex custom domain.
+    "selfhost": {
+      "name": "seal-web",
+      "workers_dev": true,
+      "preview_urls": true,
+    },
   },
 }
