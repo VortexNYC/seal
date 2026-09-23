@@ -330,6 +330,9 @@ export const documents = sqliteTable(
       .default(false),
     pagesNeedingOcr: text("pages_needing_ocr"),
     fieldCandidates: text("field_candidates"),
+    parentDocumentId: text("parent_document_id"),
+    originalStorageKey: text("original_storage_key"),
+    originalContentType: text("original_content_type"),
     thumbnailDataUrl: text("thumbnail_data_url"),
     qrToken: text("qr_token").unique(),
     documentHash: text("document_hash"),
@@ -361,6 +364,7 @@ export const documents = sqliteTable(
     index("documents_ownerId_idx").on(table.ownerId),
     index("documents_folderId_idx").on(table.folderId),
     index("documents_documentStatus_idx").on(table.documentStatus),
+    index("documents_parentDocumentId_idx").on(table.parentDocumentId),
   ]
 );
 

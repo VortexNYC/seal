@@ -218,6 +218,13 @@
       "when": 1789770000000,
       "tag": "0030_usage_events",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "6",
+      "when": 1740000000031,
+      "tag": "0031_document_agent_power",
+      "breakpoints": true
     }
   ]
 }

@@ -900,6 +900,309 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+    post:
+      tags: [Documents]
+      operationId: createDocumentField
+      summary: Create a document field (percent-of-page geometry)
+      description: >
+        Place a signature or data field on a draft document. Coordinates are
+        percent-of-page (0–100), matching the web editor. Optional `binding_key`
+        enables later `POST /documents/apply-bindings`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, field_type, label, page, x, y, width, height]
+              properties:
+                id: { type: string }
+                field_type:
+                  type: string
+                  enum: [signature, text, number, date, checkbox, dropdown, radio, attachment, payment]
+                label: { type: string }
+                is_required: { type: boolean }
+                page: { type: integer }
+                x: { type: number }
+                y: { type: number }
+                width: { type: number }
+                height: { type: number }
+                recipient_id: { type: string }
+                binding_key: { type: string }
+                properties: { type: object, additionalProperties: true }
+      responses:
+        "201":
+          description: Created
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /documents/fields/update:
+    put:
+      tags: [Documents]
+      operationId: updateDocumentField
+      summary: Update a document field
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, field_id]
+              properties:
+                id: { type: string }
+                field_id: { type: string }
+                label: { type: string }
+                is_required: { type: boolean }
+                page: { type: integer }
+                x: { type: number }
+                y: { type: number }
+                width: { type: number }
+                height: { type: number }
+                recipient_id: { type: string, nullable: true }
+                binding_key: { type: string, nullable: true }
+                properties: { type: object, additionalProperties: true }
+      responses:
+        "200":
+          description: Updated
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /documents/fields/delete:
+    post:
+      tags: [Documents]
+      operationId: deleteDocumentField
+      summary: Delete a document field
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, field_id]
+              properties:
+                id: { type: string }
+                field_id: { type: string }
+      responses:
+        "200":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /documents/place-candidates:
+    post:
+      tags: [Documents]
+      operationId: placeDocumentFieldCandidates
+      summary: Place fields from detected field_candidates
+      description: >
+        Creates signature fields from anydoc field_candidates (with suggested
+        bounding boxes). Agents use this instead of a UI click loop.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string }
+                indices:
+                  type: array
+                  items: { type: integer }
+                recipient_id: { type: string }
+      responses:
+        "200":
+          description: Placed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [fieldIds, count]
+                properties:
+                  fieldIds:
+                    type: array
+                    items: { type: string }
+                  count: { type: integer }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /documents/field-suggestions:
+    get:
+      tags: [Documents]
+      operationId: getDocumentFieldSuggestions
+      summary: Get pending field suggestions with bounding boxes
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Suggestions or null
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /documents/field-suggestions/apply:
+    post:
+      tags: [Documents]
+      operationId: applyDocumentFieldSuggestions
+      summary: Apply field suggestions onto a draft document
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, suggestion_id]
+              properties:
+                id: { type: string }
+                suggestion_id: { type: string }
+                selected_indices:
+                  type: array
+                  items: { type: integer }
+      responses:
+        "200":
+          description: Applied
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /documents/annotations:
+    get:
+      tags: [Documents]
+      operationId: getDocumentAnnotations
+      summary: Get bbox citation annotations for contract review
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Annotations or null }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /documents/annotations/generate:
+    post:
+      tags: [Documents]
+      operationId: generateDocumentAnnotations
+      summary: Generate bbox citations from parsed text
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string }
+      responses:
+        "200": { description: Generated }
+  /documents/annotations/dismiss:
+    post:
+      tags: [Documents]
+      operationId: dismissDocumentAnnotations
+      summary: Dismiss active annotations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string }
+      responses:
+        "200": { description: Dismissed }
+  /documents/preview:
+    get:
+      tags: [Documents]
+      operationId: previewDocument
+      summary: Agent preview (markdown, structured, pdf, or original office/CSV)
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema: { type: string }
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [markdown, structured, pdf, original]
+      responses:
+        "200": { description: Preview payload }
+  /documents/split:
+    post:
+      tags: [Documents]
+      operationId: splitDocument
+      summary: Split a draft PDF into child documents by page ranges
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, splits]
+              properties:
+                id: { type: string }
+                splits:
+                  type: array
+                  items:
+                    type: object
+                    required: [title, pages]
+                    properties:
+                      title: { type: string }
+                      pages:
+                        type: array
+                        items: { type: integer }
+      responses:
+        "201": { description: Child documents created }
+  /documents/pdf/annotate:
+    post:
+      tags: [Documents]
+      operationId: annotateDocumentPdf
+      summary: Bake highlight/text/rect/redact ops onto a draft PDF
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, operations]
+              properties:
+                id: { type: string }
+                operations:
+                  type: array
+                  items:
+                    type: object
+                    required: [op, page]
+                    properties:
+                      op:
+                        type: string
+                        enum: [highlight, text, rect, redact]
+                      page: { type: integer }
+                      x: { type: number }
+                      y: { type: number }
+                      width: { type: number }
+                      height: { type: number }
+                      text: { type: string }
+                      size: { type: number }
+                      color: { type: string }
+      responses:
+        "200": { description: Annotated }
 
   /documents/send:
     post:
