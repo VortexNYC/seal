@@ -40,12 +40,6 @@
   }
 }
 
-/* PDF layer overrides — prevent text/annotation layers from capturing events */
-.react-pdf__Page__textContent,
-.react-pdf__Page__annotations {
-  pointer-events: none !important;
-}
-
 /* Collapsible section animations */
 @keyframes collapsible-down {
   from {
