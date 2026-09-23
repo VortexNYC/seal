@@ -50,6 +50,8 @@ Everything else is derivative; get this right first.
   only (destructive / expired). If everything is colored, nothing is.
 - Status hues (success/warning/destructive) are **functional**, never brand.
 - Light + dark `:root` blocks in the theme CSS; dark inverts the accent.
+- Product chrome may use `bg/text/border-kumo-*` utilities — those are **aliases**
+  onto Taupe semantic tokens in `seal-theme-web.css` (not a second palette).
 
 ### 3. Type — three faces, self-hosted
 
