@@ -54,6 +54,7 @@ import { createAuth } from "./platform/auth.js";
 import { sendEmail } from "./platform/email.js";
 import { verifyMcpAccessToken } from "./platform/mcp-auth.js";
 import { runScheduledTasks } from "./platform/scheduled.js";
+import { selfhostUrlConfigError } from "./platform/selfhost-urls.js";
 import { getSessionUser } from "./platform/session.js";
 import type { Variables } from "./platform/types.js";
 import { projectPayableObjectUpdated } from "./platform/vortex_billing.js";
@@ -718,7 +719,13 @@ app.get(
   }
 );
 
-app.get("/health", (c) => c.json({ status: "ok" }));
+app.get("/health", (c) => {
+  const configError = selfhostUrlConfigError(c.env);
+  if (configError) {
+    return c.json({ status: "misconfigured", error: configError }, 503);
+  }
+  return c.json({ status: "ok" });
+});
 
 app.get("/.well-known/oauth-authorization-server/seal-mcp", (c) => {
   const origin = new URL(c.req.url).origin;

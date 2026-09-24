@@ -100,24 +100,27 @@ API_OUT="$(mktemp)"
 WEB_OUT="$(mktemp)"
 trap 'rm -f "$API_OUT" "$WEB_OUT"' EXIT
 
-info "Deploy API (auto-provisions D1 + R2 on first run — wrangler ≥4.45)"
-pnpm --dir "$API_DIR" exec wrangler deploy --env selfhost | tee "$API_OUT"
+info "Deploy API with account-scoped auth/CORS vars"
+bash "$ROOT/scripts/selfhost-deploy-api.sh" | tee "$API_OUT"
 
-API_URL="${SEAL_API_URL:-$(extract_workers_url "$API_OUT")}"
-[[ -n "$API_URL" ]] || die "could not parse API workers.dev URL from deploy output (set SEAL_API_URL=)"
-
-info "Apply D1 migrations via binding name D1"
-pnpm --dir "$API_DIR" exec wrangler d1 migrations apply D1 --remote --env selfhost
-
-WEB_URL="${SEAL_WEB_URL:-$(derive_web_url "$API_URL")}"
+API_URL="${SEAL_API_URL:-}"
+WEB_URL="${SEAL_WEB_URL:-}"
+if [[ -z "$API_URL" || -z "$WEB_URL" ]]; then
+  eval "$(python3 - "$API_OUT" <<'PY'
+import re, sys
+text = open(sys.argv[1]).read()
+api = re.search(r"^  API: (https://\S+)", text, re.M)
+web = re.search(r"^  Web: (https://\S+)", text, re.M)
+if api:
+    print(f"API_URL={api.group(1)!r}")
+if web:
+    print(f"WEB_URL={web.group(1)!r}")
+PY
+)"
+fi
+[[ -n "${API_URL:-}" ]] || die "could not parse API URL from deploy output (set SEAL_API_URL=)"
+[[ -n "${WEB_URL:-}" ]] || WEB_URL="$(derive_web_url "$API_URL")"
 [[ -n "$WEB_URL" ]] || die "could not derive web workers.dev URL (set SEAL_WEB_URL=)"
-
-info "Redeploy API with auth/CORS vars → $API_URL / $WEB_URL"
-pnpm --dir "$API_DIR" exec wrangler deploy --env selfhost \
-  --var "BETTER_AUTH_URL:${API_URL}" \
-  --var "APP_URL:${WEB_URL}" \
-  --var "ALLOWED_ORIGINS:${WEB_URL}" \
-  >/dev/null
 
 info "Build + deploy web"
 export VITE_API_URL="$API_URL"
