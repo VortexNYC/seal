@@ -171,7 +171,7 @@ refuses Vortex unless `SEAL_SELFHOST_FORCE=1`).
 ## Code rules
 
 - TypeScript strict: no `any`, no `@ts-ignore` / `@ts-expect-error`
-- Auth is better-auth (Vortex Auth). Clerk is banned.
+- Auth is Better Auth on Cloudflare. Clerk is banned. No `@vortexnyc/*` / Vortex Core.
 - pnpm only — never npm/yarn/bun for scripts
 - Product UI primitives are Cloudflare Kumo
 - Do not edit generated files (`apps/web/src/routeTree.gen.ts`, `apps/docs/dist/*`)

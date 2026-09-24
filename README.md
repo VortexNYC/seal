@@ -38,7 +38,7 @@ npm install @vortex-api/seal   # TypeScript — client + React + CLI
 - **Relational data:** Cloudflare D1 + Drizzle ORM
 - **Stateful coordination:** Durable Objects
 - **Object / immutable storage:** R2
-- **Auth:** better-auth through Vortex Auth
+- **Auth:** Better Auth on the Cloudflare Worker API
 - **Frontend:** React 19 + TanStack Router + Vite
 - **Docs:** blume (Astro) static site + OpenAPI reference
 - **Tooling:** pnpm + Vite+ (`vp`)

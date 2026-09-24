@@ -310,8 +310,8 @@ function SecuritySettingsContent() {
               Access &amp; security events
             </Text>
             <Text variant="secondary" size="sm">
-              Member, organization, and login events are managed in Vortex Auth.
-              For document and signing activity, use the{" "}
+              Member, organization, and login events live with Better Auth
+              account security. For document and signing activity, use the{" "}
               <Link
                 className="underline underline-offset-4"
                 params={{ slug }}

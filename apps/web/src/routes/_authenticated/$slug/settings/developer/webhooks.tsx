@@ -1,7 +1,5 @@
 /**
  * Developer Settings - Webhooks
- *
- * Core Vortex surfaces removed. Webhooks are managed in Vortex Auth.
  * Route: /{slug}/settings/developer/webhooks
  */
 
@@ -32,7 +30,7 @@ function WebhooksPage() {
           </Text>
           <Text variant="secondary">
             HTTPS webhook endpoints, delivery history, and Slack notifications
-            are currently managed in Vortex Auth.
+            for this workspace.
           </Text>
         </LayerCard.Secondary>
         <LayerCard.Primary>

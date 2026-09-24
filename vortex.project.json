@@ -48,13 +48,12 @@
       "apps/docs/dist/*"
     ],
     "cloudNotes": [
-      "Preserve root AGENTS.md and CLAUDE.md because they contain Seal-specific navigation and design context.",
-      "Use staging for Vortex payments, subscriptions, webhooks, billing, and payment verification."
+      "Preserve root AGENTS.md and CLAUDE.md — Seal-specific navigation and design context.",
+      "Vortex Core (`@vortexnyc/*`) is retired for Seal. Do not add Core packages."
     ],
     "localOnlyNotes": [
       "Read .test-env before live proof; it is the local source of truth for dev URLs and deployments.",
-      "Use vb or vb --fresh against TEST_WEB_URL for browser proof.",
-      "Do not reopen payments migration scope unless the active task explicitly requires it."
+      "Use vb or vb --fresh against TEST_WEB_URL for browser proof."
     ],
     "designContext": [
       "Seal is a workflow-focused document signing and collaboration app for B2B teams.",
@@ -62,10 +61,7 @@
       "Use packages/tokens for brand colors, typography, status colors, signer slots, motion, and form affordances.",
       "Support light and dark themes with practical, restrained motion."
     ],
-    "referenceRepos": [
-      "../vortex-pos for the current pnpm + Core tooling control-plane stack",
-      "../crm for the current clean Vortex Core consumer proof"
-    ],
+    "referenceRepos": [],
     "firstActions": [
       "Run `pnpm run verify` from the repo root.",
       "Read AGENTS.md and any subdirectory AGENTS.md before touching code.",
