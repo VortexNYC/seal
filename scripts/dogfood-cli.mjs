@@ -39,7 +39,7 @@ if (!KEY) {
 }
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const SEAL_BIN = join(ROOT, "packages/sdk/bin/seal.mjs");
+const SEAL_BIN = join(ROOT, "packages/sdk/bin/seal.js");
 
 const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
 let failures = 0;

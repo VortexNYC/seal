@@ -132,7 +132,7 @@ function VerifySuccess({ result }: { result: VerifyDocumentResult }) {
         {/* Footer */}
         <p className="text-muted-foreground mt-8 text-center text-xs">
           Verified by{" "}
-          <a href="https://seal.so" className="underline underline-offset-2">
+          <a href="https://seal.nyc" className="underline underline-offset-2">
             Seal
           </a>{" "}
           — Document Signing Platform
