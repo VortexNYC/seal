@@ -85,6 +85,237 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/documents/apply-bindings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply structured values by binding_key
+         * @description For each document field with `properties.binding_key`, set `default_value` from the provided map. Draft documents only. This is the Seal-side of proposal→document sync (GitHub #604) without OCR.
+         */
+        post: operations["applyDocumentBindings"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/fields": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List document fields (with binding_key) */
+        get: operations["listDocumentFields"];
+        put?: never;
+        /**
+         * Create a document field (percent-of-page geometry)
+         * @description Place a signature or data field on a draft document. Coordinates are percent-of-page (0–100), matching the web editor. Optional `binding_key` enables later `POST /documents/apply-bindings`.
+         */
+        post: operations["createDocumentField"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/fields/update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update a document field */
+        put: operations["updateDocumentField"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/fields/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Delete a document field */
+        post: operations["deleteDocumentField"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/place-candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Place fields from detected field_candidates
+         * @description Creates signature fields from anydoc field_candidates (with suggested bounding boxes). Agents use this instead of a UI click loop.
+         */
+        post: operations["placeDocumentFieldCandidates"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/field-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get pending field suggestions with bounding boxes */
+        get: operations["getDocumentFieldSuggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/field-suggestions/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Apply field suggestions onto a draft document */
+        post: operations["applyDocumentFieldSuggestions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/annotations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get bbox citation annotations for contract review */
+        get: operations["getDocumentAnnotations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/annotations/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate bbox citations from parsed text */
+        post: operations["generateDocumentAnnotations"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/annotations/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Dismiss active annotations */
+        post: operations["dismissDocumentAnnotations"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Agent preview (markdown, structured, pdf, or original office/CSV) */
+        get: operations["previewDocument"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/split": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Split a draft PDF into child documents by page ranges */
+        post: operations["splitDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/pdf/annotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bake highlight/text/rect/redact ops onto a draft PDF */
+        post: operations["annotateDocumentPdf"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/documents/send": {
         parameters: {
             query?: never;
@@ -301,6 +532,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/templates/fields/update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update a template field (including binding_key)
+         * @description Patch label/required/properties on a template field. Set `properties.binding_key` to bind the field to an external proposal key (GitHub #604).
+         */
+        put: operations["updateTemplateField"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/templates/update": {
         parameters: {
             query?: never;
@@ -443,9 +694,29 @@ export interface paths {
         put?: never;
         /**
          * Generate upload URL
-         * @description Returns a short-lived upload URL for uploading a PDF to Seal's storage. Upload the file with a `POST` request using `Content-Type: application/pdf`, then pass the returned `storage_id` to `POST /documents`.
+         * @description Returns a short-lived upload URL. `POST` the file bytes to that URL with the matching `Content-Type`. Accepted types: `application/pdf`, DOCX, XLSX, PPTX, and CSV. Non-PDF office/CSV uploads are converted to a fixed-layout PDF via the convert worker before storage; the original is retained under an `originals/` key. Pass the returned `storageId` to `POST /documents`.
          */
         post: operations["generateUploadUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload a document file
+         * @description Upload file bytes to the URL from `POST /uploads/generate-url` (pass the token as a query param). PDFs are stored as-is. DOCX/XLSX/PPTX/CSV are converted to PDF via the convert worker; originals are kept. Requires a valid upload token (not a normal API key on this path).
+         */
+        post: operations["uploadFile"];
         delete?: never;
         options?: never;
         head?: never;
@@ -499,6 +770,130 @@ export interface paths {
         post?: never;
         /** Delete a contact */
         delete: operations["deleteContact"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contacts/update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update a contact */
+        put: operations["updateContact"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/folders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List folders */
+        get: operations["listFolders"];
+        put?: never;
+        /** Create a folder */
+        post: operations["createFolder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/folders/breadcrumbs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Folder breadcrumbs */
+        get: operations["getFolderBreadcrumbs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List import jobs */
+        get: operations["listImports"];
+        put?: never;
+        /**
+         * Create an import job
+         * @description Creates an import job in `pending_approval` status. Call approve to run it.
+         */
+        post: operations["createImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/imports/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get an import job */
+        get: operations["getImport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/imports/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve and run an import job */
+        post: operations["approveImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/imports/{id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resume an in-progress import job */
+        post: operations["resumeImport"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -817,6 +1212,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/organizations/{organizationSlug}/billing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get billing summary for an organization
+         * @description Returns the current plan, active subscription (if any), and recent invoices. Requires the `billing:read` scope.
+         */
+        get: operations["getOrganizationBilling"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/organizations/{organizationSlug}/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get usage summary for an organization
+         * @description Returns document workflow counts, monthly send/complete totals, storage usage against plan limits, and metered `metrics` aggregated from the `usage_events` ledger for the requested `period` (default current UTC YYYY-MM). Requires `usage:read` (or a `read` API token).
+         */
+        get: operations["getOrganizationUsage"];
+        put?: never;
+        /**
+         * Record a usage event
+         * @description Appends a row to `usage_events`. Document send/complete already records automatically; this endpoint is for explicit agent metering. Requires `usage:write` (or a `write`/`admin` API token).
+         */
+        post: operations["recordOrganizationUsage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -865,6 +1304,8 @@ export interface components {
              * @description Pre-signed URL to download the document PDF
              */
             download_url?: string;
+            /** @description Public folder ID this document belongs to, or null if unfiled */
+            folder_id?: string | null;
             /** @description Recipient list (only included when include_recipients=true) */
             recipients?: components["schemas"]["Recipient"][];
         };
@@ -913,10 +1354,13 @@ export interface components {
             width: number;
             /** @description Height as a fraction of page height (0–1) */
             height: number;
+            /** @description Free-form field properties. Use `binding_key` to bind a fillable field to an external proposal/deal key (programmatic sync instead of agentic OCR reconstruction — see GitHub #604). */
             properties?: {
                 placeholder?: string;
                 default_value?: string;
                 options?: string[];
+                /** @description External structured-data key (e.g. a Vortex Payments proposal field). When set, agents/integrations write this field from the bound source instead of guessing via OCR. */
+                binding_key?: string;
             };
         };
         Signature: {
@@ -1002,6 +1446,39 @@ export interface components {
             data: components["schemas"]["Contact"][];
             has_more: boolean;
             next_cursor?: string;
+        };
+        Folder: {
+            id: string;
+            name: string;
+            /** @enum {string} */
+            type: "document" | "template";
+            parent_id: string | null;
+            /** @enum {string} */
+            visibility: "everyone" | "members" | "restricted";
+            pinned: boolean;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        ImportJob: {
+            id: string;
+            /** @enum {string} */
+            adapter: "pdf" | "docusign" | "pandadoc";
+            status: string;
+            payload: unknown;
+            processed_count: number;
+            total_count?: number | null;
+            cursor?: string | null;
+            error?: string | null;
+            approved_by?: string | null;
+            /** Format: date-time */
+            approved_at?: string | null;
+            created_by: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
         };
         /** @enum {string} */
         WebhookStatus: "active" | "paused" | "disabled";
@@ -1236,6 +1713,8 @@ export interface operations {
                 cursor?: string;
                 /** @description Filter documents by status */
                 status?: components["schemas"]["DocumentStatus"];
+                /** @description Filter by folder public ID. Pass an empty string to list unfiled documents only. */
+                folder_id?: string;
             };
             header?: never;
             path?: never;
@@ -1289,6 +1768,8 @@ export interface operations {
                      * @description Signing deadline — recipients cannot sign after this date
                      */
                     deadline?: string;
+                    /** @description Public folder ID to file this document under */
+                    folder_id?: string | null;
                 };
             };
         };
@@ -1356,6 +1837,8 @@ export interface operations {
                     description?: string;
                     /** Format: date-time */
                     deadline?: string;
+                    /** @description Move document into this folder, or null to unfile */
+                    folder_id?: string | null;
                 };
             };
         };
@@ -1366,9 +1849,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        success?: boolean;
-                    };
+                    "application/json": components["schemas"]["Document"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -1399,6 +1880,408 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    applyDocumentBindings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    bindings: {
+                        [key: string]: string;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        updated: number;
+                        unmatched_keys: string[];
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listDocumentFields: {
+        parameters: {
+            query: {
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Fields */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createDocumentField: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    /** @enum {string} */
+                    field_type: "signature" | "text" | "number" | "date" | "checkbox" | "dropdown" | "radio" | "attachment" | "payment";
+                    label: string;
+                    is_required?: boolean;
+                    page: number;
+                    x: number;
+                    y: number;
+                    width: number;
+                    height: number;
+                    recipient_id?: string;
+                    binding_key?: string;
+                    properties?: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateDocumentField: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    field_id: string;
+                    label?: string;
+                    is_required?: boolean;
+                    page?: number;
+                    x?: number;
+                    y?: number;
+                    width?: number;
+                    height?: number;
+                    recipient_id?: string | null;
+                    binding_key?: string | null;
+                    properties?: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteDocumentField: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    field_id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    placeDocumentFieldCandidates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    indices?: number[];
+                    recipient_id?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Placed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        fieldIds: string[];
+                        count: number;
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getDocumentFieldSuggestions: {
+        parameters: {
+            query: {
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Suggestions or null */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    applyDocumentFieldSuggestions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    suggestion_id: string;
+                    selected_indices?: number[];
+                };
+            };
+        };
+        responses: {
+            /** @description Applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getDocumentAnnotations: {
+        parameters: {
+            query: {
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Annotations or null */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    generateDocumentAnnotations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Generated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    dismissDocumentAnnotations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Dismissed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    previewDocument: {
+        parameters: {
+            query: {
+                id: string;
+                format?: "markdown" | "structured" | "pdf" | "original";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Preview payload */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    splitDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    splits: {
+                        title: string;
+                        pages: number[];
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Child documents created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    annotateDocumentPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    operations: {
+                        /** @enum {string} */
+                        op: "highlight" | "text" | "rect" | "redact";
+                        page: number;
+                        x?: number;
+                        y?: number;
+                        width?: number;
+                        height?: number;
+                        text?: string;
+                        size?: number;
+                        color?: string;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Annotated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     sendDocument: {
@@ -1799,6 +2682,45 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    updateTemplateField: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    template_id: string;
+                    field_id: string;
+                    label?: string;
+                    is_required?: boolean;
+                    properties?: {
+                        placeholder?: string;
+                        default_value?: string;
+                        options?: string[];
+                        binding_key?: string;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Updated field */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        field?: components["schemas"]["TemplateField"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     updateTemplate: {
         parameters: {
             query: {
@@ -2022,6 +2944,47 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    uploadFile: {
+        parameters: {
+            query: {
+                token: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/pdf": string;
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation": string;
+                "text/csv": string;
+            };
+        };
+        responses: {
+            /** @description Stored (PDF bytes available at storageId) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        storageId: string;
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            /** @description Conversion failed */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     listContacts: {
         parameters: {
             query?: {
@@ -2136,6 +3099,309 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    updateContact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    first_name?: string;
+                    last_name?: string;
+                    /** Format: email */
+                    email?: string;
+                    phone?: string | null;
+                    company?: string | null;
+                    title?: string | null;
+                    status?: components["schemas"]["ContactStatus"];
+                    notes?: string | null;
+                    tags?: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listFolders: {
+        parameters: {
+            query?: {
+                type?: "document" | "template";
+                /** @description Parent folder public ID; omit for root folders */
+                parent_id?: string;
+                /** @description When true, return all folders of the type (ignore parent) */
+                flat?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Folders */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        folders: components["schemas"]["Folder"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createFolder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    /**
+                     * @default document
+                     * @enum {string}
+                     */
+                    type?: "document" | "template";
+                    parent_id?: string;
+                    /**
+                     * @default everyone
+                     * @enum {string}
+                     */
+                    visibility?: "everyone" | "members" | "restricted";
+                    /** @default false */
+                    pinned?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Folder"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getFolderBreadcrumbs: {
+        parameters: {
+            query: {
+                /** @description Folder public ID */
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Breadcrumb trail from root to the folder */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        breadcrumbs: {
+                            id: string;
+                            name: string;
+                        }[];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listImports: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Import jobs */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ImportJob"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    adapter: "pdf" | "docusign" | "pandadoc";
+                    payload?: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ImportJob"];
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Import job */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ImportJob"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    approveImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Import result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            publicId?: string;
+                            status?: string;
+                            processed_count?: number;
+                            total_count?: number | null;
+                            cursor?: string | null;
+                            error?: string | null;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Already approved or running */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    resumeImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Import result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            publicId?: string;
+                            status?: string;
+                            processed_count?: number;
+                            total_count?: number | null;
+                            cursor?: string | null;
+                            error?: string | null;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Import not resumable */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     listWebhooks: {
@@ -2740,6 +4006,164 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    getOrganizationBilling: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organizationSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Billing summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        plan: string;
+                        subscription: {
+                            id?: string;
+                            status?: string;
+                            /** Format: date-time */
+                            currentPeriodStart?: string | null;
+                            /** Format: date-time */
+                            currentPeriodEnd?: string | null;
+                            cancelAtPeriodEnd?: boolean;
+                            /** Format: date-time */
+                            canceledAt?: string | null;
+                            /** Format: date-time */
+                            pastDueSince?: string | null;
+                        } | null;
+                        invoices: {
+                            id?: string;
+                            status?: string;
+                            amountDue?: number;
+                            currency?: string;
+                            hostedInvoiceUrl?: string | null;
+                            /** Format: date-time */
+                            paidAt?: string | null;
+                            /** Format: date-time */
+                            createdAt?: string;
+                        }[];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Forbidden (insufficient scope or org mismatch) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getOrganizationUsage: {
+        parameters: {
+            query?: {
+                /** @description Usage period key, e.g. `2026-09` (UTC). Defaults to current month. */
+                period?: string;
+            };
+            header?: never;
+            path: {
+                organizationSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Usage summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        period: string;
+                        totalDocuments: number;
+                        workflowCounts: {
+                            [key: string]: number;
+                        };
+                        documentsThisMonth: number;
+                        sentThisMonth: number;
+                        completedThisMonth: number;
+                        storageUsedBytes: number;
+                        storageLimitBytes: number;
+                        storagePercentUsed: number;
+                        plan: string;
+                        documentsLimit: number;
+                        documentsPercentUsed: number;
+                        completionRate: number;
+                        /** @description Summed quantities by event_type for the period */
+                        metrics: {
+                            [key: string]: number;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Forbidden (insufficient scope or org mismatch) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    recordOrganizationUsage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organizationSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    event_type: string;
+                    /** @default 1 */
+                    quantity?: number;
+                    period?: string;
+                    metadata?: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Recorded */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        period: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
 }

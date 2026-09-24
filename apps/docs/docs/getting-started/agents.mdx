@@ -18,11 +18,12 @@ truth for every operational “do or fetch.”
 | ------- | ---- |
 | OpenAPI / HTTP | Contract |
 | [MCP](/mcp) | Tools and prompts over that API |
-| CLI (`seal`) | Thin HTTP client over that API |
-| SDK | Typed client / signing embed over that API |
+| CLI (`seal`) | Thin HTTP client: `seal <METHOD> /api/v1/... [body.json]` |
+| SDK (`@vortex-api/seal`) | Typed `paths` / `components` from OpenAPI + signing embed |
 
 MCP, CLI, and SDK **must not** invent capabilities that are missing from
-OpenAPI. Spec first, then wrap.
+OpenAPI. Spec first, then wrap. After changing `openapi.yaml`, regenerate SDK
+types with `pnpm --filter @vortex-api/seal run generate`.
 
 ## What agents do
 
