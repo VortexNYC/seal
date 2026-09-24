@@ -56,24 +56,40 @@ Web:  https://seal-web.<account>.workers.dev
 API:  https://seal-api.<account>.workers.dev
 ```
 
-## First-run checklist
+## Cold-account checklist (stranger-shaped)
 
-1. Open the web URL → create an account → create a workspace
-2. **Developer → API Keys** → create a key (`seal_…`)
-3. Smoke the API loop:
+Treat a **new Cloudflare login** as the real proof. Vortex-account dogfood is
+safe (`seal-selfhost-*` names) but does not prove stranger readiness.
 
-```bash
-SEAL_API_KEY=seal_… node scripts/smoke-prod.mjs --api https://seal-api.<account>.workers.dev
-```
+Do these in order; stop when one fails.
 
-Or the agent CLI golden path (folders, contact update, `seal upload`, imports):
+1. **Clone + install on a clean machine** (no prior `wrangler` login, no
+   copied Vortex `.dev.vars`):
+   ```bash
+   git clone https://github.com/VortexNYC/seal.git && cd seal
+   pnpm install
+   pnpm exec wrangler login   # *your* account
+   pnpm selfhost
+   ```
+2. **Open the printed web URL** → sign up → verify email → create a workspace
+3. **Developer → API Keys** → create `seal_…`
+4. **Golden path** (CLI + public signing half → completed → audit):
+   ```bash
+   SEAL_API_KEY=seal_… pnpm run prove:golden-path \
+     --api https://seal-selfhost-api.<account>.workers.dev \
+     --app https://seal-selfhost-web.<account>.workers.dev
+   ```
+   Alternate raw HTTP smoke (no CLI):
+   ```bash
+   SEAL_API_KEY=seal_… node scripts/smoke-prod.mjs \
+     --api https://seal-selfhost-api.<account>.workers.dev
+   ```
+5. **Sign once in a real browser** from the `signing_url` (or the UI) so you
+   trust the SPA route, not only the public API harness
+6. **Email** — only after the loop above is green (see next section)
 
-```bash
-SEAL_API_KEY=seal_… node scripts/dogfood-cli.mjs \
-  --api https://seal-selfhost-api.<account>.workers.dev
-```
-
-4. Send a PDF from the UI or follow [Quick Start](/docs/getting-started/quick-start) with your API base URL
+If step 1–4 fail on a cold account, that is a product bug — fix docs/script
+before claiming self-host works.
 
 ## Email (required for real invites)
 

@@ -22,12 +22,18 @@
     "knip": "vp run -r knip",
     "scan:secrets": "secretlint . --no-gitignore --secretlintignore .secretlintignore",
     "selfhost": "bash scripts/selfhost.sh",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "ci:publish": "pnpm --filter @vortex-api/seal run build && changeset publish",
+    "dogfood": "node scripts/dogfood-cli.mjs",
+    "prove:golden-path": "node scripts/prove-golden-path.mjs",
     "fix": "vp lint --fix && vp fmt",
     "verify": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run knip",
     "verify:clean": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run knip",
     "clean": "(cd apps/web && pnpm run clean) && git clean -xdf .cache dist node_modules"
   },
   "devDependencies": {
+    "@changesets/cli": "3.0.1",
     "@seal/tsconfig": "workspace:*",
     "@secretlint/secretlint-rule-preset-recommend": "^13.0.5",
     "@shadcn/lint": "^0.1.0",

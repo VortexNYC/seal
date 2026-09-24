@@ -61,6 +61,26 @@ pnpm run build
 pnpm test
 ```
 
+Hosted API golden path (needs a real `seal_…` key — optional locally, required
+in `.github/workflows/golden-path.yml` via `SEAL_API_KEY`):
+
+```bash
+SEAL_API_KEY=seal_… pnpm run prove:golden-path
+```
+
+## Releasing `@vortex-api/seal`
+
+Public npm releases use [Changesets](https://github.com/changesets/changesets)
+(same shape as mature Vortex auth packages):
+
+1. After a user-facing SDK/CLI change: `pnpm changeset`
+2. Merge to `main`. `.github/workflows/release.yml` opens a version PR or
+   publishes when the version PR lands
+3. Requires repo secret `NPM_TOKEN` (npm provenance via OIDC id-token)
+
+Do not hand-bump `packages/sdk/package.json` or publish outside this flow.
+Private workspace packages are ignored by Changesets.
+
 ## First signed document (hosted — start here)
 
 Fastest path today (no local Workers required):

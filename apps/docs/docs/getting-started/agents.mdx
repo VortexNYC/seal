@@ -40,14 +40,18 @@ Use an API key (`Authorization: Bearer seal_…`) or MCP OAuth. See
 [Authentication](/getting-started/authentication) and
 [Quick Start](/getting-started/quick-start).
 
-CLI golden path (same contract as MCP):
+CLI golden path (same contract as MCP), including the public signing half
+through `completed` and signatures audit:
 
 ```bash
-SEAL_API_KEY=seal_… node scripts/dogfood-cli.mjs
+SEAL_API_KEY=seal_… pnpm run prove:golden-path
 # or selfhost:
-SEAL_API_KEY=seal_… node scripts/dogfood-cli.mjs \
-  --api https://seal-selfhost-api.<account>.workers.dev
+SEAL_API_KEY=seal_… pnpm run prove:golden-path \
+  --api https://seal-selfhost-api.<account>.workers.dev \
+  --app https://seal-selfhost-web.<account>.workers.dev
 ```
+
+SDK snippets: `packages/sdk/examples/` (Node send + React embed).
 
 ## What humans do
 
