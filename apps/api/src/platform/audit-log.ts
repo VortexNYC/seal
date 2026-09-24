@@ -7,6 +7,8 @@ export type AuditActor = {
 };
 
 export interface AuditLogInput {
+  /** Optional stable id for atomic batches / compensation. */
+  id?: string;
   organizationId: string;
   actor: AuditActor;
   action: string;
@@ -15,14 +17,14 @@ export interface AuditLogInput {
   metadata?: Record<string, unknown>;
   ipAddress?: string;
   userAgent?: string;
+  createdAt?: Date;
 }
 
-export async function writeAuditLog(
-  db: ReturnType<typeof createD1>,
+export function buildAuditLogValues(
   input: AuditLogInput
-): Promise<void> {
-  await db.insert(auditLogs).values({
-    id: crypto.randomUUID(),
+): typeof auditLogs.$inferInsert {
+  return {
+    id: input.id ?? crypto.randomUUID(),
     organizationId: input.organizationId,
     actorId: input.actor.id,
     actorType: input.actor.type,
@@ -32,8 +34,15 @@ export async function writeAuditLog(
     metadata: input.metadata ? JSON.stringify(input.metadata) : undefined,
     ipAddress: input.ipAddress,
     userAgent: input.userAgent,
-    createdAt: new Date(),
-  });
+    createdAt: input.createdAt ?? new Date(),
+  };
+}
+
+export async function writeAuditLog(
+  db: ReturnType<typeof createD1>,
+  input: AuditLogInput
+): Promise<void> {
+  await db.insert(auditLogs).values(buildAuditLogValues(input));
 }
 
 export function getAuditRequestMeta(c: {
