@@ -1002,6 +1002,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/webhooks/deliveries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List recent webhook delivery attempts */
+        get: operations["listWebhookDeliveries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/members": {
         parameters: {
             query?: never;
@@ -1207,50 +1224,6 @@ export interface paths {
         post?: never;
         /** Revoke an API token */
         delete: operations["revokeApiToken"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/organizations/{organizationSlug}/billing": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get billing summary for an organization
-         * @description Returns the current plan, active subscription (if any), and recent invoices. Requires the `billing:read` scope.
-         */
-        get: operations["getOrganizationBilling"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/organizations/{organizationSlug}/usage": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get usage summary for an organization
-         * @description Returns document workflow counts, monthly send/complete totals, storage usage against plan limits, and metered `metrics` aggregated from the `usage_events` ledger for the requested `period` (default current UTC YYYY-MM). Requires `usage:read` (or a `read` API token).
-         */
-        get: operations["getOrganizationUsage"];
-        put?: never;
-        /**
-         * Record a usage event
-         * @description Appends a row to `usage_events`. Document send/complete already records automatically; this endpoint is for explicit agent metering. Requires `usage:write` (or a `write`/`admin` API token).
-         */
-        post: operations["recordOrganizationUsage"];
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -3597,6 +3570,42 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    listWebhookDeliveries: {
+        parameters: {
+            query?: {
+                webhook_id?: string;
+                status?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Delivery attempts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id?: string;
+                        webhookId?: string;
+                        eventType?: string;
+                        status?: string;
+                        responseStatus?: number | null;
+                        /** Format: date-time */
+                        deliveredAt?: string | null;
+                        /** Format: date-time */
+                        createdAt?: string;
+                    }[];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
     listMembers: {
         parameters: {
             query?: {
@@ -4006,164 +4015,6 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
-        };
-    };
-    getOrganizationBilling: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                organizationSlug: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Billing summary */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        plan: string;
-                        subscription: {
-                            id?: string;
-                            status?: string;
-                            /** Format: date-time */
-                            currentPeriodStart?: string | null;
-                            /** Format: date-time */
-                            currentPeriodEnd?: string | null;
-                            cancelAtPeriodEnd?: boolean;
-                            /** Format: date-time */
-                            canceledAt?: string | null;
-                            /** Format: date-time */
-                            pastDueSince?: string | null;
-                        } | null;
-                        invoices: {
-                            id?: string;
-                            status?: string;
-                            amountDue?: number;
-                            currency?: string;
-                            hostedInvoiceUrl?: string | null;
-                            /** Format: date-time */
-                            paidAt?: string | null;
-                            /** Format: date-time */
-                            createdAt?: string;
-                        }[];
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            /** @description Forbidden (insufficient scope or org mismatch) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    getOrganizationUsage: {
-        parameters: {
-            query?: {
-                /** @description Usage period key, e.g. `2026-09` (UTC). Defaults to current month. */
-                period?: string;
-            };
-            header?: never;
-            path: {
-                organizationSlug: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Usage summary */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        period: string;
-                        totalDocuments: number;
-                        workflowCounts: {
-                            [key: string]: number;
-                        };
-                        documentsThisMonth: number;
-                        sentThisMonth: number;
-                        completedThisMonth: number;
-                        storageUsedBytes: number;
-                        storageLimitBytes: number;
-                        storagePercentUsed: number;
-                        plan: string;
-                        documentsLimit: number;
-                        documentsPercentUsed: number;
-                        completionRate: number;
-                        /** @description Summed quantities by event_type for the period */
-                        metrics: {
-                            [key: string]: number;
-                        };
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            /** @description Forbidden (insufficient scope or org mismatch) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    recordOrganizationUsage: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                organizationSlug: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    event_type: string;
-                    /** @default 1 */
-                    quantity?: number;
-                    period?: string;
-                    metadata?: {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-        responses: {
-            /** @description Recorded */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        success: boolean;
-                        period: string;
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
         };
     };
 }

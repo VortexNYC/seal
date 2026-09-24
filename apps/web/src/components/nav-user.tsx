@@ -1,16 +1,8 @@
-import { Badge } from "@cloudflare/kumo/components/badge";
 import { DropdownMenu } from "@cloudflare/kumo/components/dropdown";
 import { Sidebar, useSidebar } from "@cloudflare/kumo/components/sidebar";
-import {
-  CaretUpDown,
-  CreditCard,
-  SignOut,
-  Sparkle,
-  User,
-} from "@phosphor-icons/react";
+import { CaretUpDown, SignOut, User } from "@phosphor-icons/react";
 import { useNavigate } from "@tanstack/react-router";
 
-import { useOrganization } from "@/hooks/use-organization";
 import { cn } from "@/lib/utils";
 
 function UserAvatar({
@@ -63,10 +55,6 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar();
   const navigate = useNavigate();
-  const { data: organization } = useOrganization(slug);
-  const plan = organization?.plan ?? "free";
-  const planName = plan.charAt(0).toUpperCase() + plan.slice(1);
-  const isPro = plan === "pro";
 
   return (
     <Sidebar.Menu>
@@ -108,17 +96,6 @@ export function NavUser({
               </div>
             </DropdownMenu.Label>
             <DropdownMenu.Separator />
-            <div className="flex items-center justify-between px-2 py-1.5">
-              <span className="text-kumo-secondary text-xs">Plan</span>
-              <Badge
-                variant={isPro ? "primary" : "secondary"}
-                icon={isPro ? Sparkle : undefined}
-                className="text-xs"
-              >
-                {planName}
-              </Badge>
-            </div>
-            <DropdownMenu.Separator />
             <DropdownMenu.Group>
               <DropdownMenu.Item
                 icon={User}
@@ -127,17 +104,6 @@ export function NavUser({
                 }
               >
                 Profile
-              </DropdownMenu.Item>
-              <DropdownMenu.Item
-                icon={CreditCard}
-                onClick={() =>
-                  navigate({
-                    to: "/$slug/settings/billing",
-                    params: { slug },
-                  })
-                }
-              >
-                Billing
               </DropdownMenu.Item>
             </DropdownMenu.Group>
             <DropdownMenu.Separator />

@@ -9,6 +9,5 @@
  * stable layout before real content renders.
  */
 
-export { BillingSkeleton } from "./billing-skeleton";
 export { FormSkeleton } from "./form-skeleton";
 export { TemplatesSkeleton } from "./templates-skeleton";

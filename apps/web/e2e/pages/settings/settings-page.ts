@@ -7,7 +7,6 @@ export class SettingsPage {
   // Navigation links
   readonly profileLink: Locator;
   readonly teamLink: Locator;
-  readonly billingLink: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -15,7 +14,6 @@ export class SettingsPage {
 
     this.profileLink = page.getByRole("link", { name: /profile/i });
     this.teamLink = page.getByRole("link", { name: /team/i });
-    this.billingLink = page.getByRole("link", { name: /billing/i });
   }
 
   async goto(slug: string): Promise<void> {
@@ -30,11 +28,6 @@ export class SettingsPage {
 
   async navigateToTeam(): Promise<void> {
     await this.teamLink.click();
-    await this.page.waitForLoadState("domcontentloaded");
-  }
-
-  async navigateToBilling(): Promise<void> {
-    await this.billingLink.click();
     await this.page.waitForLoadState("domcontentloaded");
   }
 }

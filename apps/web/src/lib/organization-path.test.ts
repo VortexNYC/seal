@@ -42,7 +42,6 @@ describe("buildOrganizationPath", () => {
         "templates",
         "contacts",
         "analytics",
-        "payments",
         "accounts",
         "budgets",
         "categories",

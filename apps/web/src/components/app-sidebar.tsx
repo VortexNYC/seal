@@ -3,7 +3,6 @@
 import { Sidebar } from "@cloudflare/kumo/components/sidebar";
 import {
   Code,
-  CreditCard,
   Gear,
   Moon,
   SquaresFour,
@@ -143,44 +142,6 @@ function buildNavSections({
     },
   ].filter((item) => item.visible);
 
-  const paymentsItems = [
-    {
-      title: "Overview",
-      url: buildOrganizationPath(slug, "/payments"),
-      visible: isPro && canView(permissionFlags?.canViewSettings),
-      exactMatch: true,
-    },
-    {
-      title: "Subscriptions",
-      url: buildOrganizationPath(slug, "/payments/subscriptions"),
-      visible: isPro && canView(permissionFlags?.canViewSettings),
-    },
-    {
-      title: "History",
-      url: buildOrganizationPath(slug, "/payments/history"),
-      visible: isPro && canView(permissionFlags?.canViewSettings),
-    },
-    {
-      title: "Payouts",
-      url: buildOrganizationPath(slug, "/payments/payouts"),
-      visible: isPro && canView(permissionFlags?.canViewSettings),
-    },
-    {
-      title: "Balances",
-      url: buildOrganizationPath(slug, "/payments/balances"),
-      visible: isPro && canView(permissionFlags?.canViewSettings),
-    },
-    {
-      title: "Disputes",
-      url: buildOrganizationPath(slug, "/payments/disputes"),
-      visible: isPro && canView(permissionFlags?.canViewSettings),
-    },
-    {
-      title: "Tax Documents",
-      url: buildOrganizationPath(slug, "/payments/tax"),
-      visible: isPro && canView(permissionFlags?.canViewSettings),
-    },
-  ].filter((item) => item.visible);
 
   const settingsItems = [
     {
@@ -230,18 +191,6 @@ function buildNavSections({
       url: buildOrganizationPath(slug, "/settings/audit-log"),
       visible: canView(permissionFlags?.canViewSettings),
     },
-    {
-      title: "Billing",
-      url: buildOrganizationPath(slug, "/settings/billing"),
-      visible:
-        canView(permissionFlags?.canViewBilling) ||
-        canView(permissionFlags?.canManageBilling),
-    },
-    {
-      title: "Merchant Payments",
-      url: buildOrganizationPath(slug, "/settings/payments"),
-      visible: canView(permissionFlags?.canViewSettings),
-    },
   ].filter((item) => item.visible);
 
   const developerItems = [
@@ -269,11 +218,6 @@ function buildNavSections({
       title: "Workspace",
       icon: SquaresFour,
       items: workspaceItems,
-    },
-    {
-      title: "Payments",
-      icon: CreditCard,
-      items: paymentsItems,
     },
     {
       title: "Settings",
