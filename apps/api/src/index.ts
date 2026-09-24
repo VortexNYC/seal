@@ -25,7 +25,6 @@ import accountV1 from "./api/v1/account.js";
 import analyticsV1 from "./api/v1/analytics.js";
 import auditLogsV1 from "./api/v1/audit-logs.js";
 import auditV1 from "./api/v1/audit.js";
-import billingV1 from "./api/v1/billing.js";
 import contactsV1 from "./api/v1/contacts.js";
 import documentsV1 from "./api/v1/documents.js";
 import foldersV1 from "./api/v1/folders.js";
@@ -38,7 +37,6 @@ import signaturesV1 from "./api/v1/signatures.js";
 import templatesV1 from "./api/v1/templates.js";
 import tokensV1 from "./api/v1/tokens.js";
 import uploadsV1 from "./api/v1/uploads.js";
-import usageV1 from "./api/v1/usage.js";
 import webhooksV1 from "./api/v1/webhooks.js";
 import { createD1 } from "./global/db.js";
 import {
@@ -805,8 +803,6 @@ app.route("/api/v1/signatures", signaturesV1);
 app.route("/api/v1/templates", templatesV1);
 app.route("/api/v1/uploads", uploadsV1);
 app.route("/api/v1/webhooks", webhooksV1);
-app.route("/api/v1/organizations/:organizationSlug/billing", billingV1);
-app.route("/api/v1/organizations/:organizationSlug/usage", usageV1);
 
 export default app;
 
