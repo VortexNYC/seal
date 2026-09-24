@@ -70,27 +70,17 @@ SEAL_API_KEY=seal_… node scripts/smoke-prod.mjs --api https://seal-api.<accoun
 
 ## Email (required for real invites)
 
-`selfhost` **omits** the Cloudflare Email binding until you verify a sender.
-Without email, signing links still work if you copy them from the UI/API, but
-recipients will not get invite mail.
+`selfhost` ships with a Cloudflare Email Sending binding (`EMAIL`). Signing
+links still work from the UI/API without mail; invites need a verified sender
+domain on **your** Cloudflare account.
 
-To enable mail:
+1. Enable sending for your domain:
+   `pnpm exec wrangler email sending enable your-domain.com`
+2. Set `allowed_sender_addresses` / `EMAIL_FROM` under `[env.selfhost]` in
+   `apps/api/wrangler.toml` to an address on that domain
+3. Redeploy: `pnpm --filter @seal/api exec wrangler deploy --env selfhost`
 
-1. Set up [Email Routing](https://developers.cloudflare.com/email-routing/) (or another verified sender path Cloudflare accepts for Workers `send_email`)
-2. Add to `apps/api/wrangler.toml` under `[env.selfhost]`:
-
-```toml
-[[env.selfhost.send_email]]
-name = "EMAIL"
-allowed_sender_addresses = ["noreply@your-domain.com"]
-```
-
-3. Set var `EMAIL_FROM` to that address and redeploy:
-
-```bash
-pnpm --filter @seal/api exec wrangler deploy --env selfhost \
-  --var "EMAIL_FROM:noreply@your-domain.com"
-```
+Vortex dogfood uses `noreply@seal.nyc` (domain already enabled on the account).
 
 ## Optional workers
 
@@ -123,6 +113,7 @@ See the repo [CONTRIBUTING.md](https://github.com/VortexNYC/seal/blob/main/CONTR
 
 ## Safety
 
-Do **not** run `pnpm selfhost` against the Vortex Cloudflare account — the
-`selfhost` worker names collide with hosted production. Use a separate account
-(or set `SEAL_SELFHOST_FORCE=1` only if you know what you are doing).
+Selfhost worker / D1 / R2 names are `seal-selfhost-*` so they cannot overwrite
+hosted production (`seal-api`, `seal-web`, `seal-global`, `seal-documents`). You
+can dogfood on the Vortex account; for a customer-shaped cold proof, use a
+separate Cloudflare login.

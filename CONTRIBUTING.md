@@ -148,25 +148,25 @@ pnpm exec wrangler secret put INTERNAL_API_KEY --env selfhost
 pnpm run deploy:selfhost
 
 cd ../web
-VITE_API_URL=https://seal-api.<account>.workers.dev \
-VITE_BETTER_AUTH_URL=https://seal-api.<account>.workers.dev \
-VITE_APP_URL=https://seal-web.<account>.workers.dev \
+VITE_API_URL=https://seal-selfhost-api.<account>.workers.dev \
+VITE_BETTER_AUTH_URL=https://seal-selfhost-api.<account>.workers.dev \
+VITE_APP_URL=https://seal-selfhost-web.<account>.workers.dev \
 pnpm run deploy:selfhost
 ```
 
 ### Smoke
 
 ```bash
-SEAL_API_KEY=seal_… node scripts/smoke-prod.mjs --api https://seal-api.<account>.workers.dev
+SEAL_API_KEY=seal_… node scripts/smoke-prod.mjs --api https://seal-selfhost-api.<account>.workers.dev
 ```
 
-Email needs Cloudflare Email Routing / a verified `EMAIL_FROM` — omitted from
-`selfhost` until you add an `[[env.selfhost.send_email]]` binding. Local/dev
-does not send real mail by default.
+Email uses Cloudflare Email Sending (`[[env.selfhost.send_email]]`). Enable your
+domain with `wrangler email sending enable your-domain.com`, set `EMAIL_FROM` /
+`allowed_sender_addresses`, and redeploy. Dogfood on Vortex uses `noreply@seal.nyc`.
 
-**Do not** run `pnpm selfhost` while logged into the Vortex Cloudflare account —
-worker names collide with hosted production. Use a separate account (the script
-refuses Vortex unless `SEAL_SELFHOST_FORCE=1`).
+Selfhost uses `seal-selfhost-*` worker / D1 / R2 names so it cannot clobber
+hosted production. Prefer a separate Cloudflare account for customer-shaped
+proof; Vortex-account dogfood is safe.
 
 ## Code rules
 

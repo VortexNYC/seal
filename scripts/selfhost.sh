@@ -23,15 +23,12 @@ info "Cloudflare auth"
 who="$(pnpm --dir "$API_DIR" exec wrangler whoami 2>&1)" || die "run: pnpm exec wrangler login"
 echo "$who" | head -20
 
-# Refuse accidental deploy onto Vortex production account (same worker names).
+# Selfhost uses seal-selfhost-* worker/D1/R2 names — safe beside hosted
+# seal-api / seal-web. Still prefer a non-Vortex account for customer-shaped proof.
 VORTEX_CF_ACCOUNT_ID="31bfc2c14a28e0a39e8b9e3c556a18be"
 if echo "$who" | grep -q "$VORTEX_CF_ACCOUNT_ID"; then
-  echo "WARNING: logged into the Vortex Cloudflare account."
-  echo "         selfhost worker names (seal-api / seal-web) collide with hosted production."
-  echo "         Use a separate Cloudflare account for self-host proof."
-  if [[ "${SEAL_SELFHOST_FORCE:-}" != "1" ]]; then
-    die "refusing selfhost on Vortex account (set SEAL_SELFHOST_FORCE=1 to override)"
-  fi
+  echo "NOTE: logged into the Vortex Cloudflare account."
+  echo "      Deploying seal-selfhost-* (not production seal-api / seal-web)."
 fi
 
 ensure_secret() {
@@ -48,11 +45,29 @@ ensure_secret() {
   pnpm --dir "$API_DIR" exec wrangler secret put "$name" --env selfhost
 }
 
-info "Required secrets (BETTER_AUTH_SECRET, TOKEN_HASH_SECRET, INTERNAL_API_KEY)"
+info "Required secrets (BETTER_AUTH_SECRET, TOKEN_HASH_SECRET, INTERNAL_API_KEY, MCP_SIGNING_KEY)"
 if [[ "${SEAL_SELFHOST_SKIP_SECRETS:-}" != "1" ]]; then
   for secret in BETTER_AUTH_SECRET TOKEN_HASH_SECRET INTERNAL_API_KEY; do
     ensure_secret "$secret"
   done
+  # Upload tokens need an ES256 JWK; generate one if missing.
+  if ! pnpm --dir "$API_DIR" exec wrangler secret list --env selfhost 2>/dev/null | grep -q '"name": "MCP_SIGNING_KEY"'; then
+    if [[ -n "${MCP_SIGNING_KEY:-}" ]]; then
+      printf '%s' "$MCP_SIGNING_KEY" | pnpm --dir "$API_DIR" exec wrangler secret put MCP_SIGNING_KEY --env selfhost
+    else
+      info "Generating MCP_SIGNING_KEY (ES256 JWK)"
+      pnpm --dir "$API_DIR" exec node --input-type=module -e '
+import { generateKeyPair, exportJWK } from "jose";
+const { privateKey } = await generateKeyPair("ES256", { extractable: true });
+const jwk = await exportJWK(privateKey);
+jwk.alg = "ES256";
+jwk.use = "sig";
+process.stdout.write(JSON.stringify(jwk));
+' | pnpm --dir "$API_DIR" exec wrangler secret put MCP_SIGNING_KEY --env selfhost
+    fi
+  else
+    echo "    MCP_SIGNING_KEY already set"
+  fi
 fi
 
 extract_workers_url() {
@@ -70,7 +85,11 @@ import sys
 from urllib.parse import urlparse
 host = urlparse(sys.argv[1]).hostname or ""
 parts = host.split(".")
-if len(parts) >= 4 and parts[0] == "seal-api":
+# seal-selfhost-api.<account>.workers.dev → seal-selfhost-web.<account>.workers.dev
+if len(parts) >= 4 and parts[0] == "seal-selfhost-api":
+    print("https://seal-selfhost-web." + ".".join(parts[1:]))
+elif len(parts) >= 4 and parts[0] == "seal-api":
+    # legacy name support
     print("https://seal-web." + ".".join(parts[1:]))
 else:
     print("")
