@@ -1,6 +1,6 @@
 ---
 title: MCP Tools Reference
-description: Complete reference for all 57 Seal MCP tools, 6 guided prompts, and knowledge resources
+description: Complete reference for all 59 Seal MCP tools, 6 guided prompts, and knowledge resources
 ---
 
 # MCP Tools Reference
@@ -185,6 +185,33 @@ Get detailed information about a specific document.
 - `include_recipients` (boolean, optional): Include recipient details in response
 
 **Returns:** Document object with optional recipients
+
+### seal_get_interaction
+
+Get the InteractionSession for a document (human handoff). Returns
+`{ id, kind, url, status, message, poll }`. Show or open `url` for the human,
+then poll with `seal_wait_interaction` (or this tool) until `status` is not
+`pending`. Never forge the signature.
+
+**Parameters:**
+
+- `document_id` (string, required): Document ID
+
+**Returns:** InteractionSession JSON
+
+### seal_wait_interaction
+
+Poll InteractionSession until terminal (`completed` / `cancelled` /
+`declined` / `expired`). Prefer `seal_get_interaction` first so the human sees
+the URL and message.
+
+**Parameters:**
+
+- `document_id` (string, required): Document ID
+- `interval_ms` (number, optional): Poll interval (default 2000)
+- `timeout_ms` (number, optional): Max wait (default 900000)
+
+**Returns:** Final InteractionSession JSON (or timeout payload)
 
 ### seal_create_document
 

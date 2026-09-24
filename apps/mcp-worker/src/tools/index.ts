@@ -11,6 +11,7 @@ import { registerFieldTools } from "./fields";
 import { registerDocumentTools } from "./documents";
 import { registerFolderTools } from "./folders";
 import { registerImportTools } from "./imports";
+import { registerInteractionTools } from "./interaction";
 import { registerMemberTools } from "./members";
 import { registerRecipientTools } from "./recipients";
 import { registerSearchTools } from "./search";
@@ -38,6 +39,7 @@ export function registerAllTools(
   registerFieldTools(server, client);
   registerFolderTools(server, client);
   registerImportTools(server, client);
+  registerInteractionTools(server, client);
   registerMemberTools(server, client);
   registerRecipientTools(server, client);
   registerSearchTools(server, client);

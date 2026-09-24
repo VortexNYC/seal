@@ -48,6 +48,8 @@ import {
   suggestionItemSchema,
 } from "../../platform/field-suggestions.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
+import { buildSigningUrl } from "../../platform/email.js";
+import { buildSigningInteraction } from "../../platform/interaction-session.js";
 import { recordUsageEvent } from "../../platform/usage-events.js";
 import { emitWebhookEvent } from "../../platform/webhook-events.js";
 import { sendDocumentForSigning } from "../document-send.js";
@@ -480,6 +482,82 @@ app.get("/get", async (c) => {
   }
 
   return c.json(response);
+});
+
+/**
+ * InteractionSession for document signing (ADR-004 / SEA-61).
+ * Agents open `url` (or show it) and poll this endpoint until status is terminal.
+ */
+app.get("/interaction", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:read")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const id = c.req.query("id");
+  if (!id) {
+    return c.json({ error: "missing_document_id" }, 400);
+  }
+
+  const db = createD1(c.env.D1);
+  const rows = await db
+    .select({
+      id: documents.id,
+      name: documents.name,
+      status: documents.status,
+      deadline: documents.deadline,
+      documentStatus: documents.documentStatus,
+    })
+    .from(documents)
+    .where(
+      and(eq(documents.id, id), eq(documents.organizationId, organizationId))
+    )
+    .limit(1);
+
+  const row = rows[0];
+  if (!row || row.documentStatus === "deleted") {
+    return c.json({ error: "not_found" }, 404);
+  }
+
+  let signingUrl: string | null = null;
+  if (mcpHasScope(mcp, "documents:write")) {
+    const recipientRows = await db
+      .select({
+        signingToken: recipients.signingToken,
+        status: recipients.status,
+        order: recipients.order,
+      })
+      .from(recipients)
+      .where(eq(recipients.documentId, row.id));
+
+    const openRecipient = recipientRows.find(
+      (r) =>
+        r.signingToken &&
+        r.status !== "signed" &&
+        r.status !== "approved" &&
+        r.status !== "declined"
+    );
+    const anyWithToken = recipientRows.find((r) => r.signingToken);
+    const token = openRecipient?.signingToken ?? anyWithToken?.signingToken;
+    if (token) {
+      signingUrl = buildSigningUrl(c.env, token);
+    }
+  }
+
+  const session = buildSigningInteraction({
+    documentId: row.id,
+    documentStatus: row.status,
+    title: row.name,
+    signingUrl,
+    expiresAt: row.deadline ? row.deadline.toISOString() : null,
+  });
+
+  return c.json(session);
 });
 
 app.get("/parsed", async (c) => {

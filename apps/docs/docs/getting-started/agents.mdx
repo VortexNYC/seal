@@ -76,18 +76,19 @@ SEAL_API_KEY=seal_… pnpm run prove:golden-path \
   --app https://seal-selfhost-web.<account>.workers.dev
 ```
 
-### Human handoff (temporary UI)
+### Human handoff (InteractionSession)
 
 When the agent hits “human must act” (sign, approve), it does **not** forge
-the act. Pattern:
+the act. Pattern (ADR-004 / SEA-61):
 
-1. API returns an interaction URL (`signing_url`)
-2. CLI opens it: `seal wait --document <id> --open`
-3. Human does the one job in a minimal page and finishes
-4. CLI polls until terminal status and prints JSON — agent continues
+1. `GET /api/v1/documents/interaction?id=<document_id>` → InteractionSession
+2. Show or open `url` (CLI: `seal wait --document <id> --open`; MCP:
+   `seal_get_interaction` then `seal_wait_interaction`)
+3. Human does the one job on the page (“Sign … then close this tab”)
+4. Poll until `status` is terminal — agent continues with the JSON result
 
-Same shape should apply across Vortex (Veil unlock, Pile approve, Seal sign):
-open URL → one-shot human surface → poll → resume. See SEA-61.
+Same shape should apply across Vortex (Veil unlock, Pile approve): open URL →
+one-shot human surface → poll → resume.
 SDK snippets: `packages/sdk/examples/` (Node send + React embed).
 
 ## What humans do
