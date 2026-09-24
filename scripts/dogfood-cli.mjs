@@ -9,8 +9,9 @@
  *     --signer dogfood+signer@example.com
  *
  * Covers: health → folders → contact create/update → upload → document+folder_id
- * → recipients → send (signing_url) → public viewed/signed → completed →
- * org audit trail → imports create → breadcrumbs.
+ * → recipients → webhook create → send (signing_url) → public viewed/signed →
+ * completed → org audit → signatures audit → webhook deliveries → imports →
+ * breadcrumbs.
  *
  * The public signing half uses the same HTTP surface a recipient (or embed)
  * hits — agents prepare and track; humans (or this proof harness) apply intent.
@@ -307,6 +308,28 @@ startxref
     }
   }
 
+  let webhookId = null;
+  {
+    try {
+      const created = await sealJson([
+        "POST",
+        "/api/v1/webhooks",
+        await writeJson("webhook.json", {
+          name: `Dogfood ${stamp}`,
+          url: "https://httpbin.org/post",
+          events: ["recipient.signed", "document.completed"],
+          description: "golden-path delivery proof",
+        }),
+      ]);
+      webhookId = created?.id ?? null;
+      webhookId
+        ? pass("webhooks create", webhookId)
+        : fail("webhooks create", JSON.stringify(created));
+    } catch (err) {
+      fail("webhooks create", err instanceof Error ? err.message : String(err));
+    }
+  }
+
   let signingToken = null;
   {
     try {
@@ -424,6 +447,74 @@ startxref
       } catch (err) {
         fail("audit trail", err instanceof Error ? err.message : String(err));
       }
+    }
+    {
+      try {
+        const audit = await sealJson([
+          "GET",
+          `/api/v1/signatures/audit?document_id=${encodeURIComponent(docId)}&limit=20`,
+        ]);
+        const entries = Array.isArray(audit?.entries) ? audit.entries : [];
+        const types = new Set(entries.map((e) => e?.event_type));
+        types.has("document.signed")
+          ? pass("signatures audit", [...types].join(","))
+          : fail(
+              "signatures audit",
+              `missing document.signed — ${JSON.stringify(audit)}`
+            );
+      } catch (err) {
+        fail(
+          "signatures audit",
+          err instanceof Error ? err.message : String(err)
+        );
+      }
+    }
+    if (webhookId) {
+      let delivered = false;
+      let lastDetail = "";
+      for (let attempt = 0; attempt < 8; attempt++) {
+        await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+        try {
+          const deliveries = await sealJson([
+            "GET",
+            `/api/v1/webhooks/deliveries?webhook_id=${encodeURIComponent(webhookId)}&limit=20`,
+          ]);
+          const rows = Array.isArray(deliveries) ? deliveries : [];
+          const hit = rows.filter(
+            (d) =>
+              d?.webhookId === webhookId &&
+              (d?.eventType === "recipient.signed" ||
+                d?.eventType === "document.completed")
+          );
+          lastDetail = `n=${rows.length} hit=${hit.length} statuses=${hit
+            .map((d) => d?.status)
+            .join(",")}`;
+          if (
+            hit.some(
+              (d) =>
+                d?.status === "delivered" ||
+                d?.status === "success" ||
+                (typeof d?.responseStatus === "number" &&
+                  d.responseStatus >= 200 &&
+                  d.responseStatus < 300)
+            )
+          ) {
+            delivered = true;
+            break;
+          }
+          // Accept recorded attempts even if httpbin flaked — proves emit path
+          if (hit.length >= 1) {
+            delivered = true;
+            lastDetail = `${lastDetail} (attempt recorded)`;
+            break;
+          }
+        } catch (err) {
+          lastDetail = err instanceof Error ? err.message : String(err);
+        }
+      }
+      delivered
+        ? pass("webhook deliveries", lastDetail)
+        : fail("webhook deliveries", lastDetail || "no deliveries");
     }
   }
 

@@ -14,16 +14,19 @@ way to operate Seal.
 The [API reference](/reference) (`apps/docs/openapi.yaml`) is the source of
 truth for every operational “do or fetch.”
 
-| Surface | Role |
-| ------- | ---- |
-| OpenAPI / HTTP | Contract |
-| [MCP](/mcp) | Tools and prompts over that API |
-| CLI (`seal`) | Thin HTTP client: `seal <METHOD> /api/v1/... [body.json]` or `seal upload ./file.pdf` |
-| SDK (`@vortex-api/seal`) | Typed `paths` / `components` from OpenAPI + signing embed |
+| Surface                  | Role                                                                                  |
+| ------------------------ | ------------------------------------------------------------------------------------- |
+| OpenAPI / HTTP           | Contract                                                                              |
+| [MCP](/mcp)              | Tools and prompts over that API                                                       |
+| CLI (`seal`)             | Thin HTTP client: `seal <METHOD> /api/v1/... [body.json]` or `seal upload ./file.pdf` |
+| SDK (`@vortex-api/seal`) | Typed `paths` / `components` from OpenAPI + signing embed                             |
 
 MCP, CLI, and SDK **must not** invent capabilities that are missing from
 OpenAPI. Spec first, then wrap. After changing `openapi.yaml`, regenerate SDK
 types with `pnpm --filter @vortex-api/seal run generate`.
+
+Machine brief for agents: [`/llms.txt`](https://docs.seal.nyc/llms.txt)
+(also on [seal.nyc/llms.txt](https://seal.nyc/llms.txt)).
 
 ## What agents do
 
@@ -82,12 +85,12 @@ the LLM.
 
 ## Channels
 
-| Channel | Status |
-| ------- | ------ |
-| Cloudflare Email | First-class — most deals flow here |
-| Messaging | Planned — same OpenAPI-first rule |
+| Channel             | Status                             |
+| ------------------- | ---------------------------------- |
+| Cloudflare Email    | First-class — most deals flow here |
+| Messaging           | Planned — same OpenAPI-first rule  |
 | Payments / Terminal | Wait for Vortex payments readiness |
-| Web SPA | Oversight and human decisions |
+| Web SPA             | Oversight and human decisions      |
 
 ## Related
 
