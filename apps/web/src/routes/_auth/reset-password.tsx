@@ -4,6 +4,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
  */
 import { AuthProvider, ResetPasswordForm } from "@vortex-api/better-auth-ui";
 
+import { AUTH_FORM_CARD_CLASS } from "@/lib/auth-form";
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { createPageMeta, pageSEO } from "@/lib/seo";
 
@@ -40,6 +41,7 @@ function ResetPasswordRoute() {
   return (
     <AuthProvider client={client}>
       <ResetPasswordForm
+        className={AUTH_FORM_CARD_CLASS}
         token={token}
         onSuccess={() => {
           window.location.assign("/sign-in");

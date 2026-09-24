@@ -5,6 +5,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AuthProvider, VerifyEmailForm } from "@vortex-api/better-auth-ui";
 
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { AUTH_FORM_CARD_CLASS } from "@/lib/auth-form";
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { createPageMeta, pageSEO } from "@/lib/seo";
 
@@ -42,6 +43,7 @@ function VerifyEmailRoute() {
     <div className="space-y-4">
       <AuthProvider client={client}>
         <VerifyEmailForm
+          className={AUTH_FORM_CARD_CLASS}
           callbackUrl={callbackUrl}
           token={token}
           userEmail={userEmail}
