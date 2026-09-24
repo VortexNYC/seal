@@ -15,8 +15,6 @@ import { containers, email, fonts, surfaces, text } from "../styles.js";
 
 const sealEmailBrand = {
   name: "Seal",
-  logoUrl: "https://app.seal.so/seal-logo-email.png",
-  logoWidth: 36,
   supportEmail: "support@seal.nyc",
   accentColor: email.primary,
   backgroundColor: email.background,

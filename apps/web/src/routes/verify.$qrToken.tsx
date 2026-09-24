@@ -15,6 +15,7 @@ import {
   verifyDocumentByQrToken,
   type VerifyDocumentResult,
 } from "@/lib/api-client";
+import { SealLogo } from "@/components/seal-logo";
 
 export const Route = createFileRoute("/verify/$qrToken")({
   component: VerifyPage,
@@ -38,9 +39,9 @@ function VerifySuccess({ result }: { result: VerifyDocumentResult }) {
   return (
     <div className="bg-background flex min-h-dvh flex-col items-center px-4 py-16">
       <div className="w-full max-w-lg">
-        {/* Logo */}
-        <div className="mb-10 text-center">
-          <span className="text-foreground text-2xl font-bold tracking-tight">
+        <div className="mb-10 flex flex-col items-center gap-3 text-center">
+          <SealLogo size={40} variant="color" />
+          <span className="text-foreground font-serif text-2xl tracking-tight">
             Seal
           </span>
         </div>
@@ -174,8 +175,9 @@ function VerifyFailed() {
   return (
     <div className="bg-background flex min-h-dvh flex-col items-center px-4 py-16">
       <div className="w-full max-w-lg">
-        <div className="mb-10 text-center">
-          <span className="text-foreground text-2xl font-bold tracking-tight">
+        <div className="mb-10 flex flex-col items-center gap-3 text-center">
+          <SealLogo size={40} variant="color" />
+          <span className="text-foreground font-serif text-2xl tracking-tight">
             Seal
           </span>
         </div>
@@ -193,7 +195,7 @@ function VerifyFailed() {
             This verification link is invalid or the document no longer exists.
           </p>
           <a
-            href="https://seal.so"
+            href="https://seal.nyc"
             className="text-muted-foreground hover:text-foreground mt-6 inline-block text-sm underline underline-offset-2"
           >
             Go to Seal

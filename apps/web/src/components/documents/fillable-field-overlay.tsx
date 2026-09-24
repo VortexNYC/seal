@@ -149,7 +149,7 @@ function SealFieldIcon({
       }}
     >
       <img
-        src="/logo/seal-icon-color-no-background.svg"
+        src="/logo/seal-mark.svg"
         alt=""
         aria-hidden="true"
         style={{
