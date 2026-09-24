@@ -7,6 +7,9 @@
 Where deals get done — upload, send, sign, audit, all API-first. Signing is free.
 
 An open-source, agent-native e-signature platform. Built and powered by Vortex.
+**OpenAPI is the contract** (MCP / CLI / SDK follow it). Agents operate the
+sender side; **humans sign**. Details:
+[Agents & who signs](https://docs.seal.nyc/getting-started/agents/).
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/VortexNYC/seal)
 

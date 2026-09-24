@@ -5,7 +5,12 @@ description: Complete reference for all 57 Seal MCP tools, 6 guided prompts, and
 
 # MCP Tools Reference
 
-The Seal MCP server provides 57 tools, 6 pre-built workflow prompts, and a knowledge base of product documentation — giving AI assistants complete, confident access to your Seal account.
+The Seal MCP server exposes tools and prompts over the **OpenAPI contract** —
+agents prepare, send, and track; **humans apply the legal signature**. See
+[Agents & who signs](/getting-started/agents).
+
+The server provides tools, 6 pre-built workflow prompts, and a knowledge base
+of product documentation.
 
 ## Guided Prompts
 
@@ -32,6 +37,7 @@ The MCP server exposes Seal product documentation as readable resources at `seal
 | -------------------------------- | ---------------------------------------------- |
 | `seal://docs`                    | Index of all topics                            |
 | `seal://docs/overview`           | What Seal is and how it works                  |
+| `seal://docs/agent-roles`        | OpenAPI contract; agents operate, humans sign  |
 | `seal://docs/document-states`    | State machine and lifecycle                    |
 | `seal://docs/recipient-roles`    | signer vs approver vs viewer                   |
 | `seal://docs/field-types`        | All field types and properties                 |

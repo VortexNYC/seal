@@ -1,0 +1,82 @@
+---
+title: Agents, OpenAPI, and who signs
+description: OpenAPI is the contract; MCP/CLI/SDK follow; agents operate, humans sign
+---
+
+# Agents, OpenAPI, and who signs
+
+Seal is built so **agents** (Claude, Codex, CLI, MCP) run the work, and humans
+watch, decide, and sign. The web app is an oversight surface — not the primary
+way to operate Seal.
+
+## OpenAPI is the contract
+
+The [API reference](/reference) (`apps/docs/openapi.yaml`) is the source of
+truth for every operational “do or fetch.”
+
+| Surface | Role |
+| ------- | ---- |
+| OpenAPI / HTTP | Contract |
+| [MCP](/mcp) | Tools and prompts over that API |
+| CLI (`seal`) | Thin HTTP client over that API |
+| SDK | Typed client / signing embed over that API |
+
+MCP, CLI, and SDK **must not** invent capabilities that are missing from
+OpenAPI. Spec first, then wrap.
+
+## What agents do
+
+Agents should be able to run the **sender-side** process end-to-end:
+
+1. Upload a PDF and create a document
+2. Place fields / use templates
+3. Add recipients and send
+4. Remind, void, poll status, handle webhooks
+5. Download completed PDFs and read the audit trail
+6. Orchestrate via **email** (primary channel for deals; messaging later)
+
+Use an API key (`Authorization: Bearer seal_…`) or MCP OAuth. See
+[Authentication](/getting-started/authentication) and
+[Quick Start](/getting-started/quick-start).
+
+## What humans do
+
+Humans (or authorized recipients) provide **intent and identity** for the
+legal signature:
+
+- Open the signing link from email (or an embed)
+- Review and sign on `/sign/$token` (or the embed SDK)
+- Make trust decisions the agent surfaces (approve void, unblock identity, etc.)
+
+## Agents do not sign
+
+**AI agents are not signatories.** Seal will not treat a model as the person
+who signed.
+
+- Matches how agent-native e-sign products position themselves: agents prepare,
+  route, and track; humans review and sign.
+- Aligns with **eIDAS** (EU): an electronic signature is created by a
+  **natural person**; organization automation is an electronic **seal**, not
+  “the bot signed.”
+- **ESIGN / UETA** (US) allow electronic agents to help form contracts when
+  acts are attributable to a person or company — that is attribution, not
+  making the model the signer of record.
+
+The public signing path and embed SDK remain the only places a signature is
+applied. Audit trails name the human (or, later, an org seal process) — never
+the LLM.
+
+## Channels
+
+| Channel | Status |
+| ------- | ------ |
+| Cloudflare Email | First-class — most deals flow here |
+| Messaging | Planned — same OpenAPI-first rule |
+| Payments / Terminal | Wait for Vortex payments readiness |
+| Web SPA | Oversight and human decisions |
+
+## Related
+
+- [Production checklist](/getting-started/production)
+- [Self-host](/getting-started/self-host)
+- ADR: `docs/decisions/ADR-003-agent-native-openapi-and-signing.md`
