@@ -40,6 +40,15 @@ Use an API key (`Authorization: Bearer seal_…`) or MCP OAuth. See
 [Authentication](/getting-started/authentication) and
 [Quick Start](/getting-started/quick-start).
 
+CLI golden path (same contract as MCP):
+
+```bash
+SEAL_API_KEY=seal_… node scripts/dogfood-cli.mjs
+# or selfhost:
+SEAL_API_KEY=seal_… node scripts/dogfood-cli.mjs \
+  --api https://seal-selfhost-api.<account>.workers.dev
+```
+
 ## What humans do
 
 Humans (or authorized recipients) provide **intent and identity** for the
