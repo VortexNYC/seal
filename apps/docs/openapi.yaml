@@ -101,6 +101,10 @@ components:
           type: string
           format: uri
           description: Pre-signed URL to download the document PDF
+        folder_id:
+          type: string
+          nullable: true
+          description: Public folder ID this document belongs to, or null if unfiled
         recipients:
           type: array
           items:
@@ -359,6 +363,66 @@ components:
           items: { $ref: "#/components/schemas/Contact" }
         has_more: { type: boolean }
         next_cursor: { type: string }
+
+    Folder:
+      type: object
+      required: [id, name, type, parent_id, visibility, pinned, created_at, updated_at]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        type:
+          type: string
+          enum: [document, template]
+        parent_id:
+          type: string
+          nullable: true
+        visibility:
+          type: string
+          enum: [everyone, members, restricted]
+        pinned: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    ImportJob:
+      type: object
+      required:
+        [
+          id,
+          adapter,
+          status,
+          payload,
+          processed_count,
+          created_by,
+          created_at,
+          updated_at,
+        ]
+      properties:
+        id: { type: string }
+        adapter:
+          type: string
+          enum: [pdf, docusign, pandadoc]
+        status: { type: string }
+        payload: {}
+        processed_count: { type: integer }
+        total_count:
+          type: integer
+          nullable: true
+        cursor:
+          type: string
+          nullable: true
+        error:
+          type: string
+          nullable: true
+        approved_by:
+          type: string
+          nullable: true
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
 
     WebhookStatus:
       type: string
@@ -620,6 +684,10 @@ tags:
     description: Upload PDF files for use with the Documents API
   - name: Contacts
     description: Workspace contact directory for recipients
+  - name: Folders
+    description: Organize documents and templates into folders
+  - name: Imports
+    description: Import jobs from PDF batches or external e-sign providers
   - name: Webhooks
     description: Receive real-time events when document state changes
   - name: Members
@@ -673,6 +741,13 @@ paths:
           schema:
             $ref: "#/components/schemas/DocumentStatus"
           description: Filter documents by status
+        - name: folder_id
+          in: query
+          schema:
+            type: string
+          description: >
+            Filter by folder public ID. Pass an empty string to list unfiled
+            documents only.
       responses:
         "200":
           description: OK
@@ -719,6 +794,10 @@ paths:
                   type: string
                   format: date-time
                   description: Signing deadline — recipients cannot sign after this date
+                folder_id:
+                  type: string
+                  nullable: true
+                  description: Public folder ID to file this document under
             example:
               title: Service Agreement Q1 2026
               storage_id: kg2a7b3c8d9e0f1a2b3c
@@ -798,16 +877,17 @@ paths:
                 deadline:
                   type: string
                   format: date-time
+                folder_id:
+                  type: string
+                  nullable: true
+                  description: Move document into this folder, or null to unfile
       responses:
         "200":
           description: Updated
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
+                $ref: "#/components/schemas/Document"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -2144,6 +2224,304 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+
+  /contacts/update:
+    put:
+      tags: [Contacts]
+      operationId: updateContact
+      summary: Update a contact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string }
+                first_name: { type: string }
+                last_name: { type: string }
+                email: { type: string, format: email }
+                phone: { type: string, nullable: true }
+                company: { type: string, nullable: true }
+                title: { type: string, nullable: true }
+                status: { $ref: "#/components/schemas/ContactStatus" }
+                notes: { type: string, nullable: true }
+                tags:
+                  type: array
+                  items: { type: string }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success]
+                properties:
+                  success: { type: boolean }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Folders
+  # ──────────────────────────────────────────────────────────────────────────
+
+  /folders:
+    get:
+      tags: [Folders]
+      operationId: listFolders
+      summary: List folders
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [document, template]
+            default: document
+        - name: parent_id
+          in: query
+          schema: { type: string }
+          description: Parent folder public ID; omit for root folders
+        - name: flat
+          in: query
+          schema: { type: boolean, default: false }
+          description: When true, return all folders of the type (ignore parent)
+      responses:
+        "200":
+          description: Folders
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [folders]
+                properties:
+                  folders:
+                    type: array
+                    items: { $ref: "#/components/schemas/Folder" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Folders]
+      operationId: createFolder
+      summary: Create a folder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                type:
+                  type: string
+                  enum: [document, template]
+                  default: document
+                parent_id: { type: string }
+                visibility:
+                  type: string
+                  enum: [everyone, members, restricted]
+                  default: everyone
+                pinned: { type: boolean, default: false }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Folder" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /folders/breadcrumbs:
+    get:
+      tags: [Folders]
+      operationId: getFolderBreadcrumbs
+      summary: Folder breadcrumbs
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema: { type: string }
+          description: Folder public ID
+      responses:
+        "200":
+          description: Breadcrumb trail from root to the folder
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [breadcrumbs]
+                properties:
+                  breadcrumbs:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, name]
+                      properties:
+                        id: { type: string }
+                        name: { type: string }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Imports
+  # ──────────────────────────────────────────────────────────────────────────
+
+  /imports:
+    get:
+      tags: [Imports]
+      operationId: listImports
+      summary: List import jobs
+      responses:
+        "200":
+          description: Import jobs
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ImportJob" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Imports]
+      operationId: createImport
+      summary: Create an import job
+      description: >
+        Creates an import job in `pending_approval` status. Call approve to run it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [adapter]
+              properties:
+                adapter:
+                  type: string
+                  enum: [pdf, docusign, pandadoc]
+                payload:
+                  type: object
+                  additionalProperties: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: "#/components/schemas/ImportJob" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /imports/{id}:
+    get:
+      tags: [Imports]
+      operationId: getImport
+      summary: Get an import job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Import job
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: "#/components/schemas/ImportJob" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /imports/{id}/approve:
+    post:
+      tags: [Imports]
+      operationId: approveImport
+      summary: Approve and run an import job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Import result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      publicId: { type: string }
+                      status: { type: string }
+                      processed_count: { type: integer }
+                      total_count: { type: integer, nullable: true }
+                      cursor: { type: string, nullable: true }
+                      error: { type: string, nullable: true }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Already approved or running
+
+  /imports/{id}/resume:
+    post:
+      tags: [Imports]
+      operationId: resumeImport
+      summary: Resume an in-progress import job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Import result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      publicId: { type: string }
+                      status: { type: string }
+                      processed_count: { type: integer }
+                      total_count: { type: integer, nullable: true }
+                      cursor: { type: string, nullable: true }
+                      error: { type: string, nullable: true }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Import not resumable
 
   # ──────────────────────────────────────────────────────────────────────────
   # Webhooks (full)

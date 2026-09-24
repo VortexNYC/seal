@@ -5,6 +5,8 @@ import {
   eq,
   gt,
   gte,
+  inArray,
+  isNull,
   like,
   lt,
   ne,
@@ -18,6 +20,7 @@ import { createD1 } from "../../global/db.js";
 import {
   aiFieldSuggestions,
   documents,
+  folders,
   organization,
   recipients,
   signatureFields,
@@ -81,6 +84,7 @@ type ApiDocument = {
   pages_needing_ocr?: number[];
   parsed_format?: string;
   pdf_type?: string;
+  folder_id?: string | null;
 };
 
 type ApiRecipient = {
@@ -95,6 +99,49 @@ type ApiRecipient = {
   declined_at?: string;
   decline_reason?: string;
 };
+
+async function folderPublicIdMap(
+  db: ReturnType<typeof createD1>,
+  organizationId: string,
+  folderIds: (string | null | undefined)[]
+): Promise<Map<string, string>> {
+  const ids = [
+    ...new Set(
+      folderIds.filter((id): id is string => typeof id === "string" && id.length > 0)
+    ),
+  ];
+  const map = new Map<string, string>();
+  if (ids.length === 0) return map;
+  const rows = await db
+    .select({ id: folders.id, publicId: folders.publicId })
+    .from(folders)
+    .where(
+      and(eq(folders.organizationId, organizationId), inArray(folders.id, ids))
+    );
+  for (const row of rows) {
+    map.set(row.id, row.publicId);
+  }
+  return map;
+}
+
+async function resolveFolderInternalId(
+  db: ReturnType<typeof createD1>,
+  organizationId: string,
+  folderPublicId: string
+): Promise<string | null> {
+  const rows = await db
+    .select({ id: folders.id })
+    .from(folders)
+    .where(
+      and(
+        eq(folders.publicId, folderPublicId),
+        eq(folders.organizationId, organizationId),
+        eq(folders.type, "document")
+      )
+    )
+    .limit(1);
+  return rows[0]?.id ?? null;
+}
 
 function formatDate(value: Date | null | undefined): string | undefined {
   return value ? value.toISOString() : undefined;
@@ -198,7 +245,8 @@ function toApiDocument(
     parsedFormat?: string | null;
     pdfType?: string | null;
   },
-  counts: { total: number; signed: number }
+  counts: { total: number; signed: number },
+  folderPublicId?: string | null
 ): ApiDocument {
   return {
     id: row.id,
@@ -222,6 +270,7 @@ function toApiDocument(
       : {}),
     ...(row.parsedFormat ? { parsed_format: row.parsedFormat } : {}),
     ...(row.pdfType ? { pdf_type: row.pdfType } : {}),
+    ...(folderPublicId !== undefined ? { folder_id: folderPublicId } : {}),
   };
 }
 
@@ -247,6 +296,7 @@ app.get("/", async (c) => {
   const titleSearch = query.title_search;
   const createdAfter = query.created_after;
   const createdBefore = query.created_before;
+  const folderPublicId = query.folder_id;
 
   const db = createD1(c.env.D1);
 
@@ -272,6 +322,19 @@ app.get("/", async (c) => {
     if (!Number.isNaN(before.getTime())) {
       conditions.push(lt(documents.createdAt, before));
     }
+  }
+  if (folderPublicId === "null" || folderPublicId === "") {
+    conditions.push(isNull(documents.folderId));
+  } else if (folderPublicId) {
+    const folderInternalId = await resolveFolderInternalId(
+      db,
+      organizationId,
+      folderPublicId
+    );
+    if (!folderInternalId) {
+      return c.json({ documents: [], has_more: false });
+    }
+    conditions.push(eq(documents.folderId, folderInternalId));
   }
 
   if (cursor) {
@@ -305,6 +368,7 @@ app.get("/", async (c) => {
       updatedAt: documents.updatedAt,
       deadline: documents.deadline,
       storageKey: documents.storageKey,
+      folderId: documents.folderId,
     })
     .from(documents)
     .where(and(...conditions))
@@ -314,10 +378,20 @@ app.get("/", async (c) => {
   const hasMore = rows.length > limit;
   const resultRows = hasMore ? rows.slice(0, limit) : rows;
 
+  const folderMap = await folderPublicIdMap(
+    db,
+    organizationId,
+    resultRows.map((row) => row.folderId)
+  );
+
   const apiDocuments: ApiDocument[] = await Promise.all(
     resultRows.map(async (row) => {
       const counts = await recipientCountsForDocument(db, row.id);
-      return toApiDocument(row, counts);
+      return toApiDocument(
+        row,
+        counts,
+        row.folderId ? (folderMap.get(row.folderId) ?? null) : null
+      );
     })
   );
 
@@ -363,6 +437,7 @@ app.get("/get", async (c) => {
       deadline: documents.deadline,
       storageKey: documents.storageKey,
       documentStatus: documents.documentStatus,
+      folderId: documents.folderId,
     })
     .from(documents)
     .where(
@@ -376,7 +451,12 @@ app.get("/get", async (c) => {
   }
 
   const counts = await recipientCountsForDocument(db, row.id);
-  const response = toApiDocument(row, counts);
+  const folderMap = await folderPublicIdMap(db, organizationId, [row.folderId]);
+  const response = toApiDocument(
+    row,
+    counts,
+    row.folderId ? (folderMap.get(row.folderId) ?? null) : null
+  );
 
   if (includeRecipients) {
     const recipientRows = await db
@@ -483,6 +563,7 @@ const createDocumentSchema = z.object({
   file_type: z.string().optional(),
   page_count: z.number().int().nonnegative().optional(),
   deadline: deadlineSchema.optional(),
+  folder_id: z.string().nullable().optional(),
 });
 
 app.post("/", async (c) => {
@@ -510,6 +591,7 @@ app.post("/", async (c) => {
     file_type,
     page_count,
     deadline,
+    folder_id,
   } = parsed.data;
 
   const object = await c.env.DOCUMENTS_BUCKET.get(storage_id);
@@ -523,6 +605,21 @@ app.post("/", async (c) => {
   const originalContentType =
     object.customMetadata?.originalContentType ?? null;
   const db = createD1(c.env.D1);
+
+  let folderInternalId: string | null = null;
+  let folderPublicId: string | null = null;
+  if (folder_id) {
+    folderInternalId = await resolveFolderInternalId(
+      db,
+      organizationId,
+      folder_id
+    );
+    if (!folderInternalId) {
+      return c.json({ error: "folder_not_found" }, 404);
+    }
+    folderPublicId = folder_id;
+  }
+
   const docId = crypto.randomUUID();
   const inserted = await db
     .insert(documents)
@@ -531,6 +628,7 @@ app.post("/", async (c) => {
       publicId: crypto.randomUUID(),
       organizationId,
       ownerId: mcp.sub,
+      folderId: folderInternalId,
       name: title,
       description,
       status: "draft",
@@ -611,13 +709,14 @@ app.post("/", async (c) => {
     });
   }
 
-  return c.json(toApiDocument(row, { total: 0, signed: 0 }));
+  return c.json(toApiDocument(row, { total: 0, signed: 0 }, folderPublicId));
 });
 
 const updateDocumentSchema = z.object({
   title: z.string().min(1).optional(),
   description: z.string().optional(),
   deadline: deadlineSchema.optional(),
+  folder_id: z.string().nullable().optional(),
 });
 
 async function handleUpdateDocument(
@@ -655,17 +754,34 @@ async function handleUpdateDocument(
     return c.json({ error: "validation_error" }, 400);
   }
 
-  const { title, description, deadline } = parsed.data;
+  const { title, description, deadline, folder_id } = parsed.data;
 
   const db = createD1(c.env.D1);
   const updateValues: {
     name?: string;
     description?: string | null;
     deadline?: Date | null;
+    folderId?: string | null;
   } = {};
   if (title !== undefined) updateValues.name = title;
   if (description !== undefined) updateValues.description = description ?? null;
   if (deadline !== undefined) updateValues.deadline = parseDeadline(deadline);
+  let folderPublicId: string | null | undefined;
+  if (folder_id === null) {
+    updateValues.folderId = null;
+    folderPublicId = null;
+  } else if (folder_id !== undefined) {
+    const folderInternalId = await resolveFolderInternalId(
+      db,
+      organizationId,
+      folder_id
+    );
+    if (!folderInternalId) {
+      return c.json({ error: "folder_not_found" }, 404);
+    }
+    updateValues.folderId = folderInternalId;
+    folderPublicId = folder_id;
+  }
 
   await db
     .update(documents)
@@ -690,6 +806,7 @@ async function handleUpdateDocument(
       deadline: documents.deadline,
       storageKey: documents.storageKey,
       documentStatus: documents.documentStatus,
+      folderId: documents.folderId,
     })
     .from(documents)
     .where(
@@ -719,7 +836,15 @@ async function handleUpdateDocument(
   }
 
   const counts = await recipientCountsForDocument(db, row.id);
-  return c.json(toApiDocument(row, counts));
+  if (folderPublicId === undefined) {
+    const folderMap = await folderPublicIdMap(db, organizationId, [
+      row.folderId,
+    ]);
+    folderPublicId = row.folderId
+      ? (folderMap.get(row.folderId) ?? null)
+      : null;
+  }
+  return c.json(toApiDocument(row, counts, folderPublicId));
 }
 
 app.post("/update", async (c) => handleUpdateDocument(c));

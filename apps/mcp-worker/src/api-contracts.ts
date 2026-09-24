@@ -87,6 +87,12 @@ export const listDocumentsSchema = z.object({
     .describe(
       "Return documents created before this ISO 8601 timestamp (e.g. 2025-12-31T23:59:59Z)"
     ),
+  folder_id: z
+    .string()
+    .optional()
+    .describe(
+      "Filter by folder public ID. Pass empty string for unfiled documents only."
+    ),
 });
 export type ListDocumentsInput = z.infer<typeof listDocumentsSchema>;
 
@@ -117,6 +123,11 @@ export const createDocumentSchema = z.object({
     .string()
     .optional()
     .describe("Signing deadline as ISO 8601 timestamp"),
+  folder_id: z
+    .string()
+    .nullable()
+    .optional()
+    .describe("Public folder ID to file this document under"),
 });
 export type CreateDocumentInput = z.infer<typeof createDocumentSchema>;
 
@@ -129,6 +140,11 @@ export const updateDocumentSchema = z.object({
     .string()
     .optional()
     .describe("New signing deadline as ISO 8601 timestamp"),
+  folder_id: z
+    .string()
+    .nullable()
+    .optional()
+    .describe("Move into this folder, or null to unfile"),
 });
 export type UpdateDocumentInput = z.infer<typeof updateDocumentSchema>;
 
@@ -488,6 +504,7 @@ export interface ApiDocument {
   signed_count: number;
   deadline?: string;
   download_url?: string;
+  folder_id?: string | null;
   recipients?: ApiRecipient[];
 }
 
@@ -856,6 +873,21 @@ export const createContactSchema = z.object({
 });
 export type CreateContactInput = z.infer<typeof createContactSchema>;
 
+/** Schema for updating a contact */
+export const updateContactSchema = z.object({
+  id: z.string().describe("Contact ID"),
+  first_name: z.string().optional().describe("First name"),
+  last_name: z.string().optional().describe("Last name"),
+  email: z.string().email().optional().describe("Email address"),
+  phone: z.string().nullable().optional().describe("Phone number"),
+  company: z.string().nullable().optional().describe("Company or organization"),
+  title: z.string().nullable().optional().describe("Job title"),
+  status: contactStatusSchema.optional().describe("Contact status"),
+  notes: z.string().nullable().optional().describe("Free-form notes"),
+  tags: z.array(z.string()).optional().describe("Tags for categorization"),
+});
+export type UpdateContactInput = z.infer<typeof updateContactSchema>;
+
 /** Schema for deleting a contact */
 export const deleteContactSchema = z.object({
   id: z.string().describe("Contact ID"),
@@ -876,6 +908,93 @@ export interface ApiContact {
   notes?: string;
   tags?: string[];
   last_contacted_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// =============================================================================
+// Folder Schemas
+// =============================================================================
+
+export const listFoldersSchema = z.object({
+  type: z
+    .enum(["document", "template"])
+    .optional()
+    .describe("Folder type (default: document)"),
+  parent_id: z
+    .string()
+    .optional()
+    .describe("Parent folder public ID; omit for root"),
+  flat: z
+    .boolean()
+    .optional()
+    .describe("When true, return all folders of the type"),
+});
+export type ListFoldersInput = z.infer<typeof listFoldersSchema>;
+
+export const createFolderSchema = z.object({
+  name: z.string().describe("Folder name"),
+  type: z
+    .enum(["document", "template"])
+    .optional()
+    .describe("Folder type (default: document)"),
+  parent_id: z.string().optional().describe("Parent folder public ID"),
+  visibility: z
+    .enum(["everyone", "members", "restricted"])
+    .optional()
+    .describe("Folder visibility (default: everyone)"),
+  pinned: z.boolean().optional().describe("Pin folder in the UI"),
+});
+export type CreateFolderInput = z.infer<typeof createFolderSchema>;
+
+export const folderBreadcrumbsSchema = z.object({
+  id: z.string().describe("Folder public ID"),
+});
+export type FolderBreadcrumbsInput = z.infer<typeof folderBreadcrumbsSchema>;
+
+export interface ApiFolder {
+  id: string;
+  name: string;
+  type: "document" | "template";
+  parent_id: string | null;
+  visibility: string;
+  pinned: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// =============================================================================
+// Import Schemas
+// =============================================================================
+
+export const createImportSchema = z.object({
+  adapter: z
+    .enum(["pdf", "docusign", "pandadoc"])
+    .describe("Import adapter to use"),
+  payload: z
+    .record(z.string(), z.unknown())
+    .optional()
+    .describe("Adapter-specific payload"),
+});
+export type CreateImportInput = z.infer<typeof createImportSchema>;
+
+export const importIdSchema = z.object({
+  id: z.string().describe("Import job public ID"),
+});
+export type ImportIdInput = z.infer<typeof importIdSchema>;
+
+export interface ApiImportJob {
+  id: string;
+  adapter: string;
+  status: string;
+  payload: unknown;
+  processed_count: number;
+  total_count: number | null;
+  cursor: string | null;
+  error: string | null;
+  approved_by: string | null;
+  approved_at: string | null;
+  created_by: string;
   created_at: string;
   updated_at: string;
 }

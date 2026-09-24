@@ -290,6 +290,92 @@ app.post("/", async (c) => {
   return c.json({ id: contactId });
 });
 
+const updateContactSchema = z.object({
+  id: z.string().min(1),
+  first_name: z.string().min(1).optional(),
+  last_name: z.string().min(1).optional(),
+  email: z.string().email().optional(),
+  phone: z.string().nullable().optional(),
+  company: z.string().nullable().optional(),
+  title: z.string().nullable().optional(),
+  status: z.enum(["active", "inactive", "lead"]).optional(),
+  notes: z.string().nullable().optional(),
+  tags: z.array(z.string()).optional(),
+});
+
+app.put("/update", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "contacts:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const rawBody: unknown = await c.req.json();
+  const parsed = updateContactSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return c.json({ error: "validation_error" }, 400);
+  }
+
+  const { id, ...patch } = parsed.data;
+  const db = createD1(c.env.D1);
+  const existing = await db
+    .select({
+      id: contacts.id,
+      firstName: contacts.firstName,
+      lastName: contacts.lastName,
+    })
+    .from(contacts)
+    .where(
+      and(eq(contacts.id, id), eq(contacts.organizationId, organizationId))
+    )
+    .limit(1);
+
+  if (!existing[0]) {
+    return c.json({ error: "not_found" }, 404);
+  }
+
+  const firstName = patch.first_name ?? existing[0].firstName;
+  const lastName = patch.last_name ?? existing[0].lastName;
+  const updates: {
+    firstName?: string;
+    lastName?: string;
+    fullName?: string;
+    email?: string;
+    phone?: string | null;
+    company?: string | null;
+    title?: string | null;
+    status?: string;
+    notes?: string | null;
+    tags?: string | null;
+    updatedAt: Date;
+  } = {
+    updatedAt: new Date(),
+    fullName: `${firstName} ${lastName}`,
+  };
+  if (patch.first_name !== undefined) updates.firstName = patch.first_name;
+  if (patch.last_name !== undefined) updates.lastName = patch.last_name;
+  if (patch.email !== undefined) updates.email = patch.email;
+  if (patch.phone !== undefined) updates.phone = patch.phone;
+  if (patch.company !== undefined) updates.company = patch.company;
+  if (patch.title !== undefined) updates.title = patch.title;
+  if (patch.status !== undefined) updates.status = patch.status;
+  if (patch.notes !== undefined) updates.notes = patch.notes;
+  if (patch.tags !== undefined) updates.tags = JSON.stringify(patch.tags);
+
+  await db
+    .update(contacts)
+    .set(updates)
+    .where(
+      and(eq(contacts.id, id), eq(contacts.organizationId, organizationId))
+    );
+
+  return c.json({ success: true });
+});
+
 async function handleDeleteContact(c: {
   get: (key: "mcp") => McpAccessToken;
   json: (body: unknown, status?: number) => Response;

@@ -5,10 +5,24 @@ import { createSealClient, type HttpMethod } from "./index.js";
 const VALID_METHODS: HttpMethod[] = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 
 function printUsage(): never {
-  console.error("Usage: seal <METHOD> <path> [body-file]");
-  console.error("  METHOD: GET, POST, PUT, PATCH, DELETE");
-  console.error("  body-file: JSON file to send as the request body");
-  console.error("Environment: SEAL_API_KEY, SEAL_BASE_URL");
+  console.error(`Usage: seal <METHOD> <path> [body-file]
+
+Thin HTTP client over the Seal OpenAPI contract (api.seal.nyc).
+Authenticate with SEAL_API_KEY. Optional SEAL_BASE_URL (default https://api.seal.nyc).
+
+Paths are relative to the base URL — include /api/v1.
+
+Examples:
+  seal GET  /api/v1/documents
+  seal GET  /api/v1/folders
+  seal POST /api/v1/folders create-folder.json
+  seal PUT  /api/v1/contacts/update update-contact.json
+  seal GET  /api/v1/imports
+  seal POST /api/v1/imports create-import.json
+  seal POST /api/v1/imports/<id>/approve
+
+Body files are JSON. See https://docs.seal.nyc/reference for the full contract.
+`);
   process.exit(1);
   throw new Error("unreachable");
 }
