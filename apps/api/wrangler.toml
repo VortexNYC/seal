@@ -98,17 +98,19 @@ custom_domain = true
 # No Vortex resource IDs. No custom domains. workers.dev only.
 # Optional Email / anydoc / convert bindings are omitted — PDF upload→sign works
 # without them. Add later when you need mail or DOCX conversion.
+# Distinct names so a mistaken deploy on the Vortex account cannot clobber
+# hosted production (seal-api / seal-global / seal-documents).
 [env.selfhost]
-name = "seal-api"
+name = "seal-selfhost-api"
 workers_dev = true
 preview_urls = true
 
 [env.selfhost.vars]
 # Replaced by scripts/selfhost.sh after the first deploy with real *.workers.dev URLs.
-BETTER_AUTH_URL = "https://seal-api.workers.dev"
-ALLOWED_ORIGINS = "https://seal-web.workers.dev"
-EMAIL_FROM = "noreply@example.com"
-APP_URL = "https://seal-web.workers.dev"
+BETTER_AUTH_URL = "https://seal-selfhost-api.workers.dev"
+ALLOWED_ORIGINS = "https://seal-selfhost-web.workers.dev"
+EMAIL_FROM = "noreply@seal.nyc"
+APP_URL = "https://seal-selfhost-web.workers.dev"
 MCP_SIGNING_KEY_ID = "mcp-key-1"
 
 [env.selfhost.observability]
@@ -117,9 +119,16 @@ logs = { enabled = true }
 
 [[env.selfhost.d1_databases]]
 binding = "D1"
-database_name = "seal-documents"
+database_name = "seal-selfhost"
 migrations_dir = "migrations"
 
 [[env.selfhost.r2_buckets]]
 binding = "DOCUMENTS_BUCKET"
-bucket_name = "seal-documents"
+bucket_name = "seal-selfhost-documents"
+
+# Requires the Cloudflare account to have Email Sending enabled for the
+# from-domain (e.g. `wrangler email sending enable yourdomain.com`).
+# Customers: use your own domain here. Vortex dogfood uses seal.nyc.
+[[env.selfhost.send_email]]
+name = "EMAIL"
+allowed_sender_addresses = ["noreply@seal.nyc"]

@@ -8,9 +8,9 @@
  *     --org seal-e2e-b --signer smoke+signer@example.com
  *
  * Covers: health → upload → document → recipient → send → audit.
- * When v1 send issues signing tokens (VOR-212), also covers:
- * public signing fetch → PDF bytes (must be application/pdf, not the
- * app.seal.nyc SPA fallback) → viewed → signed → completed → audit.
+ * Signing URL comes from the send response (recipients[].signing_url).
+ * When present, also covers: public signing fetch → PDF bytes → viewed →
+ * signed → completed → audit.
  *
  * Exit 0 = pass, 1 = failure. SKIP lines are known gaps, not failures.
  */
@@ -168,7 +168,8 @@ async function main() {
       : fail("recipients create", `HTTP ${status} ${JSON.stringify(data)}`);
   }
 
-  // 6. send
+  // 6. send (returns signing_url per recipient — preferred token source)
+  let signingToken;
   {
     const { status, data } = await api(
       `/api/v1/documents/send?id=${encodeURIComponent(docId)}`,
@@ -177,6 +178,18 @@ async function main() {
     status < 300
       ? pass("documents send")
       : fail("documents send", `HTTP ${status} ${JSON.stringify(data)}`);
+    const sentRecipients = pickArray(data?.recipients ?? data);
+    const sent =
+      sentRecipients.find((r) => r?.id === recipientId) ?? sentRecipients[0];
+    if (sent?.signing_url) {
+      const m = /\/sign\/([A-Za-z0-9_-]+)/.exec(String(sent.signing_url));
+      signingToken = m?.[1];
+    }
+    signingToken =
+      signingToken ??
+      sent?.signing_token ??
+      sent?.signingToken ??
+      sent?.sign_token;
   }
 
   // 7. document status
@@ -191,9 +204,8 @@ async function main() {
       : fail("document status", `HTTP ${status} ${JSON.stringify(data)}`);
   }
 
-  // 8. signing token — VOR-212: v1 send currently issues none
-  let signingToken;
-  {
+  // 8. signing token fallback via recipients list (send response is primary)
+  if (!signingToken) {
     const { data } = await api(
       `/api/v1/recipients?document_id=${encodeURIComponent(docId)}`
     );
@@ -203,12 +215,14 @@ async function main() {
       const m = /\/sign\/([A-Za-z0-9_-]+)/.exec(rec.signing_url);
       signingToken = m?.[1];
     }
-    signingToken
-      ? pass("recipient signing token")
-      : skip(
-          "recipient signing token",
-          "VOR-212: v1 send does not issue tokens — signing phase skipped"
-        );
+  }
+  if (signingToken) {
+    pass("recipient signing token");
+  } else {
+    skip(
+      "recipient signing token",
+      "send + recipients list returned no signing_url — signing phase skipped"
+    );
   }
 
   // 9-13. public signing phase (runs automatically once tokens exist)
