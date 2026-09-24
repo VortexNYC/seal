@@ -1,0 +1,77 @@
+---
+title: Production checklist
+description: What production teams need before sending real documents on Seal
+---
+
+# Production checklist
+
+For teams on **seal.nyc** (hosted) or a serious self-host. Agents and humans both
+use this as the “are we ready?” gate.
+
+## Golden path (must work)
+
+1. Create workspace
+2. Create API key (`seal_…`) with document + recipient write scopes
+3. Upload PDF → add recipient → send
+4. Recipient opens signing link → signs
+5. Webhook (or poll) sees `document.completed`
+6. Audit log shows the trail
+
+Hosted smoke (from the repo):
+
+```bash
+SEAL_API_KEY=seal_… node scripts/smoke-prod.mjs
+# self-host:
+SEAL_API_KEY=seal_… node scripts/smoke-prod.mjs --api https://seal-api.<account>.workers.dev
+```
+
+## API keys
+
+- Prefer **least privilege** scopes; rotate by creating a new key and revoking the old
+- Plaintext token is shown **once** at create — store it in your secret manager
+- Revoked keys must fail immediately on the next request
+
+## Webhooks
+
+- Configure an HTTPS endpoint before you send production volume
+- Verify signatures on every delivery ([Webhooks](/docs/webhooks))
+- Treat delivery as at-least-once — make handlers idempotent
+- Alert on sustained delivery failure (check Analytics / webhook status)
+
+## Audit & compliance
+
+- Signing events write an audit trail (view / sign / complete)
+- Export or retain audit according to your policy — do not rely on UI alone for
+  legal hold without verifying retention for your plan
+
+## Email
+
+- Hosted Seal sends from Vortex-managed senders
+- Self-host: you must configure Email Routing / verified `EMAIL_FROM` or invites
+  will not leave the box ([Self-host](/docs/getting-started/self-host#email-required-for-real-invites))
+
+## Auth & sessions
+
+- Enforce 2FA for operators (Profile → Security)
+- Review active sessions after staffing changes
+- Prefer org-scoped API keys over browser sessions for automation
+
+## Money / invoices (if you collect payment on documents)
+
+- Amounts are **integer minor units** — never float math in your integration
+- Prefer Seal’s payment config + Stripe path; do not reimplement fee allocation
+  in the client
+
+## Ops
+
+| Check | Where |
+| ----- | ----- |
+| Status | [seal.nyc/status](https://seal.nyc/status) |
+| API health | `GET https://api.seal.nyc/health` |
+| Docs | [docs.seal.nyc](https://docs.seal.nyc) |
+| MCP | `mcp.seal.nyc` |
+
+## Self-host extras
+
+Follow [Self-host on Cloudflare](/docs/getting-started/self-host) first, then
+this checklist against **your** origins.
