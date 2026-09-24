@@ -668,6 +668,33 @@ app.openapi(submitRouteDef, async (c) => {
       action: "recipient.signed",
       metadata: recipientMeta,
     });
+
+    // Envelope-level typed/drawn sign (no per-field placement) still needs a
+    // signatures row so /api/v1/signatures/audit is not empty for buyers.
+    const existingEnvelope = await db
+      .select({ id: signatures.id })
+      .from(signatures)
+      .where(
+        and(
+          eq(signatures.documentId, doc.id),
+          eq(signatures.recipientId, recipient.id)
+        )
+      )
+      .limit(1);
+    if (!existingEnvelope[0]) {
+      await db.insert(signatures).values({
+        id: crypto.randomUUID(),
+        documentId: doc.id,
+        recipientId: recipient.id,
+        value: input.signatureData,
+        signatureMethod: input.signatureType ?? "type",
+        ipAddress: input.ipAddress,
+        userAgent: input.userAgent,
+        signedAt: nowDate,
+        createdAt: nowDate,
+        updatedAt: nowDate,
+      });
+    }
   } else if (input.status === "declined") {
     await writeAuditLog(db, {
       ...auditBase,

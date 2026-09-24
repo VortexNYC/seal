@@ -1,0 +1,61 @@
+# Seal
+
+> Open-source, agent-native e-signature. Upload, send, sign, audit — API-first. Signing is free.
+
+- Site: https://seal.nyc
+- App: https://app.seal.nyc
+- Docs: https://docs.seal.nyc
+- API: https://api.seal.nyc
+- MCP: https://mcp.seal.nyc
+- Status: https://seal.nyc/status
+- OpenAPI: https://docs.seal.nyc/reference
+- SDK: `npm install @vortex-api/seal`
+- Repo: https://github.com/VortexNYC/seal
+
+## Contract
+
+OpenAPI (`apps/docs/openapi.yaml` / `/reference`) is the source of truth.
+MCP, CLI (`seal`), and `@vortex-api/seal` wrap that contract — they must not invent paths.
+
+## Agent golden path
+
+1. Create API key in app → Developer (`seal_…`)
+2. Upload PDF → create document → add recipient → send
+3. Human opens `signing_url` (or embed) and signs — agents do not sign
+4. Poll document status / webhooks → `document.completed` → audit
+
+Proof from the repo:
+
+```bash
+SEAL_API_KEY=seal_… pnpm run prove:golden-path
+```
+
+## Self-host
+
+```bash
+git clone https://github.com/VortexNYC/seal.git && cd seal
+pnpm install && pnpm exec wrangler login && pnpm selfhost
+```
+
+Cold-account checklist: https://docs.seal.nyc/getting-started/self-host
+
+## Docs map
+
+- [Quick start](https://docs.seal.nyc/getting-started/quick-start)
+- [Agents & who signs](https://docs.seal.nyc/getting-started/agents)
+- [Authentication](https://docs.seal.nyc/getting-started/authentication)
+- [Production checklist](https://docs.seal.nyc/getting-started/production)
+- [Self-host](https://docs.seal.nyc/getting-started/self-host)
+- [MCP tools](https://docs.seal.nyc/mcp/tools)
+- [API reference](https://docs.seal.nyc/reference)
+
+## SDK
+
+- Node send example: `packages/sdk/examples/node-send.mjs`
+- React embed: `packages/sdk/examples/react-embed.tsx` (`@vortex-api/seal/react`)
+
+## Rules for agents
+
+- Prefer API / MCP / CLI over the product UI for sender work
+- Never treat a model as the signatory
+- Do not invent endpoints missing from OpenAPI

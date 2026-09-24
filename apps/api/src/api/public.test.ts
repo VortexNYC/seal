@@ -4,7 +4,12 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import { createD1 } from "../global/db.js";
-import { documents, organization, recipients } from "../global/schema.js";
+import {
+  documents,
+  organization,
+  recipients,
+  signatures,
+} from "../global/schema.js";
 import publicRoute from "./public.js";
 
 function createApp() {
@@ -16,6 +21,7 @@ function createApp() {
 describe("public API", () => {
   beforeEach(async () => {
     const db = createD1(env.D1);
+    await db.delete(signatures);
     await db.delete(recipients);
     await db.delete(documents);
     await db.delete(organization);
@@ -186,5 +192,81 @@ describe("public API", () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toBeNull();
+  });
+
+  it("writes a signatures row on typed envelope submit", async () => {
+    const db = createD1(env.D1);
+
+    await db.insert(organization).values({
+      id: "org_sign",
+      name: "Sign Org",
+      slug: "sign-org",
+    });
+
+    await db.insert(documents).values({
+      id: "doc_sign",
+      publicId: "doc_pub_sign",
+      organizationId: "org_sign",
+      name: "Sign Document",
+      status: "sent",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const token = "sign-token-type";
+    await db.insert(recipients).values({
+      id: "rec_sign",
+      publicId: "rec_pub_sign",
+      documentId: "doc_sign",
+      email: "signer@example.com",
+      name: "Typed Signer",
+      role: "signer",
+      status: "pending",
+      signingToken: token,
+      tokenExpiresAt: new Date(Date.now() + 60_000),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const app = createApp();
+    const viewed = await app.fetch(
+      new Request(`http://localhost:8787/api/public/signing/${token}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "viewed",
+          ipAddress: "203.0.113.10",
+          userAgent: "seal-test/1.0",
+        }),
+      }),
+      env
+    );
+    expect(viewed.status).toBe(200);
+
+    const signed = await app.fetch(
+      new Request(`http://localhost:8787/api/public/signing/${token}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "signed",
+          signatureData: "Typed Signer",
+          signatureType: "type",
+          ipAddress: "203.0.113.10",
+          userAgent: "seal-test/1.0",
+        }),
+      }),
+      env
+    );
+    expect(signed.status).toBe(200);
+    expect(await signed.json()).toEqual({ success: true });
+
+    const rows = await db.select().from(signatures);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.documentId).toBe("doc_sign");
+    expect(rows[0]?.recipientId).toBe("rec_sign");
+    expect(rows[0]?.value).toBe("Typed Signer");
+    expect(rows[0]?.signatureMethod).toBe("type");
   });
 });

@@ -2703,6 +2703,44 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /webhooks/deliveries:
+    get:
+      tags: [Webhooks]
+      operationId: listWebhookDeliveries
+      summary: List recent webhook delivery attempts
+      parameters:
+        - name: webhook_id
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+        - name: offset
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        "200":
+          description: Delivery attempts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string }
+                    webhookId: { type: string }
+                    eventType: { type: string }
+                    status: { type: string }
+                    responseStatus: { type: integer, nullable: true }
+                    deliveredAt: { type: string, format: date-time, nullable: true }
+                    createdAt: { type: string, format: date-time }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
   # ──────────────────────────────────────────────────────────────────────────
   # Members
   # ──────────────────────────────────────────────────────────────────────────
