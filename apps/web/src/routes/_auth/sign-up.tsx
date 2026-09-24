@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AuthProvider, SignUpForm } from "@vortex-api/better-auth-ui";
 
+import { AUTH_FORM_CARD_CLASS } from "@/lib/auth-form";
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { createPageMeta, pageSEO } from "@/lib/seo";
 
@@ -40,7 +41,12 @@ function RouteComponent() {
 
   return (
     <AuthProvider client={client}>
-      <SignUpForm redirectTo={redirectTo} signInUrl="/sign-in" providers={[]} />
+      <SignUpForm
+        className={AUTH_FORM_CARD_CLASS}
+        redirectTo={redirectTo}
+        signInUrl="/sign-in"
+        providers={[]}
+      />
     </AuthProvider>
   );
 }

@@ -4,6 +4,7 @@ import {
   AuthProvider,
 } from "@vortex-api/better-auth-ui";
 
+import { AUTH_FORM_CARD_CLASS } from "@/lib/auth-form";
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 
 export const Route = createFileRoute("/_auth/accept-invite")({
@@ -25,6 +26,7 @@ function AcceptInviteRoute() {
   return (
     <AuthProvider client={client}>
       <AcceptInviteScreen
+        className={AUTH_FORM_CARD_CLASS}
         token={token}
         onSuccess={() => {
           void navigate({ to: "/app", replace: true });

@@ -95,6 +95,17 @@
   }
 }
 
+/*
+ * Auth shell — Kumo AuthSubmitButton is already variant=primary, but if
+ * --color-kumo-brand is missing the CTA reads as a hollow outline. Pin
+ * submit to Seal primary so sign-in always shows a filled taupe button.
+ */
+[data-auth-shell] button[type="submit"] {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  border-color: transparent;
+}
+
 /* Scrollbar */
 @layer base {
   * {
