@@ -66,6 +66,13 @@ API:  https://seal-api.<account>.workers.dev
 SEAL_API_KEY=seal_… node scripts/smoke-prod.mjs --api https://seal-api.<account>.workers.dev
 ```
 
+Or the agent CLI golden path (folders, contact update, `seal upload`, imports):
+
+```bash
+SEAL_API_KEY=seal_… node scripts/dogfood-cli.mjs \
+  --api https://seal-selfhost-api.<account>.workers.dev
+```
+
 4. Send a PDF from the UI or follow [Quick Start](/docs/getting-started/quick-start) with your API base URL
 
 ## Email (required for real invites)
