@@ -13,6 +13,8 @@ import {
   getContactSchema,
   type ListContactsInput,
   listContactsSchema,
+  type UpdateContactInput,
+  updateContactSchema,
 } from "../api-contracts";
 import type { SealApiClient } from "../client";
 import { getAuthToken } from "../utils/auth";
@@ -105,6 +107,32 @@ export function registerContactTools(
           notes,
           tags,
         },
+        undefined,
+        authToken
+      );
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(response, null, 2),
+          },
+        ],
+      };
+    }
+  );
+
+  // Update contact
+  server.tool(
+    "seal_update_contact",
+    "Update an existing contact. Pass the contact id and any fields to change. Null clears optional fields like phone, company, title, and notes.",
+    updateContactSchema.shape,
+    async (args, extra) => {
+      const body = args as UpdateContactInput;
+      const authToken = getAuthToken(extra);
+      const response = await client.put<{ success: boolean }>(
+        "/contacts/update",
+        body,
         undefined,
         authToken
       );

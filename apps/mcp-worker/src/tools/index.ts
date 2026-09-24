@@ -9,6 +9,8 @@ import { registerDocumentAgentTools } from "./document_agent";
 import { registerDocumentExtraTools } from "./document_extra";
 import { registerFieldTools } from "./fields";
 import { registerDocumentTools } from "./documents";
+import { registerFolderTools } from "./folders";
+import { registerImportTools } from "./imports";
 import { registerMemberTools } from "./members";
 import { registerRecipientTools } from "./recipients";
 import { registerSearchTools } from "./search";
@@ -34,6 +36,8 @@ export function registerAllTools(
   registerDocumentExtraTools(server, client);
   registerDocumentAgentTools(server, client);
   registerFieldTools(server, client);
+  registerFolderTools(server, client);
+  registerImportTools(server, client);
   registerMemberTools(server, client);
   registerRecipientTools(server, client);
   registerSearchTools(server, client);

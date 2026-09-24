@@ -202,4 +202,71 @@ describe("GET /api/v1/contacts", () => {
       status: "lead",
     });
   });
+
+  it("updates a contact", async () => {
+    const privateJwk = await configureSigningKey();
+    const { userId, orgId, db } = await seedOrgAndUser();
+
+    const contactId = crypto.randomUUID();
+    await db.insert(contacts).values({
+      id: contactId,
+      publicId: crypto.randomUUID(),
+      organizationId: orgId,
+      firstName: "Ada",
+      lastName: "Lovelace",
+      fullName: "Ada Lovelace",
+      email: "ada@example.com",
+      status: "active",
+      createdBy: userId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const token = await signAccessToken(privateJwk, {
+      sub: userId,
+      organizationId: orgId,
+      scope: "mcp contacts:write",
+      clientId: crypto.randomUUID(),
+      jti: crypto.randomUUID(),
+    });
+
+    const response = await indexApp.fetch(
+      new Request("http://localhost:8787/api/v1/contacts/update", {
+        method: "PUT",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          id: contactId,
+          company: "Analytical Engines",
+          status: "inactive",
+        }),
+      }),
+      env
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ success: true });
+
+    const getToken = await signAccessToken(privateJwk, {
+      sub: userId,
+      organizationId: orgId,
+      scope: "mcp contacts:read",
+      clientId: crypto.randomUUID(),
+      jti: crypto.randomUUID(),
+    });
+
+    const getResponse = await indexApp.fetch(
+      new Request(`http://localhost:8787/api/v1/contacts/get?id=${contactId}`, {
+        headers: { authorization: `Bearer ${getToken}` },
+      }),
+      env
+    );
+    const body = getResponseSchema
+      .extend({ company: z.string().optional() })
+      .parse(await getResponse.json());
+    expect(body.company).toBe("Analytical Engines");
+    expect(body.status).toBe("inactive");
+  });
 });

@@ -52,11 +52,20 @@ function registerListDocumentsTool(
         title_search,
         created_after,
         created_before,
+        folder_id,
       } = args as ListDocumentsInput;
       const authToken = getAuthToken(extra);
       const response = await client.get<PaginatedResponse<ApiDocument>>(
         "/documents",
-        { limit, cursor, status, title_search, created_after, created_before },
+        {
+          limit,
+          cursor,
+          status,
+          title_search,
+          created_after,
+          created_before,
+          folder_id,
+        },
         authToken
       );
 
@@ -104,6 +113,7 @@ function registerCreateDocumentTool(
         file_type,
         page_count,
         deadline,
+        folder_id,
       } = args as CreateDocumentInput;
       const authToken = getAuthToken(extra);
       const response = await client.post<{ id: string }>(
@@ -116,6 +126,7 @@ function registerCreateDocumentTool(
           file_type,
           page_count,
           deadline: deadline ? new Date(deadline).getTime() : undefined,
+          folder_id,
         },
         undefined,
         authToken
@@ -135,7 +146,8 @@ function registerUpdateDocumentTool(
     "Update document metadata. Only works for documents in draft status.",
     updateDocumentSchema.shape,
     async (args, extra) => {
-      const { id, title, description, deadline } = args as UpdateDocumentInput;
+      const { id, title, description, deadline, folder_id } =
+        args as UpdateDocumentInput;
       const authToken = getAuthToken(extra);
       const response = await client.put<{ success: boolean }>(
         "/documents/update",
@@ -143,6 +155,7 @@ function registerUpdateDocumentTool(
           title,
           description,
           deadline: deadline ? new Date(deadline).getTime() : undefined,
+          folder_id,
         },
         { id },
         authToken
