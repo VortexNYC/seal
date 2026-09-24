@@ -193,7 +193,7 @@ overrides:
   adm-zip: '>=0.6.1'
   '@tanstack/router-core': 1.171.16
   '@tanstack/react-router@1.163.2>@tanstack/router-core': 1.163.2
-  '@modelcontextprotocol/sdk': 1.30.0
+  '@modelcontextprotocol/sdk': 1.30.1
 
 importers:
 
@@ -357,7 +357,7 @@ importers:
     dependencies:
       blume:
         specifier: ^1.7.0
-        version: 1.7.0(325257b267b9666d899e721d51ab8d9c)
+        version: 1.7.0(05e7d9642a6c0e40c24d111f1d37a742)
     devDependencies:
       wrangler:
         specifier: ^4.133.0
@@ -366,11 +366,11 @@ importers:
   apps/mcp-worker:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: 1.30.0
-        version: 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.5)
+        specifier: 1.30.1
+        version: 1.30.1(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.5)
       agents:
         specifier: ^0.23.0
-        version: 0.23.0(@ai-sdk/react@4.0.100(react@19.3.0)(zod@4.6.5))(@babel/core@8.0.5)(@babel/plugin-transform-runtime@7.29.7(@babel/core@8.0.5)(supports-color@10.2.2))(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.0.0)(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.5))(@modelcontextprotocol/server@2.0.0)(ai@7.0.102(zod@4.6.5))(react@19.3.0)(rolldown@1.2.8)(vite@8.3.0(@types/node@22.20.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1))(zod@4.6.5)
+        version: 0.23.0(@ai-sdk/react@4.0.100(react@19.3.0)(zod@4.6.5))(@babel/core@8.0.5)(@babel/plugin-transform-runtime@7.29.7(@babel/core@8.0.5)(supports-color@10.2.2))(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.0.0)(@modelcontextprotocol/sdk@1.30.1(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.5))(@modelcontextprotocol/server@2.0.0)(ai@7.0.102(zod@4.6.5))(react@19.3.0)(rolldown@1.2.8)(vite@8.3.0(@types/node@22.20.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1))(zod@4.6.5)
       zod:
         specifier: ^4.6.5
         version: 4.6.5
@@ -3562,8 +3562,8 @@ packages:
     resolution: {integrity: sha512-pJCEwGG7Lfr/+PQp9ZTwKXNeO5wzbfKL7H3MYpCorM4oFBoQrdjnBgEoqG+RjhsvS1FKrDbKux+M1HhlnGWqcA==}
     engines: {node: '>=20'}
 
-  '@modelcontextprotocol/sdk@1.30.0':
-    resolution: {integrity: sha512-xKd8OIzlqNzcqcNumGAa6g+PW2kjD5vrpcKOnfldAUPP3j7lnqMPwlTXQm8gF+UwH72z0lqaRbjr9hqGz0eITA==}
+  '@modelcontextprotocol/sdk@1.30.1':
+    resolution: {integrity: sha512-H2HxLvC3HDNybePJaLdSrU1hhUK5iQw+WvV1b01myFyI7sdVGe1u/IPTE5D9fGCiJDVtgMV/lmFkQXLmQyIFYA==}
     engines: {node: '>=18'}
     peerDependencies:
       '@cfworker/json-schema': ^4.1.1
@@ -7161,7 +7161,7 @@ packages:
       '@ai-sdk/react': ^3.0.0 || ^4.0.0
       '@cloudflare/codemode': '>=0.5.0'
       '@modelcontextprotocol/client': 2.0.0
-      '@modelcontextprotocol/sdk': 1.30.0
+      '@modelcontextprotocol/sdk': 1.30.1
       '@modelcontextprotocol/server': 2.0.0
       '@tanstack/ai': '>=0.10.2 <1.0.0'
       '@x402/core': ^2.0.0
@@ -12862,10 +12862,10 @@ snapshots:
 
   '@astrojs/underscore-redirects@1.0.4': {}
 
-  '@astrojs/vercel@11.0.10(astro@7.3.2(@azure/identity@4.13.1(supports-color@10.2.2))(@azure/storage-blob@12.33.0(supports-color@10.2.2))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(@types/node@26.1.1)(@vercel/functions@3.9.7(ws@8.21.3))(aws4fetch@1.0.20)(db0@0.3.4(@libsql/client@0.17.4)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260916.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.5)(pg@8.22.0)))(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1))(react@19.3.0)(rollup@4.63.3)(supports-color@10.2.2)(ws@8.21.3)':
+  '@astrojs/vercel@11.0.10(astro@7.3.2(@azure/identity@4.13.1(supports-color@10.2.2))(@azure/storage-blob@12.33.0(supports-color@10.2.2))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(@types/node@26.1.1)(@vercel/functions@3.9.7(ws@8.21.3))(aws4fetch@1.0.20)(db0@0.3.4(@libsql/client@0.17.4)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260916.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.5)(pg@8.22.0)))(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1))(react@19.3.0)(rollup@4.63.3)(supports-color@10.2.2)(svelte@5.57.1(@typescript-eslint/types@8.70.0))(vue@3.5.43(typescript@6.0.3))(ws@8.21.3)':
     dependencies:
       '@astrojs/internal-helpers': 0.11.0
-      '@vercel/analytics': 2.0.1(react@19.3.0)
+      '@vercel/analytics': 2.0.1(react@19.3.0)(svelte@5.57.1(@typescript-eslint/types@8.70.0))(vue@3.5.43(typescript@6.0.3))
       '@vercel/functions': 3.9.7(ws@8.21.3)
       '@vercel/nft': 1.11.0(rollup@4.63.3)(supports-color@10.2.2)
       '@vercel/routing-utils': 6.6.0
@@ -15425,7 +15425,7 @@ snapshots:
     dependencies:
       zod: 4.6.5
 
-  '@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.5.4)':
+  '@modelcontextprotocol/sdk@1.30.1(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.5.4)':
     dependencies:
       '@hono/node-server': 2.1.1(hono@4.13.8)
       ajv: 8.20.0
@@ -15449,7 +15449,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.5)':
+  '@modelcontextprotocol/sdk@1.30.1(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.5)':
     dependencies:
       '@hono/node-server': 2.1.1(hono@4.13.8)
       ajv: 8.20.0
@@ -18486,9 +18486,11 @@ snapshots:
       d3-selection: 3.0.0
       d3-transition: 3.0.1(d3-selection@3.0.0)
 
-  '@vercel/analytics@2.0.1(react@19.3.0)':
+  '@vercel/analytics@2.0.1(react@19.3.0)(svelte@5.57.1(@typescript-eslint/types@8.70.0))(vue@3.5.43(typescript@6.0.3))':
     optionalDependencies:
       react: 19.3.0
+      svelte: 5.57.1(@typescript-eslint/types@8.70.0)
+      vue: 3.5.43(typescript@6.0.3)
 
   '@vercel/cli-config@0.2.6':
     dependencies:
@@ -19012,12 +19014,12 @@ snapshots:
       prompts: 2.4.2
       yaml: 2.9.1
 
-  agents@0.23.0(@ai-sdk/react@4.0.100(react@19.3.0)(zod@4.6.5))(@babel/core@8.0.5)(@babel/plugin-transform-runtime@7.29.7(@babel/core@8.0.5)(supports-color@10.2.2))(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.0.0)(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.5))(@modelcontextprotocol/server@2.0.0)(ai@7.0.102(zod@4.6.5))(react@19.3.0)(rolldown@1.2.8)(vite@8.3.0(@types/node@22.20.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1))(zod@4.6.5):
+  agents@0.23.0(@ai-sdk/react@4.0.100(react@19.3.0)(zod@4.6.5))(@babel/core@8.0.5)(@babel/plugin-transform-runtime@7.29.7(@babel/core@8.0.5)(supports-color@10.2.2))(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.0.0)(@modelcontextprotocol/sdk@1.30.1(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.5))(@modelcontextprotocol/server@2.0.0)(ai@7.0.102(zod@4.6.5))(react@19.3.0)(rolldown@1.2.8)(vite@8.3.0(@types/node@22.20.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1))(zod@4.6.5):
     dependencies:
       '@babel/plugin-proposal-decorators': 8.0.2(@babel/core@8.0.5)
       '@cfworker/json-schema': 4.1.1
       '@modelcontextprotocol/client': 2.0.0
-      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.5)
+      '@modelcontextprotocol/sdk': 1.30.1(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.5)
       '@modelcontextprotocol/server': 2.0.0
       '@rolldown/plugin-babel': 0.2.4(@babel/core@8.0.5)(@babel/plugin-transform-runtime@7.29.7(@babel/core@8.0.5)(supports-color@10.2.2))(@babel/runtime@7.29.7)(rolldown@1.2.8)(vite@8.3.0(@types/node@22.20.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1))
       capnweb: 0.12.0
@@ -19529,20 +19531,20 @@ snapshots:
 
   bluebird@3.4.7: {}
 
-  blume@1.7.0(325257b267b9666d899e721d51ab8d9c):
+  blume@1.7.0(05e7d9642a6c0e40c24d111f1d37a742):
     dependencies:
       '@astrojs/check': 0.9.10(prettier@3.9.6)(typescript@6.0.3)
       '@astrojs/markdown-satteri': 0.4.1
       '@astrojs/mdx': 8.0.1(@astrojs/markdown-satteri@0.4.1)(astro@7.3.2(@azure/identity@4.13.1(supports-color@10.2.2))(@azure/storage-blob@12.33.0(supports-color@10.2.2))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(@types/node@26.1.1)(@vercel/functions@3.9.7(ws@8.21.3))(aws4fetch@1.0.20)(db0@0.3.4(@libsql/client@0.17.4)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260916.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.5)(pg@8.22.0)))(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1))
       '@astrojs/node': 11.1.5(astro@7.3.2(@azure/identity@4.13.1(supports-color@10.2.2))(@azure/storage-blob@12.33.0(supports-color@10.2.2))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(@types/node@26.1.1)(@vercel/functions@3.9.7(ws@8.21.3))(aws4fetch@1.0.20)(db0@0.3.4(@libsql/client@0.17.4)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260916.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.5)(pg@8.22.0)))(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1))(supports-color@10.2.2)
       '@astrojs/react': 6.0.5(@types/node@26.1.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(esbuild@0.28.2)(jiti@2.7.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@10.2.2)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1)
-      '@astrojs/vercel': 11.0.10(astro@7.3.2(@azure/identity@4.13.1(supports-color@10.2.2))(@azure/storage-blob@12.33.0(supports-color@10.2.2))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(@types/node@26.1.1)(@vercel/functions@3.9.7(ws@8.21.3))(aws4fetch@1.0.20)(db0@0.3.4(@libsql/client@0.17.4)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260916.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.5)(pg@8.22.0)))(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1))(react@19.3.0)(rollup@4.63.3)(supports-color@10.2.2)(ws@8.21.3)
+      '@astrojs/vercel': 11.0.10(astro@7.3.2(@azure/identity@4.13.1(supports-color@10.2.2))(@azure/storage-blob@12.33.0(supports-color@10.2.2))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(@types/node@26.1.1)(@vercel/functions@3.9.7(ws@8.21.3))(aws4fetch@1.0.20)(db0@0.3.4(@libsql/client@0.17.4)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260916.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.5)(pg@8.22.0)))(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1))(react@19.3.0)(rollup@4.63.3)(supports-color@10.2.2)(svelte@5.57.1(@typescript-eslint/types@8.70.0))(vue@3.5.43(typescript@6.0.3))(ws@8.21.3)
       '@asyncapi/converter': 2.0.2
       '@clack/prompts': 1.8.1
       '@iconify-json/lucide': 1.2.132
       '@iconify/types': 2.0.0
       '@iconify/utils': 3.1.7
-      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.5)
+      '@modelcontextprotocol/sdk': 1.30.1(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.6.5)
       '@orama/orama': 3.1.18
       '@pierre/diffs': 1.4.2(@shikijs/themes@4.4.3)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@scalar/astro': 0.4.18(astro@7.3.2(@azure/identity@4.13.1(supports-color@10.2.2))(@azure/storage-blob@12.33.0(supports-color@10.2.2))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(@types/node@26.1.1)(@vercel/functions@3.9.7(ws@8.21.3))(aws4fetch@1.0.20)(db0@0.3.4(@libsql/client@0.17.4)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260916.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.5)(pg@8.22.0)))(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1))
@@ -19553,7 +19555,7 @@ snapshots:
       '@tailwindcss/typography': 0.5.20(tailwindcss@4.3.3)
       '@tailwindcss/vite': 4.3.3(vite@8.3.0(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1))
       '@types/mdast': 4.0.4
-      '@vercel/analytics': 2.0.1(react@19.3.0)
+      '@vercel/analytics': 2.0.1(react@19.3.0)(svelte@5.57.1(@typescript-eslint/types@8.70.0))(vue@3.5.43(typescript@6.0.3))
       ai: 7.0.102(zod@4.6.5)
       astro: 7.3.2(@azure/identity@4.13.1(supports-color@10.2.2))(@azure/storage-blob@12.33.0(supports-color@10.2.2))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(@types/node@26.1.1)(@vercel/functions@3.9.7(ws@8.21.3))(aws4fetch@1.0.20)(db0@0.3.4(@libsql/client@0.17.4)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260916.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.5)(pg@8.22.0)))(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1)
       babel-plugin-react-compiler: 1.0.0
@@ -19720,7 +19722,7 @@ snapshots:
 
   buffer-image-size@0.6.4:
     dependencies:
-      '@types/node': 22.20.3
+      '@types/node': 25.9.7
 
   bundle-name@4.1.0:
     dependencies:
@@ -20464,7 +20466,7 @@ snapshots:
       '@emdash-cms/registry-lexicons': 0.5.0
       '@emdash-cms/registry-verification': 0.3.1
       '@floating-ui/react': 0.27.20(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@modelcontextprotocol/sdk': 1.30.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.5.4)
+      '@modelcontextprotocol/sdk': 1.30.1(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.5.4)
       '@oslojs/crypto': 1.0.1
       '@oslojs/encoding': 1.1.0
       '@portabletext/toolkit': 5.0.2
@@ -21281,7 +21283,7 @@ snapshots:
 
   happy-dom@20.14.5:
     dependencies:
-      '@types/node': 22.20.3
+      '@types/node': 25.9.7
       '@types/whatwg-mimetype': 3.0.2
       '@types/ws': 8.18.1
       buffer-image-size: 0.6.4
@@ -25140,6 +25142,17 @@ snapshots:
   vscode-nls@5.2.0: {}
 
   vscode-uri@3.2.0: {}
+
+  vue@3.5.43(typescript@6.0.3):
+    dependencies:
+      '@vue/compiler-dom': 3.5.43
+      '@vue/compiler-sfc': 3.5.43
+      '@vue/runtime-dom': 3.5.43
+      '@vue/server-renderer': 3.5.43
+      '@vue/shared': 3.5.43
+    optionalDependencies:
+      typescript: 6.0.3
+    optional: true
 
   vue@3.5.43(typescript@7.0.2):
     dependencies:
