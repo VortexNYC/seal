@@ -44,7 +44,8 @@ PY
 }
 
 API_OUT="$(mktemp)"
-trap 'rm -f "$API_OUT"' EXIT
+HEALTH_JSON="$(mktemp)"
+trap 'rm -f "$API_OUT" "$HEALTH_JSON"' EXIT
 
 info "Apply D1 migrations (binding D1)"
 pnpm --dir "$API_DIR" exec wrangler d1 migrations apply D1 --remote --env selfhost
@@ -67,6 +68,19 @@ pnpm --dir "$API_DIR" exec wrangler deploy --env selfhost \
   --var "BETTER_AUTH_URL:${API_URL}" \
   --var "APP_URL:${WEB_URL}" \
   --var "ALLOWED_ORIGINS:${WEB_URL}"
+
+info "Verify /health rejects placeholder APP_URL"
+# CF edge can lag a second behind version activation
+for _ in 1 2 3 4 5; do
+  code="$(curl -sS -o "$HEALTH_JSON" -w "%{http_code}" "$API_URL/health" || true)"
+  if [[ "$code" == "200" ]]; then
+    break
+  fi
+  sleep 2
+done
+if [[ "${code:-}" != "200" ]]; then
+  die "/health returned HTTP ${code:-err} after deploy (body=$(head -c 240 "$HEALTH_JSON")). APP_URL vars likely did not stick — redeploy with --var or set SEAL_API_URL/SEAL_WEB_URL."
+fi
 
 echo
 echo "Selfhost API ready:"
