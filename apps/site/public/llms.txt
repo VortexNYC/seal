@@ -20,9 +20,12 @@ MCP, CLI (`seal`), and `@vortex-api/seal` wrap that contract — they must not i
 ## Agent golden path
 
 1. Create API key in app → Developer (`seal_…`)
-2. Upload PDF → create document → add recipient → send
+2. Upload PDF → create document → place fields (optional `binding_key`) → `POST /documents/apply-bindings` → add recipient → send
 3. Human opens `signing_url` (or embed) and signs — agents do not sign
 4. Poll document status / webhooks → `document.completed` → audit
+
+Prefer `binding_key` + apply-bindings over OCR reconstruction for deal data
+(GitHub #604 Seal-side; Payments sync = SEA-43).
 
 Proof from the repo:
 
