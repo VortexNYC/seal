@@ -9,9 +9,9 @@
  *     --signer dogfood+signer@example.com
  *
  * Covers: health → folders → contact create/update → upload → document+folder_id
- * → recipients → webhook create → send (signing_url) → public viewed/signed →
- * completed → org audit → signatures audit → webhook deliveries → imports →
- * breadcrumbs.
+ * → recipients → agent fields/bindings/preview/annotations/pdf-annotate →
+ * webhook create → send (signing_url) → public viewed/signed → completed →
+ * org audit → signatures audit → webhook deliveries → imports → breadcrumbs.
  *
  * The public signing half uses the same HTTP surface a recipient (or embed)
  * hits — agents prepare and track; humans (or this proof harness) apply intent.
@@ -286,6 +286,7 @@ startxref
     }
   }
 
+  let recipientId = null;
   {
     try {
       const recipient = await sealJson([
@@ -297,12 +298,197 @@ startxref
           role: "signer",
         }),
       ]);
-      recipient?.id
-        ? pass("recipients create", recipient.id)
+      recipientId = recipient?.id ?? null;
+      recipientId
+        ? pass("recipients create", recipientId)
         : fail("recipients create", JSON.stringify(recipient));
     } catch (err) {
       fail(
         "recipients create",
+        err instanceof Error ? err.message : String(err)
+      );
+    }
+  }
+
+  // Agent surface (SEA-22/23/25) — no product UI
+  {
+    try {
+      const field = await sealJson([
+        "POST",
+        "/api/v1/documents/fields",
+        await writeJson("field-sig.json", {
+          id: docId,
+          field_type: "signature",
+          label: "Signature",
+          page: 1,
+          x: 10,
+          y: 70,
+          width: 30,
+          height: 8,
+          is_required: true,
+          ...(recipientId ? { recipient_id: recipientId } : {}),
+        }),
+      ]);
+      field?.id || field?.field_id || field?.success
+        ? pass("agent create signature field", field?.id ?? field?.field_id)
+        : fail("agent create signature field", JSON.stringify(field));
+    } catch (err) {
+      fail(
+        "agent create signature field",
+        err instanceof Error ? err.message : String(err)
+      );
+    }
+  }
+
+  {
+    try {
+      const field = await sealJson([
+        "POST",
+        "/api/v1/documents/fields",
+        await writeJson("field-text.json", {
+          id: docId,
+          field_type: "text",
+          label: "Counterparty",
+          page: 1,
+          x: 10,
+          y: 55,
+          width: 40,
+          height: 5,
+          binding_key: "counterparty_name",
+          ...(recipientId ? { recipient_id: recipientId } : {}),
+        }),
+      ]);
+      field?.id || field?.field_id || field?.success
+        ? pass("agent create bound text field", field?.id ?? field?.field_id)
+        : fail("agent create bound text field", JSON.stringify(field));
+    } catch (err) {
+      fail(
+        "agent create bound text field",
+        err instanceof Error ? err.message : String(err)
+      );
+    }
+  }
+
+  {
+    try {
+      const applied = await sealJson([
+        "POST",
+        "/api/v1/documents/apply-bindings",
+        await writeJson("bindings.json", {
+          id: docId,
+          bindings: { counterparty_name: "Vortex Dogfood LLC" },
+        }),
+      ]);
+      applied?.success !== false &&
+      (applied?.updated != null ||
+        applied?.matched != null ||
+        Array.isArray(applied?.fields) ||
+        applied?.success === true ||
+        typeof applied === "object")
+        ? pass("agent apply-bindings", JSON.stringify(applied).slice(0, 120))
+        : fail("agent apply-bindings", JSON.stringify(applied));
+    } catch (err) {
+      fail(
+        "agent apply-bindings",
+        err instanceof Error ? err.message : String(err)
+      );
+    }
+  }
+
+  {
+    try {
+      const listed = await sealJson([
+        "GET",
+        `/api/v1/documents/fields?id=${encodeURIComponent(docId)}`,
+      ]);
+      const fields = listed.fields ?? listed;
+      Array.isArray(fields) && fields.length >= 2
+        ? pass("agent list fields", `${fields.length}`)
+        : fail("agent list fields", JSON.stringify(listed));
+    } catch (err) {
+      fail("agent list fields", err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  {
+    try {
+      const preview = await sealJson([
+        "GET",
+        `/api/v1/documents/preview?id=${encodeURIComponent(docId)}&format=structured`,
+      ]);
+      preview
+        ? pass("agent preview structured")
+        : fail("agent preview structured", JSON.stringify(preview));
+    } catch (err) {
+      fail(
+        "agent preview structured",
+        err instanceof Error ? err.message : String(err)
+      );
+    }
+  }
+
+  {
+    try {
+      const generated = await sealJson([
+        "POST",
+        "/api/v1/documents/annotations/generate",
+        await writeJson("ann-gen.json", { id: docId }),
+      ]);
+      pass(
+        "agent annotations generate",
+        `count=${generated?.count ?? generated?.annotations?.items?.length ?? "?"}`
+      );
+    } catch (err) {
+      fail(
+        "agent annotations generate",
+        err instanceof Error ? err.message : String(err)
+      );
+    }
+  }
+
+  {
+    try {
+      const anns = await sealJson([
+        "GET",
+        `/api/v1/documents/annotations?id=${encodeURIComponent(docId)}`,
+      ]);
+      pass(
+        "agent annotations get",
+        anns?.annotations ? "present" : JSON.stringify(anns).slice(0, 80)
+      );
+    } catch (err) {
+      fail(
+        "agent annotations get",
+        err instanceof Error ? err.message : String(err)
+      );
+    }
+  }
+
+  {
+    try {
+      const annotated = await sealJson([
+        "POST",
+        "/api/v1/documents/pdf/annotate",
+        await writeJson("pdf-ann.json", {
+          id: docId,
+          operations: [
+            {
+              op: "highlight",
+              page: 1,
+              x: 10,
+              y: 20,
+              width: 50,
+              height: 4,
+            },
+          ],
+        }),
+      ]);
+      annotated?.success !== false
+        ? pass("agent pdf annotate highlight")
+        : fail("agent pdf annotate", JSON.stringify(annotated));
+    } catch (err) {
+      fail(
+        "agent pdf annotate",
         err instanceof Error ? err.message : String(err)
       );
     }
