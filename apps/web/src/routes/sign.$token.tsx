@@ -1008,6 +1008,14 @@ function SigningPage() {
               <span className="max-w-[300px] truncate text-sm font-medium">
                 {doc.name}
               </span>
+              {!isCompleted && (
+                <>
+                  <span className="text-kumo-secondary/40">·</span>
+                  <span className="text-kumo-secondary max-w-[280px] truncate text-sm">
+                    Your signature is needed — then you can close this tab
+                  </span>
+                </>
+              )}
               {/* Completion status inline with document title */}
               {isCompleted && (
                 <>
@@ -1541,13 +1549,19 @@ function SigningPage() {
           {/* Completed state footer */}
           {isCompleted && recipient.status !== "declined" && (
             <div className="border-kumo-hairline/50 bg-kumo-success-tint/30 space-y-4 border-t p-6">
-              <div className="text-kumo-success flex items-center justify-center gap-2">
-                <CheckCircle className="h-5 w-5" />
-                <span className="text-sm font-semibold">
-                  {recipient.status === "approved"
-                    ? "Document Approved"
-                    : "Document Signed"}
-                </span>
+              <div className="text-kumo-success flex flex-col items-center gap-2 text-center">
+                <div className="flex items-center justify-center gap-2">
+                  <CheckCircle className="h-5 w-5" />
+                  <span className="text-sm font-semibold">
+                    {recipient.status === "approved"
+                      ? "Document Approved"
+                      : "Document Signed"}
+                  </span>
+                </div>
+                <p className="text-kumo-secondary text-sm">
+                  You&apos;re done — you can close this tab. The agent will
+                  continue.
+                </p>
               </div>
               <Button
                 variant="outline"

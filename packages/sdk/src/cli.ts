@@ -21,9 +21,9 @@ Authenticate with SEAL_API_KEY. Optional SEAL_BASE_URL (default https://api.seal
 
 Human handoff (agents prepare; humans act; agent resumes):
   seal wait --document <id> --open
-    Opens the recipient signing_url in the browser (if available) and polls
-    until the document reaches a terminal status (completed / voided / …).
-    Prints JSON for the agent to continue. Agents never forge the signature.
+    Fetches InteractionSession (GET /api/v1/documents/interaction), opens
+    the human URL when available, polls until status is terminal, prints JSON.
+    Agents never forge the signature. Same shape for future Veil/Pile kinds.
 
 Examples:
   seal upload ./contract.pdf
@@ -77,28 +77,24 @@ function hasFlag(argv: string[], name: string): boolean {
   return argv.includes(`--${name}`);
 }
 
-type DocumentListResponse = {
-  documents?: Array<{
-    id?: string;
-    status?: string;
-    title?: string;
-  }>;
-};
-
-type RecipientsResponse = {
-  recipients?: Array<{
-    id?: string;
-    email?: string;
-    status?: string;
-    signing_url?: string;
-  }>;
+type InteractionSession = {
+  id?: string;
+  kind?: string;
+  url?: string | null;
+  status?: string;
+  message?: string;
+  expires_at?: string | null;
+  result?: {
+    document_id?: string;
+    document_status?: string;
+    title?: string | null;
+  };
+  poll?: { path?: string; interval_ms?: number };
 };
 
 const TERMINAL = new Set([
   "completed",
-  "voided",
   "cancelled",
-  "canceled",
   "declined",
   "expired",
 ]);
@@ -126,52 +122,45 @@ async function runWait(argv: string[]): Promise<void> {
   const client = createClient();
   const base = process.env.SEAL_BASE_URL ?? "https://api.seal.nyc";
 
-  let signingUrl = urlFlag;
-  if (!signingUrl) {
-    const recipients = (await client.request(
-      "GET",
-      `/api/v1/recipients?document_id=${encodeURIComponent(documentId)}`
-    )) as RecipientsResponse;
-    const withUrl = (recipients.recipients ?? []).find(
-      (r) => typeof r.signing_url === "string" && r.signing_url.length > 0
-    );
-    signingUrl = withUrl?.signing_url;
-  }
-
-  if (shouldOpen) {
-    if (!signingUrl) {
-      console.error(
-        "Error: no signing_url available to open (document may still be draft, or recipients lack tokens)"
-      );
-      process.exit(1);
-    }
-    console.error(`Opening human interaction URL:\n  ${signingUrl}`);
-    await openUrl(signingUrl);
-  } else if (signingUrl) {
-    console.error(`Human interaction URL (pass --open to launch browser):\n  ${signingUrl}`);
-  }
-
   const started = Date.now();
+  let opened = false;
   let lastStatus = "";
+
   while (Date.now() - started < timeoutMs) {
-    const listed = (await client.request(
+    const session = (await client.request(
       "GET",
-      `/api/v1/documents?id=${encodeURIComponent(documentId)}`
-    )) as DocumentListResponse;
-    const doc = (listed.documents ?? []).find((d) => d.id === documentId);
-    const status = doc?.status ?? "unknown";
+      `/api/v1/documents/interaction?id=${encodeURIComponent(documentId)}`
+    )) as InteractionSession;
+
+    const status = session.status ?? "unknown";
+    const signingUrl = urlFlag ?? session.url ?? null;
+
+    if (session.message && status !== lastStatus) {
+      console.error(session.message);
+    }
     if (status !== lastStatus) {
       console.error(`status=${status}`);
       lastStatus = status;
     }
+
+    if (shouldOpen && !opened && signingUrl) {
+      console.error(`Opening human interaction URL:\n  ${signingUrl}`);
+      await openUrl(signingUrl);
+      opened = true;
+    } else if (!shouldOpen && signingUrl && status === "pending" && !opened) {
+      console.error(
+        `Human interaction URL (pass --open to launch browser):\n  ${signingUrl}`
+      );
+      opened = true;
+    }
+
     if (TERMINAL.has(status)) {
       console.log(
         JSON.stringify(
           {
+            ...session,
             document_id: documentId,
-            status,
-            title: doc?.title ?? null,
-            signing_url: signingUrl ?? null,
+            signing_url: signingUrl,
             waited_ms: Date.now() - started,
             base_url: base,
           },
@@ -181,6 +170,7 @@ async function runWait(argv: string[]): Promise<void> {
       );
       return;
     }
+
     await new Promise((r) => setTimeout(r, intervalMs));
   }
 

@@ -111,6 +111,49 @@ components:
             $ref: "#/components/schemas/Recipient"
           description: Recipient list (only included when include_recipients=true)
 
+    InteractionSession:
+      type: object
+      description: |
+        Vortex human-handoff object (ADR-004). Agents open/show `url` and poll
+        until `status` is terminal. Seal signing is the first producer.
+      required: [id, kind, status, message, poll]
+      properties:
+        id:
+          type: string
+          description: Stable session id (e.g. sign:{document_id})
+        kind:
+          type: string
+          description: Interaction kind (sign, approve, unlock, pay, …)
+        url:
+          type: string
+          format: uri
+          nullable: true
+          description: Temporary human page; null if not available yet
+        status:
+          type: string
+          enum: [pending, completed, cancelled, declined, expired]
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        message:
+          type: string
+          description: One-line instruction for the host/human
+        poll:
+          type: object
+          required: [path, interval_ms]
+          properties:
+            path:
+              type: string
+            interval_ms:
+              type: integer
+        result:
+          type: object
+          properties:
+            document_id: { type: string }
+            document_status: { type: string }
+            title: { type: string, nullable: true }
+
     Recipient:
       type: object
       required: [id, email, name, role, status]
@@ -842,6 +885,35 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Document"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /documents/interaction:
+    get:
+      tags: [Documents]
+      operationId: getDocumentInteraction
+      summary: Get InteractionSession for a document (human handoff)
+      description: |
+        Returns a Vortex InteractionSession for signing (ADR-004 / SEA-61).
+        Agents show or open `url`, then poll this endpoint until `status` is
+        not `pending`. Never forge the human signature. Requires
+        `documents:write` to include `url` (signing link).
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Document ID
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InteractionSession"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
