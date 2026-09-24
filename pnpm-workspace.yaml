@@ -69,7 +69,7 @@ minimumReleaseAgeExclude:
   - wrangler@4.132.0 || 4.133.0
   - '@cloudflare/vite-plugin@1.54.11'
   - '@cloudflare/workers-types@5.20260916.1'
-  - '@astrojs/cloudflare@14.3.2'
+  - '@astrojs/cloudflare@14.3.3'
   - '@astrojs/react@6.0.6'
   - astro@7.3.3
   - '@vortex-api/better-auth-ui@0.1.4 || 0.2.1 || 0.2.2 || 0.2.3'
