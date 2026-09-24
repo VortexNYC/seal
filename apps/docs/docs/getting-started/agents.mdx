@@ -76,6 +76,18 @@ SEAL_API_KEY=seal_… pnpm run prove:golden-path \
   --app https://seal-selfhost-web.<account>.workers.dev
 ```
 
+### Human handoff (temporary UI)
+
+When the agent hits “human must act” (sign, approve), it does **not** forge
+the act. Pattern:
+
+1. API returns an interaction URL (`signing_url`)
+2. CLI opens it: `seal wait --document <id> --open`
+3. Human does the one job in a minimal page and finishes
+4. CLI polls until terminal status and prints JSON — agent continues
+
+Same shape should apply across Vortex (Veil unlock, Pile approve, Seal sign):
+open URL → one-shot human surface → poll → resume. See SEA-61.
 SDK snippets: `packages/sdk/examples/` (Node send + React embed).
 
 ## What humans do

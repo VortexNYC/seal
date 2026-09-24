@@ -1,7 +1,11 @@
 import { readFile } from "node:fs/promises";
 import { basename } from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 
 import { createSealClient, type HttpMethod } from "./index.js";
+
+const execFileAsync = promisify(execFile);
 
 const VALID_METHODS: HttpMethod[] = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 
@@ -9,18 +13,23 @@ function printUsage(): never {
   console.error(`Usage:
   seal <METHOD> <path> [body.json]
   seal upload <file> [--content-type <mime>]
+  seal wait --document <id> [--open] [--interval <ms>] [--timeout <ms>]
+  seal wait --url <signing_url> --document <id> [--open] ...
 
 Thin HTTP client over the Seal OpenAPI contract.
 Authenticate with SEAL_API_KEY. Optional SEAL_BASE_URL (default https://api.seal.nyc).
 
-Paths are relative to the base URL — include /api/v1.
+Human handoff (agents prepare; humans act; agent resumes):
+  seal wait --document <id> --open
+    Opens the recipient signing_url in the browser (if available) and polls
+    until the document reaches a terminal status (completed / voided / …).
+    Prints JSON for the agent to continue. Agents never forge the signature.
 
 Examples:
   seal upload ./contract.pdf
   seal POST /api/v1/documents create-doc.json
+  seal wait --document <id> --open
   seal GET  /api/v1/folders
-  seal PUT  /api/v1/contacts/update update-contact.json
-  seal GET  /api/v1/imports
 
 upload prints { "storage_id", "content_type" } for use as storage_id on create document.
 See https://docs.seal.nyc/reference for the full contract.
@@ -43,6 +52,142 @@ function createClient() {
     baseUrl: process.env.SEAL_BASE_URL ?? "https://api.seal.nyc",
     apiKey: requireApiKey(),
   });
+}
+
+async function openUrl(url: string): Promise<void> {
+  const platform = process.platform;
+  if (platform === "darwin") {
+    await execFileAsync("open", [url]);
+    return;
+  }
+  if (platform === "win32") {
+    await execFileAsync("cmd", ["/c", "start", "", url]);
+    return;
+  }
+  await execFileAsync("xdg-open", [url]);
+}
+
+function flagValue(argv: string[], name: string): string | undefined {
+  const i = argv.indexOf(`--${name}`);
+  if (i < 0) return undefined;
+  return argv[i + 1];
+}
+
+function hasFlag(argv: string[], name: string): boolean {
+  return argv.includes(`--${name}`);
+}
+
+type DocumentListResponse = {
+  documents?: Array<{
+    id?: string;
+    status?: string;
+    title?: string;
+  }>;
+};
+
+type RecipientsResponse = {
+  recipients?: Array<{
+    id?: string;
+    email?: string;
+    status?: string;
+    signing_url?: string;
+  }>;
+};
+
+const TERMINAL = new Set([
+  "completed",
+  "voided",
+  "cancelled",
+  "canceled",
+  "declined",
+  "expired",
+]);
+
+async function runWait(argv: string[]): Promise<void> {
+  const documentId = flagValue(argv, "document");
+  const urlFlag = flagValue(argv, "url");
+  const shouldOpen = hasFlag(argv, "open");
+  const intervalMs = Number(flagValue(argv, "interval") ?? "2000");
+  const timeoutMs = Number(flagValue(argv, "timeout") ?? String(15 * 60 * 1000));
+
+  if (!documentId) {
+    console.error("Error: seal wait requires --document <id>");
+    process.exit(1);
+  }
+  if (!Number.isFinite(intervalMs) || intervalMs < 250) {
+    console.error("Error: --interval must be >= 250 ms");
+    process.exit(1);
+  }
+  if (!Number.isFinite(timeoutMs) || timeoutMs < intervalMs) {
+    console.error("Error: --timeout must be >= --interval");
+    process.exit(1);
+  }
+
+  const client = createClient();
+  const base = process.env.SEAL_BASE_URL ?? "https://api.seal.nyc";
+
+  let signingUrl = urlFlag;
+  if (!signingUrl) {
+    const recipients = (await client.request(
+      "GET",
+      `/api/v1/recipients?document_id=${encodeURIComponent(documentId)}`
+    )) as RecipientsResponse;
+    const withUrl = (recipients.recipients ?? []).find(
+      (r) => typeof r.signing_url === "string" && r.signing_url.length > 0
+    );
+    signingUrl = withUrl?.signing_url;
+  }
+
+  if (shouldOpen) {
+    if (!signingUrl) {
+      console.error(
+        "Error: no signing_url available to open (document may still be draft, or recipients lack tokens)"
+      );
+      process.exit(1);
+    }
+    console.error(`Opening human interaction URL:\n  ${signingUrl}`);
+    await openUrl(signingUrl);
+  } else if (signingUrl) {
+    console.error(`Human interaction URL (pass --open to launch browser):\n  ${signingUrl}`);
+  }
+
+  const started = Date.now();
+  let lastStatus = "";
+  while (Date.now() - started < timeoutMs) {
+    const listed = (await client.request(
+      "GET",
+      `/api/v1/documents?id=${encodeURIComponent(documentId)}`
+    )) as DocumentListResponse;
+    const doc = (listed.documents ?? []).find((d) => d.id === documentId);
+    const status = doc?.status ?? "unknown";
+    if (status !== lastStatus) {
+      console.error(`status=${status}`);
+      lastStatus = status;
+    }
+    if (TERMINAL.has(status)) {
+      console.log(
+        JSON.stringify(
+          {
+            document_id: documentId,
+            status,
+            title: doc?.title ?? null,
+            signing_url: signingUrl ?? null,
+            waited_ms: Date.now() - started,
+            base_url: base,
+          },
+          null,
+          2
+        )
+      );
+      return;
+    }
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+
+  console.error(
+    `Error: timed out after ${timeoutMs}ms waiting for document ${documentId} (last status=${lastStatus || "unknown"})`
+  );
+  process.exit(1);
 }
 
 async function runUpload(argv: string[]): Promise<void> {
@@ -96,6 +241,11 @@ async function main() {
 
   if (cmd === "upload" || cmd === "--upload") {
     await runUpload(process.argv.slice(3));
+    return;
+  }
+
+  if (cmd === "wait") {
+    await runWait(process.argv.slice(3));
     return;
   }
 
