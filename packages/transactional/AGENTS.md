@@ -2,39 +2,38 @@
 
 ## OVERVIEW
 
-React Email templates for **Seal document / product** notifications. Shared
-shell, brand helpers, and `renderEmail` come from `@vortexnyc/email`. Auth
-verify / reset / org-invite HTML is owned by `@vortexnyc/auth` Better Auth drafts
-— do not add parallel auth templates here.
+React Email templates for **Seal document / product** notifications. Layout,
+brand tokens, and `renderX()` helpers live in this package (`@react-email/*` +
+`@seal/tokens`). **No `@vortexnyc/email` / `@vortexnyc/auth`.**
 
 ## STRUCTURE
 
 ```
 packages/transactional/
 ├── src/
-│   ├── emails/          # Seal document templates + Core layout adapter
-│   └── index.tsx        # Central exports + renderers (via renderEmail)
+│   ├── emails/          # Document templates + EmailLayout
+│   ├── styles.js        # Literal email colors/fonts
+│   └── index.tsx        # Central exports + renderers
 ```
 
 ## WHERE TO LOOK
 
-| Task          | Location                               | Notes                                      |
-| ------------- | -------------------------------------- | ------------------------------------------ |
-| Template list | `packages/transactional/src/emails/`   | Kebab-case files                           |
-| Layout shell  | `emails/email-layout.tsx`              | Thin adapter over `@vortexnyc/email`       |
-| Exports       | `packages/transactional/src/index.tsx` | Components + `renderX()` helpers           |
-| Auth emails   | `@vortexnyc/auth`                      | Not in this package                        |
-| Transport     | `apps/api/src/platform/email.ts`       | Cloudflare `send_email` binding (`EMAIL`). |
+| Task          | Location                               | Notes                                         |
+| ------------- | -------------------------------------- | --------------------------------------------- |
+| Template list | `packages/transactional/src/emails/`   | Kebab-case files                              |
+| Layout shell  | `emails/email-layout.tsx`              | Seal-owned Html/Head/Preview/Body             |
+| Exports       | `packages/transactional/src/index.tsx` | Components + `renderX()` via `@react-email/render` |
+| Transport     | `apps/api/src/platform/email.ts`       | Cloudflare `send_email` binding (`EMAIL`)     |
 
 ## CONVENTIONS
 
 - File names are kebab-case; component names are PascalCase.
 - Each template exports a `Props` interface, named component, and default export.
-- `src/index.tsx` re-exports components/types and provides `renderX()` helpers via Core `renderEmail`.
-- Templates use `@react-email/components` for document-specific chrome; shell/brand from Core.
+- `src/index.tsx` re-exports components/types and provides `renderX()` helpers.
+- Templates use `@react-email/components`; shell/brand from `email-layout.tsx` + `styles.js`.
 
 ## ANTI-PATTERNS
 
 - Export templates without matching `renderX()` in `src/index.tsx`.
-- Hand-roll a second Html/Head/Preview/Body shell — use `EmailLayout` (Core adapter).
-- Add auth verify / password-reset / org-invite HTML here (use Auth drafts).
+- Hand-roll a second Html/Head/Preview/Body shell — use `EmailLayout`.
+- Add `@vortexnyc/*` email packages.

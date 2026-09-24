@@ -54,9 +54,9 @@ reviews:
         - No `@ts-ignore`, `eslint-disable`, or `biome-ignore`.
         - Parse all untrusted input with Zod; no unsafe casts.
         - No secrets, PII, or AI attribution in commits/PRs.
-        - Auth is Vortex Auth (Better Auth); Clerk is banned.
+        - Auth is Better Auth on Cloudflare; Clerk is banned. No `@vortexnyc/*`.
         - Native-first: prefer Hono/Drizzle/Cloudflare primitives before hand-rolling.
-        - Money math uses Seal-local `apps/web/src/lib/money.ts` (integer minor units, round-half-up). Do not add `@vortexnyc/money`.
+        - Money math uses `apps/web/src/lib/money.ts` (integer minor units, round-half-up).
         - Migrations: minimal hand-written `.sql` with matching Drizzle snapshots.
     - path: "apps/web/src/**/*.{ts,tsx}"
       instructions: |
@@ -66,7 +66,7 @@ reviews:
         - No `@ts-ignore`, `eslint-disable`, or `biome-ignore`.
         - Use TanStack Router patterns; don't edit `routeTree.gen.ts`.
         - E2E selectors use `data-testid`, not CSS classes.
-        - Money: `apps/web/src/lib/money.ts` only — never `@vortexnyc/money`.
+        - Money: `apps/web/src/lib/money.ts` only. No `@vortexnyc/*`.
     - path: "apps/docs/**/*.{ts,tsx,mdx}"
       instructions: |
         blume (Astro) static docs site; MDX content under docs/.

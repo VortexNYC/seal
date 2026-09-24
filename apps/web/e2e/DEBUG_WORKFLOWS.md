@@ -106,7 +106,7 @@ When a test fails, use Chrome DevTools MCP to:
 
 ### 3. Debugging Authentication Issues (Better-Auth)
 
-Auth is handled by Better-Auth (via `@vortexnyc/vortex-auth`). The session lives in
+Auth is handled by Better Auth. The session lives in
 an HTTP cookie — there is **no** global window auth object to inspect.
 
 **Check the auth session cookie:**

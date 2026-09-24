@@ -12,8 +12,8 @@
  * These values mirror the OKLCH values in seal-theme-web.css exactly.
  * When updating a color, change both files.
  *
- * Visual language: Taupe 50–950. Owned in Seal — do not import
- * @vortexnyc/brand. No product hue; red is functional only.
+ * Visual language: Taupe 50–950. Owned in Seal. No product hue; red is
+ * functional only.
  */
 
 /** Brand color scale — Taupe 50→950 */

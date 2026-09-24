@@ -8,7 +8,7 @@
 
 ## OVERVIEW
 
-Seal is a pnpm + Vite+ (VoidZero) monorepo with a React 19 product app, a blume (Astro) static docs site, a marketing site, a Cloudflare Workers backend, transactional email templates, an embeddable React SDK, and shared design tokens. Auth uses Better-Auth through Vortex Auth (`@vortexnyc/auth`); the product UI uses Cloudflare Kumo. Product data lives in the Cloudflare Worker API (`apps/api`).
+Seal is a pnpm + Vite+ (VoidZero) monorepo with a React 19 product app, a blume (Astro) static docs site, a marketing site, a Cloudflare Workers backend, transactional email templates, an embeddable React SDK, and shared design tokens. Auth is Better Auth on the Cloudflare Worker API (`apps/api`); the product UI uses Cloudflare Kumo. Product data lives in the Worker. **Seal does not use Vortex Core (`@vortexnyc/*`).** Core is retired — do not add it.
 
 ## STRUCTURE
 
@@ -125,20 +125,21 @@ locally via the `vp` pre-push hook.
 - Complexity hotspots: `apps/web/src/routes/_authenticated/$slug/documents/$documentId.tsx`, `apps/web/src/routes/sign.$token.tsx`.
 - D1 migrations: `drizzle-kit generate` can emit full-schema snapshots when `migrations/meta/_journal.json` is out of sync with existing `.sql` files. Use manual incremental `.sql` migrations and keep `_journal.json` aligned; `readD1Migrations` / `applyD1Migrations` in tests apply all `.sql` files in filename order.
 
-<!-- BEGIN VORTEX TOOLING MANAGED REVIEW GUIDELINES -->
+<!-- BEGIN SEAL REVIEW GUIDELINES -->
 ## Review guidelines
 
+Seal owns its stack. **Vortex Core (`@vortexnyc/*`) is dead for this repo** — never add it, never “lift to Core,” never reject a PR for not using Core.
+
 * **Review the invariant, not the diff.** Trace what the changed code is *read by*, not just the changed lines. Removing or renaming a committed baseline, fixture, generated receipt, config, or guard that another script/workflow consumes silently disables it — REJECT unless the reader is deleted in the same PR. A green diff is not a safe diff.
-* **Run the proof wall before approving** (typecheck/lint/build/test + `project-kit doctor`). Every finding must cite the failing command or the exact invariant it breaks — not a vibe. Satisfy the invariant, never just the sentence. On money/auth/data-loss/security, require a patch PLUS proof and a human gate.
-* **NATIVE-FIRST — check the provider BEFORE you hand-roll.** A hand-rolled utility is a weaker solution 99% of the time; provider primitives move us far faster. Before writing any query helper, aggregation, pagination, rate-limiter, migration, retrier, or counter for the Worker, check Hono, Drizzle, Cloudflare primitives (D1, Durable Objects, R2, Queues, Workflows), and Better Auth first. Same discipline for every provider (Codex GitHub/Linear apps, Modal, LiveKit, Stripe Elements, Better Auth). REJECT any PR that hand-rolls what a provider already ships. Vortex is WIRING, not reinvention — Core absorbs the provider primitive, consumers use it.
-* **CORE-FIRST does not apply to Seal.** Seal stays off `@vortexnyc/*` Core packages. Prefer Cloudflare / Better Auth / Kumo / in-repo packages. Do not introduce Core deps to “fix” a review finding.
-* **Rule of two (Seal):** prefer deleting duplication inside this repo over lifting to Core. A third copy across Vortex products is not a reason to pull Core into Seal.
+* **Run the proof wall before approving** (typecheck/lint/build/test). Every finding must cite the failing command or the exact invariant it breaks — not a vibe. On money/auth/data-loss/security, require a patch PLUS proof and a human gate.
+* **NATIVE-FIRST — check the provider BEFORE you hand-roll.** Prefer Hono, Drizzle, Cloudflare primitives (D1, Durable Objects, R2, Queues, Workflows), Better Auth, Stripe Elements, Kumo. REJECT hand-rolls of what those providers already ship. Fix it in this repo or delete it — not by importing a dead Core package.
+* **No `@vortexnyc/*`.** If a PR adds a Core dependency, REJECT it. In-repo packages (`@seal/*`, `@vortex-api/seal`, `@vortex-api/better-auth-ui`) and public npm are fine.
+* **Delete duplication in-repo.** Prefer deletion and simplification over abstraction. Do not invent a shared package to satisfy portfolio dogma.
 * **pnpm only** (never npm/yarn/bun/npx). **Never** `any` (use `unknown` + narrow). **Never** `eslint-disable`/`biome-ignore`/`@ts-ignore`.
-* **REMEDIATION INTEGRITY — a lint/type fix must change BEHAVIOR toward the rule's intent or prove the rule's documented non-applicability through a Core-owned ratchet, never just silence the report.** A check is a proxy; satisfying its letter while preserving the flagged behavior is gaming, and it is REJECTED even when the number hits zero. In any diff whose purpose is clearing a lint/type finding: (a) it may NOT introduce a new named helper, wrapper, naming convention, or abstraction that merely relocates the flagged construct out of the matcher's reach (e.g. a `sequentialForEach`/`parallelForEach` wrapper, an async `.reduce`, a helper that hides an `await` from `no-await-in-loop`) — if a "fix lint" diff ADDS a function definition, that is a red flag, inspect it as gaming; (b) it may NOT add `as any`/`as unknown as`, a `void`-prefixed promise, or any broad suppression-shaped comment/allowlist/config entry; (c) it may NOT weaken a read that must return all rows (`.take(N)`/`.paginate()` on a money/aggregate path is a silent cap). The reviewer must confirm the fix altered execution semantics in the intended direction or that the rule does not apply — same behavior + green check without either proof = FAIL. Use the provider's native concurrency primitive when it owns the lifecycle (for example Cloudflare **Queues** / **Durable Object alarms** / **Drizzle transactions**). When correctness or a provider contract truly requires a raw serial loop — dependent pagination, bounded retry/backoff, or ordered event application — ratchet the exact reviewed source file under `lint.sequentialFiles` and require behavior proof. Wildcards, directories, and filename-based exemptions are forbidden. Prefer an adversarial second-pass review on remediation PRs: its job is to prove the fix is cosmetic.
-* **Auth is Vortex Auth** (better-auth + Cloudflare). **Clerk is always wrong.**
-* **Untrusted input — parse against a validator, never cast.** `JSON.parse` returns `any`; `JSON.parse(x) as T` is a lie the type system cannot check. Use Zod (`z.object(...).parse(value)` or `.safeParse()`) at every request/env/boundary in the Worker, and the Drizzle schema for database boundaries. A remaining `as T` means no validator was declared for that boundary — declare one.
-* **Money math — Seal-local `apps/web/src/lib/money.ts`, never `@vortexnyc/money`.** Money is INTEGER minor units (no float storage). Route rounding/conversion/split/display through that module (`fromMajorUnits`, `allocate`, `applyRate`, `formatMoney`, …). Do not add `@vortexnyc/money`. Rounding policy is **round-half-up** (Stripe-aligned); do not default to banker's/half-even for money amounts.
-* **Test flavor** — tests run with vitest (`pnpm run test`). NEVER `bun test` or `bun:test` APIs — bun is not the toolchain.
-* **Supply never single-sourced** — model calls need the flat fallback chain (`ollama-cloud → opencode-go → openai/gpt-5.5`), never one provider, never a metered tier.
-* **No secrets/PII in logs.** Auth middleware wraps every route. **No AI attribution** anywhere.
-<!-- END VORTEX TOOLING MANAGED REVIEW GUIDELINES -->
+* **REMEDIATION INTEGRITY — a lint/type fix must change BEHAVIOR toward the rule's intent or prove the rule does not apply — never just silence the report.** Do not add named helpers that only dodge a matcher, `as any`/`as unknown as`, voided promises, or broad suppressions. Do not weaken reads that must return all rows. Prefer provider concurrency (Queues, DO alarms, Drizzle transactions). Serial loops only when correctness requires them — then document why.
+* **Auth is Better Auth on Cloudflare.** **Clerk is always wrong.**
+* **Untrusted input — parse against a validator, never cast.** Use Zod at request/env boundaries and the Drizzle schema at DB boundaries.
+* **Money math — `apps/web/src/lib/money.ts` only.** Integer minor units. Round-half-up (Stripe-aligned). No float storage. No `@vortexnyc/money`.
+* **Test flavor** — vitest (`pnpm run test`). Never `bun test` / `bun:test`.
+* **No secrets/PII in logs.** **No AI attribution** anywhere.
+<!-- END SEAL REVIEW GUIDELINES -->
