@@ -357,7 +357,7 @@ importers:
     dependencies:
       blume:
         specifier: ^1.7.0
-        version: 1.7.0(325257b267b9666d899e721d51ab8d9c)
+        version: 1.7.0(05e7d9642a6c0e40c24d111f1d37a742)
     devDependencies:
       wrangler:
         specifier: ^4.133.0
@@ -533,8 +533,8 @@ importers:
         specifier: 1.170.19
         version: 1.170.19(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@tanstack/react-router-devtools':
-        specifier: 1.167.1
-        version: 1.167.1(@tanstack/react-router@1.170.19(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tanstack/router-core@1.171.16)(csstype@3.2.3)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        specifier: 1.167.2
+        version: 1.167.2(@tanstack/react-router@1.170.19(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tanstack/router-core@1.171.16)(csstype@3.2.3)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@tanstack/react-virtual':
         specifier: ^3.14.13
         version: 3.14.13(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -5754,11 +5754,11 @@ packages:
     peerDependencies:
       react: 19.3.0
 
-  '@tanstack/react-router-devtools@1.167.1':
-    resolution: {integrity: sha512-pjfGrmjj4d7naEPM7oshqFfwBoxDPNo/UxltlHH5ePbHsJ+plBhd+JaAewm1ueYOjZ0js9hckjWWDYXpCrSfKw==}
+  '@tanstack/react-router-devtools@1.167.2':
+    resolution: {integrity: sha512-VuoqB7OhDUrBa4WOFSKiAQ8xI8sJpeZdo9sYE1hQa89iMuVFUQu1iWE4iCiQhB+6TYOZDZ9e+iHKxYjop4ZVYw==}
     engines: {node: '>=20.19'}
     peerDependencies:
-      '@tanstack/react-router': ^1.170.19
+      '@tanstack/react-router': ^1.170.36
       '@tanstack/router-core': 1.171.16
       react: 19.3.0
       react-dom: 19.3.0
@@ -5855,8 +5855,8 @@ packages:
     resolution: {integrity: sha512-/qwawP5a45puA9DQtG8syrChWCV7uGMYs1p5rwgrICgiS/0pHo7zNOFyfVI02J1azWhCfFc6w6+SuiivPESYAA==}
     engines: {node: '>=20.19'}
 
-  '@tanstack/router-devtools-core@1.168.1':
-    resolution: {integrity: sha512-qr4voa4cpSMwQvS3867xkU3AB3MtJbTuovKIy+btjJ/Faju6er9w0nDylmD+005Mk/3YKw9/iueZJl2JAB7JOA==}
+  '@tanstack/router-devtools-core@1.168.2':
+    resolution: {integrity: sha512-pCCdQ5M/NUeWdiAbPmjyfcNdls6G4vaVlIQbPf1IqZk1FLYFr00aQvi578yUuWFBNM2KNS2QcwM1uPucbtGf5Q==}
     engines: {node: '>=20.19'}
     peerDependencies:
       '@tanstack/router-core': 1.171.16
@@ -12862,10 +12862,10 @@ snapshots:
 
   '@astrojs/underscore-redirects@1.0.4': {}
 
-  '@astrojs/vercel@11.0.10(astro@7.3.2(@azure/identity@4.13.1(supports-color@10.2.2))(@azure/storage-blob@12.33.0(supports-color@10.2.2))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(@types/node@26.1.1)(@vercel/functions@3.9.7(ws@8.21.3))(aws4fetch@1.0.20)(db0@0.3.4(@libsql/client@0.17.4)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260916.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.5)(pg@8.22.0)))(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1))(react@19.3.0)(rollup@4.63.3)(supports-color@10.2.2)(ws@8.21.3)':
+  '@astrojs/vercel@11.0.10(astro@7.3.2(@azure/identity@4.13.1(supports-color@10.2.2))(@azure/storage-blob@12.33.0(supports-color@10.2.2))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(@types/node@26.1.1)(@vercel/functions@3.9.7(ws@8.21.3))(aws4fetch@1.0.20)(db0@0.3.4(@libsql/client@0.17.4)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260916.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.5)(pg@8.22.0)))(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1))(react@19.3.0)(rollup@4.63.3)(supports-color@10.2.2)(svelte@5.57.1(@typescript-eslint/types@8.70.0))(vue@3.5.43(typescript@6.0.3))(ws@8.21.3)':
     dependencies:
       '@astrojs/internal-helpers': 0.11.0
-      '@vercel/analytics': 2.0.1(react@19.3.0)
+      '@vercel/analytics': 2.0.1(react@19.3.0)(svelte@5.57.1(@typescript-eslint/types@8.70.0))(vue@3.5.43(typescript@6.0.3))
       '@vercel/functions': 3.9.7(ws@8.21.3)
       '@vercel/nft': 1.11.0(rollup@4.63.3)(supports-color@10.2.2)
       '@vercel/routing-utils': 6.6.0
@@ -17321,10 +17321,10 @@ snapshots:
       '@tanstack/query-core': 5.90.20
       react: 19.3.0
 
-  '@tanstack/react-router-devtools@1.167.1(@tanstack/react-router@1.170.19(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tanstack/router-core@1.171.16)(csstype@3.2.3)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@tanstack/react-router-devtools@1.167.2(@tanstack/react-router@1.170.19(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tanstack/router-core@1.171.16)(csstype@3.2.3)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@tanstack/react-router': 1.170.19(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@tanstack/router-devtools-core': 1.168.1(@tanstack/router-core@1.171.16)(csstype@3.2.3)
+      '@tanstack/router-devtools-core': 1.168.2(@tanstack/router-core@1.171.16)(csstype@3.2.3)
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
     optionalDependencies:
@@ -17528,7 +17528,7 @@ snapshots:
       seroval: 1.5.6
       seroval-plugins: 1.5.6(seroval@1.5.6)
 
-  '@tanstack/router-devtools-core@1.168.1(@tanstack/router-core@1.171.16)(csstype@3.2.3)':
+  '@tanstack/router-devtools-core@1.168.2(@tanstack/router-core@1.171.16)(csstype@3.2.3)':
     dependencies:
       '@tanstack/router-core': 1.171.16
       clsx: 2.1.1
@@ -18486,9 +18486,11 @@ snapshots:
       d3-selection: 3.0.0
       d3-transition: 3.0.1(d3-selection@3.0.0)
 
-  '@vercel/analytics@2.0.1(react@19.3.0)':
+  '@vercel/analytics@2.0.1(react@19.3.0)(svelte@5.57.1(@typescript-eslint/types@8.70.0))(vue@3.5.43(typescript@6.0.3))':
     optionalDependencies:
       react: 19.3.0
+      svelte: 5.57.1(@typescript-eslint/types@8.70.0)
+      vue: 3.5.43(typescript@6.0.3)
 
   '@vercel/cli-config@0.2.6':
     dependencies:
@@ -19529,14 +19531,14 @@ snapshots:
 
   bluebird@3.4.7: {}
 
-  blume@1.7.0(325257b267b9666d899e721d51ab8d9c):
+  blume@1.7.0(05e7d9642a6c0e40c24d111f1d37a742):
     dependencies:
       '@astrojs/check': 0.9.10(prettier@3.9.6)(typescript@6.0.3)
       '@astrojs/markdown-satteri': 0.4.1
       '@astrojs/mdx': 8.0.1(@astrojs/markdown-satteri@0.4.1)(astro@7.3.2(@azure/identity@4.13.1(supports-color@10.2.2))(@azure/storage-blob@12.33.0(supports-color@10.2.2))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(@types/node@26.1.1)(@vercel/functions@3.9.7(ws@8.21.3))(aws4fetch@1.0.20)(db0@0.3.4(@libsql/client@0.17.4)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260916.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.5)(pg@8.22.0)))(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1))
       '@astrojs/node': 11.1.5(astro@7.3.2(@azure/identity@4.13.1(supports-color@10.2.2))(@azure/storage-blob@12.33.0(supports-color@10.2.2))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(@types/node@26.1.1)(@vercel/functions@3.9.7(ws@8.21.3))(aws4fetch@1.0.20)(db0@0.3.4(@libsql/client@0.17.4)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260916.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.5)(pg@8.22.0)))(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1))(supports-color@10.2.2)
       '@astrojs/react': 6.0.5(@types/node@26.1.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(esbuild@0.28.2)(jiti@2.7.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@10.2.2)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1)
-      '@astrojs/vercel': 11.0.10(astro@7.3.2(@azure/identity@4.13.1(supports-color@10.2.2))(@azure/storage-blob@12.33.0(supports-color@10.2.2))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(@types/node@26.1.1)(@vercel/functions@3.9.7(ws@8.21.3))(aws4fetch@1.0.20)(db0@0.3.4(@libsql/client@0.17.4)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260916.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.5)(pg@8.22.0)))(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1))(react@19.3.0)(rollup@4.63.3)(supports-color@10.2.2)(ws@8.21.3)
+      '@astrojs/vercel': 11.0.10(astro@7.3.2(@azure/identity@4.13.1(supports-color@10.2.2))(@azure/storage-blob@12.33.0(supports-color@10.2.2))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(@types/node@26.1.1)(@vercel/functions@3.9.7(ws@8.21.3))(aws4fetch@1.0.20)(db0@0.3.4(@libsql/client@0.17.4)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260916.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.5)(pg@8.22.0)))(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1))(react@19.3.0)(rollup@4.63.3)(supports-color@10.2.2)(svelte@5.57.1(@typescript-eslint/types@8.70.0))(vue@3.5.43(typescript@6.0.3))(ws@8.21.3)
       '@asyncapi/converter': 2.0.2
       '@clack/prompts': 1.8.1
       '@iconify-json/lucide': 1.2.132
@@ -19553,7 +19555,7 @@ snapshots:
       '@tailwindcss/typography': 0.5.20(tailwindcss@4.3.3)
       '@tailwindcss/vite': 4.3.3(vite@8.3.0(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1))
       '@types/mdast': 4.0.4
-      '@vercel/analytics': 2.0.1(react@19.3.0)
+      '@vercel/analytics': 2.0.1(react@19.3.0)(svelte@5.57.1(@typescript-eslint/types@8.70.0))(vue@3.5.43(typescript@6.0.3))
       ai: 7.0.102(zod@4.6.5)
       astro: 7.3.2(@azure/identity@4.13.1(supports-color@10.2.2))(@azure/storage-blob@12.33.0(supports-color@10.2.2))(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(@types/node@26.1.1)(@vercel/functions@3.9.7(ws@8.21.3))(aws4fetch@1.0.20)(db0@0.3.4(@libsql/client@0.17.4)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260916.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.5)(pg@8.22.0)))(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1)
       babel-plugin-react-compiler: 1.0.0
@@ -25140,6 +25142,17 @@ snapshots:
   vscode-nls@5.2.0: {}
 
   vscode-uri@3.2.0: {}
+
+  vue@3.5.43(typescript@6.0.3):
+    dependencies:
+      '@vue/compiler-dom': 3.5.43
+      '@vue/compiler-sfc': 3.5.43
+      '@vue/runtime-dom': 3.5.43
+      '@vue/server-renderer': 3.5.43
+      '@vue/shared': 3.5.43
+    optionalDependencies:
+      typescript: 6.0.3
+    optional: true
 
   vue@3.5.43(typescript@7.0.2):
     dependencies:
