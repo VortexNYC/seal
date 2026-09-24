@@ -17,7 +17,20 @@ import {
   sendDocumentCompletedEmail,
   sendDocumentViewedEmail,
   sendSigningCompleteEmail,
+  sendSigningOtpEmail,
 } from "../platform/email.js";
+import {
+  isSignerAuthVerified,
+  markAccessCodeVerified,
+  maskEmail,
+  normalizeAuthMethod,
+  OTP_TTL_MS,
+  parseSignerAuthState,
+  serializeSignerAuthState,
+  startEmailOtpChallenge,
+  verifyAccessCode,
+  verifyEmailOtpChallenge,
+} from "../platform/signer-auth.js";
 import { recordUsageEvent } from "../platform/usage-events.js";
 import { emitWebhookEvent } from "../platform/webhook-events.js";
 
@@ -44,6 +57,9 @@ const signingRecipientSchema = z.object({
   signedAt: z.number().nullable().optional(),
   approvedAt: z.number().nullable().optional(),
   declinedAt: z.number().nullable().optional(),
+  authMethod: z.enum(["none", "access_code", "email_otp"]).optional(),
+  authVerified: z.boolean().optional(),
+  authEmailMasked: z.string().nullable().optional(),
 });
 
 const signingDocumentSchema = z.object({
@@ -205,6 +221,15 @@ app.openapi(signingTokenRouteDef, async (c) => {
         signedAt: recipient.signedAt?.getTime() ?? null,
         approvedAt: recipient.approvedAt?.getTime() ?? null,
         declinedAt: recipient.declinedAt?.getTime() ?? null,
+        authMethod: normalizeAuthMethod(recipient.authMethod),
+        authVerified: isSignerAuthVerified(
+          recipient.authMethod,
+          recipient.authenticationData
+        ),
+        authEmailMasked:
+          normalizeAuthMethod(recipient.authMethod) === "email_otp"
+            ? maskEmail(recipient.email)
+            : null,
       },
       document: {
         _id: doc.publicId,
@@ -539,6 +564,200 @@ app.openapi(saveFieldValueRouteDef, async (c) => {
   return c.json({ success: true });
 });
 
+const authChallengeBodySchema = z.object({}).optional();
+
+const authChallengeRouteDef = createRoute({
+  method: "post",
+  path: "/signing/{token}/auth/challenge",
+  request: {
+    params: tokenParamsSchema,
+    body: {
+      content: {
+        "application/json": { schema: authChallengeBodySchema },
+      },
+      required: false,
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            method: z.enum(["email_otp"]),
+            maskedEmail: z.string(),
+            expiresInSeconds: z.number().int(),
+          }),
+        },
+      },
+      description: "OTP challenge sent",
+    },
+    400: { description: "Invalid token or method" },
+    404: { description: "Document not found" },
+  },
+});
+
+app.openapi(authChallengeRouteDef, async (c) => {
+  const { token } = c.req.valid("param");
+  const db = createD1(c.env.D1);
+  const now = Date.now();
+
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(eq(recipients.signingToken, token))
+    .limit(1);
+  const recipient = recipientRows[0];
+  if (!recipient) {
+    return c.json({ error: "Invalid signing token" }, 400);
+  }
+  if (recipient.tokenExpiresAt && recipient.tokenExpiresAt.getTime() < now) {
+    return c.json({ error: "Signing token has expired" }, 400);
+  }
+
+  const method = normalizeAuthMethod(recipient.authMethod);
+  if (method !== "email_otp") {
+    return c.json({ error: "Email OTP is not required for this recipient" }, 400);
+  }
+
+  if (isSignerAuthVerified(recipient.authMethod, recipient.authenticationData)) {
+    return c.json({ error: "Already verified" }, 400);
+  }
+
+  const docRows = await db
+    .select({ id: documents.id, name: documents.name, status: documents.status })
+    .from(documents)
+    .where(eq(documents.id, recipient.documentId))
+    .limit(1);
+  const doc = docRows[0];
+  if (!doc || doc.status === "deleted") {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  const existing = parseSignerAuthState(recipient.authenticationData);
+  const { code, state } = await startEmailOtpChallenge(existing);
+
+  await db
+    .update(recipients)
+    .set({
+      authenticationData: serializeSignerAuthState(state),
+      updatedAt: new Date(),
+    })
+    .where(eq(recipients.id, recipient.id));
+
+  const result = await sendSigningOtpEmail(c.env, {
+    to: recipient.email,
+    recipientName: recipient.name ?? recipient.email,
+    documentName: doc.name,
+    code,
+    expiresInMinutes: Math.round(OTP_TTL_MS / 60_000),
+  });
+  if (!result.success) {
+    console.error("[public/auth/challenge] otp email failed:", result);
+    return c.json({ error: "Failed to send verification email" }, 400);
+  }
+
+  return c.json({
+    method: "email_otp" as const,
+    maskedEmail: maskEmail(recipient.email),
+    expiresInSeconds: Math.round(OTP_TTL_MS / 1000),
+  });
+});
+
+const authVerifyBodySchema = z.object({
+  code: z.string().min(1).max(128),
+});
+
+const authVerifyRouteDef = createRoute({
+  method: "post",
+  path: "/signing/{token}/auth/verify",
+  request: {
+    params: tokenParamsSchema,
+    body: {
+      content: {
+        "application/json": { schema: authVerifyBodySchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": {
+          schema: z.object({ success: z.boolean(), method: z.string() }),
+        },
+      },
+      description: "Signer authenticated",
+    },
+    400: { description: "Invalid code or token" },
+    403: { description: "Locked out" },
+  },
+});
+
+app.openapi(authVerifyRouteDef, async (c) => {
+  const { token } = c.req.valid("param");
+  const input = c.req.valid("json");
+  const db = createD1(c.env.D1);
+  const now = Date.now();
+
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(eq(recipients.signingToken, token))
+    .limit(1);
+  const recipient = recipientRows[0];
+  if (!recipient) {
+    return c.json({ error: "Invalid signing token" }, 400);
+  }
+  if (recipient.tokenExpiresAt && recipient.tokenExpiresAt.getTime() < now) {
+    return c.json({ error: "Signing token has expired" }, 400);
+  }
+
+  const method = normalizeAuthMethod(recipient.authMethod);
+  if (method === "none") {
+    return c.json({ success: true, method: "none" });
+  }
+
+  if (isSignerAuthVerified(recipient.authMethod, recipient.authenticationData)) {
+    return c.json({ success: true, method });
+  }
+
+  if (method === "access_code") {
+    const ok = await verifyAccessCode(input.code, recipient.accessCodeHash);
+    if (!ok) {
+      return c.json({ error: "Invalid access code" }, 400);
+    }
+    await db
+      .update(recipients)
+      .set({
+        authenticationData: serializeSignerAuthState(markAccessCodeVerified()),
+        updatedAt: new Date(),
+      })
+      .where(eq(recipients.id, recipient.id));
+    return c.json({ success: true, method: "access_code" });
+  }
+
+  const existing = parseSignerAuthState(recipient.authenticationData);
+  const result = await verifyEmailOtpChallenge(existing, input.code);
+  await db
+    .update(recipients)
+    .set({
+      authenticationData: serializeSignerAuthState(result.state),
+      updatedAt: new Date(),
+    })
+    .where(eq(recipients.id, recipient.id));
+
+  if (!result.ok) {
+    if (result.reason === "locked") {
+      return c.json({ error: "Too many attempts. Request a new code." }, 403);
+    }
+    if (result.reason === "expired" || result.reason === "missing") {
+      return c.json({ error: "Code expired. Request a new one." }, 400);
+    }
+    return c.json({ error: "Invalid verification code" }, 400);
+  }
+
+  return c.json({ success: true, method: "email_otp" });
+});
+
 const submitBodySchema = z.object({
   status: z.enum(["viewed", "signed", "approved", "declined"]),
   signatureData: z.string().optional(),
@@ -616,6 +835,12 @@ app.openapi(submitRouteDef, async (c) => {
 
   if (["signed", "approved", "declined"].includes(recipient.status)) {
     return c.json({ error: "Recipient has already completed" }, 403);
+  }
+
+  if (
+    !isSignerAuthVerified(recipient.authMethod, recipient.authenticationData)
+  ) {
+    return c.json({ error: "Signer authentication required" }, 403);
   }
 
   const nowDate = new Date();

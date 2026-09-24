@@ -451,6 +451,9 @@ export const recipients = sqliteTable(
     signatureData: text("signature_data"),
     signatureType: text("signature_type"),
     authenticationData: text("authentication_data"),
+    /** none | access_code | email_otp — gates the public sign page (SEA-48). */
+    authMethod: text("auth_method").notNull().default("none"),
+    accessCodeHash: text("access_code_hash"),
     esignConsentAt: integer("esign_consent_at", { mode: "timestamp_ms" }),
     esignConsentIp: text("esign_consent_ip"),
     esignConsentVersion: text("esign_consent_version"),

@@ -12,6 +12,10 @@ import {
 } from "../../platform/audit-log.js";
 import { buildSigningUrl, type EmailEnv } from "../../platform/email.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
+import {
+  hashAccessCode,
+  normalizeAuthMethod,
+} from "../../platform/signer-auth.js";
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
@@ -246,6 +250,8 @@ const createRecipientSchema = z.object({
   name: z.string().min(1),
   role: z.enum(["signer", "viewer", "approver"]).default("signer"),
   order: z.number().int().nonnegative().optional(),
+  auth_method: z.enum(["none", "access_code", "email_otp"]).optional(),
+  access_code: z.string().min(4).max(64).optional(),
 });
 
 app.post("/", async (c) => {
@@ -270,7 +276,11 @@ app.post("/", async (c) => {
     return c.json({ error: "missing_document_id" }, 400);
   }
 
-  const { email, name, role, order } = parsed.data;
+  const { email, name, role, order, auth_method, access_code } = parsed.data;
+  const authMethod = normalizeAuthMethod(auth_method);
+  if (authMethod === "access_code" && !access_code) {
+    return c.json({ error: "access_code_required" }, 400);
+  }
 
   const db = createD1(c.env.D1);
   const documentRows = await db
@@ -294,6 +304,10 @@ app.post("/", async (c) => {
   }
 
   const recipientId = crypto.randomUUID();
+  const accessCodeHash =
+    authMethod === "access_code" && access_code
+      ? await hashAccessCode(access_code)
+      : null;
   await db.insert(recipients).values({
     id: recipientId,
     publicId: crypto.randomUUID(),
@@ -303,6 +317,8 @@ app.post("/", async (c) => {
     role,
     order: order ?? 0,
     status: "pending",
+    authMethod,
+    accessCodeHash,
   });
 
   const actor = getAuditActor({ mcp: c.get("mcp") });

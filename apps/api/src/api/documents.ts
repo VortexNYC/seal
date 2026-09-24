@@ -37,6 +37,10 @@ import {
   isConvertibleFileType,
 } from "../platform/document-conversion.js";
 import {
+  hashAccessCode,
+  normalizeAuthMethod,
+} from "../platform/signer-auth.js";
+import {
   sendDocumentInvitationEmail,
   sendOwnershipTransferredEmail,
 } from "../platform/email.js";
@@ -1278,6 +1282,8 @@ const RecipientSchema = z
     signatureData: z.string().nullable().optional(),
     signatureType: z.string().nullable().optional(),
     authenticationData: z.string().nullable().optional(),
+    authMethod: z.enum(["none", "access_code", "email_otp"]).optional(),
+    hasAccessCode: z.boolean().optional(),
     createdAt: z.number(),
     updatedAt: z.number(),
   })
@@ -1301,6 +1307,8 @@ const recipientResponse = (recipient: {
   signatureData: string | null;
   signatureType: string | null;
   authenticationData: string | null;
+  authMethod?: string | null;
+  accessCodeHash?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }) => ({
@@ -1323,6 +1331,8 @@ const recipientResponse = (recipient: {
   signatureData: recipient.signatureData,
   signatureType: recipient.signatureType,
   authenticationData: recipient.authenticationData,
+  authMethod: normalizeAuthMethod(recipient.authMethod),
+  hasAccessCode: !!recipient.accessCodeHash,
   createdAt: recipient.createdAt.getTime(),
   updatedAt: recipient.updatedAt.getTime(),
 });
@@ -1335,6 +1345,8 @@ const addRecipientsBodySchema = z.object({
       role: z.enum(["signer", "viewer", "approver"]).optional(),
       order: z.number().int().optional(),
       isPlaceholder: z.boolean().optional(),
+      authMethod: z.enum(["none", "access_code", "email_otp"]).optional(),
+      accessCode: z.string().min(4).max(64).optional(),
     })
   ),
 });
@@ -1411,20 +1423,41 @@ app.openapi(addRecipientsRouteDef, async (c) => {
   const baseOrder = countResult[0]?.value ?? 0;
   const tokenExpiration = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-  const recipientValues = input.recipients.map((recipientInput, index) => ({
-    id: crypto.randomUUID(),
-    publicId: crypto.randomUUID(),
-    documentId: doc.id,
-    name: recipientInput.name ?? null,
-    email: recipientInput.email.toLowerCase(),
-    role: recipientInput.role ?? "signer",
-    order: recipientInput.order ?? baseOrder + index + 1,
-    status: "pending" as const,
-    signingToken: generateSigningToken(),
-    tokenExpiresAt: tokenExpiration,
-    createdAt: now,
-    updatedAt: now,
-  }));
+  for (const recipientInput of input.recipients) {
+    const authMethod = normalizeAuthMethod(recipientInput.authMethod);
+    if (authMethod === "access_code" && !recipientInput.accessCode) {
+      return c.json(
+        { error: "accessCode is required when authMethod is access_code" },
+        400
+      );
+    }
+  }
+
+  const recipientValues = await Promise.all(
+    input.recipients.map(async (recipientInput, index) => {
+      const authMethod = normalizeAuthMethod(recipientInput.authMethod);
+      const accessCodeHash =
+        authMethod === "access_code" && recipientInput.accessCode
+          ? await hashAccessCode(recipientInput.accessCode)
+          : null;
+      return {
+        id: crypto.randomUUID(),
+        publicId: crypto.randomUUID(),
+        documentId: doc.id,
+        name: recipientInput.name ?? null,
+        email: recipientInput.email.toLowerCase(),
+        role: recipientInput.role ?? "signer",
+        order: recipientInput.order ?? baseOrder + index + 1,
+        status: "pending" as const,
+        signingToken: generateSigningToken(),
+        tokenExpiresAt: tokenExpiration,
+        authMethod,
+        accessCodeHash,
+        createdAt: now,
+        updatedAt: now,
+      };
+    })
+  );
 
   await db.insert(recipients).values(recipientValues);
 

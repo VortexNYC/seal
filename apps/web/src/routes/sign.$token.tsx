@@ -56,6 +56,7 @@ import { SealLogo } from "@/components/seal-logo";
 import { DictateNextSignerDialog } from "@/components/signing/dictate-next-signer-dialog";
 import { DocumentExpiredPage } from "@/components/signing/document-expired-page";
 import { RedirectCountdown } from "@/components/signing/redirect-countdown";
+import { SignerAuthGate } from "@/components/signing/signer-auth-gate";
 import { useAnalytics } from "@/hooks/use-analytics";
 import {
   getClientIp,
@@ -323,6 +324,11 @@ function SigningPage() {
   // ESIGN consent state — skip modal if already consented
   const [hasConsented, setHasConsented] = useState(!!recipient.esignConsentAt);
   const [isConsentSubmitting, setIsConsentSubmitting] = useState(false);
+  const [authVerified, setAuthVerified] = useState(
+    recipient.authVerified ??
+      !recipient.authMethod ||
+      recipient.authMethod === "none"
+  );
 
   // Fetch fields assigned to this recipient
   const { data: fields, refetch: refetchFields } = useSuspenseQuery({
@@ -881,6 +887,22 @@ function SigningPage() {
   // Expiration gate — block access if recipient's deadline has passed
   if (recipient.expiresAt && recipient.expiresAt < Date.now()) {
     return <DocumentExpiredPage ownerName={doc.ownerName || ""} />;
+  }
+
+  const authMethod = recipient.authMethod ?? "none";
+  if (
+    !authVerified &&
+    (authMethod === "email_otp" || authMethod === "access_code") &&
+    !isCompleted
+  ) {
+    return (
+      <SignerAuthGate
+        token={token}
+        method={authMethod}
+        maskedEmail={recipient.authEmailMasked ?? null}
+        onVerified={() => setAuthVerified(true)}
+      />
+    );
   }
 
   // Show waiting state for sequential signing when it's not this recipient's turn
