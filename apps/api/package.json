@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy -e production",
-    "deploy:selfhost": "wrangler d1 migrations apply D1 --remote --env selfhost && wrangler deploy --env selfhost",
+    "deploy:selfhost": "bash ../../scripts/selfhost-deploy-api.sh",
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

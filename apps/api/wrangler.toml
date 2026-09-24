@@ -106,7 +106,10 @@ workers_dev = true
 preview_urls = true
 
 [env.selfhost.vars]
-# Replaced by scripts/selfhost.sh after the first deploy with real *.workers.dev URLs.
+# PLACEHOLDERS — bare hosts without an account subdomain. Signing links break if
+# these ship. Always deploy via `pnpm selfhost` or
+# `pnpm --filter @seal/api run deploy:selfhost` (rewrites to
+# seal-selfhost-*.<account>.workers.dev). /health returns 503 if these remain.
 BETTER_AUTH_URL = "https://seal-selfhost-api.workers.dev"
 ALLOWED_ORIGINS = "https://seal-selfhost-web.workers.dev"
 EMAIL_FROM = "noreply@seal.nyc"
