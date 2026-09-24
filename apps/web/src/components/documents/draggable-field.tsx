@@ -23,7 +23,7 @@ function useSealIcon(): HTMLImageElement | null {
 
   useEffect(() => {
     const img = new window.Image();
-    img.src = "/logo/seal-icon-color-no-background.svg";
+    img.src = "/logo/seal-mark.svg";
     img.addEventListener("load", () => setImage(img));
   }, []);
 

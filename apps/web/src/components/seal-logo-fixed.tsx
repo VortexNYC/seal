@@ -1,33 +1,33 @@
 import { cn } from "@/lib/utils";
 
+import { SealLogo } from "@/components/seal-logo";
+
 interface SealLogoBadgeFixedProps {
   className?: string;
   /** The total size of the badge in pixels */
   size?: number;
-  /** Whether to show the text logo or just the icon */
+  /** Whether to show the serif wordmark beside the mark */
   withText?: boolean;
 }
 
 /**
- * A proportionally scaling Seal logo badge.
- * All internal elements (padding, border-radius, logo) scale based on the `size` prop.
+ * Seal mark badge for chrome (sidebar). Quill + optional Hedvig serif wordmark.
  */
 export function SealLogoBadgeFixed({
   className,
   size = 80,
   withText = false,
-}: SealLogoBadgeFixedProps) {
-  // Proportions
-  const paddingRatio = withText ? 0.08 : 0.15;
+}: SealLogoBadgeFixedProps): JSX.Element {
+  const paddingRatio = withText ? 0.1 : 0.18;
   const borderRadiusRatio = 0.2;
-
   const padding = size * paddingRatio;
   const borderRadius = size * borderRadiusRatio;
+  const markSize = size - padding * 2;
 
   return (
     <div
       className={cn(
-        "from-background to-muted dark:from-background dark:to-muted inline-flex items-center justify-center bg-linear-to-br",
+        "from-background to-muted dark:from-background dark:to-muted inline-flex items-center gap-2 bg-linear-to-br",
         "shadow-brand-700/10 border-brand-700/5 border shadow-xl",
         "hover:shadow-brand-700/15 transition-shadow duration-300 hover:shadow-2xl",
         className
@@ -35,38 +35,20 @@ export function SealLogoBadgeFixed({
       style={{
         width: withText ? "auto" : size,
         height: size,
-        padding: padding,
-        borderRadius: borderRadius,
-        minWidth: withText ? size * 2 : size,
+        padding,
+        borderRadius,
+        minWidth: withText ? size * 1.6 : size,
       }}
     >
+      <SealLogo size={markSize} variant="color" />
       {withText ? (
-        <>
-          <img
-            src="/logo/seal-logo-color-no-background.svg"
-            alt="Seal Logo"
-            className="h-full w-auto object-contain dark:hidden"
-          />
-          <img
-            src="/logo/seal-logo-white-no-background.svg"
-            alt="Seal Logo"
-            className="hidden h-full w-auto object-contain dark:block"
-          />
-        </>
-      ) : (
-        <>
-          <img
-            src="/logo/seal-icon-color-no-background.svg"
-            alt="Seal Icon"
-            className="h-full w-full object-contain dark:hidden"
-          />
-          <img
-            src="/logo/seal-icon-white-no-background.svg"
-            alt="Seal Icon"
-            className="hidden h-full w-full object-contain dark:block"
-          />
-        </>
-      )}
+        <span
+          className="text-foreground font-serif tracking-tight"
+          style={{ fontSize: markSize * 0.55, lineHeight: 1 }}
+        >
+          Seal
+        </span>
+      ) : null}
     </div>
   );
 }
