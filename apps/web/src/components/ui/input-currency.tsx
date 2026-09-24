@@ -19,7 +19,6 @@ export function parseCurrency(value: string): number {
 
 /**
  * Parse a formatted currency string to integer minor units (cents).
- * Routes major→minor through `@vortexnyc/money` (round-half-up).
  */
 export function parseCurrencyToMinorUnits(
   value: string,
