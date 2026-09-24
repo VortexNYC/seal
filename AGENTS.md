@@ -10,6 +10,8 @@
 
 Seal is a pnpm + Vite+ (VoidZero) monorepo with a React 19 product app, a blume (Astro) static docs site, a marketing site, a Cloudflare Workers backend, transactional email templates, an embeddable React SDK, and shared design tokens. Auth is Better Auth on the Cloudflare Worker API (`apps/api`); the product UI uses Cloudflare Kumo. Product data lives in the Worker. **Seal does not use Vortex Core (`@vortexnyc/*`).** Core is retired — do not add it.
 
+**Agent-native:** OpenAPI (`apps/docs/openapi.yaml`) is the product contract. MCP / CLI / SDK follow it. Agents operate the sender-side machine; humans provide signing intent. Agents are not signatories — see `docs/decisions/ADR-003-agent-native-openapi-and-signing.md` and docs `/getting-started/agents`.
+
 ## STRUCTURE
 
 ```text
@@ -24,16 +26,17 @@ seal/
 
 | Task                   | Location                                                       | Notes                                           |
 | ---------------------- | -------------------------------------------------------------- | ----------------------------------------------- |
-| Architecture overview  | `README.md`, `apps/api/src/`, `docs/decisions/`                | Live stack only                                 |
+| Architecture overview  | `README.md`, `apps/api/src/`, `docs/decisions/`                | Live stack only; ADR-003 = agents + signing |
+| Agent / OpenAPI doctrine | `docs/decisions/ADR-003-agent-native-openapi-and-signing.md`, `apps/docs/docs/getting-started/agents.mdx` | Spec first; humans sign |
 | Cloudflare Worker API  | `apps/api/src/`                                                | Hono + Drizzle + wrangler backend               |
 | REST API routes        | `apps/api/src/api/`                                            | Public + internal API routes                      |
 | Product web routing    | `apps/web/src/routes/`                                         | TanStack file-based routes                      |
 | Product web entry      | `apps/web/src/main.tsx`                                        | Better-Auth + TanStack Query + Router setup     |
 | Docs site config       | `apps/docs/blume.config.ts`                                    | blume site config, OpenAPI route                |
 | Published docs content | `apps/docs/docs/`                                              | blume (Astro) MDX source                        |
-| API spec source        | `apps/docs/openapi.yaml`                                       | OpenAPI spec rendered at `/reference`           |
-| MCP tools/resources    | `apps/mcp-worker/src/tools/`, `apps/mcp-worker/src/resources/` | MCP worker surface                              |
-| Email templates        | `packages/transactional/src/emails/`                           | React Email templates                           |
+| API spec source        | `apps/docs/openapi.yaml`                                       | OpenAPI spec rendered at `/reference` — **contract** |
+| MCP tools/resources    | `apps/mcp-worker/src/tools/`, `apps/mcp-worker/src/resources/` | Must mirror OpenAPI                             |
+| Email templates        | `packages/transactional/src/emails/`                           | React Email templates; email is a first-class channel |
 | SDK                    | `packages/sdk/src/`                                            | `@vortex-api/seal` — client, React components, CLI |
 | Shared design tokens   | `packages/tokens/src/`                                         | Shared fonts/theme exports                      |
 | Brand system / assets  | `docs/brand-bootstrap.md`                                      | Mark, palette, fonts, OG/favicon render pipeline — reuse for other products |
@@ -130,6 +133,7 @@ locally via the `vp` pre-push hook.
 
 Seal owns its stack. **Vortex Core (`@vortexnyc/*`) is dead for this repo** — never add it, never “lift to Core,” never reject a PR for not using Core.
 
+* **OpenAPI is the contract.** Operational do/fetch belongs in `apps/docs/openapi.yaml` first. MCP / CLI / SDK wrap it — never invent parallel surfaces. Agents operate sender-side; **agents are not signatories** (ADR-003). SPA is oversight.
 * **Review the invariant, not the diff.** Trace what the changed code is *read by*, not just the changed lines. Removing or renaming a committed baseline, fixture, generated receipt, config, or guard that another script/workflow consumes silently disables it — REJECT unless the reader is deleted in the same PR. A green diff is not a safe diff.
 * **Run the proof wall before approving** (typecheck/lint/build/test). Every finding must cite the failing command or the exact invariant it breaks — not a vibe. On money/auth/data-loss/security, require a patch PLUS proof and a human gate.
 * **NATIVE-FIRST — check the provider BEFORE you hand-roll.** Prefer Hono, Drizzle, Cloudflare primitives (D1, Durable Objects, R2, Queues, Workflows), Better Auth, Stripe Elements, Kumo. REJECT hand-rolls of what those providers already ship. Fix it in this repo or delete it — not by importing a dead Core package.

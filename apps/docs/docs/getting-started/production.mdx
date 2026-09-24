@@ -6,14 +6,15 @@ description: What production teams need before sending real documents on Seal
 # Production checklist
 
 For teams on **seal.nyc** (hosted) or a serious self-host. Agents and humans both
-use this as the “are we ready?” gate.
+use this as the “are we ready?” gate. Agents run the sender side via OpenAPI;
+recipients (humans) sign. See [Agents & who signs](/getting-started/agents).
 
 ## Golden path (must work)
 
 1. Create workspace
 2. Create API key (`seal_…`) with document + recipient write scopes
-3. Upload PDF → add recipient → send
-4. Recipient opens signing link → signs
+3. Upload PDF → add recipient → send (agent / API / MCP)
+4. Recipient opens signing link → **human** signs
 5. Webhook (or poll) sees `document.completed`
 6. Audit log shows the trail
 
@@ -22,7 +23,7 @@ Hosted smoke (from the repo):
 ```bash
 SEAL_API_KEY=seal_… node scripts/smoke-prod.mjs
 # self-host:
-SEAL_API_KEY=seal_… node scripts/smoke-prod.mjs --api https://seal-api.<account>.workers.dev
+SEAL_API_KEY=seal_… node scripts/smoke-prod.mjs --api https://seal-selfhost-api.<account>.workers.dev
 ```
 
 ## API keys

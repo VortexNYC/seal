@@ -14,7 +14,7 @@ const KNOWLEDGE_BASE: Record<string, { title: string; content: string }> = {
     title: "Seal — Product Overview",
     content: `# Seal — Product Overview
 
-Seal is an intelligent document platform for signing, payment collection, and workflow automation.
+Seal is an agent-native document signing platform. **OpenAPI is the product contract**; MCP, CLI, and SDK wrap that API. Agents run the sender-side work; humans provide signing intent. **AI agents are not signatories.**
 
 ## Core Concepts
 
@@ -24,6 +24,17 @@ Seal is an intelligent document platform for signing, payment collection, and wo
 - **Fields**: Signing zones placed on document pages — signature, text, date, checkbox, dropdown, radio, or file attachment.
 - **Audit Trail**: A tamper-evident log of every action on a document (viewed, signed, declined) with timestamps and IP addresses.
 - **Webhooks**: HTTP callbacks fired in real-time when document events occur.
+- **Email**: First-class channel — most deals flow through invite / remind / complete mail.
+
+## Agent vs human
+
+| Actor | Role |
+|-------|------|
+| Agent (API / MCP / CLI) | Upload, prepare, send, remind, void, poll, webhooks, audit |
+| Human recipient | Review and apply the legal signature on the signing link / embed |
+| Human operator | Decisions and trust (unblock, void approval, identity) — not day-to-day clicking |
+
+See \`seal://docs/agent-roles\` and docs \`/getting-started/agents\`.
 
 ## Key Capabilities
 
@@ -31,20 +42,44 @@ Seal is an intelligent document platform for signing, payment collection, and wo
 - **Agent field placement**: seal_create_document_field, seal_place_field_candidates, seal_get_field_suggestions / seal_apply_field_suggestions, and seal_apply_document_bindings let agents place and fill fields without the web UI.
 - **Agent document power**: seal_get_document_annotations / generate, seal_preview_document (markdown|structured|pdf|original), seal_split_document, seal_annotate_document_pdf (highlight/text/rect/redact).
 - **Sequential signing**: Route a document through signers in a specific order before the next group receives it.
-- **Payment collection**: Collect payments as part of the signing flow through Vortex Payments.
-- **ESIGN compliance**: Full U.S. ESIGN Act compliance with consent capture and audit trail.
+- **ESIGN compliance**: Full U.S. ESIGN Act compliance with consent capture and audit trail (human signatory).
 - **Cryptographic verification**: Every signature is hashed with SHA-256 — tamper detection is built in.
-- **REST API**: Full programmatic access to every feature.
-- **MCP server**: AI-native access via the Model Context Protocol.
+- **REST API**: OpenAPI is the source of truth.
+- **MCP server**: AI-native access via the Model Context Protocol over that API.
 
 ## Typical Workflow
 
-1. Upload a PDF → Seal stores it securely
-2. Create a document → add title, description, deadline
-3. Add recipients → assign roles and signing order
-4. Send → recipients receive email invitations with secure signing links
-5. Monitor → track signing progress in real-time
-6. Complete → all parties receive the signed PDF; audit certificate generated`,
+1. Agent uploads a PDF → Seal stores it securely
+2. Agent creates a document → add title, description, deadline
+3. Agent adds recipients → assign roles and signing order
+4. Agent sends → recipients receive **email** invitations with secure signing links
+5. **Human** opens the link and signs
+6. Agent monitors via API / webhooks → completed PDF + audit certificate`,
+  },
+
+  "agent-roles": {
+    title: "Agents, OpenAPI, and who signs",
+    content: `# Agents, OpenAPI, and who signs
+
+## OpenAPI is the contract
+
+\`apps/docs/openapi.yaml\` (docs.seal.nyc /reference) is the source of truth for every operational do/fetch. MCP, CLI, and SDK follow OpenAPI — they must not invent endpoints.
+
+## Agents operate; humans sign
+
+Agents prepare, send, remind, void, poll, and orchestrate email. Humans (recipients) apply the legal signature on \`/sign/$token\` or the embed SDK.
+
+**AI agents are not signatories.** Audit trails name the natural person (or a future org electronic seal), never the model. This matches agent-native e-sign competitors and eIDAS (signature = natural person; org automation = seal).
+
+## Channels
+
+- Email (Cloudflare): first-class — most deals flow here
+- Messaging: planned, same OpenAPI-first rule
+- Payments: wait for Vortex readiness
+- Web SPA: oversight, not the primary operator path
+
+Full ADR: \`docs/decisions/ADR-003-agent-native-openapi-and-signing.md\`.
+`,
   },
 
   "document-states": {
