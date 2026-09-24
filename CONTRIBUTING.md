@@ -164,6 +164,10 @@ Email needs Cloudflare Email Routing / a verified `EMAIL_FROM` — omitted from
 `selfhost` until you add an `[[env.selfhost.send_email]]` binding. Local/dev
 does not send real mail by default.
 
+**Do not** run `pnpm selfhost` while logged into the Vortex Cloudflare account —
+worker names collide with hosted production. Use a separate account (the script
+refuses Vortex unless `SEAL_SELFHOST_FORCE=1`).
+
 ## Code rules
 
 - TypeScript strict: no `any`, no `@ts-ignore` / `@ts-expect-error`

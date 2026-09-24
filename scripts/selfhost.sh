@@ -23,6 +23,17 @@ info "Cloudflare auth"
 who="$(pnpm --dir "$API_DIR" exec wrangler whoami 2>&1)" || die "run: pnpm exec wrangler login"
 echo "$who" | head -20
 
+# Refuse accidental deploy onto Vortex production account (same worker names).
+VORTEX_CF_ACCOUNT_ID="31bfc2c14a28e0a39e8b9e3c556a18be"
+if echo "$who" | grep -q "$VORTEX_CF_ACCOUNT_ID"; then
+  echo "WARNING: logged into the Vortex Cloudflare account."
+  echo "         selfhost worker names (seal-api / seal-web) collide with hosted production."
+  echo "         Use a separate Cloudflare account for self-host proof."
+  if [[ "${SEAL_SELFHOST_FORCE:-}" != "1" ]]; then
+    die "refusing selfhost on Vortex account (set SEAL_SELFHOST_FORCE=1 to override)"
+  fi
+fi
+
 ensure_secret() {
   local name="$1"
   if pnpm --dir "$API_DIR" exec wrangler secret list --env selfhost 2>/dev/null | grep -q "\"name\": \"$name\""; then

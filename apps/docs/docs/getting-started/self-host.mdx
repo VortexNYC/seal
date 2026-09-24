@@ -1,0 +1,128 @@
+---
+title: Self-host on Cloudflare
+description: Deploy Seal on your own Cloudflare account with D1, R2, and workers.dev
+---
+
+# Self-host on Cloudflare
+
+Run Seal on **your** Cloudflare account. Signing loop works with Workers + D1 + R2.
+No Vortex resource IDs. No Docker compose.
+
+## Deploy to Cloudflare
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/VortexNYC/seal)
+
+Seal is a pnpm monorepo. On the Workers Builds setup screen:
+
+| Field | Value |
+| ----- | ----- |
+| Root directory | `/` |
+| Build command | `pnpm install` |
+| Deploy command | `pnpm selfhost` |
+
+## CLI (recommended)
+
+Requires Node 24+, pnpm 12+, and a Cloudflare account.
+
+```bash
+git clone https://github.com/VortexNYC/seal.git
+cd seal
+pnpm install
+pnpm exec wrangler login
+pnpm selfhost
+```
+
+Non-interactive secrets:
+
+```bash
+BETTER_AUTH_SECRET=$(openssl rand -base64 32) \
+TOKEN_HASH_SECRET=$(openssl rand -base64 32) \
+INTERNAL_API_KEY=$(openssl rand -base64 32) \
+pnpm selfhost
+```
+
+What the script does:
+
+1. Prompts for (or reads) the three secrets above
+2. Deploys `apps/api` `[env.selfhost]` — wrangler **auto-provisions** D1 + R2
+3. Applies D1 migrations by binding name (`D1`)
+4. Sets `BETTER_AUTH_URL` / `APP_URL` / `ALLOWED_ORIGINS` to your `*.workers.dev` URLs
+5. Builds and deploys `apps/web` against that API
+
+You get something like:
+
+```text
+Web:  https://seal-web.<account>.workers.dev
+API:  https://seal-api.<account>.workers.dev
+```
+
+## First-run checklist
+
+1. Open the web URL → create an account → create a workspace
+2. **Developer → API Keys** → create a key (`seal_…`)
+3. Smoke the API loop:
+
+```bash
+SEAL_API_KEY=seal_… node scripts/smoke-prod.mjs --api https://seal-api.<account>.workers.dev
+```
+
+4. Send a PDF from the UI or follow [Quick Start](/docs/getting-started/quick-start) with your API base URL
+
+## Email (required for real invites)
+
+`selfhost` **omits** the Cloudflare Email binding until you verify a sender.
+Without email, signing links still work if you copy them from the UI/API, but
+recipients will not get invite mail.
+
+To enable mail:
+
+1. Set up [Email Routing](https://developers.cloudflare.com/email-routing/) (or another verified sender path Cloudflare accepts for Workers `send_email`)
+2. Add to `apps/api/wrangler.toml` under `[env.selfhost]`:
+
+```toml
+[[env.selfhost.send_email]]
+name = "EMAIL"
+allowed_sender_addresses = ["noreply@your-domain.com"]
+```
+
+3. Set var `EMAIL_FROM` to that address and redeploy:
+
+```bash
+pnpm --filter @seal/api exec wrangler deploy --env selfhost \
+  --var "EMAIL_FROM:noreply@your-domain.com"
+```
+
+## Optional workers
+
+| Worker | Needed for |
+| ------ | ---------- |
+| API + web | Core upload → send → sign |
+| anydoc | Rich PDF field detection |
+| convert | DOCX → PDF (Containers) |
+| mcp | Agent MCP surface on your origin |
+
+PDF upload and signature collection work without anydoc/convert.
+
+## Custom domains
+
+Start on `*.workers.dev`. When you own DNS, add routes under `[env.selfhost]`
+(or promote to a dedicated `production` env with your own D1/R2 IDs — never
+reuse Vortex’s).
+
+## Local development
+
+For laptop-only work (no deploy):
+
+```bash
+cp apps/api/.dev.vars.example apps/api/.dev.vars
+cp apps/web/.env.example apps/web/.env.local
+pnpm run dev
+```
+
+See the repo [CONTRIBUTING.md](https://github.com/VortexNYC/seal/blob/main/CONTRIBUTING.md).
+
+## Safety
+
+Do **not** run `pnpm selfhost` against the Vortex Cloudflare account — the
+`selfhost` worker names collide with hosted production. Use a separate account
+(or set `SEAL_SELFHOST_FORCE=1` only if you know what you are doing).
