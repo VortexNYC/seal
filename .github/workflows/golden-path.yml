@@ -1,0 +1,61 @@
+name: Golden path
+
+# Hosted API loop: CLI dogfood (folders → upload → send → public sign →
+# completed → audit). Skips cleanly when SEAL_API_KEY is not configured —
+# same pattern as artifacts-sync when ARTIFACTS_PUSH_TOKEN is absent.
+
+on:
+  schedule:
+    - cron: "17 14 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "packages/sdk/**"
+      - "scripts/dogfood-cli.mjs"
+      - "scripts/prove-golden-path.mjs"
+      - "scripts/smoke-prod.mjs"
+      - ".github/workflows/golden-path.yml"
+
+concurrency:
+  group: golden-path-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  dogfood:
+    name: Hosted dogfood
+    runs-on: blacksmith-4vcpu-ubuntu-2204
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build SDK (CLI bin)
+        run: pnpm --filter @vortex-api/seal run build
+
+      - name: Prove golden path
+        env:
+          SEAL_API_KEY: ${{ secrets.SEAL_API_KEY }}
+          SEAL_BASE_URL: https://api.seal.nyc
+        run: |
+          set -euo pipefail
+          if [ -z "${SEAL_API_KEY:-}" ]; then
+            echo "SEAL_API_KEY secret not set — skipping hosted dogfood."
+            exit 0
+          fi
+          pnpm run prove:golden-path

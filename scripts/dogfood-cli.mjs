@@ -9,16 +9,20 @@
  *     --signer dogfood+signer@example.com
  *
  * Covers: health → folders → contact create/update → upload → document+folder_id
- * → recipients → send (signing_url) → imports create → breadcrumbs.
+ * → recipients → send (signing_url) → public viewed/signed → completed →
+ * org audit trail → imports create → breadcrumbs.
+ *
+ * The public signing half uses the same HTTP surface a recipient (or embed)
+ * hits — agents prepare and track; humans (or this proof harness) apply intent.
  *
  * Exit 0 = pass, 1 = failure.
  */
 
-import { mkdtemp, writeFile, readFile, rm } from "node:fs/promises";
+import { spawn } from "node:child_process";
+import { mkdtemp, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { spawn } from "node:child_process";
 
 const args = process.argv.slice(2);
 function flag(name, fallback) {
@@ -26,10 +30,14 @@ function flag(name, fallback) {
   return i >= 0 && args[i + 1] ? args[i + 1] : fallback;
 }
 
-const API = flag("api", process.env.SEAL_BASE_URL ?? "https://api.seal.nyc").replace(
-  /\/$/,
-  ""
-);
+const API = flag(
+  "api",
+  process.env.SEAL_BASE_URL ?? "https://api.seal.nyc"
+).replace(/\/$/, "");
+const APP = flag(
+  "app",
+  process.env.SEAL_APP_URL ?? "https://app.seal.nyc"
+).replace(/\/$/, "");
 const SIGNER = flag("signer", "dogfood+signer@seal.nyc");
 const KEY = process.env.SEAL_API_KEY;
 
@@ -92,6 +100,20 @@ async function writeJson(name, value) {
   const path = join(work, name);
   await writeFile(path, `${JSON.stringify(value, null, 2)}\n`);
   return path;
+}
+
+function extractSigningToken(sent) {
+  const recipients = Array.isArray(sent?.recipients) ? sent.recipients : [];
+  const first = recipients[0];
+  if (!first) return null;
+  if (typeof first.signing_token === "string" && first.signing_token) {
+    return first.signing_token;
+  }
+  if (typeof first.signing_url === "string") {
+    const m = /\/sign\/([A-Za-z0-9_-]+)/.exec(first.signing_url);
+    return m?.[1] ?? null;
+  }
+  return null;
 }
 
 async function main() {
@@ -285,6 +307,7 @@ startxref
     }
   }
 
+  let signingToken = null;
   {
     try {
       const sent = await sealJson([
@@ -292,15 +315,115 @@ startxref
         `/api/v1/documents/send?id=${encodeURIComponent(docId)}`,
         await writeJson("send.json", { id: docId }),
       ]);
-      const url = sent?.recipients?.[0]?.signing_url;
-      url
+      signingToken = extractSigningToken(sent);
+      signingToken
         ? pass("documents send", "signing_url present")
         : fail("documents send", JSON.stringify(sent));
-      if (url && sent?.recipients?.[0]?.email_sent === true) {
+      if (sent?.recipients?.[0]?.email_sent === true) {
         pass("documents send email_sent");
       }
     } catch (err) {
       fail("documents send", err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  // Human half via public signing API (same path as /sign/$token + embed)
+  if (signingToken) {
+    {
+      const res = await fetch(`${API}/api/public/signing/${signingToken}`);
+      res.ok
+        ? pass("public signing page data")
+        : fail("public signing page data", `HTTP ${res.status}`);
+    }
+    {
+      const res = await fetch(`${API}/api/public/signing/${signingToken}/pdf`);
+      const ct = res.headers.get("content-type") ?? "";
+      res.ok && ct.includes("pdf")
+        ? pass("public signing pdf", ct)
+        : fail("public signing pdf", `HTTP ${res.status} content-type=${ct}`);
+    }
+    {
+      const res = await fetch(`${APP}/sign/${signingToken}`);
+      const ct = res.headers.get("content-type") ?? "";
+      res.ok && ct.includes("html")
+        ? pass("app signing route serves SPA", ct)
+        : fail("app signing route", `HTTP ${res.status} content-type=${ct}`);
+    }
+    for (const submit of [
+      { status: "viewed" },
+      {
+        status: "signed",
+        signatureData: "Dogfood Signer",
+        signatureType: "type",
+      },
+    ]) {
+      const res = await fetch(
+        `${API}/api/public/signing/${signingToken}/submit`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            ...submit,
+            ipAddress: "203.0.113.10",
+            userAgent: "seal-dogfood-cli/1.0",
+          }),
+        }
+      );
+      const data = await res.json().catch(() => ({}));
+      res.ok && data.success
+        ? pass(`public submit ${submit.status}`)
+        : fail(
+            `public submit ${submit.status}`,
+            `HTTP ${res.status} ${JSON.stringify(data)}`
+          );
+    }
+    {
+      try {
+        const listed = await sealJson([
+          "GET",
+          `/api/v1/documents?id=${encodeURIComponent(docId)}`,
+        ]);
+        const docs = Array.isArray(listed?.documents) ? listed.documents : [];
+        const after =
+          docs.find((d) => d?.id === docId) ??
+          (listed?.id === docId ? listed : null);
+        after?.status === "completed"
+          ? pass("document completed", after.status)
+          : fail("document completed", `status=${after?.status}`);
+      } catch (err) {
+        fail(
+          "document completed",
+          err instanceof Error ? err.message : String(err)
+        );
+      }
+    }
+    {
+      try {
+        const account = await sealJson(["GET", "/api/v1/account"]);
+        const slug = account?.slug;
+        if (!slug) {
+          fail("audit trail", "account missing slug");
+        } else {
+          const audit = await sealJson([
+            "GET",
+            `/api/v1/organizations/${encodeURIComponent(slug)}/audit?limit=100`,
+          ]);
+          const entries = Array.isArray(audit?.entries) ? audit.entries : [];
+          const actions = new Set(entries.map((e) => e?.action));
+          const expected = [
+            "document.sent",
+            "recipient.viewed",
+            "recipient.signed",
+            "document.completed",
+          ];
+          const missing = expected.filter((a) => !actions.has(a));
+          missing.length === 0
+            ? pass("audit trail", expected.join(","))
+            : fail("audit trail", `missing=${missing.join(",")}`);
+        }
+      } catch (err) {
+        fail("audit trail", err instanceof Error ? err.message : String(err));
+      }
     }
   }
 
