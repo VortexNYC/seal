@@ -43,6 +43,28 @@ Use an API key (`Authorization: Bearer seal_…`) or MCP OAuth. See
 [Authentication](/getting-started/authentication) and
 [Quick Start](/getting-started/quick-start).
 
+## Deal writes the document (field bindings)
+
+Do **not** OCR-reconstruct deals on every send. Tag fillable fields with a
+`binding_key`, then push structured values:
+
+```bash
+# Place a text field bound to a proposal key
+seal POST /api/v1/documents/fields field.json
+# field.json includes: binding_key "proposal.amount" (etc.)
+
+# Payments / CRM / agent writes the deal into the draft
+seal POST /api/v1/documents/apply-bindings <<'EOF'
+{"id":"<document_id>","bindings":{"proposal.amount":"12000","proposal.counterparty_name":"Acme"}}
+EOF
+```
+
+MCP: `seal_create_document_field` / `seal_apply_document_bindings`. Template
+fields support the same `binding_key` via `PUT /api/v1/templates/fields/update`.
+
+Seal-side of GitHub #604. Payments→Seal push when a proposal changes is
+SEA-43 (Vortex payments backend), not OCR theater.
+
 CLI golden path (same contract as MCP), including the public signing half
 through `completed` and signatures audit:
 
