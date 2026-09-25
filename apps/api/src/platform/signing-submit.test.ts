@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createD1 } from "../global/db.js";
 import {
   activity,
+  auditChainTips,
   auditLogs,
   documents,
   organization,
@@ -22,6 +23,7 @@ describe("commitSigningSubmit", () => {
     await db.delete(signatures);
     await db.delete(activity);
     await db.delete(auditLogs);
+    await db.delete(auditChainTips);
     await db.delete(recipients);
     await db.delete(documents);
     await db.delete(organization);
@@ -61,6 +63,7 @@ describe("commitSigningSubmit", () => {
 
     const base = {
       recipientId: "rec_batch",
+      previousStatus: "pending",
       recipientUpdate: {
         status: "signed",
         signedAt: now,

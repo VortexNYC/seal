@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { createD1 } from "../global/db.js";
 import {
+  auditChainTips,
   auditLogs,
   documents,
   organization,
@@ -15,6 +16,7 @@ describe("commitDocumentExpiry", () => {
   beforeEach(async () => {
     const db = createD1(env.D1);
     await db.delete(auditLogs);
+    await db.delete(auditChainTips);
     await db.delete(recipients);
     await db.delete(documents);
     await db.delete(organization);

@@ -8,6 +8,7 @@ import {
   apiTokenAuth,
   parseApiTokenScopes,
 } from "../../platform/api-token-auth.js";
+import { verifyAuditChain } from "../../platform/audit-chain.js";
 import { organizationMiddleware } from "../../platform/organization-middleware.js";
 import type { Variables } from "../../platform/types.js";
 
@@ -132,11 +133,30 @@ app.get("/", async (c) => {
       metadata: parseMetadata(row.metadata),
       ipAddress: row.ipAddress,
       userAgent: row.userAgent,
+      prevHash: row.prevHash,
+      entryHash: row.entryHash,
+      sequence: row.sequence,
       createdAt: row.createdAt.toISOString(),
     })),
     has_more: hasMore,
     ...(nextCursor !== undefined ? { next_cursor: String(nextCursor) } : {}),
   });
+});
+
+/** SEA-44 — verify the org's tamper-evident audit hash chain. */
+app.get("/verify", async (c) => {
+  if (!canAdminister(c)) {
+    return c.json({ error: "forbidden" }, 403);
+  }
+
+  const organization = c.get("organization");
+  if (!organization) {
+    return c.json({ error: "unauthorized" }, 401);
+  }
+
+  const db = createD1(c.env.D1);
+  const result = await verifyAuditChain(db, organization.id);
+  return c.json(result, result.ok ? 200 : 409);
 });
 
 export default app;

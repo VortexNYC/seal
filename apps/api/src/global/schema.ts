@@ -1306,6 +1306,12 @@ export const auditLogs = sqliteTable(
     metadata: text("metadata"),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
+    /** Hash of prior sealed entry in this org (SEA-44). */
+    prevHash: text("prev_hash"),
+    /** SHA-256 of prev_hash + canonical row (SEA-44). */
+    entryHash: text("entry_hash"),
+    /** Per-org monotonic sequence for sealed rows (SEA-44). */
+    sequence: integer("sequence"),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
@@ -1320,8 +1326,24 @@ export const auditLogs = sqliteTable(
       table.organizationId,
       table.createdAt
     ),
+    index("auditLogs_organizationId_sequence_idx").on(
+      table.organizationId,
+      table.sequence
+    ),
   ]
 );
+
+/** Per-org tip of the tamper-evident audit hash chain (SEA-44). */
+export const auditChainTips = sqliteTable("audit_chain_tips", {
+  organizationId: text("organization_id")
+    .primaryKey()
+    .references(() => organization.id, { onDelete: "cascade" }),
+  tipHash: text("tip_hash").notNull(),
+  sequence: integer("sequence").notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+});
 
 // -------------------------------------------------------------------------
 // Import jobs

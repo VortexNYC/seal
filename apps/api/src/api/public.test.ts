@@ -6,6 +6,7 @@ import { z } from "zod";
 import { createD1 } from "../global/db.js";
 import {
   activity,
+  auditChainTips,
   auditLogs,
   documents,
   organization,
@@ -20,12 +21,20 @@ function createApp() {
   return app;
 }
 
+const consentFields = {
+  esignConsentAt: new Date(),
+  esignConsentIp: "203.0.113.1",
+  esignConsentVersion: "2026-03-esign-v1",
+  esignConsentTextHash: "sha256:test",
+};
+
 describe("public API", () => {
   beforeEach(async () => {
     const db = createD1(env.D1);
     await db.delete(signatures);
     await db.delete(activity);
     await db.delete(auditLogs);
+    await db.delete(auditChainTips);
     await db.delete(recipients);
     await db.delete(documents);
     await db.delete(organization);
@@ -230,6 +239,7 @@ describe("public API", () => {
       status: "pending",
       signingToken: token,
       tokenExpiresAt: new Date(Date.now() + 60_000),
+      ...consentFields,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -321,6 +331,7 @@ describe("public API", () => {
         status: "pending",
         signingToken: token,
         tokenExpiresAt: new Date(Date.now() + 60_000),
+        ...consentFields,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -335,6 +346,7 @@ describe("public API", () => {
         status: "pending",
         signingToken: "sign-token-other",
         tokenExpiresAt: new Date(Date.now() + 60_000),
+        ...consentFields,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -413,6 +425,7 @@ describe("public API", () => {
       tokenExpiresAt: new Date(Date.now() + 60_000),
       authMethod: "access_code",
       accessCodeHash: await hashAccessCode("pass-1234"),
+      ...consentFields,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
