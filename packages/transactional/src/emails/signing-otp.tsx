@@ -38,7 +38,7 @@ export function SigningOtp({
             fontSize: "32px",
             letterSpacing: "8px",
             fontWeight: 700,
-            color: email.bodyText,
+            color: email.foreground,
             fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
           }}
         >

@@ -13,7 +13,7 @@ Updated with SEA-50 (Certificate of Completion / EVID-2).
 | SEA-49 | `fnd_6ab57f7839041b4a5b9319ae` (EVID-4) | high | backlog | Cryptographic seal of final PDF bytes (PAdES-class) — **not** CoC |
 | SEA-50 | `fnd_6ab57f78da8f9cbcb8affce0` (EVID-2) | high | **done** | Certificate of Completion PDF per completed envelope |
 | SEA-51 | `fnd_6ab57d53603ca70a50b0c160` (hipaa) | medium | backlog | HIPAA / BAA scoping for health-doc signing |
-| SEA-52 | `fnd_6ab57d53cb550d31b62425d7` + `fnd_6ab57d541b22e8a67eda3def` | high | backlog | Signer privacy notice + CCPA disclosures |
+| SEA-52 | `fnd_6ab57d53cb550d31b62425d7` + `fnd_6ab57d541b22e8a67eda3def` | high | **done** | Signer privacy notice + CCPA disclosures |
 | SEA-53 | `fnd_6ab563f6cb3383f010948219` (soc2) | medium | backlog | Secret scanning in CI |
 | SEA-54 | `fnd_6ab563f60a74553c6d277135` (soc2) | medium | backlog | External security audit / pen test |
 | SEA-55 | `fnd_6ab563f6c6010aa7fade2e30` (soc2) | high | backlog | Backup/DR for signed docs + audit |
@@ -27,7 +27,7 @@ Adjacent (not CompAI findings, but trust spine):
 | --- | --- | --- |
 | SEA-63 | **done** | Atomic sign + first-writer-wins + audited expiry |
 | SEA-59 | **done** | Seal-only Vortex signing path (ADR-005) |
-| SEA-64 | **in progress → this PR** | Near-realtime webhooks + declined/voided/expired + delivery retry |
+| SEA-64 | **done** | Near-realtime webhooks + declined/voided/expired + delivery retry |
 
 ## SEA-50 / EVID-2 acceptance
 
@@ -90,4 +90,16 @@ Seal coverage in this change:
 | Gate viewed/signed/approved until consented | `POST /signing/{token}/submit` → 403 |
 | Audit + activity | `recipient.esign_consent` |
 | CoC surfaces consent | Certificate party line |
+
+## SEA-52 / Signer privacy notice + CCPA
+
+| Requirement | Where |
+| --- | --- |
+| Default CCPA notice + org override | `privacy-notice.ts` + `signingSettings.privacyNoticeText` |
+| Notice published on signing session | `GET /signing/{token}` → `signingSettings.privacyNoticeText` |
+| Record IP + UA + text hash | `POST /signing/{token}/privacy` |
+| Gate viewed/signed/approved until acknowledged | `POST /signing/{token}/submit` → 403 |
+| Flow order | Auth → Privacy → ESIGN → sign |
+| Audit + activity | `recipient.privacy_notice` |
+| CoC surfaces privacy acknowledgment | Certificate party line |
 

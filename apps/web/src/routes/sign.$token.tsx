@@ -48,6 +48,7 @@ import {
 } from "react";
 
 import { EsignConsentDialog } from "@/components/documents/esign-consent-dialog";
+import { PrivacyNoticeDialog } from "@/components/documents/privacy-notice-dialog";
 import { FieldInputManager } from "@/components/documents/field-input-manager";
 import { FillableFieldOverlay } from "@/components/documents/fillable-field-overlay";
 import { PdfSigningDocumentSurface } from "@/components/documents/pdf-signing-document-surface";
@@ -67,6 +68,7 @@ import {
   getSigningFields,
   recordPublicSigningConsent,
   recordPublicSigningOptOut,
+  recordPublicSigningPrivacyNotice,
   savePublicSigningFieldValue,
   submitPublicSigning,
 } from "@/lib/api-client";
@@ -321,13 +323,16 @@ function SigningPage() {
     signingSettings,
   } = data;
 
-  // ESIGN consent state — skip modal if already consented
+  // Privacy notice then ESIGN consent — skip if already recorded
+  const [hasPrivacyAck, setHasPrivacyAck] = useState(
+    !!recipient.privacyNoticeAt
+  );
+  const [isPrivacySubmitting, setIsPrivacySubmitting] = useState(false);
   const [hasConsented, setHasConsented] = useState(!!recipient.esignConsentAt);
   const [isConsentSubmitting, setIsConsentSubmitting] = useState(false);
   const [authVerified, setAuthVerified] = useState(
     recipient.authVerified ??
-      !recipient.authMethod ||
-      recipient.authMethod === "none"
+      (!recipient.authMethod || recipient.authMethod === "none")
   );
 
   // Fetch fields assigned to this recipient
@@ -403,6 +408,26 @@ function SigningPage() {
         // Silently fall back to "unknown" — IP is best-effort
       });
   }, []);
+
+  // Privacy notice handlers (SEA-52)
+  const handlePrivacyAccept = useCallback(async () => {
+    setIsPrivacySubmitting(true);
+    try {
+      await recordPublicSigningPrivacyNotice(token, {
+        ipAddress: clientIp,
+        userAgent:
+          typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+        noticeText: signingSettings?.privacyNoticeText ?? undefined,
+        noticeVersion:
+          signingSettings?.privacyNoticeVersion ?? "seal-privacy-1",
+      });
+      setHasPrivacyAck(true);
+    } catch {
+      toast.error("Failed to record privacy acknowledgment. Please try again.");
+    } finally {
+      setIsPrivacySubmitting(false);
+    }
+  }, [token, clientIp, signingSettings]);
 
   // ESIGN consent handlers
   const handleConsentAccept = useCallback(async () => {
@@ -952,6 +977,18 @@ function SigningPage() {
     );
   }
 
+  // Show privacy notice before ESIGN consent (SEA-52)
+  if (!hasPrivacyAck && !isCompleted) {
+    return (
+      <PrivacyNoticeDialog
+        recipientEmail={recipient.email}
+        noticeText={signingSettings?.privacyNoticeText ?? ""}
+        onAccept={handlePrivacyAccept}
+        isSubmitting={isPrivacySubmitting}
+      />
+    );
+  }
+
   // Show ESIGN consent modal before allowing document access
   // Skip for recipients who already consented or are in a terminal state
   if (!hasConsented && !isCompleted) {
@@ -963,7 +1000,7 @@ function SigningPage() {
         onDownloadPdf={handleDownload}
         onOptOut={handleOptOut}
         isSubmitting={isConsentSubmitting}
-        customConsentText={signingSettings?.esignConsentText}
+        customConsentText={signingSettings?.esignConsentText ?? undefined}
       />
     );
   }

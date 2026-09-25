@@ -24,6 +24,7 @@ export interface SentRecipient {
   publicId: string;
   email: string | null;
   name: string | null;
+  role: string;
   signingToken: string;
   signingUrl: string;
   emailSent: boolean;
@@ -83,6 +84,7 @@ export async function sendDocumentForSigning(
       publicId: recipient.publicId,
       email: recipient.email,
       name: recipient.name,
+      role: recipient.role,
       signingToken,
       signingUrl: buildSigningUrl(env, signingToken),
       emailSent: false,

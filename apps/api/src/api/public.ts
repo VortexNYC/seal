@@ -20,6 +20,12 @@ import {
   resolveEsignConsentText,
 } from "../platform/esign-consent.js";
 import {
+  PRIVACY_NOTICE_VERSION,
+  hashPrivacyNoticeText,
+  readOrgPrivacyNoticeText,
+  resolvePrivacyNoticeText,
+} from "../platform/privacy-notice.js";
+import {
   sendDocumentCompletedEmail,
   sendDocumentViewedEmail,
   sendSigningCompleteEmail,
@@ -63,6 +69,7 @@ const signingRecipientSchema = z.object({
   order: z.number().int(),
   status: z.string(),
   esignConsentAt: z.number().nullable().optional(),
+  privacyNoticeAt: z.number().nullable().optional(),
   awaitingDictation: z.boolean(),
   expiresAt: z.number().nullable().optional(),
   viewedAt: z.number().nullable().optional(),
@@ -114,6 +121,8 @@ const signingTokenResponseSchema = z
       .object({
         esignConsentText: z.string().nullable().optional(),
         esignConsentVersion: z.string().optional(),
+        privacyNoticeText: z.string().nullable().optional(),
+        privacyNoticeVersion: z.string().optional(),
       })
       .optional(),
   })
@@ -232,6 +241,7 @@ app.openapi(signingTokenRouteDef, async (c) => {
         order: recipient.order,
         status: recipient.status,
         esignConsentAt: recipient.esignConsentAt?.getTime() ?? null,
+        privacyNoticeAt: recipient.privacyNoticeAt?.getTime() ?? null,
         awaitingDictation: recipient.awaitingDictation,
         expiresAt: recipient.tokenExpiresAt?.getTime() ?? null,
         viewedAt: recipient.viewedAt?.getTime() ?? null,
@@ -279,10 +289,13 @@ app.openapi(signingTokenRouteDef, async (c) => {
         customFooterText,
       },
       signingSettings: (() => {
-        const custom = readOrgEsignConsentText(org?.metadata ?? null);
+        const customConsent = readOrgEsignConsentText(org?.metadata ?? null);
+        const customPrivacy = readOrgPrivacyNoticeText(org?.metadata ?? null);
         return {
-          esignConsentText: resolveEsignConsentText(custom),
+          esignConsentText: resolveEsignConsentText(customConsent),
           esignConsentVersion: ESIGN_CONSENT_VERSION,
+          privacyNoticeText: resolvePrivacyNoticeText(customPrivacy),
+          privacyNoticeVersion: PRIVACY_NOTICE_VERSION,
         };
       })(),
     },
@@ -870,6 +883,15 @@ app.openapi(submitRouteDef, async (c) => {
     (input.status === "signed" ||
       input.status === "approved" ||
       input.status === "viewed") &&
+    !recipient.privacyNoticeAt
+  ) {
+    return c.json({ error: "Privacy notice acknowledgment required" }, 403);
+  }
+
+  if (
+    (input.status === "signed" ||
+      input.status === "approved" ||
+      input.status === "viewed") &&
     !recipient.esignConsentAt
   ) {
     return c.json({ error: "ESIGN consent required" }, 403);
@@ -1082,33 +1104,6 @@ app.openapi(submitRouteDef, async (c) => {
       }
     }
 
-    if (input.status === "declined") {
-      const emitPromise = emitWebhookEvent(c.env, {
-        organizationId: doc.organizationId,
-        eventType: "recipient.declined",
-        payload: {
-          documentId: doc.id,
-          publicId: doc.publicId,
-          recipientId: recipient.id,
-          name: recipient.name,
-          email: recipient.email,
-          declinedAt: nowDate.getTime(),
-          hasReason: Boolean(input.declineReason),
-        },
-      }).catch((err) => {
-        console.error("[webhooks] recipient.declined emit failed:", err);
-      });
-      try {
-        if (c.executionCtx?.waitUntil) {
-          c.executionCtx.waitUntil(emitPromise);
-        } else {
-          await emitPromise;
-        }
-      } catch {
-        await emitPromise;
-      }
-    }
-
     if (doc.allowDictateNextSigner) {
       const placeholderRows = await db
         .select()
@@ -1268,6 +1263,33 @@ app.openapi(submitRouteDef, async (c) => {
           console.error("[public/submit] completed email failed:", result);
         }
       }
+    }
+  }
+
+  if (input.status === "declined") {
+    const emitPromise = emitWebhookEvent(c.env, {
+      organizationId: doc.organizationId,
+      eventType: "recipient.declined",
+      payload: {
+        documentId: doc.id,
+        publicId: doc.publicId,
+        recipientId: recipient.id,
+        name: recipient.name,
+        email: recipient.email,
+        declinedAt: nowDate.getTime(),
+        hasReason: Boolean(input.declineReason),
+      },
+    }).catch((err) => {
+      console.error("[webhooks] recipient.declined emit failed:", err);
+    });
+    try {
+      if (c.executionCtx?.waitUntil) {
+        c.executionCtx.waitUntil(emitPromise);
+      } else {
+        await emitPromise;
+      }
+    } catch {
+      await emitPromise;
     }
   }
 
@@ -1704,6 +1726,148 @@ app.openapi(consentRouteDef, async (c) => {
     consentAt: now,
     consentVersion,
     consentTextHash,
+  });
+});
+
+const privacyInputSchema = z.object({
+  ipAddress: z.string().optional(),
+  userAgent: z.string().optional(),
+  noticeText: z.string().optional(),
+  noticeVersion: z.string().optional(),
+});
+
+const privacyResponseSchema = z
+  .object({
+    success: z.boolean(),
+    acknowledgedAt: z.number(),
+    noticeVersion: z.string(),
+    noticeTextHash: z.string(),
+  })
+  .openapi("PublicSigningPrivacyNoticeResponse");
+
+const privacyRouteDef = createRoute({
+  method: "post",
+  path: "/signing/{token}/privacy",
+  request: {
+    params: tokenParamsSchema,
+    body: {
+      content: {
+        "application/json": { schema: privacyInputSchema },
+      },
+      description: "Privacy notice acknowledgment input",
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: privacyResponseSchema },
+      },
+      description: "Privacy notice acknowledged",
+    },
+    400: { description: "Invalid or expired token" },
+    404: { description: "Document not found" },
+  },
+});
+
+app.openapi(privacyRouteDef, async (c) => {
+  const { token } = c.req.valid("param");
+  const input = c.req.valid("json");
+  const db = createD1(c.env.D1);
+
+  const now = Date.now();
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(eq(recipients.signingToken, token))
+    .limit(1);
+
+  const recipient = recipientRows[0];
+  if (!recipient) {
+    return c.json({ error: "Invalid signing token" }, 400);
+  }
+
+  if (recipient.tokenExpiresAt && recipient.tokenExpiresAt.getTime() < now) {
+    return c.json({ error: "Signing token has expired" }, 400);
+  }
+
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(eq(documents.id, recipient.documentId))
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc || doc.status === "deleted" || doc.documentStatus === "deleted") {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  const acknowledgedAt = new Date(now);
+  const ipAddress = input.ipAddress;
+  const userAgent = input.userAgent ?? c.req.header("user-agent") ?? null;
+  const customText = readOrgPrivacyNoticeText(
+    (
+      await db
+        .select({ metadata: organization.metadata })
+        .from(organization)
+        .where(eq(organization.id, doc.organizationId))
+        .limit(1)
+    )[0]?.metadata ?? null
+  );
+  const noticeText = resolvePrivacyNoticeText(customText);
+  if (input.noticeText?.trim() && input.noticeText.trim() !== noticeText) {
+    return c.json({ error: "Privacy notice text mismatch" }, 400);
+  }
+  const noticeTextHash = await hashPrivacyNoticeText(noticeText);
+  const noticeVersion = input.noticeVersion ?? PRIVACY_NOTICE_VERSION;
+
+  await db
+    .update(recipients)
+    .set({
+      privacyNoticeAt: acknowledgedAt,
+      privacyNoticeIp: ipAddress,
+      privacyNoticeVersion: noticeVersion,
+      privacyNoticeTextHash: noticeTextHash,
+      privacyNoticeUserAgent: userAgent,
+      updatedAt: acknowledgedAt,
+    })
+    .where(eq(recipients.id, recipient.id));
+
+  await db.insert(activity).values({
+    id: crypto.randomUUID(),
+    organizationId: doc.organizationId,
+    action: "recipient.privacy_notice",
+    actorName: recipient.name ?? recipient.email,
+    targetName: doc.name,
+    metadata: JSON.stringify({
+      noticeVersion,
+      noticeTextHash,
+      ipAddress,
+      acknowledgedAt: now,
+    }),
+    createdAt: acknowledgedAt,
+  });
+
+  await writeAuditLog(db, {
+    organizationId: doc.organizationId,
+    actor: { type: "user", id: recipient.id },
+    action: "recipient.privacy_notice",
+    resourceType: "recipient",
+    resourceId: recipient.id,
+    metadata: {
+      documentId: doc.id,
+      publicId: doc.publicId,
+      noticeVersion,
+      noticeTextHash,
+    },
+    ipAddress,
+    userAgent: userAgent ?? undefined,
+  });
+
+  return c.json({
+    success: true,
+    acknowledgedAt: now,
+    noticeVersion,
+    noticeTextHash,
   });
 });
 

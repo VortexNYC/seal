@@ -38,6 +38,8 @@ describe("certificate-of-completion", () => {
           authMethod: "email_otp",
           consentAt: "2026-09-24T11:58:30.000Z",
           consentTextHash: "sha256:abc123",
+          privacyNoticeAt: "2026-09-24T11:58:00.000Z",
+          privacyNoticeTextHash: "sha256:privacyabc",
         },
         {
           name: "Bob CC",
@@ -49,6 +51,8 @@ describe("certificate-of-completion", () => {
           authMethod: "none",
           consentAt: null,
           consentTextHash: null,
+          privacyNoticeAt: null,
+          privacyNoticeTextHash: null,
         },
       ],
       events: [

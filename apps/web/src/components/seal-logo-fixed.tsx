@@ -17,7 +17,7 @@ export function SealLogoBadgeFixed({
   className,
   size = 80,
   withText = false,
-}: SealLogoBadgeFixedProps): JSX.Element {
+}: SealLogoBadgeFixedProps) {
   const paddingRatio = withText ? 0.1 : 0.18;
   const borderRadiusRatio = 0.2;
   const padding = size * paddingRatio;

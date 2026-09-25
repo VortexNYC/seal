@@ -47,10 +47,12 @@ function SigningSettings() {
   const [formData, setFormData] = useState<{
     allowedSignatureTypes: SignatureTypeOption[];
     esignConsentText: string;
+    privacyNoticeText: string;
     defaultDeadlineDays: number;
   }>({
     allowedSignatureTypes: [...SIGNATURE_TYPE_OPTIONS],
     esignConsentText: "",
+    privacyNoticeText: "",
     defaultDeadlineDays: 30,
   });
 
@@ -59,6 +61,7 @@ function SigningSettings() {
       setFormData({
         allowedSignatureTypes: [...signingSettings.allowedSignatureTypes],
         esignConsentText: signingSettings.esignConsentText ?? "",
+        privacyNoticeText: signingSettings.privacyNoticeText ?? "",
         defaultDeadlineDays: signingSettings.defaultDeadlineDays,
       });
     }
@@ -98,6 +101,7 @@ function SigningSettings() {
       await updateSigningSettings(slug, {
         allowedSignatureTypes: formData.allowedSignatureTypes,
         esignConsentText: formData.esignConsentText || undefined,
+        privacyNoticeText: formData.privacyNoticeText || undefined,
         defaultDeadlineDays: formData.defaultDeadlineDays,
       });
       toast.success("Signing settings updated");
@@ -216,6 +220,35 @@ function SigningSettings() {
             />
             <Text variant="secondary" as="p" id="esign-consent-help">
               This text is shown to recipients before they can sign.
+            </Text>
+          </LayerCard.Primary>
+        </LayerCard>
+
+        <LayerCard>
+          <LayerCard.Secondary>
+            <Text as="h2" variant="heading">
+              Privacy / CCPA Notice
+            </Text>
+            <Text variant="secondary">
+              Custom privacy / CCPA notice shown before e-sign consent. Leave
+              blank to use the Seal default.
+            </Text>
+          </LayerCard.Secondary>
+          <LayerCard.Primary>
+            <Textarea
+              id="privacy-notice-text"
+              value={formData.privacyNoticeText}
+              disabled={isSubmitting}
+              onChange={(e) =>
+                setFormData({ ...formData, privacyNoticeText: e.target.value })
+              }
+              placeholder="Privacy notice for electronic signing..."
+              rows={6}
+              aria-describedby="privacy-notice-help"
+            />
+            <Text variant="secondary" as="p" id="privacy-notice-help">
+              Recipients must acknowledge this notice before they can consent to
+              sign.
             </Text>
           </LayerCard.Primary>
         </LayerCard>

@@ -539,6 +539,7 @@ const signingSettingsSchema = z.object({
     z.union([z.literal("draw"), z.literal("type"), z.literal("upload")])
   ),
   esignConsentText: z.string().nullable().optional(),
+  privacyNoticeText: z.string().nullable().optional(),
   defaultDeadlineDays: z.number().int(),
 });
 export type ApiSigningSettings = z.infer<typeof signingSettingsSchema>;
@@ -555,6 +556,7 @@ export async function updateSigningSettings(
   input: {
     allowedSignatureTypes?: Array<"draw" | "type" | "upload">;
     esignConsentText?: string;
+    privacyNoticeText?: string;
     defaultDeadlineDays?: number;
   }
 ): Promise<ApiSigningSettings> {
@@ -2182,6 +2184,7 @@ const publicSigningRecipientSchema = z.object({
   order: z.number().int(),
   status: z.string(),
   esignConsentAt: z.number().nullable().optional(),
+  privacyNoticeAt: z.number().nullable().optional(),
   awaitingDictation: z.boolean(),
   expiresAt: z.number().nullable().optional(),
   viewedAt: z.number().nullable().optional(),
@@ -2229,6 +2232,8 @@ const publicSigningTokenResponseSchema = z.object({
     .object({
       esignConsentText: z.string().nullable().optional(),
       esignConsentVersion: z.string().optional(),
+      privacyNoticeText: z.string().nullable().optional(),
+      privacyNoticeVersion: z.string().optional(),
     })
     .optional(),
 });
@@ -2258,7 +2263,7 @@ export async function challengePublicSigningAuth(
       maskedEmail: z.string(),
       expiresInSeconds: z.number().int(),
     }),
-    { method: "POST", body: {} }
+    { method: "POST", body: JSON.stringify({}) }
   );
 }
 
@@ -2272,7 +2277,7 @@ export async function verifyPublicSigningAuth(
       success: z.boolean(),
       method: z.string(),
     }),
-    { method: "POST", body: { code } }
+    { method: "POST", body: JSON.stringify({ code }) }
   );
 }
 const publicSigningFieldSchema = z.object({
@@ -2413,6 +2418,34 @@ export async function recordPublicSigningConsent(
       consentAt: z.number(),
       consentVersion: z.string(),
       consentTextHash: z.string(),
+    }),
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+export async function recordPublicSigningPrivacyNotice(
+  token: string,
+  input: {
+    ipAddress: string;
+    userAgent?: string;
+    noticeText?: string;
+    noticeVersion?: string;
+  }
+): Promise<{
+  success: boolean;
+  acknowledgedAt: number;
+  noticeVersion: string;
+  noticeTextHash: string;
+}> {
+  return apiFetch(
+    `/api/public/signing/${encodeURIComponent(token)}/privacy`,
+    z.object({
+      success: z.boolean(),
+      acknowledgedAt: z.number(),
+      noticeVersion: z.string(),
+      noticeTextHash: z.string(),
     }),
     {
       method: "POST",

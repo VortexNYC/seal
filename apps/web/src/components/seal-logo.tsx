@@ -18,7 +18,7 @@ export function SealLogo({
   size = 32,
   variant = "color",
   withBackground = false,
-}: SealLogoProps): JSX.Element {
+}: SealLogoProps) {
   const colorClass =
     variant === "white"
       ? "text-white"

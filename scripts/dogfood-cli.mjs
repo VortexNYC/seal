@@ -568,6 +568,25 @@ startxref
       },
     ]) {
       if (submit.status === "viewed") {
+        const privacyRes = await fetch(
+          `${API}/api/public/signing/${signingToken}/privacy`,
+          {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              ipAddress: "203.0.113.10",
+              userAgent: "seal-dogfood-cli/1.0",
+            }),
+          }
+        );
+        const privacyData = await privacyRes.json().catch(() => ({}));
+        privacyRes.ok && privacyData.success
+          ? pass("public privacy notice", privacyData.noticeTextHash ?? "")
+          : fail(
+              "public privacy notice",
+              `HTTP ${privacyRes.status} ${JSON.stringify(privacyData)}`
+            );
+
         const consentRes = await fetch(
           `${API}/api/public/signing/${signingToken}/consent`,
           {
