@@ -12,7 +12,7 @@ Updated with SEA-50 (Certificate of Completion / EVID-2).
 | SEA-48 | `fnd_6ab57f78271c3d6767ba069b` (AUTH-1) | medium | **done** | Graded signer auth: `none` \| `access_code` \| `email_otp` |
 | SEA-49 | `fnd_6ab57f7839041b4a5b9319ae` (EVID-4) | high | **done** (L1a+L1b) | Cryptographic seal of final PDF bytes (PAdES-class) — **not** CoC |
 | SEA-50 | `fnd_6ab57f78da8f9cbcb8affce0` (EVID-2) | high | **done** | Certificate of Completion PDF per completed envelope |
-| SEA-51 | `fnd_6ab57d53603ca70a50b0c160` (hipaa) | medium | backlog | HIPAA / BAA scoping for health-doc signing |
+| SEA-51 | `fnd_6ab57d53603ca70a50b0c160` (hipaa) | medium | **done** | HIPAA / BAA scoping — decline PHI until expand path |
 | SEA-52 | `fnd_6ab57d53cb550d31b62425d7` + `fnd_6ab57d541b22e8a67eda3def` | high | **done** | Signer privacy notice + CCPA disclosures |
 | SEA-53 | `fnd_6ab563f6cb3383f010948219` (soc2) | medium | **done** | Secret scanning in CI |
 | SEA-54 | `fnd_6ab563f60a74553c6d277135` (soc2) | medium | backlog | External security audit / pen test |
@@ -96,6 +96,14 @@ Seal coverage in this change:
 | --- | --- |
 | State current level (SES) | `apps/docs/docs/getting-started/eidas.mdx` |
 | Roadmap AES/QES via TSP | Same page — pairs with SEA-49 L2–L4 |
+
+## SEA-51 / HIPAA scoping
+
+| Requirement | Where |
+| --- | --- |
+| Accept/decline healthcare decision | **Decline** PHI / BA workloads until BAA + PHI controls |
+| Document BA trigger + gaps | `apps/docs/docs/getting-started/hipaa.mdx` |
+| Expand path before first health customer | Same page — BAA, data map, retention, breach, subprocessors |
 
 ## SEA-45 / ESIGN consent
 
