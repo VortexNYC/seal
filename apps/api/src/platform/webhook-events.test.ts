@@ -207,7 +207,7 @@ describe("webhook-events", () => {
     expect(rows[0]?.attemptCount).toBeGreaterThanOrEqual(1);
   });
 
-  it("does not deliver to non-active webhooks", async () => {
+  it("does not enqueue deliveries for non-active webhooks", async () => {
     const { orgId, db } = await seedOrg();
     const url = "https://example.com/hook";
     await createWebhook(db, {
@@ -217,7 +217,7 @@ describe("webhook-events", () => {
       status: "paused",
     });
 
-    await emitWebhookEvent(
+    const emit = await emitWebhookEvent(
       env,
       {
         organizationId: orgId,
@@ -226,22 +226,20 @@ describe("webhook-events", () => {
       },
       { flushImmediately: false }
     );
+    expect(emit.deliveryCount).toBe(0);
 
     const result = await processWebhookDeliveries(env, {
       organizationId: orgId,
       fetchImpl: async () => new Response("ok", { status: 200 }),
     });
 
-    expect(result.processed).toBe(1);
-    expect(result.succeeded).toBe(0);
-    expect(result.failed).toBe(1);
+    expect(result.processed).toBe(0);
 
     const rows = await db
       .select()
       .from(webhookDeliveries)
       .where(eq(webhookDeliveries.organizationId, orgId));
-    expect(rows[0]?.status).toBe("failed");
-    expect(rows[0]?.lastError).toBe("webhook is not active");
+    expect(rows).toHaveLength(0);
   });
 
   it("retries a failed delivery via retryWebhookDelivery (SEA-64)", async () => {

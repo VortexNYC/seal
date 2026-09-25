@@ -270,6 +270,13 @@ Webhooks deliver real-time HTTP POST notifications to your server when Seal even
 | \`template.updated\` | Template modified |
 | \`template.used\` | Document created from template |
 
+### Audit / SIEM Events
+| Event | Fired When |
+|-------|-----------|
+| \`audit.entry.created\` | A sealed workspace audit log entry was written (subscribe with \`audit.entry.created\`, \`audit.*\`, or \`*\`) |
+
+Also: \`GET /organizations/{slug}/audit/export\` returns NDJSON for SIEM pull/backfill.
+
 ## Payload Format
 
 \`\`\`json

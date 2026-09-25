@@ -387,4 +387,50 @@ describe("api v1 audit logs", () => {
     expect(body.checked).toBeGreaterThanOrEqual(1);
     expect(body.tipHash).toBeTruthy();
   });
+
+  it("exports sealed audit entries as NDJSON for SIEM pull (SEA-67)", async () => {
+    const { slug, plaintext, orgId, userId } = await seedTokenContext();
+    const db = createD1(env.D1);
+
+    await writeAuditLog(db, {
+      organizationId: orgId,
+      actor: { type: "user", id: userId },
+      action: "settings.update",
+      resourceType: "organization",
+      resourceId: orgId,
+      ipAddress: "198.51.100.20",
+    });
+
+    const res = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/v1/organizations/${encodeURIComponent(
+          slug
+        )}/audit/export?limit=50`,
+        { headers: { authorization: `Bearer ${plaintext}` } }
+      ),
+      env
+    );
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("application/x-ndjson");
+    const text = new TextDecoder().decode(await res.arrayBuffer());
+    const lines = text
+      .trim()
+      .split("\n")
+      .filter((line) => line.length > 0);
+    expect(lines.length).toBeGreaterThanOrEqual(1);
+    const first = JSON.parse(lines[0] ?? "{}") as {
+      action: string;
+      ipAddress: string | null;
+      sequence: number;
+    };
+    const last = JSON.parse(lines[lines.length - 1] ?? "{}") as {
+      sequence: number;
+    };
+    expect(first.action).toBe("settings.update");
+    expect(first.ipAddress).toBe("198.51.100.20");
+    expect(first.sequence).toBeGreaterThan(0);
+    expect(res.headers.get("x-seal-next-sequence")).toBe(
+      String(last.sequence)
+    );
+  });
 });

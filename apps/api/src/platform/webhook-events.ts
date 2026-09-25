@@ -16,6 +16,11 @@ export interface EmitWebhookEventInput {
   organizationId: string;
   eventType: string;
   payload: WebhookEventPayload;
+  /**
+   * Stable id for idempotent enqueue (SEA-67 SIEM uses audit entry id).
+   * Defaults to a fresh UUID.
+   */
+  eventId?: string;
 }
 
 export interface EmitWebhookEventOptions {
@@ -45,6 +50,24 @@ function parseEvents(value: string | null): string[] {
   }
 }
 
+/** Exact match, `*`, or category wildcard (`audit.*`). */
+export function webhookSubscribesTo(
+  subscribed: string[],
+  eventType: string
+): boolean {
+  if (subscribed.includes("*") || subscribed.includes(eventType)) {
+    return true;
+  }
+  const dot = eventType.indexOf(".");
+  if (dot > 0) {
+    const categoryWildcard = `${eventType.slice(0, dot)}.*`;
+    if (subscribed.includes(categoryWildcard)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 async function hmacSha256(secret: string, message: string): Promise<string> {
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
@@ -70,7 +93,7 @@ export async function emitWebhookEvent(
   options: EmitWebhookEventOptions = {}
 ): Promise<EmitWebhookEventResult> {
   const db = createD1(env.D1);
-  const eventId = crypto.randomUUID();
+  const eventId = input.eventId ?? crypto.randomUUID();
   const now = new Date();
   const payload = JSON.stringify({
     eventId,
@@ -85,14 +108,17 @@ export async function emitWebhookEvent(
       url: webhooks.url,
       secret: webhooks.secret,
       events: webhooks.events,
+      status: webhooks.status,
     })
     .from(webhooks)
     .where(eq(webhooks.organizationId, input.organizationId));
 
   const values = hookRows
     .filter((hook) => {
-      const subscribed = parseEvents(hook.events);
-      return subscribed.includes(input.eventType) || subscribed.includes("*");
+      if (hook.status !== "active") {
+        return false;
+      }
+      return webhookSubscribesTo(parseEvents(hook.events), input.eventType);
     })
     .map((hook) => ({
       id: crypto.randomUUID(),

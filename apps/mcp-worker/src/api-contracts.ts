@@ -416,6 +416,7 @@ export const webhookEventTypeSchema = z.enum([
   "template.created",
   "template.updated",
   "template.used",
+  "audit.entry.created",
 ]);
 export type WebhookEventType = z.infer<typeof webhookEventTypeSchema>;
 

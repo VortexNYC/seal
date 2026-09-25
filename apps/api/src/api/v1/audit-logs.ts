@@ -9,11 +9,13 @@ import {
   parseApiTokenScopes,
 } from "../../platform/api-token-auth.js";
 import { verifyAuditChain } from "../../platform/audit-chain.js";
+import { listAuditEntriesForExport, flushAuditSiemStream } from "../../platform/audit-siem.js";
 import { organizationMiddleware } from "../../platform/organization-middleware.js";
 import type { Variables } from "../../platform/types.js";
 
 const DEFAULT_PAGE_LIMIT = 20;
 const MAX_PAGE_LIMIT = 100;
+const MAX_EXPORT_LIMIT = 500;
 
 const listQuerySchema = z.object({
   actor: z.string().optional(),
@@ -23,6 +25,11 @@ const listQuerySchema = z.object({
   to: z.string().datetime().optional(),
   limit: z.coerce.number().int().min(1).max(MAX_PAGE_LIMIT).optional(),
   cursor: z.coerce.number().int().min(0).optional(),
+});
+
+const exportQuerySchema = z.object({
+  after_sequence: z.coerce.number().int().min(0).optional(),
+  limit: z.coerce.number().int().min(1).max(MAX_EXPORT_LIMIT).optional(),
 });
 
 const app = new OpenAPIHono<{
@@ -141,6 +148,82 @@ app.get("/", async (c) => {
     has_more: hasMore,
     ...(nextCursor !== undefined ? { next_cursor: String(nextCursor) } : {}),
   });
+});
+
+/**
+ * SEA-67 — NDJSON pull export for SIEM backfill.
+ * Cursor is sealed sequence (after_sequence), ascending.
+ */
+app.get("/export", async (c) => {
+  if (!canAdminister(c)) {
+    return c.json({ error: "forbidden" }, 403);
+  }
+
+  const organization = c.get("organization");
+  if (!organization) {
+    return c.json({ error: "unauthorized" }, 401);
+  }
+
+  const parsed = exportQuerySchema.safeParse(c.req.query());
+  if (!parsed.success) {
+    return c.json({ error: "validation_error" }, 400);
+  }
+
+  const limit = parsed.data.limit ?? 100;
+  const afterSequence = parsed.data.after_sequence ?? 0;
+  const db = createD1(c.env.D1);
+  const entries = await listAuditEntriesForExport(db, organization.id, {
+    afterSequence,
+    limit,
+  });
+
+  const body = entries.map((entry) => JSON.stringify(entry)).join("\n");
+  const last = entries[entries.length - 1];
+  const nextSequence =
+    last?.sequence !== null && last?.sequence !== undefined
+      ? String(last.sequence)
+      : undefined;
+
+  return new Response(body.length > 0 ? `${body}\n` : "", {
+    status: 200,
+    headers: {
+      "content-type": "application/x-ndjson; charset=utf-8",
+      ...(nextSequence
+        ? {
+            "x-seal-next-sequence": nextSequence,
+            "x-seal-has-more": entries.length >= limit ? "1" : "0",
+          }
+        : { "x-seal-has-more": "0" }),
+    },
+  });
+});
+
+/**
+ * SEA-67 — enqueue sealed audit rows past the SIEM cursor to subscribed
+ * webhooks (audit.entry.created / audit.* / *), then drain deliveries.
+ */
+app.post("/siem/flush", async (c) => {
+  if (!canAdminister(c)) {
+    return c.json({ error: "forbidden" }, 403);
+  }
+
+  const organization = c.get("organization");
+  if (!organization) {
+    return c.json({ error: "unauthorized" }, 401);
+  }
+
+  const limit = Math.min(
+    Math.max(parseInt(c.req.query("limit") ?? "100", 10) || 100, 1),
+    200
+  );
+
+  const result = await flushAuditSiemStream(c.env, {
+    organizationId: organization.id,
+    limitPerOrg: limit,
+    flushImmediately: true,
+  });
+
+  return c.json({ success: true, ...result });
 });
 
 /** SEA-44 — verify the org's tamper-evident audit hash chain. */

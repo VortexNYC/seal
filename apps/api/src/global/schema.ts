@@ -1357,6 +1357,21 @@ export const auditChainTips = sqliteTable("audit_chain_tips", {
 });
 
 /**
+ * Per-org SIEM stream cursor (SEA-67).
+ * last_sequence is the highest sealed audit sequence already enqueued
+ * as audit.entry.created webhook deliveries for this org.
+ */
+export const auditSiemCursors = sqliteTable("audit_siem_cursors", {
+  organizationId: text("organization_id")
+    .primaryKey()
+    .references(() => organization.id, { onDelete: "cascade" }),
+  lastSequence: integer("last_sequence").notNull().default(0),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+});
+
+/**
  * Per-org audit write health (SEA-56).
  * Consecutive sealed-write failures trigger admin alerts.
  */

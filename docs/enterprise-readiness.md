@@ -28,7 +28,7 @@ do not design Seal features “so Pile users also have SSO.”
 | No customer-held encryption keys | Only platform/Cloudflare keys | Later |
 | Egress via email / webhooks / convert-AI | Extra copies of names + file bytes | SEA-70 |
 | Signing audit strong; file-access audit weak | Lifecycle ≠ every storage read | SEA-44 done; SEA-68 extends |
-| SIEM / stream export | Enterprise security teams pipe logs out | SEA-67 |
+| SIEM / stream export | Enterprise security teams pipe logs out | SEA-67 **done** — push `audit.entry.created` webhooks + NDJSON `/audit/export` |
 | SAML SSO advertised, not implemented | Plan flag + marketing ahead of product | SEA-66 |
 | Public subprocessors / DPA stub / breach runbook | RFP blank pages | SEA-69 **done** |
 | External pen test | SEA-54 | External firm |
@@ -50,7 +50,7 @@ not a multi-product SKU). That is internal reuse — not “prepare for dual sea
 ## Suggested Seal attack order
 
 1. **SEA-69** Privacy surface — **done**
-2. **SEA-67** SIEM / audit export
+2. **SEA-67** SIEM / audit export — **done** (push webhook + NDJSON pull)
 3. **SEA-68** Data-access + break-glass logging
 4. **SEA-70** Sensitive egress gates
 5. **SEA-66** SAML SSO (real, not marketing checkbox)
@@ -60,6 +60,6 @@ not a multi-product SKU). That is internal reuse — not “prepare for dual sea
 
 - SEA-54 pen test (external)
 - SEA-57 legal review (attorney)
-- SEA-43 Vortex payments (wait VOR-571 ceremony)
+- SEA-43 Vortex payments (Seal-as-customer on sandbox — Agree.com slice; Vortex owns VOR-585+ children)
 - SEA-1 / SEA-3 marketing
-- SEA-66 … SEA-68, SEA-70 foundation
+- SEA-66, SEA-68, SEA-70 foundation

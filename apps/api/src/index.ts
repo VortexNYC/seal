@@ -57,6 +57,7 @@ import { getSessionUser } from "./platform/session.js";
 import type { Variables } from "./platform/types.js";
 import { projectPayableObjectUpdated } from "./platform/vortex_billing.js";
 import { processWebhookDeliveries } from "./platform/webhook-events.js";
+import { flushAuditSiemStream } from "./platform/audit-siem.js";
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
@@ -841,7 +842,14 @@ export const scheduled: ExportedHandlerScheduledHandler<
   // pending for hours if the cron branch is skipped or the daily job faults.
   await processWebhookDeliveries(env);
 
-  // Five-minute cron is webhooks-only.
+  // SEA-67: enqueue sealed audit rows to SIEM subscribers, then drain again
+  // so push is near-realtime on the */5 cadence.
+  await flushAuditSiemStream(env).catch((err) => {
+    console.error("[scheduled/audit-siem] flush failed:", err);
+  });
+  await processWebhookDeliveries(env);
+
+  // Five-minute cron is webhooks + SIEM fan-out only.
   if (event.cron === "*/5 * * * *") {
     return;
   }
