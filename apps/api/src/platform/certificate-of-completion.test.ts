@@ -36,6 +36,8 @@ describe("certificate-of-completion", () => {
           completedAt: "2026-09-24T11:59:00.000Z",
           ipAddress: "203.0.113.10",
           authMethod: "email_otp",
+          consentAt: "2026-09-24T11:58:30.000Z",
+          consentTextHash: "sha256:abc123",
         },
         {
           name: "Bob CC",
@@ -45,6 +47,8 @@ describe("certificate-of-completion", () => {
           completedAt: "2026-09-24T11:58:00.000Z",
           ipAddress: null,
           authMethod: "none",
+          consentAt: null,
+          consentTextHash: null,
         },
       ],
       events: [

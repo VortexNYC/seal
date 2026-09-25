@@ -15,6 +15,8 @@ export type CertificateParty = {
   completedAt: string | null;
   ipAddress: string | null;
   authMethod: string | null;
+  consentAt: string | null;
+  consentTextHash: string | null;
 };
 
 export type CertificateOfCompletionInput = {
@@ -124,6 +126,10 @@ export async function buildCertificateOfCompletionPdf(
         (party.ipAddress ? ` · IP ${party.ipAddress}` : "") +
         (party.authMethod && party.authMethod !== "none"
           ? ` · auth ${party.authMethod}`
+          : "") +
+        (party.consentAt ? ` · ESIGN consent ${party.consentAt}` : "") +
+        (party.consentTextHash
+          ? ` · consent ${party.consentTextHash.slice(0, 18)}…`
           : ""),
       8,
       { color: muted }

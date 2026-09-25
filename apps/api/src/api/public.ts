@@ -14,6 +14,12 @@ import {
 } from "../global/schema.js";
 import { writeAuditLog } from "../platform/audit-log.js";
 import {
+  ESIGN_CONSENT_VERSION,
+  hashEsignConsentText,
+  readOrgEsignConsentText,
+  resolveEsignConsentText,
+} from "../platform/esign-consent.js";
+import {
   sendDocumentCompletedEmail,
   sendDocumentViewedEmail,
   sendSigningCompleteEmail,
@@ -104,7 +110,12 @@ const signingTokenResponseSchema = z
         customFooterText: z.string().nullable().optional(),
       })
       .optional(),
-    signingSettings: z.record(z.string(), z.string()).optional(),
+    signingSettings: z
+      .object({
+        esignConsentText: z.string().nullable().optional(),
+        esignConsentVersion: z.string().optional(),
+      })
+      .optional(),
   })
   .openapi("SigningTokenResponse");
 
@@ -267,7 +278,13 @@ app.openapi(signingTokenRouteDef, async (c) => {
         hideSealBranding,
         customFooterText,
       },
-      signingSettings: undefined,
+      signingSettings: (() => {
+        const custom = readOrgEsignConsentText(org?.metadata ?? null);
+        return {
+          esignConsentText: resolveEsignConsentText(custom),
+          esignConsentVersion: ESIGN_CONSENT_VERSION,
+        };
+      })(),
     },
     200
   );
@@ -847,6 +864,15 @@ app.openapi(submitRouteDef, async (c) => {
     !isSignerAuthVerified(recipient.authMethod, recipient.authenticationData)
   ) {
     return c.json({ error: "Signer authentication required" }, 403);
+  }
+
+  if (
+    (input.status === "signed" ||
+      input.status === "approved" ||
+      input.status === "viewed") &&
+    !recipient.esignConsentAt
+  ) {
+    return c.json({ error: "ESIGN consent required" }, 403);
   }
 
   const nowDate = new Date();
@@ -1510,7 +1536,10 @@ app.openapi(signingPaymentConfigsRouteDef, async (c) => {
 });
 
 const consentInputSchema = z.object({
-  ipAddress: z.string().optional(),
+  ipAddress: z.string().min(1),
+  userAgent: z.string().optional(),
+  /** Client may echo the text it displayed; server still resolves canonical text. */
+  consentText: z.string().optional(),
   consentVersion: z.string().optional(),
 });
 
@@ -1518,6 +1547,8 @@ const consentResponseSchema = z
   .object({
     success: z.boolean(),
     consentAt: z.number(),
+    consentVersion: z.string(),
+    consentTextHash: z.string(),
   })
   .openapi("PublicSigningConsentResponse");
 
@@ -1578,8 +1609,24 @@ app.openapi(consentRouteDef, async (c) => {
   }
 
   const consentAt = new Date(now);
-  const ipAddress = input.ipAddress ?? "unknown";
-  const consentVersion = input.consentVersion ?? "1.0";
+  const ipAddress = input.ipAddress;
+  const userAgent = input.userAgent ?? c.req.header("user-agent") ?? null;
+  const customText = readOrgEsignConsentText(
+    (
+      await db
+        .select({ metadata: organization.metadata })
+        .from(organization)
+        .where(eq(organization.id, doc.organizationId))
+        .limit(1)
+    )[0]?.metadata ?? null
+  );
+  const consentText = resolveEsignConsentText(customText);
+  if (input.consentText?.trim() && input.consentText.trim() !== consentText) {
+    // Client must echo the text the server published on GET /signing/{token}.
+    return c.json({ error: "Consent text mismatch" }, 400);
+  }
+  const consentTextHash = await hashEsignConsentText(consentText);
+  const consentVersion = input.consentVersion ?? ESIGN_CONSENT_VERSION;
 
   await db
     .update(recipients)
@@ -1587,6 +1634,8 @@ app.openapi(consentRouteDef, async (c) => {
       esignConsentAt: consentAt,
       esignConsentIp: ipAddress,
       esignConsentVersion: consentVersion,
+      esignConsentTextHash: consentTextHash,
+      esignConsentUserAgent: userAgent,
       updatedAt: consentAt,
     })
     .where(eq(recipients.id, recipient.id));
@@ -1599,13 +1648,35 @@ app.openapi(consentRouteDef, async (c) => {
     targetName: doc.name,
     metadata: JSON.stringify({
       consentVersion,
+      consentTextHash,
       ipAddress,
       consentAt: now,
     }),
     createdAt: consentAt,
   });
 
-  return c.json({ success: true, consentAt: now });
+  await writeAuditLog(db, {
+    organizationId: doc.organizationId,
+    actor: { type: "user", id: recipient.id },
+    action: "recipient.esign_consent",
+    resourceType: "recipient",
+    resourceId: recipient.id,
+    metadata: {
+      documentId: doc.id,
+      publicId: doc.publicId,
+      consentVersion,
+      consentTextHash,
+    },
+    ipAddress,
+    userAgent: userAgent ?? undefined,
+  });
+
+  return c.json({
+    success: true,
+    consentAt: now,
+    consentVersion,
+    consentTextHash,
+  });
 });
 
 const optOutInputSchema = z.object({

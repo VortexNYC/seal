@@ -2225,7 +2225,12 @@ const publicSigningTokenResponseSchema = z.object({
       customFooterText: z.string().nullable().optional(),
     })
     .optional(),
-  signingSettings: z.record(z.string(), z.string()).optional(),
+  signingSettings: z
+    .object({
+      esignConsentText: z.string().nullable().optional(),
+      esignConsentVersion: z.string().optional(),
+    })
+    .optional(),
 });
 export type PublicSigningTokenResponse = z.infer<
   typeof publicSigningTokenResponseSchema
@@ -2391,15 +2396,24 @@ export async function recordPublicSigningConsent(
   token: string,
   input: {
     ipAddress: string;
+    userAgent?: string;
+    consentText?: string;
     consentVersion?: string;
   }
 ): Promise<{
   success: boolean;
   consentAt: number;
+  consentVersion: string;
+  consentTextHash: string;
 }> {
   return apiFetch(
     `/api/public/signing/${encodeURIComponent(token)}/consent`,
-    z.object({ success: z.boolean(), consentAt: z.number() }),
+    z.object({
+      success: z.boolean(),
+      consentAt: z.number(),
+      consentVersion: z.string(),
+      consentTextHash: z.string(),
+    }),
     {
       method: "POST",
       body: JSON.stringify(input),

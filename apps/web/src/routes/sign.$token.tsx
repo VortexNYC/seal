@@ -410,7 +410,10 @@ function SigningPage() {
     try {
       await recordPublicSigningConsent(token, {
         ipAddress: clientIp,
-        consentVersion: "1.0",
+        userAgent:
+          typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+        consentText: signingSettings?.esignConsentText ?? undefined,
+        consentVersion: signingSettings?.esignConsentVersion ?? "seal-esign-1",
       });
       setHasConsented(true);
       if (isEmbedded) {
@@ -421,7 +424,7 @@ function SigningPage() {
     } finally {
       setIsConsentSubmitting(false);
     }
-  }, [token, clientIp, isEmbedded]);
+  }, [token, clientIp, isEmbedded, signingSettings]);
 
   const handleConsentDecline = useCallback(() => {
     // The decline state is handled inside the consent dialog component.

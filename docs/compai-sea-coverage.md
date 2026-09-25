@@ -52,6 +52,13 @@ Seal coverage in this change:
 
 **Explicit non-coverage:** SEA-49 (EVID-4 cryptographic PDF seal). The certificate footer states it is an audit summary, not a PAdES seal.
 
-## Dogfood
+## SEA-45 / ESIGN consent
 
-`scripts/dogfood-cli.mjs` exercises create → send → sign → complete → **certificate download** against a generated PDF.
+| Requirement | Where |
+| --- | --- |
+| Consent text published on signing session | `GET /signing/{token}` → `signingSettings.esignConsentText` |
+| Record IP + UA + text hash | `POST /signing/{token}/consent` |
+| Gate viewed/signed/approved until consented | `POST /signing/{token}/submit` → 403 |
+| Audit + activity | `recipient.esign_consent` |
+| CoC surfaces consent | Certificate party line |
+
