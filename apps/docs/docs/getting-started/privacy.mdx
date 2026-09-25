@@ -1,0 +1,98 @@
+---
+title: Privacy, subprocessors, and incidents
+description: Who processes Seal data, customer DPA posture, and what we do if something goes wrong
+---
+
+# Privacy, subprocessors, and incidents
+
+Enterprise / CompAI foundation (SEA-69). This is the **publishable** privacy
+surface for RFPs — not a substitute for counsel (SEA-57) and not a HIPAA
+offering ([HIPAA scoping](/getting-started/hipaa)).
+
+## What Seal processes
+
+Seal processes account data (names, emails), document files you upload, signing
+field values, IP/user-agent on signing events, and webhook delivery metadata.
+Completed envelopes and sealed audit rows are retained as evidentiary records
+(see [Trust & evidence](/getting-started/trust-and-evidence) and
+[Backup & DR](https://github.com/VortexNYC/seal/blob/main/docs/runbooks/backup-dr.md)).
+
+## Subprocessors (hosted seal.nyc)
+
+| Subprocessor | Role | Data involved |
+| --- | --- | --- |
+| **Cloudflare** | API Workers, D1 database, R2 file storage, DNS, TLS, email routing hooks | Document bytes, metadata, account identifiers, logs |
+| **Vortex Auth / Better Auth stack** (as deployed with Seal) | Authentication and sessions | Email, session tokens, org membership |
+| **Transactional email** (Cloudflare Email / configured sender) | Invite and notification mail | Recipient email, document title, signing links |
+
+Self-host customers run the same software on **their** Cloudflare account — they
+are the operator; Seal Inc. is not in the data path unless they use hosted
+`api.seal.nyc`.
+
+Optional features that send document bytes to additional workers when enabled:
+
+| Feature | Worker / service | When it runs |
+| --- | --- | --- |
+| Office → PDF convert | Seal convert worker | Upload of DOCX/XLSX/PPTX/CSV |
+| Document AI / field candidates | Seal anydoc worker | When org uses AI field tools |
+
+Turn those features off (or do not call them) if your policy forbids extra
+processing of file bytes.
+
+## Customer agreement posture (DPA)
+
+For hosted customers that need a Data Processing Agreement: contact
+`privacy@vortex.nyc` (or your Seal sales path). Seal’s default commercial terms
+plus this page describe processing; formal DPA countersign is available for
+enterprise contracts. **This page is not itself a signed DPA.**
+
+We do **not** offer a HIPAA Business Associate Agreement for general signup —
+see [HIPAA scoping](/getting-started/hipaa).
+
+## Data subject / privacy requests
+
+Hosted:
+
+1. Account holders can update profile data in-app.
+2. Org admins control members and can void/delete documents per product rules
+   (retention locks may prevent immediate destroy of locked R2 objects — see
+   backup/DR runbook).
+3. For erasure or export requests that exceed self-serve tools, email
+   `privacy@vortex.nyc` with the workspace slug and request type. We respond
+   within **30 days** (faster when legally required).
+
+## Breach / security incident runbook (ops)
+
+If Seal discovers unauthorized access to hosted customer document or account
+data:
+
+1. **Contain** — revoke keys, rotate secrets, isolate affected Worker/version,
+   disable compromised webhook endpoints.
+2. **Assess** — what orgs, what object classes (PDFs, audit rows, emails), time
+   window.
+3. **Notify** — affected workspace owners/admins without undue delay, and within
+   **72 hours** of confirming a personal-data breach where GDPR-style duties
+   apply; follow US state timelines where applicable.
+4. **Record** — incident ticket, timeline, systems touched, customer comms.
+5. **Remediate** — patch, rotate, post-mortem; update this page if subprocessors
+   or practices change.
+
+On-call / security contact for hosted Seal: `security@vortex.nyc`.
+Publish `/.well-known/security.txt` on `seal.nyc` / `api.seal.nyc` as the
+machine-readable pointer (SEA-54 / bounty track).
+
+## What this page does *not* claim
+
+- SOC 2 / ISO report availability (roadmap, not asserted here)
+- HIPAA compliance or BA relationship
+- Customer-managed encryption keys
+- EU data residency pin (Cloudflare region choice is limited; self-host for
+  stricter control)
+
+## Related
+
+- [HIPAA scoping](/getting-started/hipaa)
+- [eIDAS levels](/getting-started/eidas)
+- [Trust & evidence](/getting-started/trust-and-evidence)
+- [Production checklist](/getting-started/production)
+- Enterprise backlog notes: `docs/enterprise-readiness.md` in the Seal repo
