@@ -134,3 +134,21 @@ Seal coverage in this change:
 | GitHub native push protection | Repo `secret_scanning` + `secret_scanning_push_protection` enabled |
 | Prove | `pnpm run prove:secret-scan` |
 
+## SEA-49 / Cryptographic seal of final PDF bytes (EVID-4)
+
+CompAI `fnd_6ab57f7839041b4a5b9319ae`. **Not** the Certificate of Completion (SEA-50 / EVID-2).
+
+Today: signatures live as field/image data; completed download is still the original upload. Trust is in Seal's record (audit chain + CoC), not in the PDF bytes.
+
+Ship levels in order. **Level 1 closes CompAI.** Higher levels are optional upgrades.
+
+| Level | What it is | Work required | Status |
+| --- | --- | --- | --- |
+| **0** | Record integrity | Audit hash chain, CoC sidecar, R2 retention, `/verify` | **done** (other SEAs) |
+| **1** | Final PDF + platform PAdES-B | (a) Flatten appearances into one final PDF on `completed`; persist as download artifact; store byte `sha256`. (b) Platform PKCS#12 (Worker secret); embed CMS/`ETSI.CAdES.detached`; sealed bytes are the download; offline verify (`pdfsig`/Acrobat) + `prove:pdf-seal`. Out: TSA, LTV, public-CA green check, per-signer certs, QES, merging CoC into the PDF. | backlog |
+| **2** | PAdES-T | RFC 3161 TSA at seal time so “signed at T” survives cert expiry | backlog |
+| **3** | PAdES-LT / LTA | Embed revocation/validation material (+ optional archival timestamp) for long-term verification | backlog |
+| **4** | QES / eIDAS qualified | Qualified certs, remote CSC-style signing, per-signer crypto identity — track with SEA-47 | backlog |
+
+**Build order:** Level 1a (flatten / final-bytes) → Level 1b (platform seal + prove) → stop unless a deal needs 2+.
+
