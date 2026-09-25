@@ -1345,6 +1345,23 @@ export const auditChainTips = sqliteTable("audit_chain_tips", {
     .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
 });
 
+/**
+ * Per-org audit write health (SEA-56).
+ * Consecutive sealed-write failures trigger admin alerts.
+ */
+export const auditHealth = sqliteTable("audit_health", {
+  organizationId: text("organization_id")
+    .primaryKey()
+    .references(() => organization.id, { onDelete: "cascade" }),
+  consecutiveFailures: integer("consecutive_failures").notNull().default(0),
+  lastFailureAt: integer("last_failure_at", { mode: "timestamp_ms" }),
+  lastFailureReason: text("last_failure_reason"),
+  lastAlertAt: integer("last_alert_at", { mode: "timestamp_ms" }),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+});
+
 // -------------------------------------------------------------------------
 // Import jobs
 // -------------------------------------------------------------------------

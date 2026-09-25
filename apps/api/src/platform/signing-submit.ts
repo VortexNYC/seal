@@ -23,6 +23,7 @@ import {
   AuditChainConflictError,
   buildAuditChainTipRevertBatchItems,
 } from "./audit-chain.js";
+import { recordAuditWriteFailure, recordAuditWriteSuccess } from "./audit-health.js";
 import {
   prepareChainedAuditLog,
   tipBatchItemsForPrepared,
@@ -85,6 +86,7 @@ export async function commitSigningSubmit(
     const prepared = await prepareChainedAuditLog(db, input.audit);
     const outcome = await attemptSigningSubmitBatch(db, input, prepared);
     if (outcome === "ok") {
+      await recordAuditWriteSuccess(db, input.audit.organizationId);
       return;
     }
     if (outcome === "recipient_lost") {
@@ -92,6 +94,11 @@ export async function commitSigningSubmit(
     }
     // tip_lost — orphan cleaned; retry with fresh tip
   }
+  await recordAuditWriteFailure(
+    db,
+    input.audit.organizationId,
+    "AuditChainConflictError:signing_submit"
+  );
   throw new AuditChainConflictError();
 }
 
