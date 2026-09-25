@@ -461,10 +461,13 @@ function SigningPage() {
       try {
         await recordPublicSigningOptOut(token, {
           ipAddress: clientIp,
+          userAgent:
+            typeof navigator !== "undefined" ? navigator.userAgent : undefined,
           method,
         });
+        toast.success("Sender notified — you can complete this offline.");
       } catch {
-        // Opt-out logging is best-effort — don't block the user's action
+        toast.error("Could not notify the sender. Try contacting them directly.");
       }
     },
     [token, clientIp]
@@ -995,6 +998,7 @@ function SigningPage() {
     return (
       <EsignConsentDialog
         recipientEmail={recipient.email}
+        ownerEmail={doc.ownerEmail}
         onAccept={handleConsentAccept}
         onDecline={handleConsentDecline}
         onDownloadPdf={handleDownload}

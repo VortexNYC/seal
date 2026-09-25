@@ -19,6 +19,8 @@ export type CertificateParty = {
   consentTextHash: string | null;
   privacyNoticeAt: string | null;
   privacyNoticeTextHash: string | null;
+  esignOptOutAt: string | null;
+  esignOptOutMethod: string | null;
 };
 
 export type CertificateOfCompletionInput = {
@@ -138,6 +140,12 @@ export async function buildCertificateOfCompletionPdf(
           : "") +
         (party.privacyNoticeTextHash
           ? ` · privacy ${party.privacyNoticeTextHash.slice(0, 18)}…`
+          : "") +
+        (party.esignOptOutAt
+          ? ` · ESIGN opt-out ${party.esignOptOutAt}`
+          : "") +
+        (party.esignOptOutMethod
+          ? ` · opt-out ${party.esignOptOutMethod}`
           : ""),
       8,
       { color: muted }

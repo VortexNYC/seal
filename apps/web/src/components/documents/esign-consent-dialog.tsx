@@ -29,6 +29,8 @@ type ConsentState = "pending" | "accepted" | "declined";
 
 interface EsignConsentDialogProps {
   recipientEmail: string;
+  /** Document owner email — used for paper-path mailto links (SEA-58). */
+  ownerEmail?: string | null;
   onAccept: () => void;
   onDecline: () => void;
   onDownloadPdf?: () => void;
@@ -40,6 +42,7 @@ interface EsignConsentDialogProps {
 
 export function EsignConsentDialog({
   recipientEmail,
+  ownerEmail,
   onAccept,
   onDecline,
   onDownloadPdf,
@@ -49,6 +52,7 @@ export function EsignConsentDialog({
 }: EsignConsentDialogProps) {
   const [consentState, setConsentState] = useState<ConsentState>("pending");
   const [isChecked, setIsChecked] = useState(false);
+  const senderMail = ownerEmail?.trim() || "support@seal.nyc";
 
   const handleAccept = useCallback(() => {
     setConsentState("accepted");
@@ -82,14 +86,15 @@ export function EsignConsentDialog({
               </h1>
             </div>
             <p className="text-muted-foreground text-sm text-pretty">
-              You have declined to use electronic signatures. Unfortunately,
-              this document requires electronic signatures to proceed.
+              You declined electronic signatures. You can still complete this
+              document with a paper or wet-ink signature — choose an option
+              below and the sender will be notified.
             </p>
           </div>
 
           <LayerCard>
             <LayerCard.Primary className="space-y-3 p-5">
-              <p className="text-sm font-medium">Alternative options:</p>
+              <p className="text-sm font-medium">Manual signature options:</p>
               <div className="space-y-2">
                 {onDownloadPdf && (
                   <Button
@@ -109,7 +114,7 @@ export function EsignConsentDialog({
                   className="w-full justify-start"
                   onClick={() => {
                     onOptOut?.("paper_copy_request");
-                    window.location.href = `mailto:support@seal.nyc?subject=Paper%20Copy%20Request&body=I%20would%20like%20to%20request%20a%20paper%20copy%20of%20the%20document.%20My%20email%20is%20${encodeURIComponent(recipientEmail)}`;
+                    window.location.href = `mailto:${encodeURIComponent(senderMail)}?subject=${encodeURIComponent("Paper copy request")}&body=${encodeURIComponent(`I would like a paper copy of the document to sign by hand.\n\nMy email: ${recipientEmail}`)}`;
                   }}
                 >
                   <FileTextIcon className="mr-2 size-4" />
@@ -120,7 +125,7 @@ export function EsignConsentDialog({
                   className="w-full justify-start"
                   onClick={() => {
                     onOptOut?.("contact_sender");
-                    window.location.href = `mailto:support@seal.nyc?subject=Document%20Signing%20Assistance&body=I%20need%20assistance%20with%20a%20document%20I%20was%20asked%20to%20sign.%20My%20email%20is%20${encodeURIComponent(recipientEmail)}`;
+                    window.location.href = `mailto:${encodeURIComponent(senderMail)}?subject=${encodeURIComponent("Document signing assistance")}&body=${encodeURIComponent(`I need a non-electronic way to sign this document.\n\nMy email: ${recipientEmail}`)}`;
                   }}
                 >
                   <MailIcon className="mr-2 size-4" />
@@ -141,13 +146,30 @@ export function EsignConsentDialog({
           </div>
 
           <p className="text-muted-foreground text-center text-xs">
-            For assistance, please contact:{" "}
-            <a
-              href="mailto:support@seal.nyc"
-              className="underline underline-offset-2"
-            >
-              support@seal.nyc
-            </a>
+            For assistance, contact the sender
+            {ownerEmail ? (
+              <>
+                :{" "}
+                <a
+                  href={`mailto:${encodeURIComponent(ownerEmail)}`}
+                  className="underline underline-offset-2"
+                >
+                  {ownerEmail}
+                </a>
+              </>
+            ) : (
+              <>
+                {" "}
+                or{" "}
+                <a
+                  href="mailto:support@seal.nyc"
+                  className="underline underline-offset-2"
+                >
+                  support@seal.nyc
+                </a>
+              </>
+            )}
+            .
           </p>
         </div>
       </div>

@@ -19,7 +19,7 @@ Updated with SEA-50 (Certificate of Completion / EVID-2).
 | SEA-55 | `fnd_6ab563f6c6010aa7fade2e30` (soc2) | high | backlog | Backup/DR for signed docs + audit |
 | SEA-56 | `fnd_6ab563f69ddf3aae4a95e3ae` (soc2) | high | **done** | Alert on audit-log write failures |
 | SEA-57 | `fnd_6ab563f53c4f6314a654ecd3` (soc2) | high | backlog | Legal review of consent / retention / attribution |
-| SEA-58 | `fnd_6ab563f5d67363c2a3e06fb8` (soc2) | high | backlog | ESIGN opt-out / manual-signature path |
+| SEA-58 | `fnd_6ab563f5d67363c2a3e06fb8` (soc2) | high | **done** | ESIGN opt-out / manual-signature path |
 
 Adjacent (not CompAI findings, but trust spine):
 
@@ -102,4 +102,16 @@ Seal coverage in this change:
 | Flow order | Auth → Privacy → ESIGN → sign |
 | Audit + activity | `recipient.privacy_notice` |
 | CoC surfaces privacy acknowledgment | Certificate party line |
+
+## SEA-58 / ESIGN opt-out + manual path
+
+| Requirement | Where |
+| --- | --- |
+| Declined-consent UI offers paper / wet-ink options | `esign-consent-dialog.tsx` |
+| Mailto targets document owner (not Seal support) | `ownerEmail` on signing session |
+| Persist method + IP + UA | migration `0039_esign_opt_out.sql` |
+| Record + audit | `POST /signing/{token}/opt-out` → `recipient.esign_opt_out` |
+| Notify sender to fulfill offline | `DocumentEsignOptOut` email |
+| Webhook for integrations | `recipient.esign_opt_out` |
+| CoC surfaces opt-out if recorded | Certificate party line |
 

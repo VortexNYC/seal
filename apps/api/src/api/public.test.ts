@@ -1,4 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { eq } from "drizzle-orm";
 import { env } from "cloudflare:test";
 import { beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
@@ -579,5 +580,82 @@ describe("public API", () => {
     expect(audits.some((a) => a.action === "recipient.privacy_notice")).toBe(
       true
     );
+  });
+
+  it("records ESIGN opt-out with audit evidence (SEA-58)", async () => {
+    const db = createD1(env.D1);
+
+    await db.insert(organization).values({
+      id: "org_optout",
+      name: "OptOut Org",
+      slug: "optout-org",
+    });
+    await db.insert(documents).values({
+      id: "doc_optout",
+      publicId: "doc_pub_optout",
+      organizationId: "org_optout",
+      name: "OptOut Document",
+      status: "sent",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const token = "sign-token-optout";
+    await db.insert(recipients).values({
+      id: "rec_optout",
+      publicId: "rec_pub_optout",
+      documentId: "doc_optout",
+      email: "optout@example.com",
+      name: "OptOut Signer",
+      role: "signer",
+      status: "pending",
+      signingToken: token,
+      tokenExpiresAt: new Date(Date.now() + 60_000),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const app = createApp();
+    const res = await app.fetch(
+      new Request(`http://localhost:8787/api/public/signing/${token}/opt-out`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ipAddress: "203.0.113.50",
+          userAgent: "seal-test/1.0",
+          method: "paper_copy_request",
+        }),
+      }),
+      env
+    );
+    expect(res.status).toBe(200);
+    const body = z
+      .object({
+        success: z.literal(true),
+        optedOutAt: z.number(),
+        method: z.literal("paper_copy_request"),
+      })
+      .parse(await res.json());
+    expect(body.optedOutAt).toBeGreaterThan(0);
+
+    const [row] = await db
+      .select()
+      .from(recipients)
+      .where(eq(recipients.id, "rec_optout"));
+    expect(row?.esignOptOutAt).toBeTruthy();
+    expect(row?.esignOptOutMethod).toBe("paper_copy_request");
+    expect(row?.esignOptOutIp).toBe("203.0.113.50");
+
+    const audits = await db.select().from(auditLogs);
+    expect(audits.some((a) => a.action === "recipient.esign_opt_out")).toBe(
+      true
+    );
+
+    const activityRows = await db.select().from(activity);
+    expect(
+      activityRows.some((a) => a.action === "recipient.esign_opt_out")
+    ).toBe(true);
   });
 });

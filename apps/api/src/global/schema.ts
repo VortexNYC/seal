@@ -466,6 +466,11 @@ export const recipients = sqliteTable(
     privacyNoticeVersion: text("privacy_notice_version"),
     privacyNoticeTextHash: text("privacy_notice_text_hash"),
     privacyNoticeUserAgent: text("privacy_notice_user_agent"),
+    /** SEA-58 — recorded when signer refuses e-sign and requests a paper path. */
+    esignOptOutAt: integer("esign_opt_out_at", { mode: "timestamp_ms" }),
+    esignOptOutIp: text("esign_opt_out_ip"),
+    esignOptOutMethod: text("esign_opt_out_method"),
+    esignOptOutUserAgent: text("esign_opt_out_user_agent"),
     awaitingDictation: integer("awaiting_dictation", {
       mode: "boolean",
     })

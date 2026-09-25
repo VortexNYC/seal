@@ -26,7 +26,12 @@ import {
   resolvePrivacyNoticeText,
 } from "../platform/privacy-notice.js";
 import {
+  describeEsignOptOutMethod,
+  resolveEsignOptOutMethod,
+} from "../platform/esign-opt-out.js";
+import {
   sendDocumentCompletedEmail,
+  sendDocumentEsignOptOutEmail,
   sendDocumentViewedEmail,
   sendSigningCompleteEmail,
   sendSigningOtpEmail,
@@ -70,6 +75,8 @@ const signingRecipientSchema = z.object({
   status: z.string(),
   esignConsentAt: z.number().nullable().optional(),
   privacyNoticeAt: z.number().nullable().optional(),
+  esignOptOutAt: z.number().nullable().optional(),
+  esignOptOutMethod: z.string().nullable().optional(),
   awaitingDictation: z.boolean(),
   expiresAt: z.number().nullable().optional(),
   viewedAt: z.number().nullable().optional(),
@@ -89,6 +96,7 @@ const signingDocumentSchema = z.object({
   workflowStatus: z.string(),
   description: z.string().nullable().optional(),
   ownerName: z.string().nullable().optional(),
+  ownerEmail: z.string().nullable().optional(),
   pageCount: z.number().int().nullable().optional(),
   redirectUrl: z.string().nullable().optional(),
 });
@@ -242,6 +250,8 @@ app.openapi(signingTokenRouteDef, async (c) => {
         status: recipient.status,
         esignConsentAt: recipient.esignConsentAt?.getTime() ?? null,
         privacyNoticeAt: recipient.privacyNoticeAt?.getTime() ?? null,
+        esignOptOutAt: recipient.esignOptOutAt?.getTime() ?? null,
+        esignOptOutMethod: recipient.esignOptOutMethod ?? null,
         awaitingDictation: recipient.awaitingDictation,
         expiresAt: recipient.tokenExpiresAt?.getTime() ?? null,
         viewedAt: recipient.viewedAt?.getTime() ?? null,
@@ -266,6 +276,7 @@ app.openapi(signingTokenRouteDef, async (c) => {
         workflowStatus: doc.status,
         description: doc.description,
         ownerName: owner?.name || owner?.email,
+        ownerEmail: owner?.email ?? null,
         pageCount: doc.pageCount,
         redirectUrl: doc.redirectUrl,
       },
@@ -1873,11 +1884,16 @@ app.openapi(privacyRouteDef, async (c) => {
 
 const optOutInputSchema = z.object({
   ipAddress: z.string().optional(),
+  userAgent: z.string().optional(),
   method: z.string().optional(),
 });
 
 const optOutResponseSchema = z
-  .object({ success: z.boolean() })
+  .object({
+    success: z.boolean(),
+    optedOutAt: z.number(),
+    method: z.string(),
+  })
   .openapi("PublicSigningOptOutResponse");
 
 const optOutRouteDef = createRoute({
@@ -1889,7 +1905,7 @@ const optOutRouteDef = createRoute({
       content: {
         "application/json": { schema: optOutInputSchema },
       },
-      description: "Opt-out record input",
+      description: "ESIGN opt-out / paper-path request",
     },
   },
   responses: {
@@ -1897,7 +1913,7 @@ const optOutRouteDef = createRoute({
       content: {
         "application/json": { schema: optOutResponseSchema },
       },
-      description: "Opt-out recorded",
+      description: "Opt-out recorded and sender notified",
     },
     400: { description: "Invalid or expired token" },
     404: { description: "Document not found" },
@@ -1936,8 +1952,22 @@ app.openapi(optOutRouteDef, async (c) => {
     return c.json({ error: "Document not found" }, 404);
   }
 
+  const optedOutAt = new Date(now);
   const ipAddress = input.ipAddress ?? "unknown";
-  const method = input.method ?? "paper_copy_request";
+  const userAgent = input.userAgent ?? c.req.header("user-agent") ?? null;
+  const method = resolveEsignOptOutMethod(input.method);
+  const methodLabel = describeEsignOptOutMethod(method);
+
+  await db
+    .update(recipients)
+    .set({
+      esignOptOutAt: optedOutAt,
+      esignOptOutIp: ipAddress,
+      esignOptOutMethod: method,
+      esignOptOutUserAgent: userAgent,
+      updatedAt: optedOutAt,
+    })
+    .where(eq(recipients.id, recipient.id));
 
   await db.insert(activity).values({
     id: crypto.randomUUID(),
@@ -1947,13 +1977,89 @@ app.openapi(optOutRouteDef, async (c) => {
     targetName: doc.name,
     metadata: JSON.stringify({
       method,
+      methodLabel,
       ipAddress,
       optedOutAt: now,
     }),
-    createdAt: new Date(now),
+    createdAt: optedOutAt,
   });
 
-  return c.json({ success: true });
+  await writeAuditLog(db, {
+    organizationId: doc.organizationId,
+    actor: { type: "user", id: recipient.id },
+    action: "recipient.esign_opt_out",
+    resourceType: "recipient",
+    resourceId: recipient.id,
+    metadata: {
+      documentId: doc.id,
+      publicId: doc.publicId,
+      method,
+      methodLabel,
+    },
+    ipAddress,
+    userAgent: userAgent ?? undefined,
+  });
+
+  const [owner] = await db
+    .select({ name: userTable.name, email: userTable.email })
+    .from(userTable)
+    .where(eq(userTable.id, doc.ownerId))
+    .limit(1);
+
+  const [org] = await db
+    .select({ slug: organization.slug })
+    .from(organization)
+    .where(eq(organization.id, doc.organizationId))
+    .limit(1);
+
+  if (owner?.email) {
+    const result = await sendDocumentEsignOptOutEmail(c.env, {
+      to: owner.email,
+      ownerName: owner.name ?? owner.email,
+      documentName: doc.name,
+      documentSlug: org?.slug ?? "",
+      documentPublicId: doc.publicId,
+      recipientName: recipient.name ?? recipient.email,
+      recipientEmail: recipient.email,
+      methodLabel,
+      optedOutAt: now,
+    });
+    if (!result.success) {
+      console.error("[public/opt-out] owner email failed:", result);
+    }
+  }
+
+  const emitPromise = emitWebhookEvent(c.env, {
+    organizationId: doc.organizationId,
+    eventType: "recipient.esign_opt_out",
+    payload: {
+      documentId: doc.id,
+      publicId: doc.publicId,
+      recipientId: recipient.id,
+      name: recipient.name,
+      email: recipient.email,
+      method,
+      methodLabel,
+      optedOutAt: now,
+    },
+  }).catch((err) => {
+    console.error("[webhooks] recipient.esign_opt_out emit failed:", err);
+  });
+  try {
+    if (c.executionCtx?.waitUntil) {
+      c.executionCtx.waitUntil(emitPromise);
+    } else {
+      await emitPromise;
+    }
+  } catch {
+    await emitPromise;
+  }
+
+  return c.json({
+    success: true,
+    optedOutAt: now,
+    method,
+  });
 });
 
 const dictateBodySchema = z.object({
