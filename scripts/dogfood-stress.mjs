@@ -137,11 +137,21 @@ function buildSimplePdf(pages, title) {
   return body;
 }
 
-function extractToken(sent) {
+function extractToken(sent, preferEmail) {
   const recipients = Array.isArray(sent?.recipients) ? sent.recipients : [];
-  const first = recipients.find((r) => r?.role === "signer") ?? recipients[0];
+  const byEmail = preferEmail
+    ? recipients.find(
+        (r) =>
+          typeof r?.email === "string" &&
+          r.email.toLowerCase() === preferEmail.toLowerCase()
+      )
+    : null;
+  const byRole = recipients.find((r) => r?.role === "signer");
+  const first = byEmail ?? byRole ?? recipients[0];
   if (!first) return null;
-  if (typeof first.signing_token === "string") return first.signing_token;
+  if (typeof first.signing_token === "string" && first.signing_token) {
+    return first.signing_token;
+  }
   if (typeof first.signing_url === "string") {
     const m = /\/sign\/([A-Za-z0-9_-]+)/.exec(first.signing_url);
     return m?.[1] ?? null;
@@ -213,7 +223,10 @@ async function runCase(name, opts) {
       `/api/v1/documents/send?id=${encodeURIComponent(docId)}`,
       await writeJson(`${name}-send.json`, { id: docId }),
     ]);
-    token = extractToken(sent);
+    token = extractToken(
+      sent,
+      opts.recipients.find((r) => r.role === "signer")?.email
+    );
     token
       ? pass(`${name} send`)
       : fail(`${name} send`, JSON.stringify(sent));
@@ -311,9 +324,10 @@ async function runCase(name, opts) {
         );
       }
     } else if (res.status === 404) {
+      const body = await res.text().catch(() => "");
       limit(
         `${name} certificate`,
-        "404 — CoC not deployed on this API yet (SEA-50 PR)"
+        `HTTP 404 ${body.slice(0, 120)} (doc not completed or cert missing)`
       );
     } else {
       fail(`${name} certificate`, `HTTP ${res.status} ${ct}`);
