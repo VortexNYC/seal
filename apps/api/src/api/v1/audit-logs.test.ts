@@ -11,6 +11,7 @@ import {
 } from "../../global/schema.js";
 import app from "../../index.js";
 import { hashToken } from "../../platform/api-token-auth.js";
+import { writeAuditLog } from "../../platform/audit-log.js";
 
 interface AuditLogEntry {
   id: string;
@@ -353,5 +354,37 @@ describe("api v1 audit logs", () => {
       env
     );
     expect(res.status).toBe(404);
+  });
+
+  it("verifies the org audit hash chain", async () => {
+    const { slug, plaintext, orgId, userId } = await seedTokenContext();
+    const db = createD1(env.D1);
+
+    await writeAuditLog(db, {
+      organizationId: orgId,
+      actor: { type: "user", id: userId },
+      action: "document.created",
+      resourceType: "document",
+      resourceId: crypto.randomUUID(),
+    });
+
+    const res = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/v1/organizations/${encodeURIComponent(
+          slug
+        )}/audit/verify`,
+        { headers: { authorization: `Bearer ${plaintext}` } }
+      ),
+      env
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      ok: boolean;
+      checked: number;
+      tipHash: string | null;
+    };
+    expect(body.ok).toBe(true);
+    expect(body.checked).toBeGreaterThanOrEqual(1);
+    expect(body.tipHash).toBeTruthy();
   });
 });

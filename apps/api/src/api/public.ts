@@ -988,6 +988,7 @@ app.openapi(submitRouteDef, async (c) => {
     await commitSigningSubmit(db, {
       recipientId: recipient.id,
       recipientUpdate: update,
+      previousStatus: recipient.status,
       audit: {
         id: crypto.randomUUID(),
         ...auditBase,

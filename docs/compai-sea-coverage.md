@@ -5,13 +5,13 @@ Updated with SEA-50 (Certificate of Completion / EVID-2).
 
 | SEA | CompAI | Severity | Status | What “covered” means |
 | --- | --- | --- | --- | --- |
-| SEA-44 | `fnd_6ab563f5425574f54ad441c6` (soc2) | high | backlog | Tamper-evident `audit_logs` (hash chain / signed digests) |
-| SEA-45 | `fnd_6ab563f55921f68ef33f6b75` (soc2) | high | backlog | Demonstrable ESIGN consent proof |
+| SEA-44 | `fnd_6ab563f5425574f54ad441c6` (soc2) | high | **in progress → this PR** | Tamper-evident `audit_logs` (hash chain / signed digests) |
+| SEA-45 | `fnd_6ab563f55921f68ef33f6b75` (soc2) | high | **done** | Demonstrable ESIGN consent proof |
 | SEA-46 | `fnd_6ab57f79acd3bc77c4cbdd55` + siblings | medium | backlog | Audit lifecycle + trusted timestamp + a11y |
 | SEA-47 | `fnd_6ab57f78989e02663a3ad7ff` (EIDAS-1) | medium | backlog | Document eIDAS level + AES/QES path (docs, not product) |
 | SEA-48 | `fnd_6ab57f78271c3d6767ba069b` (AUTH-1) | medium | **done** | Graded signer auth: `none` \| `access_code` \| `email_otp` |
 | SEA-49 | `fnd_6ab57f7839041b4a5b9319ae` (EVID-4) | high | backlog | Cryptographic seal of final PDF bytes (PAdES-class) — **not** CoC |
-| SEA-50 | `fnd_6ab57f78da8f9cbcb8affce0` (EVID-2) | high | **in progress → this PR** | Certificate of Completion PDF per completed envelope |
+| SEA-50 | `fnd_6ab57f78da8f9cbcb8affce0` (EVID-2) | high | **done** | Certificate of Completion PDF per completed envelope |
 | SEA-51 | `fnd_6ab57d53603ca70a50b0c160` (hipaa) | medium | backlog | HIPAA / BAA scoping for health-doc signing |
 | SEA-52 | `fnd_6ab57d53cb550d31b62425d7` + `fnd_6ab57d541b22e8a67eda3def` | high | backlog | Signer privacy notice + CCPA disclosures |
 | SEA-53 | `fnd_6ab563f6cb3383f010948219` (soc2) | medium | backlog | Secret scanning in CI |
@@ -51,6 +51,16 @@ Seal coverage in this change:
 | Verify URL on certificate | `{APP_URL}/verify/{qrToken}` (existing route) |
 
 **Explicit non-coverage:** SEA-49 (EVID-4 cryptographic PDF seal). The certificate footer states it is an audit summary, not a PAdES seal.
+
+## SEA-44 / Audit hash chain
+
+| Requirement | Where |
+| --- | --- |
+| Per-org tip + sealed rows (`prev_hash`, `entry_hash`, `sequence`) | migration `0036_audit_hash_chain.sql`, `audit_chain_tips` |
+| Hash = SHA-256(prev \|\| canonical row) | `apps/api/src/platform/audit-chain.ts` |
+| All writers seal via tip optimistic lock | `writeAuditLog`, `commitSigningSubmit`, `commitDocumentExpiry` |
+| Verify unbroken sealed chain | `GET /api/v1/organizations/{slug}/audit/verify` |
+| Legacy null-hash rows skipped | `verifyAuditChain` |
 
 ## SEA-45 / ESIGN consent
 

@@ -2995,6 +2995,59 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /organizations/{organizationSlug}/audit/verify:
+    get:
+      tags: [Audit]
+      operationId: verifyAuditHashChain
+      summary: Verify the organization's tamper-evident audit hash chain (SEA-44)
+      parameters:
+        - name: organizationSlug
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Chain intact
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, checked, unbrokenPrefix]
+                properties:
+                  ok: { type: boolean }
+                  checked: { type: integer }
+                  unbrokenPrefix: { type: integer }
+                  tipHash: { type: string, nullable: true }
+                  tipSequence: { type: integer, nullable: true }
+                  firstBreak:
+                    type: object
+                    nullable: true
+                    properties:
+                      id: { type: string }
+                      sequence: { type: integer, nullable: true }
+                      expected: { type: string }
+                      actual: { type: string, nullable: true }
+        "409":
+          description: Chain broken or tip mismatch
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, checked, unbrokenPrefix]
+                properties:
+                  ok: { type: boolean }
+                  checked: { type: integer }
+                  unbrokenPrefix: { type: integer }
+                  tipHash: { type: string, nullable: true }
+                  tipSequence: { type: integer, nullable: true }
+                  firstBreak:
+                    type: object
+                    nullable: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Forbidden
+
   /search:
     get:
       tags: [Search]

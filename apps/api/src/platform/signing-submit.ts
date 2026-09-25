@@ -1,11 +1,12 @@
 /**
- * Atomic signing-submit helpers (SEA-63).
- * Recipient status + legal evidence commit in one D1 batch.
+ * Atomic signing-submit helpers (SEA-63 + SEA-44).
+ * Recipient status + sealed audit evidence commit in one D1 batch.
  *
  * D1 `db.batch()` is the atomic unit (no interactive BEGIN in production).
  * A 0-row UPDATE is still "success", so subsequent INSERTs would otherwise
  * commit as orphans — we compensate by deleting the known IDs we just wrote
- * when the first-writer-wins UPDATE matched nothing.
+ * when the first-writer-wins UPDATE matched nothing. Tip advances use the
+ * same pattern (WHERE tip_hash = prev).
  */
 
 import { and, eq, notInArray, type SQL } from "drizzle-orm";
@@ -18,7 +19,16 @@ import {
   recipients,
   signatures,
 } from "../global/schema.js";
-import { buildAuditLogValues, type AuditLogInput } from "./audit-log.js";
+import {
+  AuditChainConflictError,
+  buildAuditChainTipRevertBatchItems,
+} from "./audit-chain.js";
+import {
+  prepareChainedAuditLog,
+  tipBatchItemsForPrepared,
+  type AuditLogInput,
+  type PreparedAuditLog,
+} from "./audit-log.js";
 
 export const TERMINAL_RECIPIENT_STATUSES = [
   "signed",
@@ -36,6 +46,8 @@ export class RecipientAlreadyCompletedError extends Error {
 export type SigningSubmitBatchInput = {
   recipientId: string;
   recipientUpdate: Partial<typeof recipients.$inferInsert>;
+  /** Status to restore if tip lost after recipient update (SEA-44). */
+  previousStatus: string;
   extraWhere?: SQL;
   audit: AuditLogInput & { id: string };
   signature?: {
@@ -60,7 +72,7 @@ export type SigningSubmitBatchInput = {
 };
 
 /**
- * First-writer-wins recipient update + audit (+ optional signature/activity)
+ * First-writer-wins recipient update + sealed audit (+ optional signature/activity)
  * in one D1 batch. Losers throw RecipientAlreadyCompletedError after
  * compensating any evidence rows the batch still wrote.
  */
@@ -68,6 +80,26 @@ export async function commitSigningSubmit(
   db: D1Client,
   input: SigningSubmitBatchInput
 ): Promise<void> {
+  const maxAttempts = 5;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const prepared = await prepareChainedAuditLog(db, input.audit);
+    const outcome = await attemptSigningSubmitBatch(db, input, prepared);
+    if (outcome === "ok") {
+      return;
+    }
+    if (outcome === "recipient_lost") {
+      throw new RecipientAlreadyCompletedError();
+    }
+    // tip_lost — orphan cleaned; retry with fresh tip
+  }
+  throw new AuditChainConflictError();
+}
+
+async function attemptSigningSubmitBatch(
+  db: D1Client,
+  input: SigningSubmitBatchInput,
+  prepared: PreparedAuditLog
+): Promise<"ok" | "recipient_lost" | "tip_lost"> {
   const where = and(
     eq(recipients.id, input.recipientId),
     notInArray(recipients.status, [...TERMINAL_RECIPIENT_STATUSES]),
@@ -80,11 +112,23 @@ export async function commitSigningSubmit(
     .where(where)
     .returning({ id: recipients.id });
 
-  const auditQuery = db
-    .insert(auditLogs)
-    .values(buildAuditLogValues(input.audit));
+  const tipItems = tipBatchItemsForPrepared(db, {
+    organizationId: prepared.values.organizationId,
+    prevHash: prepared.prevHash,
+    entryHash: prepared.entryHash,
+    sequence: prepared.sequence,
+    hadTipRow: prepared.hadTipRow,
+  });
+  const tipHead = tipItems[0];
+  if (!tipHead) {
+    throw new Error("commitSigningSubmit: missing tip statement");
+  }
 
-  const queries: BatchItem<"sqlite">[] = [updateQuery, auditQuery];
+  const queries: BatchItem<"sqlite">[] = [
+    updateQuery,
+    db.insert(auditLogs).values(prepared.values),
+    tipHead,
+  ];
 
   if (input.signature) {
     queries.push(
@@ -122,22 +166,79 @@ export async function commitSigningSubmit(
     throw new Error("commitSigningSubmit: empty batch");
   }
 
-  const results = await db.batch([updateQueryHead, ...rest]);
-  const updated = results[0] as Array<{ id: string }>;
-
-  if (!updated || updated.length === 0) {
-    await compensateLostRace(db, input);
-    throw new RecipientAlreadyCompletedError();
+  let results: unknown[];
+  try {
+    results = await db.batch([updateQueryHead, ...rest]);
+  } catch {
+    // Tip insert unique race — nothing committed if batch rolled back; still
+    // best-effort delete in case partial writes ever surface.
+    await compensateLostRace(db, input, prepared, {
+      revertTip: false,
+      revertRecipient: false,
+    });
+    return "tip_lost";
   }
+
+  const updated = results[0] as Array<{ id: string }>;
+  const tipResult = results[2] as Array<{ organizationId: string }>;
+  const recipientWon = Boolean(updated && updated.length > 0);
+  const tipWon = Boolean(tipResult && tipResult.length > 0);
+
+  if (recipientWon && tipWon) {
+    return "ok";
+  }
+
+  if (!recipientWon) {
+    await compensateLostRace(db, input, prepared, {
+      revertTip: tipWon,
+      revertRecipient: false,
+    });
+    return "recipient_lost";
+  }
+
+  // Tip lost after recipient won — revert recipient + drop orphan sealed row.
+  await compensateLostRace(db, input, prepared, {
+    revertTip: tipWon,
+    revertRecipient: true,
+  });
+  return "tip_lost";
 }
 
 async function compensateLostRace(
   db: D1Client,
-  input: SigningSubmitBatchInput
+  input: SigningSubmitBatchInput,
+  prepared: PreparedAuditLog,
+  opts: { revertTip: boolean; revertRecipient: boolean }
 ): Promise<void> {
   const cleanup: BatchItem<"sqlite">[] = [
     db.delete(auditLogs).where(eq(auditLogs.id, input.audit.id)),
   ];
+
+  if (opts.revertTip) {
+    cleanup.push(
+      ...buildAuditChainTipRevertBatchItems(db, {
+        organizationId: prepared.values.organizationId,
+        prevHash: prepared.prevHash,
+        entryHash: prepared.entryHash,
+        hadTipRow: prepared.hadTipRow,
+        sequence: prepared.sequence,
+      })
+    );
+  }
+
+  if (opts.revertRecipient) {
+    cleanup.push(
+      db
+        .update(recipients)
+        .set({
+          status: input.previousStatus,
+          signedAt: null,
+          declinedAt: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(recipients.id, input.recipientId))
+    );
+  }
 
   if (input.signature) {
     cleanup.push(
