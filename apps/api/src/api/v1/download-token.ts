@@ -12,6 +12,9 @@ export interface DownloadTokenPayload {
   purpose: "download";
   storageKey: string;
   documentName: string;
+  /** Document id when known — enables document.downloaded audit (SEA-46). */
+  documentId?: string;
+  actorType: "user" | "agent" | "api_token";
   jti: string;
 }
 
@@ -38,11 +41,15 @@ export async function createDownloadToken(
     organizationId,
     storageKey,
     documentName,
+    documentId,
+    actorType = "api_token",
   }: {
     userId: string;
     organizationId: string;
     storageKey: string;
     documentName: string;
+    documentId?: string;
+    actorType?: "user" | "agent" | "api_token";
   }
 ): Promise<string | null> {
   const signing = await importMcpSigningKey(env);
@@ -59,6 +66,8 @@ export async function createDownloadToken(
     purpose: "download" as const,
     storageKey,
     documentName,
+    actorType,
+    ...(documentId ? { documentId } : {}),
     jti: crypto.randomUUID(),
   })
     .setProtectedHeader({ alg, kid, typ: "JWT" })
@@ -86,6 +95,15 @@ export async function verifyDownloadToken(
     if (typeof payload.storageKey !== "string") return null;
     if (typeof payload.documentName !== "string") return null;
     if (payload.purpose !== "download") return null;
+    const documentId =
+      typeof payload.documentId === "string" ? payload.documentId : undefined;
+    const actorTypeRaw = payload.actorType;
+    const actorType =
+      actorTypeRaw === "user" ||
+      actorTypeRaw === "agent" ||
+      actorTypeRaw === "api_token"
+        ? actorTypeRaw
+        : "api_token";
 
     return {
       sub: payload.sub,
@@ -93,6 +111,8 @@ export async function verifyDownloadToken(
       purpose: "download",
       storageKey: payload.storageKey,
       documentName: payload.documentName,
+      documentId,
+      actorType,
       jti: payload.jti,
     };
   } catch {

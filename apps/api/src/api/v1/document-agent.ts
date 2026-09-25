@@ -353,6 +353,7 @@ app.get("/preview", async (c) => {
     organizationId,
     storageKey,
     documentName: doc.name,
+    documentId: doc.id,
   });
   if (!token) {
     return c.json({ error: "server_error" }, 503);

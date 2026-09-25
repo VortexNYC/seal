@@ -7,8 +7,8 @@ Updated with SEA-50 (Certificate of Completion / EVID-2).
 | --- | --- | --- | --- | --- |
 | SEA-44 | `fnd_6ab563f5425574f54ad441c6` (soc2) | high | **done** | Tamper-evident `audit_logs` (hash chain / signed digests) |
 | SEA-45 | `fnd_6ab563f55921f68ef33f6b75` (soc2) | high | **done** | Demonstrable ESIGN consent proof |
-| SEA-46 | `fnd_6ab57f79acd3bc77c4cbdd55` + siblings | medium | backlog | Audit lifecycle + trusted timestamp + a11y |
-| SEA-47 | `fnd_6ab57f78989e02663a3ad7ff` (EIDAS-1) | medium | backlog | Document eIDAS level + AES/QES path (docs, not product) |
+| SEA-46 | `fnd_6ab57f79acd3bc77c4cbdd55` + siblings | medium | **done** | Audit lifecycle + timestamp source + a11y posture |
+| SEA-47 | `fnd_6ab57f78989e02663a3ad7ff` (EIDAS-1) | medium | **done** | Document eIDAS level + AES/QES path (docs, not product) |
 | SEA-48 | `fnd_6ab57f78271c3d6767ba069b` (AUTH-1) | medium | **done** | Graded signer auth: `none` \| `access_code` \| `email_otp` |
 | SEA-49 | `fnd_6ab57f7839041b4a5b9319ae` (EVID-4) | high | **done** (L1a+L1b) | Cryptographic seal of final PDF bytes (PAdES-class) — **not** CoC |
 | SEA-50 | `fnd_6ab57f78da8f9cbcb8affce0` (EVID-2) | high | **done** | Certificate of Completion PDF per completed envelope |
@@ -80,6 +80,22 @@ Seal coverage in this change:
 | Retry drain every 5 minutes | wrangler cron `*/5 * * * *` |
 | `recipient.declined` / `document.voided` / `document.expired` | public submit, void, expiry sweep |
 | Retry failed delivery | `POST /webhooks/deliveries/{id}/retry` |
+
+## SEA-46 / Audit lifecycle + clocks + a11y
+
+| Requirement | Where |
+| --- | --- |
+| Lifecycle audit rows (sent/voided/expired/viewed/signed/declined/completed) | `writeAuditLog` / `commitSigningSubmit` / document-expiry |
+| Download evidence | `document.downloaded` on v1 `download-file`, public signed-pdf + certificate, v1 certificate |
+| Timestamp source (not TSA) | Worker/D1 clock — documented in `apps/docs/docs/getting-started/trust-and-evidence.mdx` |
+| Signer a11y posture | Same doc — baseline labels/live regions; no third-party WCAG AA cert claimed |
+
+## SEA-47 / eIDAS level + AES/QES path
+
+| Requirement | Where |
+| --- | --- |
+| State current level (SES) | `apps/docs/docs/getting-started/eidas.mdx` |
+| Roadmap AES/QES via TSP | Same page — pairs with SEA-49 L2–L4 |
 
 ## SEA-45 / ESIGN consent
 
