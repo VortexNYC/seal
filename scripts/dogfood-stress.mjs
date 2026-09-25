@@ -224,29 +224,48 @@ async function runCase(name, opts) {
   if (!token) return;
 
   if (opts.accessCode) {
-    const bad = await fetch(
-      `${API}/api/public/signing/${token}/auth/access-code`,
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ code: "wrong-code" }),
-      }
-    );
-    bad.status === 401 || bad.status === 403 || !bad.ok
-      ? pass(`${name} access_code reject`, `HTTP ${bad.status}`)
+    const bad = await fetch(`${API}/api/public/signing/${token}/auth/verify`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ code: "wrong-code" }),
+    });
+    const badBody = await bad.json().catch(() => ({}));
+    bad.status === 400
+      ? pass(`${name} access_code reject`, JSON.stringify(badBody))
       : fail(`${name} access_code reject`, `HTTP ${bad.status}`);
 
-    const ok = await fetch(
-      `${API}/api/public/signing/${token}/auth/access-code`,
+    const blocked = await fetch(
+      `${API}/api/public/signing/${token}/submit`,
       {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ code: opts.accessCode }),
+        body: JSON.stringify({
+          status: "viewed",
+          ipAddress: "198.51.100.20",
+          userAgent: "seal-dogfood-stress/1.0",
+        }),
       }
     );
-    ok.ok
+    const blockedBody = await blocked.json().catch(() => ({}));
+    !blocked.ok
+      ? pass(`${name} gate before auth`, `HTTP ${blocked.status}`)
+      : fail(
+          `${name} gate before auth`,
+          `expected block, got ${JSON.stringify(blockedBody)}`
+        );
+
+    const ok = await fetch(`${API}/api/public/signing/${token}/auth/verify`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ code: opts.accessCode }),
+    });
+    const okBody = await ok.json().catch(() => ({}));
+    ok.ok && okBody.success
       ? pass(`${name} access_code accept`)
-      : fail(`${name} access_code accept`, `HTTP ${ok.status}`);
+      : fail(
+          `${name} access_code accept`,
+          `HTTP ${ok.status} ${JSON.stringify(okBody)}`
+        );
   }
 
   for (const submit of [
