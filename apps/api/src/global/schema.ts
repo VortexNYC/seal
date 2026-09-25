@@ -457,6 +457,9 @@ export const recipients = sqliteTable(
     esignConsentAt: integer("esign_consent_at", { mode: "timestamp_ms" }),
     esignConsentIp: text("esign_consent_ip"),
     esignConsentVersion: text("esign_consent_version"),
+    /** SHA-256 of the consent text shown (SEA-45 demonstrable consent). */
+    esignConsentTextHash: text("esign_consent_text_hash"),
+    esignConsentUserAgent: text("esign_consent_user_agent"),
     awaitingDictation: integer("awaiting_dictation", {
       mode: "boolean",
     })

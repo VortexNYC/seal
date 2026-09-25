@@ -567,6 +567,26 @@ startxref
         signatureType: "type",
       },
     ]) {
+      if (submit.status === "viewed") {
+        const consentRes = await fetch(
+          `${API}/api/public/signing/${signingToken}/consent`,
+          {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              ipAddress: "203.0.113.10",
+              userAgent: "seal-dogfood-cli/1.0",
+            }),
+          }
+        );
+        const consentData = await consentRes.json().catch(() => ({}));
+        consentRes.ok && consentData.success
+          ? pass("public esign consent", consentData.consentTextHash ?? "")
+          : fail(
+              "public esign consent",
+              `HTTP ${consentRes.status} ${JSON.stringify(consentData)}`
+            );
+      }
       const res = await fetch(
         `${API}/api/public/signing/${signingToken}/submit`,
         {
