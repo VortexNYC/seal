@@ -1,6 +1,10 @@
 import { render } from "@react-email/render";
 
 import {
+  AuditWriteFailureAlert,
+  type AuditWriteFailureAlertProps,
+} from "./emails/audit-write-failure-alert.js";
+import {
   DocumentCompleted,
   type DocumentCompletedProps,
 } from "./emails/document-completed.js";
@@ -43,6 +47,7 @@ import {
 
 // Re-export components for direct use
 export {
+  AuditWriteFailureAlert,
   DocumentInvitation,
   DocumentCompleted,
   DocumentExpirationAlert,
@@ -57,6 +62,7 @@ export {
 
 // Re-export types
 export type {
+  AuditWriteFailureAlertProps,
   DocumentInvitationProps,
   SigningCompleteProps,
   SigningOtpProps,
@@ -157,4 +163,13 @@ export async function renderSigningOtp(
   props: SigningOtpProps
 ): Promise<string> {
   return render(<SigningOtp {...props} />);
+}
+
+/**
+ * Render AuditWriteFailureAlert email to HTML string
+ */
+export async function renderAuditWriteFailureAlert(
+  props: AuditWriteFailureAlertProps
+): Promise<string> {
+  return render(<AuditWriteFailureAlert {...props} />);
 }

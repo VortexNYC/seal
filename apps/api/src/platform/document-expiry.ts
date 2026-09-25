@@ -12,6 +12,7 @@ import {
   buildAuditChainTipBatchItems,
   buildAuditChainTipRevertBatchItems,
 } from "./audit-chain.js";
+import { recordAuditWriteFailure, recordAuditWriteSuccess } from "./audit-health.js";
 import { prepareChainedAuditLogBatch } from "./audit-log.js";
 
 export const SCHEDULER_ACTOR = {
@@ -130,6 +131,11 @@ export async function commitDocumentExpiry(
       organizationId: input.organizationId,
       revertTip: false,
     });
+    await recordAuditWriteFailure(
+      db,
+      input.organizationId,
+      "document_expiry_batch_error"
+    );
     return false;
   }
 
@@ -140,6 +146,7 @@ export async function commitDocumentExpiry(
   const tipWon = Boolean(tipResult && tipResult.length > 0);
 
   if (docWon && tipWon) {
+    await recordAuditWriteSuccess(db, input.organizationId);
     return true;
   }
 
@@ -176,6 +183,11 @@ export async function commitDocumentExpiry(
     if (restoreHead) {
       await db.batch([restoreHead, ...restoreRest]);
     }
+    await recordAuditWriteFailure(
+      db,
+      input.organizationId,
+      "document_expiry_tip_conflict"
+    );
   }
 
   return false;

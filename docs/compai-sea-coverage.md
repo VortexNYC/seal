@@ -5,7 +5,7 @@ Updated with SEA-50 (Certificate of Completion / EVID-2).
 
 | SEA | CompAI | Severity | Status | What “covered” means |
 | --- | --- | --- | --- | --- |
-| SEA-44 | `fnd_6ab563f5425574f54ad441c6` (soc2) | high | **in progress → this PR** | Tamper-evident `audit_logs` (hash chain / signed digests) |
+| SEA-44 | `fnd_6ab563f5425574f54ad441c6` (soc2) | high | **done** | Tamper-evident `audit_logs` (hash chain / signed digests) |
 | SEA-45 | `fnd_6ab563f55921f68ef33f6b75` (soc2) | high | **done** | Demonstrable ESIGN consent proof |
 | SEA-46 | `fnd_6ab57f79acd3bc77c4cbdd55` + siblings | medium | backlog | Audit lifecycle + trusted timestamp + a11y |
 | SEA-47 | `fnd_6ab57f78989e02663a3ad7ff` (EIDAS-1) | medium | backlog | Document eIDAS level + AES/QES path (docs, not product) |
@@ -17,7 +17,7 @@ Updated with SEA-50 (Certificate of Completion / EVID-2).
 | SEA-53 | `fnd_6ab563f6cb3383f010948219` (soc2) | medium | backlog | Secret scanning in CI |
 | SEA-54 | `fnd_6ab563f60a74553c6d277135` (soc2) | medium | backlog | External security audit / pen test |
 | SEA-55 | `fnd_6ab563f6c6010aa7fade2e30` (soc2) | high | backlog | Backup/DR for signed docs + audit |
-| SEA-56 | `fnd_6ab563f69ddf3aae4a95e3ae` (soc2) | high | backlog | Alert on audit-log write failures |
+| SEA-56 | `fnd_6ab563f69ddf3aae4a95e3ae` (soc2) | high | **in progress → this PR** | Alert on audit-log write failures |
 | SEA-57 | `fnd_6ab563f53c4f6314a654ecd3` (soc2) | high | backlog | Legal review of consent / retention / attribution |
 | SEA-58 | `fnd_6ab563f5d67363c2a3e06fb8` (soc2) | high | backlog | ESIGN opt-out / manual-signature path |
 
@@ -61,6 +61,15 @@ Seal coverage in this change:
 | All writers seal via tip optimistic lock | `writeAuditLog`, `commitSigningSubmit`, `commitDocumentExpiry` |
 | Verify unbroken sealed chain | `GET /api/v1/organizations/{slug}/audit/verify` |
 | Legacy null-hash rows skipped | `verifyAuditChain` |
+
+## SEA-56 / Audit write-failure alerts
+
+| Requirement | Where |
+| --- | --- |
+| Count consecutive sealed-write failures | `audit_health` + `recordAuditWriteFailure` |
+| Clear counter on successful write | `recordAuditWriteSuccess` |
+| Alert workspace owners/admins after 3 failures | scheduled `runAuditHealthAlerts` (24h cooldown) |
+| Email template | `AuditWriteFailureAlert` |
 
 ## SEA-45 / ESIGN consent
 

@@ -10,10 +10,16 @@ import {
 import { commitDocumentExpiry } from "./document-expiry.js";
 import { runDunningEmails } from "./dunning.js";
 import {
+  sendAuditWriteFailureAlertEmail,
   sendDocumentExpiredEmail,
   sendDocumentExpirationAlertEmail,
   sendDocumentReminderEmail,
 } from "./email.js";
+import {
+  listAuditHealthAlertCandidates,
+  listOrganizationAdminEmails,
+  markAuditHealthAlerted,
+} from "./audit-health.js";
 import { processWebhookDeliveries } from "./webhook-events.js";
 
 const MS_PER_DAY = 86_400_000;
@@ -247,6 +253,52 @@ export async function runScheduledTasks(
   await runExpiredDocumentSweep(env);
   await runDocumentReminders(env);
   await runExpirationAlerts(env);
+  await runAuditHealthAlerts(env);
   await runDunningEmails(env);
   await processWebhookDeliveries(env);
+}
+
+async function runAuditHealthAlerts(env: CloudflareBindings): Promise<void> {
+  const db = createD1(env.D1);
+  const now = new Date();
+  const candidates = await listAuditHealthAlertCandidates(db, now);
+
+  await Promise.all(
+    candidates.map(async (candidate) => {
+      const admins = await listOrganizationAdminEmails(
+        db,
+        candidate.organizationId
+      );
+      if (admins.length === 0) {
+        console.error("[scheduled/audit-health] no admins to alert", {
+          organizationId: candidate.organizationId,
+        });
+        return;
+      }
+
+      const results = await Promise.all(
+        admins.map((admin) =>
+          sendAuditWriteFailureAlertEmail(env, {
+            to: admin.email,
+            adminName: admin.name,
+            organizationName: candidate.organizationName,
+            organizationSlug: candidate.organizationSlug,
+            consecutiveFailures: candidate.consecutiveFailures,
+            lastFailureReason: candidate.lastFailureReason,
+          })
+        )
+      );
+
+      const anySent = results.some((result) => result.success);
+      if (!anySent) {
+        console.error("[scheduled/audit-health] alert email failed", {
+          organizationId: candidate.organizationId,
+          errors: results.map((result) => result.error).filter(Boolean),
+        });
+        return;
+      }
+
+      await markAuditHealthAlerted(db, candidate.organizationId, now);
+    })
+  );
 }

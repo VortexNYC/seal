@@ -10,6 +10,10 @@ import {
   prepareAuditChainFields,
   type CanonicalAuditPayload,
 } from "./audit-chain.js";
+import {
+  recordAuditWriteFailure,
+  recordAuditWriteSuccess,
+} from "./audit-health.js";
 
 export type AuditActor = {
   type: "user" | "agent" | "api_token";
@@ -199,6 +203,7 @@ export async function writeAuditLog(
       ]);
       const tipResult = results[1] as Array<{ organizationId: string }>;
       if (tipResult && tipResult.length > 0) {
+        await recordAuditWriteSuccess(db, prepared.values.organizationId);
         return prepared;
       }
     } catch {
@@ -210,6 +215,12 @@ export async function writeAuditLog(
       .delete(auditLogs)
       .where(eq(auditLogs.id, prepared.values.id));
   }
+
+  await recordAuditWriteFailure(
+    db,
+    input.organizationId,
+    "AuditChainConflictError"
+  );
   throw new AuditChainConflictError();
 }
 

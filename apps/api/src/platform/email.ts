@@ -8,6 +8,7 @@ import {
   renderOwnershipTransferred,
   renderSigningComplete,
   renderSigningOtp,
+  renderAuditWriteFailureAlert,
 } from "@seal/transactional";
 
 export interface EmailSendResult {
@@ -326,6 +327,36 @@ export async function sendSigningOtpEmail(
   return sendEmail(env, {
     to: params.to,
     subject: `Your Seal verification code for "${params.documentName}"`,
+    html,
+  });
+}
+
+export async function sendAuditWriteFailureAlertEmail(
+  env: EmailEnv,
+  params: {
+    to: string;
+    adminName: string;
+    organizationName: string;
+    organizationSlug: string;
+    consecutiveFailures: number;
+    lastFailureReason?: string | null;
+  }
+): Promise<EmailSendResult> {
+  const settingsUrl = normalizeUrl(
+    env.APP_URL,
+    `/${encodeURIComponent(params.organizationSlug)}/settings/audit-log`
+  );
+  const html = await renderAuditWriteFailureAlert({
+    adminName: params.adminName,
+    organizationName: params.organizationName,
+    organizationSlug: params.organizationSlug,
+    consecutiveFailures: params.consecutiveFailures,
+    lastFailureReason: params.lastFailureReason,
+    settingsUrl,
+  });
+  return sendEmail(env, {
+    to: params.to,
+    subject: `Audit logging failing for ${params.organizationName}`,
     html,
   });
 }
