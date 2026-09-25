@@ -288,6 +288,13 @@
       "when": 1740000000040,
       "tag": "0040_audit_siem_cursors",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "6",
+      "when": 1740000000041,
+      "tag": "0041_sso_provider",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,48 @@
+---
+title: Enterprise SSO (SAML / OIDC)
+description: Company login via SAML or OIDC for Seal workspaces
+---
+
+# Enterprise SSO (SAML / OIDC)
+
+DocuSign-class buyers expect company login (SEA-66). Seal uses Better Auth’s
+[`@better-auth/sso`](https://www.better-auth.com/docs/plugins/sso) plugin —
+SAML 2.0 and OIDC, bound to a workspace, with optional enforce-SSO.
+
+Enterprise plan flag `sso` in plan limits gates the product surface; the
+endpoints below are live when the API is deployed with the SSO plugin.
+
+## What you get
+
+| Capability | How |
+| --- | --- |
+| Register IdP | `POST /api/auth/sso/register` (org owner/admin session) |
+| Domain verification | Enabled — DNS TXT token via SSO plugin verify endpoints before first sign-in |
+| SP metadata | `GET /api/auth/sso/saml2/sp/metadata?providerId=…` |
+| Sign-in | `POST /api/auth/sign-in/sso` → IdP redirect → ACS |
+| Org provisioning | First SSO login joins the provider’s organization as `member` |
+| Enforce SSO | `PATCH /api/organizations/{slug}/security` with `{ "ssoEnforced": true }` |
+
+## Enforce SSO
+
+When `ssoEnforced` is true on the organization metadata, session members who
+did **not** authenticate through that workspace’s SSO provider get
+`403 { "error": "sso_required" }` on org-scoped session routes. Owners can
+still `PATCH …/security` to turn enforcement off (recovery path if the IdP
+is misconfigured). API tokens are machine credentials and are not subject to
+this gate.
+
+## Typical admin flow
+
+1. Create / select the Seal workspace (Better Auth organization).
+2. Register a SAML (or OIDC) provider with `organizationId` + email `domain`.
+3. Complete domain verification (DNS TXT) so `domainVerified` is true.
+4. Exchange SP metadata with your IdP (Okta / Entra / Google Workspace).
+5. Optionally set `ssoEnforced: true` after a successful test login.
+
+## Related
+
+- [Privacy & incidents](/getting-started/privacy)
+- [Sensitive egress](/getting-started/egress)
+- [Production checklist](/getting-started/production)
+- Plan limits: enterprise tier includes `sso: true`

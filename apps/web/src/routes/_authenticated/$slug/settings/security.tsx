@@ -36,6 +36,7 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/security")(
 interface SecurityFormData {
   ipAllowlistText: string;
   allowApiAccess: boolean;
+  ssoEnforced: boolean;
 }
 
 function SecuritySettings() {
@@ -73,6 +74,7 @@ function SecuritySettingsContent() {
   const [formData, setFormData] = useState<SecurityFormData>({
     ipAllowlistText: "",
     allowApiAccess: true,
+    ssoEnforced: false,
   });
 
   const userRole = organization?.userRole;
@@ -84,6 +86,7 @@ function SecuritySettingsContent() {
       setFormData({
         ipAllowlistText: securitySettings.ipAllowlist?.join("\n") ?? "",
         allowApiAccess: securitySettings.allowApiAccess,
+        ssoEnforced: securitySettings.ssoEnforced ?? false,
       });
     }
   }, [securitySettings]);
@@ -151,6 +154,7 @@ function SecuritySettingsContent() {
       await updateSecuritySettings(slug, {
         ipAllowlist: ipAllowlist.length > 0 ? ipAllowlist : undefined,
         allowApiAccess: formData.allowApiAccess,
+        ssoEnforced: formData.ssoEnforced,
       });
       toast.success("Security settings updated");
     } catch (error) {
@@ -234,6 +238,18 @@ function SecuritySettingsContent() {
             <Text variant="secondary" size="sm">
               Enable programmatic access via API keys. Disabling revokes all
               existing API key access.
+            </Text>
+            <Checkbox
+              label="Require company SSO"
+              checked={formData.ssoEnforced}
+              disabled={!isOwner}
+              onCheckedChange={(checked) =>
+                setFormData({ ...formData, ssoEnforced: checked })
+              }
+            />
+            <Text variant="secondary" size="sm">
+              Members must sign in through your SAML/OIDC provider. Register the
+              IdP via the SSO API first; owners can always turn this off.
             </Text>
           </LayerCard.Primary>
         </LayerCard>
