@@ -46,6 +46,10 @@ import {
   sendDocumentInvitationEmail,
   sendOwnershipTransferredEmail,
 } from "../platform/email.js";
+import {
+  auditMetaFromContext,
+  tryAuditDocumentByteAccess,
+} from "../platform/document-access-audit.js";
 import { organizationMiddleware } from "../platform/organization-middleware.js";
 import type { Variables } from "../platform/types.js";
 import ai from "./ai.js";
@@ -1254,6 +1258,22 @@ app.openapi(downloadRouteDef, async (c) => {
   const object = await bucket.get(doc.storageKey);
   if (!object || !object.body) {
     return c.json({ error: "Document or file not found" }, 404);
+  }
+
+  const sessionUser = c.get("user");
+  if (sessionUser?.user?.id) {
+    await tryAuditDocumentByteAccess(
+      db,
+      {
+        organizationId,
+        actor: { type: "user", id: sessionUser.user.id },
+        documentId: doc.id,
+        via: "session-download",
+        metadata: { publicId: doc.publicId, storageKey: doc.storageKey },
+        ...auditMetaFromContext(c),
+      },
+      "session-download"
+    );
   }
 
   const headers: Record<string, string> = {
