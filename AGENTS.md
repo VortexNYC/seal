@@ -12,6 +12,8 @@ Seal is a pnpm + Vite+ (VoidZero) monorepo with a React 19 product app, a blume 
 
 **Agent-native:** OpenAPI (`apps/docs/openapi.yaml`) is the product contract. MCP / CLI / SDK follow it. Agents operate the sender-side machine; humans provide signing intent. Agents are not signatories — see `docs/decisions/ADR-003-agent-native-openapi-and-signing.md` and docs `/getting-started/agents`.
 
+**Portfolio default (SEA-59 / ADR-005):** Seal is the only Vortex signing path for day-to-day company docs. No new DocuSign/PandaDoc/HelloSign/Adobe Sign create/send. Gaps → SEA tickets.
+
 ## STRUCTURE
 
 ```text

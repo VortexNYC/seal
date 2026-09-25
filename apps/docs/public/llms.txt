@@ -21,17 +21,26 @@ MCP, CLI (`seal`), and `@vortex-api/seal` wrap that contract — they must not i
 
 1. Create API key in app → Developer (`seal_…`)
 2. Upload PDF → create document → place fields (optional `binding_key`) → `POST /documents/apply-bindings` → add recipient → send
-3. Human opens `signing_url` (or embed) and signs — agents do not sign
+3. Human opens `signing_url` (InteractionSession / `seal wait`) and signs — agents do not sign
 4. Poll document status / webhooks → `document.completed` → audit
 
 Prefer `binding_key` + apply-bindings over OCR reconstruction for deal data
 (GitHub #604 Seal-side; Payments sync = SEA-43).
+
+When the signing URL may sit in an agent context, use graded signer auth
+(`email_otp` or `access_code` on the recipient — SEA-48).
 
 Proof from the repo:
 
 ```bash
 SEAL_API_KEY=seal_… pnpm run prove:golden-path
 ```
+
+## Portfolio default (SEA-59)
+
+Seal is the **only** Vortex signing path for day-to-day company docs.
+Do not open DocuSign / PandaDoc / HelloSign / Adobe Sign for Vortex work.
+Gaps → SEA tickets. ADR-005.
 
 ## Self-host
 
@@ -62,3 +71,4 @@ Cold-account checklist: https://docs.seal.nyc/getting-started/self-host
 - Prefer API / MCP / CLI over the product UI for sender work
 - Never treat a model as the signatory
 - Do not invent endpoints missing from OpenAPI
+- Vortex company signing = Seal only (no DocuSign/PandaDoc create/send)
