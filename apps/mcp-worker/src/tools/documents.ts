@@ -256,6 +256,34 @@ function registerDownloadDocumentTool(
   );
 }
 
+function registerDownloadCertificateTool(
+  server: McpServer,
+  client: SealApiClient
+): void {
+  server.tool(
+    "seal_download_certificate",
+    "Download the Certificate of Completion PDF for a completed document (CompAI EVID-2). Returns size/content-type metadata; use GET /documents/certificate?id= for the raw PDF bytes.",
+    documentIdSchema.shape,
+    async (args, extra) => {
+      const { id } = args as DocumentIdInput;
+      const authToken = getAuthToken(extra);
+      const file = await client.getBytes(
+        "/documents/certificate",
+        { id },
+        authToken
+      );
+
+      return createToolResponse({
+        id,
+        available: true,
+        content_type: file.contentType,
+        bytes: file.byteLength,
+        endpoint: `/documents/certificate?id=${encodeURIComponent(id)}`,
+      });
+    }
+  );
+}
+
 /**
  * Registers all document-related tools with the MCP server.
  */
@@ -271,4 +299,5 @@ export function registerDocumentTools(
   registerSendDocumentTool(server, client);
   registerVoidDocumentTool(server, client);
   registerDownloadDocumentTool(server, client);
+  registerDownloadCertificateTool(server, client);
 }

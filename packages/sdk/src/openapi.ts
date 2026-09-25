@@ -45,6 +45,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/documents/interaction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get InteractionSession for a document (human handoff)
+         * @description Returns a Vortex InteractionSession for signing (ADR-004 / SEA-61).
+         *     Agents show or open `url`, then poll this endpoint until `status` is
+         *     not `pending`. Never forge the human signature. Requires
+         *     `documents:write` to include `url` (signing link).
+         */
+        get: operations["getDocumentInteraction"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/documents/update": {
         parameters: {
             query?: never;
@@ -368,6 +391,26 @@ export interface paths {
          * @description Returns a short-lived pre-signed URL to download the document. If the document is completed, this returns the signed PDF. Otherwise it returns the original uploaded file.
          */
         get: operations["downloadDocument"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/certificate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download Certificate of Completion
+         * @description Returns the Certificate of Completion PDF for a completed envelope (CompAI EVID-2 / SEA-50). Includes parties, emails, IPs, auth method, timestamps, document hash, and a verification URL. Only available when the document status is `completed`. Lazy-generates the PDF if missing.
+         */
+        get: operations["downloadCertificateOfCompletion"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1282,6 +1325,36 @@ export interface components {
             /** @description Recipient list (only included when include_recipients=true) */
             recipients?: components["schemas"]["Recipient"][];
         };
+        /**
+         * @description Vortex human-handoff object (ADR-004). Agents open/show `url` and poll
+         *     until `status` is terminal. Seal signing is the first producer.
+         */
+        InteractionSession: {
+            /** @description Stable session id (e.g. sign:{document_id}) */
+            id: string;
+            /** @description Interaction kind (sign, approve, unlock, pay, …) */
+            kind: string;
+            /**
+             * Format: uri
+             * @description Temporary human page; null if not available yet
+             */
+            url?: string | null;
+            /** @enum {string} */
+            status: "pending" | "completed" | "cancelled" | "declined" | "expired";
+            /** Format: date-time */
+            expires_at?: string | null;
+            /** @description One-line instruction for the host/human */
+            message: string;
+            poll: {
+                path: string;
+                interval_ms: number;
+            };
+            result?: {
+                document_id?: string;
+                document_status?: string;
+                title?: string | null;
+            };
+        };
         Recipient: {
             id: string;
             /** Format: email */
@@ -1788,6 +1861,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Document"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getDocumentInteraction: {
+        parameters: {
+            query: {
+                /** @description Document ID */
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InteractionSession"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -2348,6 +2446,38 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    downloadCertificateOfCompletion: {
+        parameters: {
+            query: {
+                /** @description Document id */
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Certificate of Completion PDF */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Object storage not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     listRecipients: {

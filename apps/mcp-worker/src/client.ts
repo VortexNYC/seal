@@ -311,6 +311,46 @@ export class SealApiClient {
   }
 
   /**
+   * GET that returns raw bytes (Certificate of Completion PDFs, etc.).
+   */
+  async getBytes(
+    path: string,
+    query?: Record<string, RequestQueryValue>,
+    authToken?: string,
+    timeout?: number
+  ): Promise<{ contentType: string; byteLength: number; bytes: Uint8Array }> {
+    const url = this.buildUrl(path, query);
+    const requestTimeout = timeout ?? this.timeout;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), requestTimeout);
+    try {
+      const response = await fetch(
+        url.toString(),
+        this.createJsonRequestInit(
+          "GET",
+          this.resolveAuthToken(authToken),
+          undefined,
+          controller.signal
+        )
+      );
+      if (!response.ok) {
+        this.throwApiError(await this.getApiError(response));
+      }
+      const buffer = await response.arrayBuffer();
+      return {
+        contentType:
+          response.headers.get("content-type") ?? "application/octet-stream",
+        byteLength: buffer.byteLength,
+        bytes: new Uint8Array(buffer),
+      };
+    } catch (error) {
+      return this.normalizeRequestError(error);
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  /**
    * Makes a POST request.
    * @param path - API endpoint path
    * @param body - Optional request body

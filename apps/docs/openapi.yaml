@@ -1462,6 +1462,38 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /documents/certificate:
+    get:
+      tags: [Documents]
+      operationId: downloadCertificateOfCompletion
+      summary: Download Certificate of Completion
+      description: >
+        Returns the Certificate of Completion PDF for a completed envelope
+        (CompAI EVID-2 / SEA-50). Includes parties, emails, IPs, auth method,
+        timestamps, document hash, and a verification URL. Only available when
+        the document status is `completed`. Lazy-generates the PDF if missing.
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Document id
+      responses:
+        "200":
+          description: Certificate of Completion PDF
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          description: Object storage not configured
+
   # ──────────────────────────────────────────────────────────────────────────
   # Recipients
   # ──────────────────────────────────────────────────────────────────────────
