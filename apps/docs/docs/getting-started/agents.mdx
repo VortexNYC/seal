@@ -118,6 +118,19 @@ The public signing path and embed SDK remain the only places a signature is
 applied. Audit trails name the human (or, later, an org seal process) — never
 the LLM.
 
+## Portfolio default (SEA-59 / ADR-005)
+
+**Seal is the only Vortex signing path** for day-to-day company documents
+(offers, NDAs, vendor packets, contractor agreements, internal filings that
+are not government portals).
+
+- Do **not** create or resume DocuSign / PandaDoc / HelloSign / Adobe Sign
+  workflows for Vortex work.
+- Use Seal API / MCP / CLI / InteractionSession instead.
+- If Seal cannot do it yet, file a SEA ticket — do not reopen a vendor seat.
+- Historical DocuSign/PandaDoc **import** adapters are migration-only, not a
+  send path.
+
 ## Channels
 
 | Channel             | Status                             |
@@ -132,3 +145,5 @@ the LLM.
 - [Production checklist](/getting-started/production)
 - [Self-host](/getting-started/self-host)
 - ADR: `docs/decisions/ADR-003-agent-native-openapi-and-signing.md`
+- ADR: `docs/decisions/ADR-004-interaction-sessions-and-host-hitl.md`
+- ADR: `docs/decisions/ADR-005-seal-only-vortex-signing-path.md`

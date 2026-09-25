@@ -80,13 +80,13 @@ function pdfAdapter(payload: unknown, cursor: string | null): ImportBatch {
 
 function docusignAdapter(): ImportBatch {
   throw new Error(
-    "docusign adapter is not yet implemented: configure DocuSign credentials first"
+    "docusign import is migration-only and not configured (SEA-59: Seal is the only Vortex send path)"
   );
 }
 
 function pandadocAdapter(): ImportBatch {
   throw new Error(
-    "pandadoc adapter is not yet implemented: configure PandaDoc credentials first"
+    "pandadoc import is migration-only and not configured (SEA-59: Seal is the only Vortex send path)"
   );
 }
 
