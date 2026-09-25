@@ -14,7 +14,7 @@ Updated with SEA-50 (Certificate of Completion / EVID-2).
 | SEA-50 | `fnd_6ab57f78da8f9cbcb8affce0` (EVID-2) | high | **done** | Certificate of Completion PDF per completed envelope |
 | SEA-51 | `fnd_6ab57d53603ca70a50b0c160` (hipaa) | medium | backlog | HIPAA / BAA scoping for health-doc signing |
 | SEA-52 | `fnd_6ab57d53cb550d31b62425d7` + `fnd_6ab57d541b22e8a67eda3def` | high | **done** | Signer privacy notice + CCPA disclosures |
-| SEA-53 | `fnd_6ab563f6cb3383f010948219` (soc2) | medium | backlog | Secret scanning in CI |
+| SEA-53 | `fnd_6ab563f6cb3383f010948219` (soc2) | medium | **done** | Secret scanning in CI |
 | SEA-54 | `fnd_6ab563f60a74553c6d277135` (soc2) | medium | backlog | External security audit / pen test |
 | SEA-55 | `fnd_6ab563f6c6010aa7fade2e30` (soc2) | high | **done** | Backup/DR for signed docs + audit |
 | SEA-56 | `fnd_6ab563f69ddf3aae4a95e3ae` (soc2) | high | **done** | Alert on audit-log write failures |
@@ -124,4 +124,13 @@ Seal coverage in this change:
 | Offline audit tip evidence | Daily cron → `backups/audit/{date}/manifest.json` |
 | Restore procedure | `docs/runbooks/backup-dr.md` |
 | Prove | `pnpm run prove:backup-dr` |
+
+## SEA-53 / Secret scanning in CI
+
+| Requirement | Where |
+| --- | --- |
+| PR / main CI gate | `.github/workflows/secret-scan.yml` → `pnpm run scan:secrets` |
+| Local pre-commit | `simple-git-hooks` → `pnpm run scan:secrets` (secretlint recommend preset) |
+| GitHub native push protection | Repo `secret_scanning` + `secret_scanning_push_protection` enabled |
+| Prove | `pnpm run prove:secret-scan` |
 
