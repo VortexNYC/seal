@@ -9,6 +9,13 @@ import {
   organization,
   templates as templatesTable,
 } from "../global/schema.js";
+import {
+  hasSSOAccountForWorkspace,
+  isSSOEnforced,
+  readSSOEnforcedFromMetadata,
+  withSSOEnforcedMetadata,
+} from "../platform/sso-enforcement.js";
+import type { Variables } from "../platform/types.js";
 
 const TemplateListItemSchema = z
   .object({
@@ -49,7 +56,7 @@ function asRecord(v: unknown): Record<string, unknown> {
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
-  Variables: { user: import("../platform/session.js").SessionUser | null };
+  Variables: Variables;
 }>();
 
 app.use("/*", async (c, next) => {
@@ -89,6 +96,19 @@ app.use("/:slug/*", async (c, next) => {
 
   if (!membership[0]) {
     return c.json({ error: "Forbidden" }, 403);
+  }
+
+  // SEA-66: when SSO is enforced, password sessions without a linked SSO
+  // account are blocked. Owners can still PATCH security to turn it off.
+  const path = new URL(c.req.url).pathname;
+  const isSSOToggle =
+    c.req.method === "PATCH" && path.endsWith(`/${slug}/security`);
+  if (
+    !isSSOToggle &&
+    (await isSSOEnforced(c.env, org.id)) &&
+    !(await hasSSOAccountForWorkspace(c.env, org.id, user.user.id))
+  ) {
+    return c.json({ error: "sso_required" }, 403);
   }
 
   c.set("organization", org);
@@ -150,6 +170,8 @@ const SecuritySettingsSchema = z
   .object({
     ipAllowlist: z.array(z.string()),
     allowApiAccess: z.boolean(),
+    /** When true, members must sign in via the org's SAML/OIDC provider (SEA-66). */
+    ssoEnforced: z.boolean(),
   })
   .openapi("SecuritySettings");
 
@@ -160,6 +182,7 @@ const securitySettingsRecordSchema = SecuritySettingsSchema.or(
 const updateSecurityBodySchema = z.object({
   ipAllowlist: z.array(z.string()).optional(),
   allowApiAccess: z.boolean().optional(),
+  ssoEnforced: z.boolean().optional(),
 });
 
 const updateNotificationBodySchema = z.object({
@@ -593,12 +616,17 @@ app.openapi(securityRouteDef, async (c) => {
     ipAllowlist: allowlist,
     allowApiAccess:
       typeof raw.allowApiAccess === "boolean" ? raw.allowApiAccess : true,
+    ssoEnforced: readSSOEnforcedFromMetadata(org.metadata),
   });
 
   return c.json(
     result.success
       ? result.data
-      : { ipAllowlist: allowlist, allowApiAccess: true }
+      : {
+          ipAllowlist: allowlist,
+          allowApiAccess: true,
+          ssoEnforced: false,
+        }
   );
 });
 
@@ -659,9 +687,27 @@ app.openapi(updateSecurityRouteDef, async (c) => {
         : typeof security.allowApiAccess === "boolean"
           ? security.allowApiAccess
           : true,
+    ssoEnforced:
+      body.ssoEnforced !== undefined
+        ? body.ssoEnforced
+        : readSSOEnforcedFromMetadata(org.metadata),
   };
 
-  const nextMetadata = { ...meta, securitySettings: nextSecurity };
+  let nextMetadata: Record<string, unknown> = {
+    ...meta,
+    securitySettings: {
+      ipAllowlist: nextSecurity.ipAllowlist,
+      allowApiAccess: nextSecurity.allowApiAccess,
+    },
+  };
+  if (body.ssoEnforced !== undefined) {
+    nextMetadata = JSON.parse(
+      withSSOEnforcedMetadata(
+        JSON.stringify(nextMetadata),
+        body.ssoEnforced
+      )
+    ) as Record<string, unknown>;
+  }
 
   await db
     .update(organization)

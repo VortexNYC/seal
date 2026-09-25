@@ -125,6 +125,21 @@ export const twoFactor = sqliteTable(
   ]
 );
 
+/** Better Auth `@better-auth/sso` provider rows (SEA-66). */
+export const ssoProvider = sqliteTable("ssoProvider", {
+  id: text("id").primaryKey(),
+  issuer: text("issuer").notNull(),
+  oidcConfig: text("oidc_config"),
+  samlConfig: text("saml_config"),
+  userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
+  providerId: text("provider_id").notNull().unique(),
+  organizationId: text("organization_id"),
+  domain: text("domain").notNull(),
+  domainVerified: integer("domain_verified", { mode: "boolean" })
+    .notNull()
+    .default(false),
+});
+
 // -----------------------------------------------------------------------------
 // Better Auth organization plugin tables
 // -----------------------------------------------------------------------------

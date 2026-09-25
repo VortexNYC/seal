@@ -473,6 +473,7 @@ export async function updateAiSettings(
 const securitySettingsSchema = z.object({
   ipAllowlist: z.array(z.string()),
   allowApiAccess: z.boolean(),
+  ssoEnforced: z.boolean().optional().default(false),
 });
 export type ApiSecuritySettings = z.infer<typeof securitySettingsSchema>;
 export async function getSecuritySettings(
@@ -488,6 +489,7 @@ export async function updateSecuritySettings(
   input: {
     ipAllowlist?: string[];
     allowApiAccess?: boolean;
+    ssoEnforced?: boolean;
   }
 ): Promise<ApiSecuritySettings> {
   return apiFetch(

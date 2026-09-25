@@ -29,7 +29,7 @@ export async function getSessionUser(
   }
 
   try {
-    const auth = createAuth(env);
+    const auth = await createAuth(env);
     const result = await auth.api.getSession({ headers: request.headers });
     if (!result || result instanceof Response) {
       console.warn(

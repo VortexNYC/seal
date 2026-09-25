@@ -7,7 +7,9 @@ import { createD1 } from "../global/db.js";
 import * as schema from "../global/schema.js";
 import { sendEmail } from "./email.js";
 
-export function createAuth(env: CloudflareBindings) {
+export async function createAuth(env: CloudflareBindings) {
+  // samlify + @xmldom are heavy; lazy-import keeps SSO out of cold-start CPU.
+  const { sso } = await import("@better-auth/sso");
   const db = createD1(env.D1);
 
   const allowedOrigins =
@@ -65,8 +67,16 @@ export function createAuth(env: CloudflareBindings) {
       twoFactor({
         issuer: "Seal",
       }),
+      sso({
+        // SEA-66: SAML/OIDC via @better-auth/sso. Admins register providers
+        // for their org; domain must be verified before sign-in.
+        domainVerification: { enabled: true },
+        organizationProvisioning: {
+          defaultRole: "member",
+        },
+      }),
     ],
   });
 }
 
-export type Auth = ReturnType<typeof createAuth>;
+export type Auth = Awaited<ReturnType<typeof createAuth>>;

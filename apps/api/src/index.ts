@@ -83,7 +83,7 @@ app.use(
 );
 
 app.use(async (c, next) => {
-  c.set("auth", createAuth(c.env));
+  c.set("auth", await createAuth(c.env));
   c.set("user", await getSessionUser(c.env, c.req.raw));
   await next();
 });
