@@ -106,6 +106,7 @@ const SigningSettingsSchema = z
       z.union([z.literal("draw"), z.literal("type"), z.literal("upload")])
     ),
     esignConsentText: z.string().nullable().optional(),
+    privacyNoticeText: z.string().nullable().optional(),
     defaultDeadlineDays: z.number().int(),
   })
   .openapi("SigningSettings");
@@ -173,6 +174,7 @@ const updateSigningBodySchema = z.object({
     .array(z.union([z.literal("draw"), z.literal("type"), z.literal("upload")]))
     .optional(),
   esignConsentText: z.string().optional(),
+  privacyNoticeText: z.string().optional(),
   defaultDeadlineDays: z.number().int().optional(),
 });
 
@@ -317,6 +319,8 @@ app.openapi(signingRouteDef, async (c) => {
         : ["draw", "type", "upload"],
     esignConsentText:
       typeof raw.esignConsentText === "string" ? raw.esignConsentText : null,
+    privacyNoticeText:
+      typeof raw.privacyNoticeText === "string" ? raw.privacyNoticeText : null,
     defaultDeadlineDays:
       typeof raw.defaultDeadlineDays === "number"
         ? Math.round(raw.defaultDeadlineDays)
@@ -384,6 +388,12 @@ app.openapi(updateSigningRouteDef, async (c) => {
         ? body.esignConsentText || null
         : typeof signing.esignConsentText === "string"
           ? signing.esignConsentText
+          : null,
+    privacyNoticeText:
+      body.privacyNoticeText !== undefined
+        ? body.privacyNoticeText || null
+        : typeof signing.privacyNoticeText === "string"
+          ? signing.privacyNoticeText
           : null,
     defaultDeadlineDays:
       body.defaultDeadlineDays !== undefined

@@ -358,7 +358,7 @@ describe("AddRecipientDialog", () => {
     test("renders a role label and combobox trigger", () => {
       renderDialog();
       expect(screen.getByLabelText("Role")).toBeInTheDocument();
-      expect(screen.getByRole("combobox")).toBeInTheDocument();
+      expect(screen.getByLabelText("Authentication")).toBeInTheDocument();
     });
 
     test("shows role description for signer by default", () => {
@@ -399,6 +399,8 @@ describe("AddRecipientDialog", () => {
           email: "alice@example.com",
           name: "Alice Smith",
           role: "signer",
+          authMethod: "none",
+          accessCode: undefined,
         },
       ]);
     });
@@ -454,6 +456,8 @@ describe("AddRecipientDialog", () => {
           email: "external@example.com",
           name: "Jane Doe",
           role: "signer",
+          authMethod: "none",
+          accessCode: undefined,
         },
       ]);
     });

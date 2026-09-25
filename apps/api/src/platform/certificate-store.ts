@@ -87,6 +87,8 @@ export async function generateAndStoreCertificateOfCompletion(params: {
       authMethod: r.authMethod ?? "none",
       consentAt: formatTs(r.esignConsentAt),
       consentTextHash: r.esignConsentTextHash ?? null,
+      privacyNoticeAt: formatTs(r.privacyNoticeAt),
+      privacyNoticeTextHash: r.privacyNoticeTextHash ?? null,
     };
   });
 

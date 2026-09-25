@@ -26,6 +26,10 @@ const consentFields = {
   esignConsentIp: "203.0.113.1",
   esignConsentVersion: "2026-03-esign-v1",
   esignConsentTextHash: "sha256:test",
+  privacyNoticeAt: new Date(),
+  privacyNoticeIp: "203.0.113.1",
+  privacyNoticeVersion: "seal-privacy-1",
+  privacyNoticeTextHash: "sha256:privacy-test",
 };
 
 describe("public API", () => {
@@ -475,5 +479,105 @@ describe("public API", () => {
       env
     );
     expect(signed.status).toBe(200);
+  });
+
+  it("records privacy notice and gates submit until acknowledged", async () => {
+    const db = createD1(env.D1);
+
+    await db.insert(organization).values({
+      id: "org_privacy",
+      name: "Privacy Org",
+      slug: "privacy-org",
+    });
+    await db.insert(documents).values({
+      id: "doc_privacy",
+      publicId: "doc_pub_privacy",
+      organizationId: "org_privacy",
+      name: "Privacy Document",
+      status: "sent",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const token = "sign-token-privacy";
+    await db.insert(recipients).values({
+      id: "rec_privacy",
+      publicId: "rec_pub_privacy",
+      documentId: "doc_privacy",
+      email: "privacy@example.com",
+      name: "Privacy Signer",
+      role: "signer",
+      status: "pending",
+      signingToken: token,
+      tokenExpiresAt: new Date(Date.now() + 60_000),
+      esignConsentAt: new Date(),
+      esignConsentIp: "203.0.113.40",
+      esignConsentVersion: "seal-esign-1",
+      esignConsentTextHash: "sha256:consent-test",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const app = createApp();
+    const blocked = await app.fetch(
+      new Request(`http://localhost:8787/api/public/signing/${token}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "viewed",
+          ipAddress: "203.0.113.40",
+          userAgent: "seal-test/1.0",
+        }),
+      }),
+      env
+    );
+    expect(blocked.status).toBe(403);
+    expect(await blocked.json()).toEqual({
+      error: "Privacy notice acknowledgment required",
+    });
+
+    const ack = await app.fetch(
+      new Request(`http://localhost:8787/api/public/signing/${token}/privacy`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ipAddress: "203.0.113.40",
+          userAgent: "seal-test/1.0",
+        }),
+      }),
+      env
+    );
+    expect(ack.status).toBe(200);
+    const ackBody = z
+      .object({
+        success: z.literal(true),
+        acknowledgedAt: z.number(),
+        noticeVersion: z.string(),
+        noticeTextHash: z.string(),
+      })
+      .parse(await ack.json());
+    expect(ackBody.noticeVersion).toBe("seal-privacy-1");
+    expect(ackBody.noticeTextHash.startsWith("sha256:")).toBe(true);
+
+    const viewed = await app.fetch(
+      new Request(`http://localhost:8787/api/public/signing/${token}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "viewed",
+          ipAddress: "203.0.113.40",
+          userAgent: "seal-test/1.0",
+        }),
+      }),
+      env
+    );
+    expect(viewed.status).toBe(200);
+
+    const audits = await db.select().from(auditLogs);
+    expect(audits.some((a) => a.action === "recipient.privacy_notice")).toBe(
+      true
+    );
   });
 });

@@ -17,7 +17,7 @@ export interface EmailSendResult {
 }
 
 export interface EmailEnv {
-  EMAIL: SendEmail | undefined;
+  EMAIL?: SendEmail;
   EMAIL_FROM: string;
   APP_URL: string;
 }

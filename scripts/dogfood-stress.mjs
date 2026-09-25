@@ -236,6 +236,25 @@ async function runCase(name, opts) {
   }
   if (!token) return;
 
+  // SEA-52 — privacy notice before ESIGN consent
+  {
+    const res = await fetch(`${API}/api/public/signing/${token}/privacy`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        ipAddress: "198.51.100.20",
+        userAgent: "seal-dogfood-stress/1.0",
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    res.ok && data.success && typeof data.noticeTextHash === "string"
+      ? pass(`${name} privacy notice`, data.noticeTextHash.slice(0, 18))
+      : fail(
+          `${name} privacy notice`,
+          `HTTP ${res.status} ${JSON.stringify(data)}`
+        );
+  }
+
   // SEA-45 — demonstrable ESIGN consent before any submit
   {
     const res = await fetch(`${API}/api/public/signing/${token}/consent`, {

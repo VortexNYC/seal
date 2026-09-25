@@ -460,6 +460,12 @@ export const recipients = sqliteTable(
     /** SHA-256 of the consent text shown (SEA-45 demonstrable consent). */
     esignConsentTextHash: text("esign_consent_text_hash"),
     esignConsentUserAgent: text("esign_consent_user_agent"),
+    /** SEA-52 — privacy / CCPA notice acceptance. */
+    privacyNoticeAt: integer("privacy_notice_at", { mode: "timestamp_ms" }),
+    privacyNoticeIp: text("privacy_notice_ip"),
+    privacyNoticeVersion: text("privacy_notice_version"),
+    privacyNoticeTextHash: text("privacy_notice_text_hash"),
+    privacyNoticeUserAgent: text("privacy_notice_user_agent"),
     awaitingDictation: integer("awaiting_dictation", {
       mode: "boolean",
     })
