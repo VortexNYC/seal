@@ -37,6 +37,7 @@ import {
   isConvertibleFileType,
 } from "../platform/document-conversion.js";
 import { generateAndStoreCertificateOfCompletion } from "../platform/certificate-store.js";
+import { generateAndStoreFinalPdf } from "../platform/final-pdf-store.js";
 import {
   hashAccessCode,
   normalizeAuthMethod,
@@ -3663,19 +3664,30 @@ app.openapi(signRouteDef, async (c) => {
 
       const bucket = c.env.DOCUMENTS_BUCKET;
       const appUrl = c.env.APP_URL;
-      if (bucket && appUrl) {
+      if (bucket) {
         try {
-          await generateAndStoreCertificateOfCompletion({
+          await generateAndStoreFinalPdf({
             db,
             bucket,
             documentId: doc.id,
-            appUrl,
           });
         } catch (err) {
-          console.error(
-            "[documents/sign] certificate of completion failed:",
-            err
-          );
+          console.error("[documents/sign] final PDF flatten failed:", err);
+        }
+        if (appUrl) {
+          try {
+            await generateAndStoreCertificateOfCompletion({
+              db,
+              bucket,
+              documentId: doc.id,
+              appUrl,
+            });
+          } catch (err) {
+            console.error(
+              "[documents/sign] certificate of completion failed:",
+              err
+            );
+          }
         }
       }
     }

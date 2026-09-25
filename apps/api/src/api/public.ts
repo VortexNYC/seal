@@ -38,6 +38,7 @@ import {
 } from "../platform/email.js";
 import { generateAndStoreCertificateOfCompletion } from "../platform/certificate-store.js";
 import { certificateStorageKey } from "../platform/certificate-of-completion.js";
+import { generateAndStoreFinalPdf } from "../platform/final-pdf-store.js";
 import {
   isSignerAuthVerified,
   markAccessCodeVerified,
@@ -1191,19 +1192,30 @@ app.openapi(submitRouteDef, async (c) => {
 
       const bucket = c.env.DOCUMENTS_BUCKET;
       const appUrl = c.env.APP_URL;
-      if (bucket && appUrl) {
+      if (bucket) {
         try {
-          await generateAndStoreCertificateOfCompletion({
+          await generateAndStoreFinalPdf({
             db,
             bucket,
             documentId: doc.id,
-            appUrl,
           });
         } catch (err) {
-          console.error(
-            "[public/submit] certificate of completion failed:",
-            err
-          );
+          console.error("[public/submit] final PDF flatten failed:", err);
+        }
+        if (appUrl) {
+          try {
+            await generateAndStoreCertificateOfCompletion({
+              db,
+              bucket,
+              documentId: doc.id,
+              appUrl,
+            });
+          } catch (err) {
+            console.error(
+              "[public/submit] certificate of completion failed:",
+              err
+            );
+          }
         }
       }
 
