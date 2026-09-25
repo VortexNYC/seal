@@ -18,6 +18,10 @@ import {
   sendDocumentViewedEmail,
   sendSigningCompleteEmail,
 } from "../platform/email.js";
+import {
+  commitSigningSubmit,
+  RecipientAlreadyCompletedError,
+} from "../platform/signing-submit.js";
 import { recordUsageEvent } from "../platform/usage-events.js";
 import { emitWebhookEvent } from "../platform/webhook-events.js";
 
@@ -636,11 +640,6 @@ app.openapi(submitRouteDef, async (c) => {
     update.declinedAt = nowDate;
   }
 
-  await db
-    .update(recipients)
-    .set(update)
-    .where(eq(recipients.id, recipient.id));
-
   const auditActor = { type: "user" as const, id: recipient.id };
   const auditBase = {
     organizationId: doc.organizationId,
@@ -656,21 +655,45 @@ app.openapi(submitRouteDef, async (c) => {
     role: recipient.role,
   };
 
-  if (input.status === "viewed") {
-    await writeAuditLog(db, {
-      ...auditBase,
-      action: "recipient.viewed",
-      metadata: recipientMeta,
-    });
-  } else if (input.status === "signed" || input.status === "approved") {
-    await writeAuditLog(db, {
-      ...auditBase,
-      action: "recipient.signed",
-      metadata: recipientMeta,
-    });
+  const auditAction =
+    input.status === "viewed"
+      ? "recipient.viewed"
+      : input.status === "declined"
+        ? "recipient.declined"
+        : "recipient.signed";
 
-    // Envelope-level typed/drawn sign (no per-field placement) still needs a
-    // signatures row so /api/v1/signatures/audit is not empty for buyers.
+  const auditMetadata =
+    input.status === "declined"
+      ? { ...recipientMeta, hasReason: !!input.declineReason }
+      : recipientMeta;
+
+  // Envelope-level typed/drawn sign (no per-field placement) still needs a
+  // signatures row so /api/v1/signatures/audit is not empty for buyers.
+  let signatureRow:
+    | {
+        id: string;
+        documentId: string;
+        recipientId: string;
+        value?: string;
+        signatureMethod?: string;
+        ipAddress?: string;
+        userAgent?: string;
+        signedAt: Date;
+      }
+    | undefined;
+  let activityRow:
+    | {
+        id: string;
+        organizationId: string;
+        action: string;
+        actorName: string;
+        targetName: string;
+        metadata: Record<string, unknown>;
+        createdAt: Date;
+      }
+    | undefined;
+
+  if (input.status === "signed" || input.status === "approved") {
     const existingEnvelope = await db
       .select({ id: signatures.id })
       .from(signatures)
@@ -682,7 +705,7 @@ app.openapi(submitRouteDef, async (c) => {
       )
       .limit(1);
     if (!existingEnvelope[0]) {
-      await db.insert(signatures).values({
+      signatureRow = {
         id: crypto.randomUUID(),
         documentId: doc.id,
         recipientId: recipient.id,
@@ -691,19 +714,42 @@ app.openapi(submitRouteDef, async (c) => {
         ipAddress: input.ipAddress,
         userAgent: input.userAgent,
         signedAt: nowDate,
-        createdAt: nowDate,
-        updatedAt: nowDate,
-      });
+      };
     }
-  } else if (input.status === "declined") {
-    await writeAuditLog(db, {
-      ...auditBase,
-      action: "recipient.declined",
+    activityRow = {
+      id: crypto.randomUUID(),
+      organizationId: doc.organizationId,
+      action: "recipient.signed",
+      actorName: recipient.name ?? recipient.email,
+      targetName: doc.name,
       metadata: {
-        ...recipientMeta,
-        hasReason: !!input.declineReason,
+        documentId: doc.id,
+        publicId: doc.publicId,
+        recipientId: recipient.id,
       },
+      createdAt: nowDate,
+    };
+  }
+
+  try {
+    await commitSigningSubmit(db, {
+      recipientId: recipient.id,
+      recipientUpdate: update,
+      audit: {
+        id: crypto.randomUUID(),
+        ...auditBase,
+        action: auditAction,
+        metadata: auditMetadata,
+        createdAt: nowDate,
+      },
+      signature: signatureRow,
+      activityRow,
     });
+  } catch (err) {
+    if (err instanceof RecipientAlreadyCompletedError) {
+      return c.json({ error: "Recipient has already completed" }, 403);
+    }
+    throw err;
   }
 
   const [owner] = await db
@@ -754,20 +800,6 @@ app.openapi(submitRouteDef, async (c) => {
         console.error("[public/submit] signing complete email failed:", result);
       }
     }
-
-    await db.insert(activity).values({
-      id: crypto.randomUUID(),
-      organizationId: doc.organizationId,
-      action: "recipient.signed",
-      actorName: recipient.name ?? recipient.email,
-      targetName: doc.name,
-      metadata: JSON.stringify({
-        documentId: doc.id,
-        publicId: doc.publicId,
-        recipientId: recipient.id,
-      }),
-      createdAt: nowDate,
-    });
 
     if (input.status === "signed" || input.status === "approved") {
       const emitPromise = emitWebhookEvent(c.env, {

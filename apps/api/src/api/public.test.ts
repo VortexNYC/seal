@@ -5,6 +5,8 @@ import { z } from "zod";
 
 import { createD1 } from "../global/db.js";
 import {
+  activity,
+  auditLogs,
   documents,
   organization,
   recipients,
@@ -22,6 +24,8 @@ describe("public API", () => {
   beforeEach(async () => {
     const db = createD1(env.D1);
     await db.delete(signatures);
+    await db.delete(activity);
+    await db.delete(auditLogs);
     await db.delete(recipients);
     await db.delete(documents);
     await db.delete(organization);
@@ -268,5 +272,110 @@ describe("public API", () => {
     expect(rows[0]?.recipientId).toBe("rec_sign");
     expect(rows[0]?.value).toBe("Typed Signer");
     expect(rows[0]?.signatureMethod).toBe("type");
+
+    const audits = await db.select().from(auditLogs);
+    expect(audits.map((a) => a.action).sort()).toEqual([
+      "document.completed",
+      "recipient.signed",
+      "recipient.viewed",
+    ]);
+
+    const activityRows = await db.select().from(activity);
+    expect(activityRows.map((a) => a.action).sort()).toEqual([
+      "document.completed",
+      "recipient.signed",
+    ]);
+  });
+
+  it("rejects a second terminal submit (first-writer-wins)", async () => {
+    const db = createD1(env.D1);
+
+    await db.insert(organization).values({
+      id: "org_race",
+      name: "Race Org",
+      slug: "race-org",
+    });
+
+    await db.insert(documents).values({
+      id: "doc_race",
+      publicId: "doc_pub_race",
+      organizationId: "org_race",
+      name: "Race Document",
+      status: "sent",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const token = "sign-token-race";
+    await db.insert(recipients).values([
+      {
+        id: "rec_race",
+        publicId: "rec_pub_race",
+        documentId: "doc_race",
+        email: "race@example.com",
+        name: "Race Signer",
+        role: "signer",
+        order: 0,
+        status: "pending",
+        signingToken: token,
+        tokenExpiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: "rec_race_other",
+        publicId: "rec_pub_race_other",
+        documentId: "doc_race",
+        email: "other@example.com",
+        name: "Other Signer",
+        role: "signer",
+        order: 1,
+        status: "pending",
+        signingToken: "sign-token-other",
+        tokenExpiresAt: new Date(Date.now() + 60_000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ]);
+
+    const app = createApp();
+    const body = {
+      status: "signed",
+      signatureData: "Race Signer",
+      signatureType: "type",
+      ipAddress: "203.0.113.20",
+      userAgent: "seal-test/1.0",
+    };
+
+    const first = await app.fetch(
+      new Request(`http://localhost:8787/api/public/signing/${token}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }),
+      env
+    );
+    expect(first.status).toBe(200);
+
+    const second = await app.fetch(
+      new Request(`http://localhost:8787/api/public/signing/${token}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }),
+      env
+    );
+    expect(second.status).toBe(403);
+    expect(await second.json()).toEqual({
+      error: "Recipient has already completed",
+    });
+
+    expect(await db.select().from(signatures)).toHaveLength(1);
+    const signedAudits = (await db.select().from(auditLogs)).filter(
+      (a) => a.action === "recipient.signed"
+    );
+    expect(signedAudits).toHaveLength(1);
   });
 });
