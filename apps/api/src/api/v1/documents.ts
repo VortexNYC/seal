@@ -55,6 +55,8 @@ import { emitWebhookEvent } from "../../platform/webhook-events.js";
 import { sendDocumentForSigning } from "../document-send.js";
 import documentAgentRoutes from "./document-agent.js";
 import { materializeAnnotationsFromParsedText } from "./document-agent.js";
+import { certificateStorageKey } from "../../platform/certificate-of-completion.js";
+import { generateAndStoreCertificateOfCompletion } from "../../platform/certificate-store.js";
 import { createDownloadToken, verifyDownloadToken } from "./download-token.js";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -1610,6 +1612,75 @@ app.get("/download", async (c) => {
   const url = `${origin}/api/v1/documents/download-file?token=${encodeURIComponent(token)}`;
 
   return c.json({ url });
+});
+
+app.get("/certificate", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:read")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const id = c.req.query("id");
+  if (!id) {
+    return c.json({ error: "missing_document_id" }, 400);
+  }
+
+  const db = createD1(c.env.D1);
+  const rows = await db
+    .select({
+      id: documents.id,
+      name: documents.name,
+      status: documents.status,
+      organizationId: documents.organizationId,
+      documentStatus: documents.documentStatus,
+    })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.id, id),
+        eq(documents.organizationId, organizationId),
+        ne(documents.documentStatus, "deleted")
+      )
+    )
+    .limit(1);
+
+  const row = rows[0];
+  if (!row || row.status !== "completed") {
+    return c.json({ error: "not_found" }, 404);
+  }
+
+  const bucket = c.env.DOCUMENTS_BUCKET;
+  if (!bucket) {
+    return c.json({ error: "storage_unavailable" }, 503);
+  }
+
+  const key = certificateStorageKey(row.organizationId, row.id);
+  let object = await bucket.get(key);
+  if (!object?.body && c.env.APP_URL) {
+    await generateAndStoreCertificateOfCompletion({
+      db,
+      bucket,
+      documentId: row.id,
+      appUrl: c.env.APP_URL,
+    });
+    object = await bucket.get(key);
+  }
+  if (!object?.body) {
+    return c.json({ error: "certificate_missing" }, 404);
+  }
+
+  const filename = `${row.name || "document"}-certificate.pdf`;
+  return new Response(object.body, {
+    headers: {
+      "content-type": "application/pdf",
+      "content-disposition": `attachment; filename="${filename}"`,
+    },
+  });
 });
 
 app.get("/download-file", async (c) => {

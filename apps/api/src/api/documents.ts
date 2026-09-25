@@ -36,6 +36,7 @@ import {
   ConversionError,
   isConvertibleFileType,
 } from "../platform/document-conversion.js";
+import { generateAndStoreCertificateOfCompletion } from "../platform/certificate-store.js";
 import {
   hashAccessCode,
   normalizeAuthMethod,
@@ -3659,6 +3660,24 @@ app.openapi(signRouteDef, async (c) => {
           updatedAt: now,
         })
         .where(eq(documents.id, doc.id));
+
+      const bucket = c.env.DOCUMENTS_BUCKET;
+      const appUrl = c.env.APP_URL;
+      if (bucket && appUrl) {
+        try {
+          await generateAndStoreCertificateOfCompletion({
+            db,
+            bucket,
+            documentId: doc.id,
+            appUrl,
+          });
+        } catch (err) {
+          console.error(
+            "[documents/sign] certificate of completion failed:",
+            err
+          );
+        }
+      }
     }
   }
 

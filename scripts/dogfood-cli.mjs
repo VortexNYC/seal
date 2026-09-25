@@ -11,7 +11,8 @@
  * Covers: health → folders → contact create/update → upload → document+folder_id
  * → recipients → agent fields/bindings/preview/annotations/pdf-annotate →
  * webhook create → send (signing_url) → public viewed/signed → completed →
- * org audit → signatures audit → webhook deliveries → imports → breadcrumbs.
+ * certificate of completion (v1 + public) → org audit → signatures audit →
+ * webhook deliveries → imports → breadcrumbs.
  *
  * The public signing half uses the same HTTP surface a recipient (or embed)
  * hits — agents prepare and track; humans (or this proof harness) apply intent.
@@ -604,6 +605,54 @@ startxref
           "document completed",
           err instanceof Error ? err.message : String(err)
         );
+      }
+    }
+    {
+      // SEA-50 / CompAI EVID-2 — Certificate of Completion
+      try {
+        const res = await fetch(
+          `${API}/api/v1/documents/certificate?id=${encodeURIComponent(docId)}`,
+          { headers: { authorization: `Bearer ${KEY}` } }
+        );
+        const ct = res.headers.get("content-type") ?? "";
+        const buf = res.ok ? await res.arrayBuffer() : null;
+        res.ok && ct.includes("pdf") && buf && buf.byteLength > 500
+          ? pass(
+              "certificate of completion",
+              `${ct} bytes=${buf.byteLength}`
+            )
+          : fail(
+              "certificate of completion",
+              `HTTP ${res.status} content-type=${ct} bytes=${buf?.byteLength ?? 0}`
+            );
+      } catch (err) {
+        fail(
+          "certificate of completion",
+          err instanceof Error ? err.message : String(err)
+        );
+      }
+      if (signingToken) {
+        try {
+          const res = await fetch(
+            `${API}/api/public/signing/${signingToken}/certificate`
+          );
+          const ct = res.headers.get("content-type") ?? "";
+          const buf = res.ok ? await res.arrayBuffer() : null;
+          res.ok && ct.includes("pdf") && buf && buf.byteLength > 500
+            ? pass(
+                "public certificate download",
+                `${ct} bytes=${buf.byteLength}`
+              )
+            : fail(
+                "public certificate download",
+                `HTTP ${res.status} content-type=${ct}`
+              );
+        } catch (err) {
+          fail(
+            "public certificate download",
+            err instanceof Error ? err.message : String(err)
+          );
+        }
       }
     }
     {

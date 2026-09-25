@@ -117,7 +117,8 @@ in_progress → cancelled
 - Only **draft** documents can be deleted (use void for sent documents).
 - **Completed** documents cannot be voided.
 - When a document is voided (\`cancelled\`), all recipients are notified by email.
-- When a document is \`completed\`, a certificate of completion is generated and all parties receive the signed PDF.
+- When a document is \`completed\`, a Certificate of Completion PDF is generated (parties, IPs, timestamps, document hash, verify URL) and stored alongside the signed PDF. Download via \`GET /documents/certificate?id=\` or MCP \`seal_download_certificate\`. This is an evidentiary audit summary (CompAI EVID-2), not a cryptographic PAdES seal (SEA-49).
+- All parties receive the signed PDF by email when the envelope completes.
 
 ## Deadlines
 

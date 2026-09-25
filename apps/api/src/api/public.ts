@@ -19,6 +19,8 @@ import {
   sendSigningCompleteEmail,
   sendSigningOtpEmail,
 } from "../platform/email.js";
+import { generateAndStoreCertificateOfCompletion } from "../platform/certificate-store.js";
+import { certificateStorageKey } from "../platform/certificate-of-completion.js";
 import {
   isSignerAuthVerified,
   markAccessCodeVerified,
@@ -1127,6 +1129,24 @@ app.openapi(submitRouteDef, async (c) => {
         metadata: { documentId: doc.id, publicId: doc.publicId },
       });
 
+      const bucket = c.env.DOCUMENTS_BUCKET;
+      const appUrl = c.env.APP_URL;
+      if (bucket && appUrl) {
+        try {
+          await generateAndStoreCertificateOfCompletion({
+            db,
+            bucket,
+            documentId: doc.id,
+            appUrl,
+          });
+        } catch (err) {
+          console.error(
+            "[public/submit] certificate of completion failed:",
+            err
+          );
+        }
+      }
+
       const emitPromise = emitWebhookEvent(c.env, {
         organizationId: doc.organizationId,
         eventType: "document.completed",
@@ -1326,6 +1346,81 @@ app.openapi(signedPdfRouteDef, async (c) => {
   };
   if (object.size) headers["content-length"] = String(object.size);
 
+  return c.body(object.body, { headers });
+});
+
+const certificateRouteDef = createRoute({
+  method: "get",
+  path: "/signing/{token}/certificate",
+  request: {
+    params: tokenParamsSchema,
+  },
+  responses: {
+    200: { description: "Certificate of Completion PDF" },
+    400: { description: "Invalid or expired token" },
+    404: { description: "Certificate not found (document not completed)" },
+    503: { description: "Object storage not configured" },
+  },
+});
+
+app.openapi(certificateRouteDef, async (c) => {
+  const { token } = c.req.valid("param");
+  const db = createD1(c.env.D1);
+
+  const now = Date.now();
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(eq(recipients.signingToken, token))
+    .limit(1);
+
+  const recipient = recipientRows[0];
+  if (!recipient) {
+    return c.json({ error: "Invalid signing token" }, 400);
+  }
+  if (recipient.tokenExpiresAt && recipient.tokenExpiresAt.getTime() < now) {
+    return c.json({ error: "Signing token has expired" }, 400);
+  }
+
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(eq(documents.id, recipient.documentId))
+    .limit(1);
+  const doc = docRows[0];
+  if (!doc || doc.status !== "completed") {
+    return c.json({ error: "Certificate not available until completed" }, 404);
+  }
+
+  const bucket = c.env.DOCUMENTS_BUCKET;
+  if (!bucket) {
+    return c.json({ error: "Object storage not configured" }, 503);
+  }
+
+  const key = certificateStorageKey(doc.organizationId, doc.id);
+  let object = await bucket.get(key);
+  if (!object || !object.body) {
+    // Lazy generate if completion raced before storage was ready.
+    if (c.env.APP_URL) {
+      await generateAndStoreCertificateOfCompletion({
+        db,
+        bucket,
+        documentId: doc.id,
+        appUrl: c.env.APP_URL,
+      });
+      object = await bucket.get(key);
+    }
+  }
+  if (!object || !object.body) {
+    return c.json({ error: "Certificate not found" }, 404);
+  }
+
+  const filename = `${doc.name || "document"}-certificate.pdf`;
+  const headers: Record<string, string> = {
+    "content-type": "application/pdf",
+    "content-disposition": `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+  };
+  if (object.size) headers["content-length"] = String(object.size);
   return c.body(object.body, { headers });
 });
 
@@ -1813,15 +1908,6 @@ app.openapi(attachmentUploadRouteDef, async (c) => {
 function base64ToBytes(value: string) {
   const binary = atob(value);
   return new Uint8Array(Array.from(binary, (char) => char.charCodeAt(0)));
-}
-
-function maskEmail(email: string): string {
-  const atIndex = email.indexOf("@");
-  if (atIndex <= 0) return email;
-  const local = email.slice(0, atIndex);
-  const domain = email.slice(atIndex);
-  if (local.length <= 1) return `*${domain}`;
-  return `${local[0]}${"*".repeat(Math.min(local.length - 1, 5))}${domain}`;
 }
 
 const qrTokenParamsSchema = z.object({
