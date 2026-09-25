@@ -2185,6 +2185,8 @@ const publicSigningRecipientSchema = z.object({
   status: z.string(),
   esignConsentAt: z.number().nullable().optional(),
   privacyNoticeAt: z.number().nullable().optional(),
+  esignOptOutAt: z.number().nullable().optional(),
+  esignOptOutMethod: z.string().nullable().optional(),
   awaitingDictation: z.boolean(),
   expiresAt: z.number().nullable().optional(),
   viewedAt: z.number().nullable().optional(),
@@ -2203,6 +2205,7 @@ const publicSigningDocumentSchema = z.object({
   workflowStatus: z.string(),
   description: z.string().nullable().optional(),
   ownerName: z.string().nullable().optional(),
+  ownerEmail: z.string().nullable().optional(),
   pageCount: z.number().int().nullable().optional(),
   redirectUrl: z.string().nullable().optional(),
 });
@@ -2457,14 +2460,21 @@ export async function recordPublicSigningOptOut(
   token: string,
   input: {
     ipAddress: string;
+    userAgent?: string;
     method?: string;
   }
 ): Promise<{
   success: boolean;
+  optedOutAt: number;
+  method: string;
 }> {
   return apiFetch(
     `/api/public/signing/${encodeURIComponent(token)}/opt-out`,
-    z.object({ success: z.boolean() }),
+    z.object({
+      success: z.boolean(),
+      optedOutAt: z.number(),
+      method: z.string(),
+    }),
     {
       method: "POST",
       body: JSON.stringify(input),

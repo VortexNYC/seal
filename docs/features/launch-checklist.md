@@ -17,4 +17,4 @@ Operational items that must be completed before public launch. These are not cod
 
 ## Process
 
-- [ ] Support workflow for receiving manually-signed documents back (ESIGN opt-out)
+- [x] Support workflow for receiving manually-signed documents back (ESIGN opt-out)
