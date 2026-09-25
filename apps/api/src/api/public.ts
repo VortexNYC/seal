@@ -58,6 +58,28 @@ import {
 import { recordUsageEvent } from "../platform/usage-events.js";
 import { emitWebhookEvent } from "../platform/webhook-events.js";
 
+/**
+ * SEA-64 reopen (Vortex live evidence 2026-09-25): public-submit path used
+ * `waitUntil(emitWebhookEvent(...))` and produced **zero** webhookDeliveries
+ * for `recipient.signed` / `document.completed`, while v1 `document.sent`
+ * enqueued fine. Always await enqueue+flush on this path so delivery rows
+ * exist before the response returns — do not fire-and-forget via waitUntil.
+ */
+async function emitSigningWebhook(
+  env: CloudflareBindings,
+  input: {
+    organizationId: string;
+    eventType: string;
+    payload: Record<string, unknown>;
+  }
+): Promise<void> {
+  try {
+    await emitWebhookEvent(env, input);
+  } catch (err) {
+    console.error(`[webhooks] ${input.eventType} emit failed:`, err);
+  }
+}
+
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
 }>();
@@ -1090,7 +1112,7 @@ app.openapi(submitRouteDef, async (c) => {
     }
 
     if (input.status === "signed" || input.status === "approved") {
-      const emitPromise = emitWebhookEvent(c.env, {
+      await emitSigningWebhook(c.env, {
         organizationId: doc.organizationId,
         eventType: "recipient.signed",
         payload: {
@@ -1102,18 +1124,7 @@ app.openapi(submitRouteDef, async (c) => {
           status: input.status,
           signedAt: nowDate.getTime(),
         },
-      }).catch((err) => {
-        console.error("[webhooks] recipient.signed emit failed:", err);
       });
-      try {
-        if (c.executionCtx?.waitUntil) {
-          c.executionCtx.waitUntil(emitPromise);
-        } else {
-          await emitPromise;
-        }
-      } catch {
-        await emitPromise;
-      }
     }
 
     if (doc.allowDictateNextSigner) {
@@ -1190,6 +1201,19 @@ app.openapi(submitRouteDef, async (c) => {
         metadata: { documentId: doc.id, publicId: doc.publicId },
       });
 
+      // Emit before PDF/certificate work so Agree.com / SIEM subscribers
+      // get document.completed even if flatten/seal is slow or fails.
+      await emitSigningWebhook(c.env, {
+        organizationId: doc.organizationId,
+        eventType: "document.completed",
+        payload: {
+          documentId: doc.id,
+          publicId: doc.publicId,
+          name: doc.name,
+          completedAt: nowDate.getTime(),
+        },
+      });
+
       const bucket = c.env.DOCUMENTS_BUCKET;
       const appUrl = c.env.APP_URL;
       if (bucket) {
@@ -1218,28 +1242,6 @@ app.openapi(submitRouteDef, async (c) => {
             );
           }
         }
-      }
-
-      const emitPromise = emitWebhookEvent(c.env, {
-        organizationId: doc.organizationId,
-        eventType: "document.completed",
-        payload: {
-          documentId: doc.id,
-          publicId: doc.publicId,
-          name: doc.name,
-          completedAt: nowDate.getTime(),
-        },
-      }).catch((err) => {
-        console.error("[webhooks] document.completed emit failed:", err);
-      });
-      try {
-        if (c.executionCtx?.waitUntil) {
-          c.executionCtx.waitUntil(emitPromise);
-        } else {
-          await emitPromise;
-        }
-      } catch {
-        await emitPromise;
       }
 
       if (owner?.email) {
@@ -1291,7 +1293,7 @@ app.openapi(submitRouteDef, async (c) => {
   }
 
   if (input.status === "declined") {
-    const emitPromise = emitWebhookEvent(c.env, {
+    await emitSigningWebhook(c.env, {
       organizationId: doc.organizationId,
       eventType: "recipient.declined",
       payload: {
@@ -1303,18 +1305,7 @@ app.openapi(submitRouteDef, async (c) => {
         declinedAt: nowDate.getTime(),
         hasReason: Boolean(input.declineReason),
       },
-    }).catch((err) => {
-      console.error("[webhooks] recipient.declined emit failed:", err);
     });
-    try {
-      if (c.executionCtx?.waitUntil) {
-        c.executionCtx.waitUntil(emitPromise);
-      } else {
-        await emitPromise;
-      }
-    } catch {
-      await emitPromise;
-    }
   }
 
   return c.json({ success: true });
@@ -2081,7 +2072,7 @@ app.openapi(optOutRouteDef, async (c) => {
     }
   }
 
-  const emitPromise = emitWebhookEvent(c.env, {
+  await emitSigningWebhook(c.env, {
     organizationId: doc.organizationId,
     eventType: "recipient.esign_opt_out",
     payload: {
@@ -2094,18 +2085,7 @@ app.openapi(optOutRouteDef, async (c) => {
       methodLabel,
       optedOutAt: now,
     },
-  }).catch((err) => {
-    console.error("[webhooks] recipient.esign_opt_out emit failed:", err);
   });
-  try {
-    if (c.executionCtx?.waitUntil) {
-      c.executionCtx.waitUntil(emitPromise);
-    } else {
-      await emitPromise;
-    }
-  } catch {
-    await emitPromise;
-  }
 
   return c.json({
     success: true,
