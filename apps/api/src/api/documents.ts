@@ -3670,9 +3670,10 @@ app.openapi(signRouteDef, async (c) => {
             db,
             bucket,
             documentId: doc.id,
+            env: c.env,
           });
         } catch (err) {
-          console.error("[documents/sign] final PDF flatten failed:", err);
+          console.error("[documents/sign] final PDF flatten/seal failed:", err);
         }
         if (appUrl) {
           try {

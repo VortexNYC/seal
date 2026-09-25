@@ -1,5 +1,6 @@
 /**
- * Persist flattened final PDF on document.completed (SEA-49 Level 1a).
+ * Persist flattened + platform-sealed final PDF on document.completed
+ * (SEA-49 Level 1a flatten + Level 1b PAdES-B).
  */
 
 import { eq } from "drizzle-orm";
@@ -9,22 +10,31 @@ import { documents, signatureFields, signatures } from "../global/schema.js";
 import {
   finalPdfStorageKey,
   flattenFieldsIntoPdf,
+  sha256PdfBytes,
   type FinalPdfField,
 } from "./final-pdf.js";
+import {
+  readPdfSealCredentials,
+  sealPdfBytes,
+  type PdfSealEnv,
+} from "./pdf-seal.js";
 
 export type FinalPdfStoreResult = {
   storageKey: string;
   documentHash: string;
   burnedFields: number;
   byteLength: number;
+  sealed: boolean;
 };
 
 export async function generateAndStoreFinalPdf(params: {
   db: D1Client;
   bucket: R2Bucket;
   documentId: string;
+  /** Worker env — used for optional platform PAdES-B secrets. */
+  env?: PdfSealEnv;
 }): Promise<FinalPdfStoreResult | null> {
-  const { db, bucket, documentId } = params;
+  const { db, bucket, documentId, env } = params;
 
   const [doc] = await db
     .select()
@@ -77,14 +87,28 @@ export async function generateAndStoreFinalPdf(params: {
   });
 
   const flattened = await flattenFieldsIntoPdf(sourceBytes, fields);
+  let finalBytes = flattened.bytes;
+  let sealed = false;
+
+  const credentials = env ? readPdfSealCredentials(env) : null;
+  if (credentials) {
+    // Fail closed when secrets are configured: do not store an unsealed
+    // artifact as the final PDF. Callers catch and leave the original in place.
+    const sealedResult = await sealPdfBytes(flattened.bytes, credentials);
+    finalBytes = sealedResult.bytes;
+    sealed = true;
+  }
+
+  const documentHash = await sha256PdfBytes(finalBytes);
   const storageKey = finalPdfStorageKey(doc.organizationId, doc.id);
 
-  await bucket.put(storageKey, flattened.bytes, {
+  await bucket.put(storageKey, finalBytes, {
     httpMetadata: { contentType: "application/pdf" },
     customMetadata: {
       kind: "seal-final-pdf",
-      documentHash: flattened.documentHash,
+      documentHash,
       burnedFields: String(flattened.burnedFields),
+      sealed: sealed ? "true" : "false",
     },
   });
 
@@ -94,8 +118,8 @@ export async function generateAndStoreFinalPdf(params: {
     .set({
       originalStorageKey: originalKey,
       storageKey,
-      size: flattened.bytes.byteLength,
-      documentHash: flattened.documentHash,
+      size: finalBytes.byteLength,
+      documentHash,
       contentType: "application/pdf",
       updatedAt: new Date(),
     })
@@ -103,8 +127,9 @@ export async function generateAndStoreFinalPdf(params: {
 
   return {
     storageKey,
-    documentHash: flattened.documentHash,
+    documentHash,
     burnedFields: flattened.burnedFields,
-    byteLength: flattened.bytes.byteLength,
+    byteLength: finalBytes.byteLength,
+    sealed,
   };
 }

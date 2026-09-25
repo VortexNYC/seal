@@ -1198,9 +1198,10 @@ app.openapi(submitRouteDef, async (c) => {
             db,
             bucket,
             documentId: doc.id,
+            env: c.env,
           });
         } catch (err) {
-          console.error("[public/submit] final PDF flatten failed:", err);
+          console.error("[public/submit] final PDF flatten/seal failed:", err);
         }
         if (appUrl) {
           try {
