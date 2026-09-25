@@ -204,6 +204,8 @@ app.get("/preview", async (c) => {
     organizationId,
     storageKey: key,
     documentName: doc.name,
+    documentId: doc.id,
+    actorType: "user",
   });
 
   if (format === "csv" || format === "text") {

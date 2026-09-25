@@ -1636,6 +1636,7 @@ app.get("/download", async (c) => {
     organizationId,
     storageKey: row.storageKey,
     documentName: row.name ?? "document.pdf",
+    documentId: row.id,
   });
 
   if (!token) {
@@ -1708,6 +1709,27 @@ app.get("/certificate", async (c) => {
     return c.json({ error: "certificate_missing" }, 404);
   }
 
+  const actor = getAuditActor({ mcp: c.get("mcp") });
+  if (actor) {
+    const meta = getAuditRequestMeta(c);
+    try {
+      await writeAuditLog(db, {
+        organizationId: row.organizationId,
+        actor,
+        action: "document.downloaded",
+        resourceType: "document",
+        resourceId: row.id,
+        metadata: {
+          via: "v1-certificate",
+          artifact: "certificate_of_completion",
+        },
+        ...meta,
+      });
+    } catch (err) {
+      console.error("[audit] document.downloaded (v1 certificate) failed:", err);
+    }
+  }
+
   const filename = `${row.name || "document"}-certificate.pdf`;
   return new Response(object.body, {
     headers: {
@@ -1731,6 +1753,29 @@ app.get("/download-file", async (c) => {
   const object = await c.env.DOCUMENTS_BUCKET.get(payload.storageKey);
   if (!object) {
     return c.json({ error: "not_found" }, 404);
+  }
+
+  // SEA-46: record the byte download (not just URL mint).
+  if (payload.documentId) {
+    const db = createD1(c.env.D1);
+    const meta = getAuditRequestMeta(c);
+    try {
+      await writeAuditLog(db, {
+        organizationId: payload.organizationId,
+        actor: { type: payload.actorType, id: payload.sub },
+        action: "document.downloaded",
+        resourceType: "document",
+        resourceId: payload.documentId,
+        metadata: {
+          documentName: payload.documentName,
+          storageKey: payload.storageKey,
+          via: "download-file",
+        },
+        ...meta,
+      });
+    } catch (err) {
+      console.error("[audit] document.downloaded failed:", err);
+    }
   }
 
   const headers = new Headers();

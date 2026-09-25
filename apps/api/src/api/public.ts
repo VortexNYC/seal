@@ -1438,6 +1438,25 @@ app.openapi(signedPdfRouteDef, async (c) => {
     return c.json({ error: "Document or file not found" }, 404);
   }
 
+  try {
+    await writeAuditLog(db, {
+      organizationId: doc.organizationId,
+      actor: { type: "user", id: recipient.id },
+      action: "document.downloaded",
+      resourceType: "document",
+      resourceId: doc.id,
+      metadata: {
+        publicId: doc.publicId,
+        via: "signing-signed-pdf",
+        recipientId: recipient.id,
+      },
+      ipAddress: c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
+      userAgent: c.req.header("user-agent"),
+    });
+  } catch (err) {
+    console.error("[audit] document.downloaded (signed-pdf) failed:", err);
+  }
+
   const filename = `${doc.name || "document"}.pdf`;
 
   const headers: Record<string, string> = {
@@ -1513,6 +1532,26 @@ app.openapi(certificateRouteDef, async (c) => {
   }
   if (!object || !object.body) {
     return c.json({ error: "Certificate not found" }, 404);
+  }
+
+  try {
+    await writeAuditLog(db, {
+      organizationId: doc.organizationId,
+      actor: { type: "user", id: recipient.id },
+      action: "document.downloaded",
+      resourceType: "document",
+      resourceId: doc.id,
+      metadata: {
+        publicId: doc.publicId,
+        via: "signing-certificate",
+        recipientId: recipient.id,
+        artifact: "certificate_of_completion",
+      },
+      ipAddress: c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
+      userAgent: c.req.header("user-agent"),
+    });
+  } catch (err) {
+    console.error("[audit] document.downloaded (certificate) failed:", err);
   }
 
   const filename = `${doc.name || "document"}-certificate.pdf`;

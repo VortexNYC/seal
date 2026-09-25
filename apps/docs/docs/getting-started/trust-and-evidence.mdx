@@ -1,0 +1,76 @@
+---
+title: Trust and evidence
+description: Audit lifecycle coverage, timestamp source of truth, and signer accessibility posture
+---
+
+# Trust and evidence
+
+CompAI / SEA-46. How Seal proves *what happened*, *when*, and what we claim for
+signer accessibility.
+
+## Audit lifecycle coverage
+
+Sealed `audit_logs` (hash-chained, SEA-44) cover the signing spine. Actions are
+written through `writeAuditLog` / `commitSigningSubmit` / expiry helpers — not
+only into the softer `activity` feed.
+
+| Event | Audit action | Where |
+| --- | --- | --- |
+| Document created | `document.create` / `document.created` | v1 + session APIs |
+| Sent for signature | `document.sent` | v1 send / session send |
+| Recipient viewed | `recipient.viewed` | public signing submit |
+| Recipient signed / approved | `recipient.signed` | public signing submit (atomic) |
+| Recipient declined | `recipient.declined` | public signing submit |
+| Envelope completed | `document.completed` | public signing completion |
+| Voided | `document.voided` | v1 void / batch void |
+| Expired | `document.expired` (+ `recipient.expired`) | scheduled expiry |
+| ESIGN consent / privacy / opt-out | `recipient.esign_consent`, `recipient.privacy_notice`, `recipient.esign_opt_out` | public signing |
+| **Downloaded (PDF / CoC)** | `document.downloaded` | v1 `download-file`, public `signed-pdf` + `certificate`, v1 certificate |
+
+Verify an org chain:
+
+```bash
+curl -sS -H "Authorization: Bearer $SEAL_API_KEY" \
+  "$API/api/v1/organizations/$SLUG/audit/verify"
+```
+
+List entries: [Audit Log API](/api-reference/audit-log).
+
+Webhook event types (near-realtime, SEA-64) are a separate delivery channel —
+they do not replace the sealed audit row.
+
+## Timestamp source of truth
+
+| Clock | Source | Use |
+| --- | --- | --- |
+| Audit `created_at` / chain `createdAtMs` | Cloudflare Worker `Date` + D1 `unixepoch('subsecond')` | Event ordering + hash canonicalization |
+| Recipient `viewedAt` / `signedAt` / `declinedAt` | Same Worker clock at submit | Ceremony timeline on CoC |
+| Platform PAdES-B signing-time | Worker clock inside CMS signed attrs | Byte seal (SEA-49 L1b) |
+
+Cloudflare's edge clock is NTP-disciplined by the provider. That is **not** an
+RFC 3161 Time Stamp Authority (TSA) token.
+
+**Honest claim:** Seal timestamps are operator-clock timestamps suitable for
+US ESIGN attribution and internal chronology. They are **not** independently
+timestamped by a trusted third party.
+
+**When a deal needs TSA:** SEA-49 Level 2 (PAdES-T) — attach an RFC 3161 token
+at seal time so “signed at T” survives signing-cert expiry. Track under SEA-49
+L2 / SEA-46 sibling finding; do not pretend L1b is PAdES-T.
+
+## Signer accessibility (WCAG)
+
+The public `/sign/$token` flow uses labeled controls, live regions for status,
+progressbars for field completion, and keyboard-reachable primary actions
+(consent, fields, decline, download).
+
+**Current claim:** accessibility **engineering baseline** on the signer flow —
+not a third-party WCAG 2.1 AA certification. Enterprise/gov reviews should run
+their own axe / VoiceOver / NVDA pass against `/sign/$token` before accepting
+AA as a contractual gate.
+
+Known follow-ups for a formal AA gate (parked, not blocking SES/US launch):
+
+- Full axe-core CI against golden signing fixtures
+- PDF canvas / field overlay focus order review under zoom + screen readers
+- Contrast audit in light and dark themes for Kumo tokens on the sign route
