@@ -1,0 +1,41 @@
+---
+title: Vulnerability disclosure
+description: How to report security issues in Seal — VDP, not a paid bounty (yet)
+---
+
+# Vulnerability disclosure
+
+CompAI / enterprise trust surface (SEA-71 twin of PILE-204). This is a
+**vulnerability disclosure policy (VDP)** — not a managed paid bug bounty.
+
+## Report a vulnerability
+
+Do **not** open a public GitHub issue for security reports.
+
+Email **security@vortex.nyc** (also listed in
+[`/.well-known/security.txt`](https://seal.nyc/.well-known/security.txt)).
+
+Include: affected route or component, reproduction steps, and impact.
+
+## Scope
+
+| In scope | Out of scope |
+| --- | --- |
+| Hosted `seal.nyc` / `api.seal.nyc` and the open-source Seal Worker code | Your self-host config, secrets, DNS, or Cloudflare account settings |
+| Auth, document storage, signing, webhooks, SCIM/SSO | Social engineering, physical attacks, DoS volume tests without coordination |
+
+## What we do
+
+1. Acknowledge receipt within a few business days.
+2. Triage and remediate based on severity.
+3. Credit reporters who want it (optional) after a fix ships.
+
+**Paid bounty / HackerOne:** not offered yet. When we add one, this page will
+say so — until then, responsible disclosure to `security@vortex.nyc` is the
+path.
+
+## Related
+
+- [Privacy & incidents](/getting-started/privacy)
+- [Production checklist](/getting-started/production)
+- Repo `SECURITY.md`

@@ -53,6 +53,16 @@ enterprise contracts. **This page is not itself a signed DPA.**
 We do **not** offer a HIPAA Business Associate Agreement for general signup —
 see [HIPAA scoping](/getting-started/hipaa).
 
+## Data residency
+
+Hosted Seal runs on Cloudflare’s global network. There is **no** separate
+“EU-only hosted SKU” that pins customer document bytes to a single EU region
+today. If you need a jurisdiction pin:
+
+1. **Self-host** Seal on your Cloudflare account and choose account/region
+   options Cloudflare exposes for D1/R2, or
+2. Wait for an explicit residency product — do not treat marketing copy as a pin.
+
 ## Data subject / privacy requests
 
 Hosted:
@@ -96,6 +106,8 @@ machine-readable pointer (SEA-54 / bounty track).
 ## Related
 
 - [Sensitive egress](/getting-started/egress)
+- [Vulnerability disclosure](/getting-started/security)
+- [SCIM provisioning](/getting-started/scim)
 - [HIPAA scoping](/getting-started/hipaa)
 - [eIDAS levels](/getting-started/eidas)
 - [Trust & evidence](/getting-started/trust-and-evidence)
