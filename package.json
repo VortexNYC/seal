@@ -29,6 +29,7 @@
     "prove:golden-path": "node scripts/prove-golden-path.mjs",
     "prove:backup-dr": "node scripts/prove-backup-dr.mjs",
     "prove:secret-scan": "node scripts/prove-secret-scan.mjs",
+    "prove:pdf-seal": "pnpm --dir apps/api exec tsx ./scripts/prove-pdf-seal.ts",
     "fix": "vp lint --fix && vp fmt",
     "verify": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run knip",
     "verify:clean": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run knip",

@@ -10,7 +10,7 @@ Updated with SEA-50 (Certificate of Completion / EVID-2).
 | SEA-46 | `fnd_6ab57f79acd3bc77c4cbdd55` + siblings | medium | backlog | Audit lifecycle + trusted timestamp + a11y |
 | SEA-47 | `fnd_6ab57f78989e02663a3ad7ff` (EIDAS-1) | medium | backlog | Document eIDAS level + AES/QES path (docs, not product) |
 | SEA-48 | `fnd_6ab57f78271c3d6767ba069b` (AUTH-1) | medium | **done** | Graded signer auth: `none` \| `access_code` \| `email_otp` |
-| SEA-49 | `fnd_6ab57f7839041b4a5b9319ae` (EVID-4) | high | **in progress** | Cryptographic seal of final PDF bytes (PAdES-class) — **not** CoC |
+| SEA-49 | `fnd_6ab57f7839041b4a5b9319ae` (EVID-4) | high | **done** (L1a+L1b) | Cryptographic seal of final PDF bytes (PAdES-class) — **not** CoC |
 | SEA-50 | `fnd_6ab57f78da8f9cbcb8affce0` (EVID-2) | high | **done** | Certificate of Completion PDF per completed envelope |
 | SEA-51 | `fnd_6ab57d53603ca70a50b0c160` (hipaa) | medium | backlog | HIPAA / BAA scoping for health-doc signing |
 | SEA-52 | `fnd_6ab57d53cb550d31b62425d7` + `fnd_6ab57d541b22e8a67eda3def` | high | **done** | Signer privacy notice + CCPA disclosures |
@@ -145,8 +145,8 @@ Ship levels in order. **Level 1 closes CompAI.** Higher levels are optional upgr
 | Level | What it is | Work required | Status |
 | --- | --- | --- | --- |
 | **0** | Record integrity | Audit hash chain, CoC sidecar, R2 retention, `/verify` | **done** (other SEAs) |
-| **1a** | Final PDF flatten | On `completed`: burn signature/initials (PNG data URLs) + text/date/checkbox into PDF (`final-pdf.ts` / `final-pdf-store.ts`); keep original in `originalStorageKey`; `storageKey` → `signed/{org}/{doc}.pdf`; `documentHash` = SHA-256 of final bytes. Download/signed-pdf serve flattened artifact. | **in progress** |
-| **1b** | Platform PAdES-B | Platform PKCS#12 (Worker secret); embed CMS/`ETSI.CAdES.detached` on the flattened bytes; offline verify (`pdfsig`/Acrobat) + `prove:pdf-seal`. Out: TSA, LTV, public-CA green check, per-signer certs, QES, merging CoC into the PDF. | backlog |
+| **1a** | Final PDF flatten | On `completed`: burn signature/initials (PNG data URLs) + text/date/checkbox into PDF (`final-pdf.ts` / `final-pdf-store.ts`); keep original in `originalStorageKey`; `storageKey` → `signed/{org}/{doc}.pdf`; `documentHash` = SHA-256 of final bytes. Download/signed-pdf serve flattened artifact. | **done** |
+| **1b** | Platform PAdES-B | Platform PKCS#12 (`SEAL_SEALING_P12` + `SEAL_SEALING_P12_PASSPHRASE` Worker secrets); embed CMS/`ETSI.CAdES.detached` with CAdES-B-B attrs including ESS `signing-certificate-v2` (`pdf-seal.ts` / `pades-p12-signer.ts`); offline verify (`openssl cms` + ESS OID check) via `pnpm run prove:pdf-seal`. Self-signed platform cert → Acrobat “identity unknown” is expected. Out: TSA, LTV, public-CA green check, per-signer certs, QES, merging CoC into the PDF. Absent secrets → flatten only (self-host). Half-configured secrets fail closed. | **done** (code + prove; upload secrets to prod to activate) |
 | **2** | PAdES-T | RFC 3161 TSA at seal time so “signed at T” survives cert expiry | backlog |
 | **3** | PAdES-LT / LTA | Embed revocation/validation material (+ optional archival timestamp) for long-term verification | backlog |
 | **4** | QES / eIDAS qualified | Qualified certs, remote CSC-style signing, per-signer crypto identity — track with SEA-47 | backlog |
