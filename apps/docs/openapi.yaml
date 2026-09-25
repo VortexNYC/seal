@@ -1976,18 +1976,25 @@ paths:
       description: >
         Creates a new draft document pre-populated with the template's field
         layout. Add recipients and send when ready.
+
+        `id` is required as a **query** parameter (OpenAPI contract). For
+        backwards compatibility the handler also accepts `id` in the JSON body.
       parameters:
         - name: id
           in: query
           required: true
           schema:
             type: string
+          description: Template id (preferred — matches this OpenAPI contract)
       requestBody:
         content:
           application/json:
             schema:
               type: object
               properties:
+                id:
+                  type: string
+                  description: Deprecated alternate — prefer query `id` (SEA-65)
                 title:
                   type: string
                   description: Title for the new document (defaults to template name)
@@ -2803,6 +2810,37 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /webhooks/flush:
+    post:
+      tags: [Webhooks]
+      operationId: flushWebhookDeliveries
+      summary: Drain pending webhook deliveries for this organization (SEA-64)
+      description: >
+        Processes due pending deliveries for the caller's organization
+        (attemptCount budget, nextRetryAt due). Useful after outages or to
+        force a catch-up without waiting for the */5 cron.
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 200, default: 100 }
+      responses:
+        "200":
+          description: Drain result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, processed, succeeded, failed]
+                properties:
+                  success: { type: boolean }
+                  processed: { type: integer }
+                  succeeded: { type: integer }
+                  failed: { type: integer }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Missing webhooks:write scope or organization
+
   /webhooks/deliveries:
     get:
       tags: [Webhooks]
@@ -2845,7 +2883,7 @@ paths:
     post:
       tags: [Webhooks]
       operationId: retryWebhookDelivery
-      summary: Re-queue a failed webhook delivery for another attempt (SEA-64)
+      summary: Re-queue a failed or stuck-pending webhook delivery (SEA-64)
       parameters:
         - name: deliveryId
           in: path
@@ -2863,7 +2901,7 @@ paths:
                   success: { type: boolean }
                   delivery_id: { type: string }
         "400":
-          description: Delivery is not failed, or webhook inactive
+          description: Delivery is not retryable, or webhook inactive
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":

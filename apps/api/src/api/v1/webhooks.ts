@@ -5,7 +5,10 @@ import { z } from "zod";
 import { createD1 } from "../../global/db.js";
 import { webhookDeliveries, webhooks } from "../../global/schema.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
-import { retryWebhookDelivery } from "../../platform/webhook-events.js";
+import {
+  processWebhookDeliveries,
+  retryWebhookDelivery,
+} from "../../platform/webhook-events.js";
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
@@ -431,6 +434,29 @@ app.get("/event-types", async (c) => {
   return c.json(eventTypes);
 });
 
+app.post("/flush", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "webhooks:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const limit = Math.min(
+    Math.max(parseInt(c.req.query("limit") ?? "100", 10) || 100, 1),
+    200
+  );
+
+  const result = await processWebhookDeliveries(c.env, {
+    organizationId,
+    limit,
+  });
+  return c.json({ success: true, ...result });
+});
+
 app.get("/deliveries", async (c) => {
   const mcp = c.get("mcp");
   if (!mcpHasScope(mcp, "webhooks:read")) {
@@ -512,8 +538,8 @@ app.post("/deliveries/:deliveryId/retry", async (c) => {
     if (result.error === "not_found") {
       return c.json({ error: "not_found" }, 404);
     }
-    if (result.error === "not_failed") {
-      return c.json({ error: "delivery_not_failed" }, 400);
+    if (result.error === "not_retryable") {
+      return c.json({ error: "delivery_not_retryable" }, 400);
     }
     return c.json({ error: "webhook_inactive" }, 400);
   }
