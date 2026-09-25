@@ -679,7 +679,9 @@ app.post("/", async (c) => {
     return c.json({ error: "storage_id_not_found" }, 400);
   }
 
-  const parsedDocument = await parseDocumentFromStorage(c.env, storage_id);
+  const parsedDocument = await parseDocumentFromStorage(c.env, storage_id, {
+    organizationId,
+  });
   const originalStorageKey =
     object.customMetadata?.originalKey ?? null;
   const originalContentType =

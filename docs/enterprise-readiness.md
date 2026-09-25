@@ -26,7 +26,7 @@ do not design Seal features “so Pile users also have SSO.”
 | --- | --- | --- |
 | Human prod access to PDFs/DB without logged break-glass | Who *read* the record | SEA-68 **done** — session/signing downloads audited; `/internal/break-glass/document-read` + [runbook](./runbooks/break-glass-data-access.md) |
 | No customer-held encryption keys | Only platform/Cloudflare keys | Later |
-| Egress via email / webhooks / convert-AI | Extra copies of names + file bytes | SEA-70 |
+| Egress via email / webhooks / convert-AI | Extra copies of names + file bytes | SEA-70 **done** — `egress.webhook_payload_mode` / `allow_convert` + enforce `ai.enabled`; [egress docs](../apps/docs/docs/getting-started/egress.mdx) |
 | Signing audit strong; file-access audit weak | Lifecycle ≠ every storage read | SEA-44 done; SEA-68 extends |
 | SIEM / stream export | Enterprise security teams pipe logs out | SEA-67 **done** — push `audit.entry.created` webhooks + NDJSON `/audit/export` |
 | SAML SSO advertised, not implemented | Plan flag + marketing ahead of product | SEA-66 |
@@ -52,7 +52,7 @@ not a multi-product SKU). That is internal reuse — not “prepare for dual sea
 1. **SEA-69** Privacy surface — **done**
 2. **SEA-67** SIEM / audit export — **done** (push webhook + NDJSON pull)
 3. **SEA-68** Data-access + break-glass logging — **done**
-4. **SEA-70** Sensitive egress gates
+4. **SEA-70** Sensitive egress gates — **done**
 5. **SEA-66** SAML SSO (real, not marketing checkbox)
 6. **SEA-54** pen test
 
@@ -62,4 +62,4 @@ not a multi-product SKU). That is internal reuse — not “prepare for dual sea
 - SEA-57 legal review (attorney)
 - SEA-43 Vortex payments (Seal-as-customer / Agree.com — Phase 0 with Vortex)
 - SEA-1 / SEA-3 marketing
-- SEA-66, SEA-70 foundation
+- SEA-66 foundation

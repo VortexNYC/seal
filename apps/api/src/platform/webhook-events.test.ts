@@ -313,4 +313,55 @@ describe("webhook-events", () => {
     expect(delivered.success).toBe(true);
     expect(delivered.status).toBe(200);
   });
+
+  it("redacts webhook data when org egress.webhook_payload_mode is minimal (SEA-70)", async () => {
+    const { orgId, db } = await seedOrg();
+    await db
+      .update(organization)
+      .set({
+        metadata: JSON.stringify({
+          seal_settings: {
+            egress: { webhook_payload_mode: "minimal", allow_convert: true },
+          },
+        }),
+      })
+      .where(eq(organization.id, orgId));
+
+    await createWebhook(db, {
+      organizationId: orgId,
+      url: "https://example.com/hook-minimal",
+      events: ["recipient.signed"],
+    });
+
+    const documentId = crypto.randomUUID();
+    await emitWebhookEvent(
+      env,
+      {
+        organizationId: orgId,
+        eventType: "recipient.signed",
+        payload: {
+          documentId,
+          email: "signer@example.com",
+          name: "Ada",
+          title: "Secret NDA",
+          status: "signed",
+        },
+      },
+      { flushImmediately: false }
+    );
+
+    const [row] = await db
+      .select()
+      .from(webhookDeliveries)
+      .where(eq(webhookDeliveries.organizationId, orgId));
+    expect(row).toBeTruthy();
+    const body = JSON.parse(row!.payload) as {
+      payloadMode: string;
+      data: Record<string, unknown>;
+    };
+    expect(body.payloadMode).toBe("minimal");
+    expect(body.data).toEqual({ documentId, status: "signed" });
+    expect(body.data.email).toBeUndefined();
+    expect(body.data.title).toBeUndefined();
+  });
 });

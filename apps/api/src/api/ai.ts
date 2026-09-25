@@ -15,6 +15,10 @@ import {
   materializeSuggestionsFromCandidates,
   suggestionItemSchema,
 } from "../platform/field-suggestions.js";
+import {
+  FeatureDisabledError,
+  assertAiEnabled,
+} from "../platform/org-settings.js";
 import type { Variables } from "../platform/types.js";
 
 const app = new OpenAPIHono<{
@@ -68,6 +72,15 @@ app.use("/*", async (c, next) => {
 
   if (!orgRow[0] || membershipRow.length === 0) {
     return c.json({ error: "Not found" }, 404);
+  }
+
+  try {
+    await assertAiEnabled(c.env, organizationId);
+  } catch (error) {
+    if (error instanceof FeatureDisabledError) {
+      return c.json({ error: error.code }, 403);
+    }
+    throw error;
   }
 
   c.set("organization", orgRow[0]);

@@ -11,6 +11,10 @@ import {
   convertBytesToPdf,
   isConvertibleFileType,
 } from "../platform/document-conversion.js";
+import {
+  FeatureDisabledError,
+  assertConvertEnabled,
+} from "../platform/org-settings.js";
 import { buildDocumentLayoutBlocks } from "../platform/document-layout-blocks.js";
 import {
   annotatePdf,
@@ -459,6 +463,7 @@ app.post("/replace-original", async (c) => {
   let pdfSize = bytes.byteLength;
   if (isConvertibleFileType(parsed.data.contentType)) {
     try {
+      await assertConvertEnabled(c.env, organizationId);
       const pdf = await convertBytesToPdf(c.env, {
         contentType: parsed.data.contentType,
         bytes,
@@ -474,7 +479,10 @@ app.post("/replace-original", async (c) => {
         },
       });
       pdfSize = pdf.byteLength;
-    } catch {
+    } catch (error) {
+      if (error instanceof FeatureDisabledError) {
+        return c.json({ error: error.code }, 403);
+      }
       return c.json({ error: "conversion_failed" }, 502);
     }
   } else if (parsed.data.contentType.includes("pdf")) {

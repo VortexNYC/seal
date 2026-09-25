@@ -2,6 +2,10 @@ import { and, eq, inArray, isNull, lte, lt, or, sql } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import { webhookDeliveries, webhooks } from "../global/schema.js";
+import {
+  applyWebhookPayloadMode,
+  loadOrgSealSettings,
+} from "./org-settings.js";
 
 const MAX_RETRY_DELAY_MS = 24 * 60 * 60 * 1000;
 const INITIAL_RETRY_DELAY_MS = 60_000;
@@ -95,11 +99,15 @@ export async function emitWebhookEvent(
   const db = createD1(env.D1);
   const eventId = input.eventId ?? crypto.randomUUID();
   const now = new Date();
+  const settings = await loadOrgSealSettings(env, input.organizationId);
+  const payloadMode = settings.egress.webhook_payload_mode;
+  const data = applyWebhookPayloadMode(payloadMode, input.payload);
   const payload = JSON.stringify({
     eventId,
     eventType: input.eventType,
     timestamp: now.toISOString(),
-    data: input.payload,
+    payloadMode,
+    data,
   });
 
   const hookRows = await db

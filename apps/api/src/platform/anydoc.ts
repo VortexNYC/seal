@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { loadOrgSealSettings } from "./org-settings.js";
+
 export const fieldCandidateSchema = z.object({
   type: z.string(),
   label: z.string(),
@@ -64,11 +66,18 @@ export type ParsedDocument = {
 
 export async function parseDocumentFromStorage(
   env: CloudflareBindings,
-  storageKey: string
+  storageKey: string,
+  options?: { organizationId?: string }
 ): Promise<ParsedDocument | null> {
   const object = await env.DOCUMENTS_BUCKET.get(storageKey);
   if (!object) return null;
   if (!env.ANYDOC) return null;
+
+  // SEA-70: anydoc sends PDF/Office bytes off the primary Worker — respect ai.enabled.
+  if (options?.organizationId) {
+    const settings = await loadOrgSealSettings(env, options.organizationId);
+    if (!settings.ai.enabled) return null;
+  }
 
   try {
     const response = await env.ANYDOC.fetch(

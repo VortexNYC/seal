@@ -82,6 +82,10 @@ All webhook payloads follow this structure:
 | `organization_id` | string | Organization that owns this event                    |
 | `data`            | object | Event-specific data payload                          |
 
+Envelope also includes `payloadMode` (`full` or `minimal`) when delivered from
+current Seal workers. See [Sensitive egress](/getting-started/egress) for
+redaction.
+
 ## Quick Start
 
 ### 1. Create Webhook Endpoint

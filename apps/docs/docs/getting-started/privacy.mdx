@@ -31,13 +31,17 @@ are the operator; Seal Inc. is not in the data path unless they use hosted
 
 Optional features that send document bytes to additional workers when enabled:
 
-| Feature | Worker / service | When it runs |
-| --- | --- | --- |
-| Office → PDF convert | Seal convert worker | Upload of DOCX/XLSX/PPTX/CSV |
-| Document AI / field candidates | Seal anydoc worker | When org uses AI field tools |
+| Feature | Worker / service | When it runs | Kill switch |
+| --- | --- | --- | --- |
+| Office → PDF convert | Seal convert worker | Upload of DOCX/XLSX/PPTX/CSV | `egress.allow_convert` (PATCH `/api/v1/settings`) |
+| Document AI / field candidates | Seal anydoc worker | AI field tools / parse-on-create | `ai.enabled` |
 
-Turn those features off (or do not call them) if your policy forbids extra
-processing of file bytes.
+Webhook deliveries also leave Seal with event metadata. Set
+`egress.webhook_payload_mode` to `minimal` to drop emails, names, titles, and
+other free-text from webhook `data` (ids / status / timestamps remain). See
+[Sensitive egress](/getting-started/egress).
+
+Turn those features off if your policy forbids extra processing of file bytes.
 
 ## Customer agreement posture (DPA)
 
@@ -91,6 +95,7 @@ machine-readable pointer (SEA-54 / bounty track).
 
 ## Related
 
+- [Sensitive egress](/getting-started/egress)
 - [HIPAA scoping](/getting-started/hipaa)
 - [eIDAS levels](/getting-started/eidas)
 - [Trust & evidence](/getting-started/trust-and-evidence)
