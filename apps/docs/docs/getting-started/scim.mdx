@@ -1,0 +1,38 @@
+---
+title: SCIM provisioning
+description: Directory sync (Okta / Entra) for Seal organization membership
+---
+
+# SCIM provisioning
+
+Enterprise IT buyers who force SSO usually ask for user lifecycle next
+(SEA-71 / CompAI twin of PILE-201). Seal wires Better Auth’s
+[`@better-auth/scim`](https://www.better-auth.com/docs/plugins/scim) plugin.
+
+## What you get
+
+| Capability | How |
+| --- | --- |
+| Mint connection + bearer token | `POST /api/organizations/{slug}/scim/connections` (owner/admin) |
+| List connections | `GET /api/organizations/{slug}/scim/connections` |
+| SCIM 2.0 Users/Groups | `{BETTER_AUTH_URL}/api/auth/scim/v2/…` with the bearer token |
+| Org membership | Active users are added as `member` (group display names can map to `admin` / `owner` / `member`) |
+| Deactivate | SCIM `active: false` removes org membership and marks the user banned |
+
+The bearer token is returned **once** at create time — store it in your IdP.
+
+## Typical Okta / Entra flow
+
+1. Org owner creates a SCIM connection (API above).
+2. In the IdP, set SCIM base URL to the returned `baseUrl` and paste the token.
+3. Push/assign users. They appear as Seal members of that organization.
+4. Deactivate in the directory → membership removed.
+
+Pair with [Enterprise SSO](/getting-started/sso) for company login + optional
+`ssoEnforced`.
+
+## Related
+
+- [Enterprise SSO](/getting-started/sso)
+- [Privacy & incidents](/getting-started/privacy)
+- [Vulnerability disclosure](/getting-started/security)

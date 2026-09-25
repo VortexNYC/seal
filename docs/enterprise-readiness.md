@@ -40,7 +40,7 @@ do not design Seal features “so Pile users also have SSO.”
 | --- | --- | --- |
 | SAML SSO | Pile CompAI | SEA-66 — build for Seal buyers |
 | Audit + SIEM | Pile CompAI | SEA-67 — Seal already has sealed logs; add export |
-| SCIM / residency / bounty | Pile / Vortex CompAI | Later; status stub exists |
+| SCIM / residency / bounty | Pile / Vortex CompAI | SEA-71 **done** — `@better-auth/scim` + VDP docs; residency = self-host (no fake hosted EU SKU); paid bounty deferred |
 | Privacy surface | Vortex CompAI | SEA-69 **done** |
 | Pen test | Vortex / SEA-54 | External |
 
@@ -54,11 +54,12 @@ not a multi-product SKU). That is internal reuse — not “prepare for dual sea
 3. **SEA-68** Data-access + break-glass logging — **done**
 4. **SEA-70** Sensitive egress gates — **done**
 5. **SEA-66** SAML SSO — **done** (`@better-auth/sso`)
-6. **SEA-54** pen test
+6. **SEA-71** SCIM + VDP trust surface — **done**
+7. **SEA-54** pen test
 
 ## CompAI SEA still open
 
 - SEA-54 pen test (external)
 - SEA-57 legal review (attorney)
-- SEA-43 Vortex payments (Seal-as-customer / Agree.com — Phase 0 with Vortex)
+- SEA-43 Vortex payments (Seal-as-customer / Agree.com — wait until Vortex ready)
 - SEA-1 / SEA-3 marketing
