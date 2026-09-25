@@ -6,6 +6,10 @@ import {
   ConversionError,
   isConvertibleFileType,
 } from "../../platform/document-conversion.js";
+import {
+  FeatureDisabledError,
+  assertConvertEnabled,
+} from "../../platform/org-settings.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import { createUploadToken, verifyUploadToken } from "./upload-token.js";
 
@@ -68,12 +72,16 @@ app.post("/", async (c) => {
     const originalStorageId = `originals/${id}`;
     let pdf: ArrayBuffer;
     try {
+      await assertConvertEnabled(c.env, payload.organizationId);
       pdf = await convertBytesToPdf(c.env, {
         contentType,
         bytes,
         name: "document",
       });
     } catch (error) {
+      if (error instanceof FeatureDisabledError) {
+        return c.json({ error: error.code }, 403);
+      }
       const status = (
         error instanceof ConversionError ? error.statusCode : 502
       ) as ContentfulStatusCode;

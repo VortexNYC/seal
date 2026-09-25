@@ -36,6 +36,10 @@ import {
   ConversionError,
   isConvertibleFileType,
 } from "../platform/document-conversion.js";
+import {
+  FeatureDisabledError,
+  assertConvertEnabled,
+} from "../platform/org-settings.js";
 import { generateAndStoreCertificateOfCompletion } from "../platform/certificate-store.js";
 import { generateAndStoreFinalPdf } from "../platform/final-pdf-store.js";
 import {
@@ -1163,6 +1167,7 @@ app.openapi(uploadRouteDef, async (c) => {
 
   if (isConvertibleFileType(contentType)) {
     try {
+      await assertConvertEnabled(c.env, organizationId);
       const pdf = await convertBytesToPdf(c.env, {
         contentType,
         bytes,
@@ -1171,6 +1176,9 @@ app.openapi(uploadRouteDef, async (c) => {
       finalBytes = pdf;
       finalContentType = "application/pdf";
     } catch (error) {
+      if (error instanceof FeatureDisabledError) {
+        return c.json({ error: error.code }, 403);
+      }
       const status = (
         error instanceof ConversionError ? error.statusCode : 502
       ) as ContentfulStatusCode;

@@ -522,7 +522,7 @@ components:
 
     Settings:
       type: object
-      required: [signing, notifications, ai, security]
+      required: [signing, notifications, ai, egress, security]
       properties:
         signing:
           type: object
@@ -547,8 +547,29 @@ components:
           type: object
           required: [enabled, auto_analyze]
           properties:
-            enabled: { type: boolean }
+            enabled:
+              type: boolean
+              description: >
+                Org kill switch for AI / anydoc (field suggestions, document
+                parse). When false, AI routes return 403 `ai_disabled` and
+                anydoc parse is skipped (SEA-70).
             auto_analyze: { type: boolean }
+        egress:
+          type: object
+          required: [webhook_payload_mode, allow_convert]
+          description: Sensitive egress gates (SEA-70)
+          properties:
+            webhook_payload_mode:
+              type: string
+              enum: [full, minimal]
+              description: >
+                `full` (default) includes emails/names/titles in webhook `data`.
+                `minimal` keeps ids, status, timestamps, and counts only.
+            allow_convert:
+              type: boolean
+              description: >
+                When false, Office→PDF convert worker calls return 403
+                `convert_disabled`.
         security:
           type: object
           required: [ip_allowlist, allow_api_access, require_mfa, session_timeout_minutes]
