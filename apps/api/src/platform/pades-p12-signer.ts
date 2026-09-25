@@ -5,14 +5,13 @@
  * (ETSI EN 319 122 / CAdES-B-B mandatory authenticated attribute).
  */
 
-import { createRequire } from "node:module";
-
+import forgeImport from "node-forge";
 import { Signer, SignPdfError, convertBuffer } from "@signpdf/utils";
 
-const require = createRequire(import.meta.url);
 // node-forge's published types lag the runtime API we need (createBuffer args,
 // pkcs7 authenticatedAttributes value shapes). Narrow at the boundary.
-const forge = require("node-forge") as unknown as ForgeRuntime;
+// Do NOT use createRequire — Workers deploy rejects import.meta.url as undefined.
+const forge = forgeImport as unknown as ForgeRuntime;
 
 type ForgeAsn1 = { tagClass: number; type: number; constructed: boolean; value: unknown };
 
