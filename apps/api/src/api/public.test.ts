@@ -13,6 +13,8 @@ import {
   organization,
   recipients,
   signatures,
+  webhookDeliveries,
+  webhooks,
 } from "../global/schema.js";
 import publicRoute from "./public.js";
 
@@ -36,6 +38,8 @@ const consentFields = {
 describe("public API", () => {
   beforeEach(async () => {
     const db = createD1(env.D1);
+    await db.delete(webhookDeliveries);
+    await db.delete(webhooks);
     await db.delete(signatures);
     await db.delete(activity);
     await db.delete(auditLogs);
@@ -249,6 +253,17 @@ describe("public API", () => {
       updatedAt: new Date(),
     });
 
+    await db.insert(webhooks).values({
+      id: "hook_sign",
+      publicId: "hook_pub_sign",
+      organizationId: "org_sign",
+      name: "Agree.com probe",
+      url: "https://example.com/hooks/seal",
+      events: JSON.stringify(["recipient.signed", "document.completed"]),
+      secret: "test-secret",
+      status: "active",
+    });
+
     const app = createApp();
     const viewed = await app.fetch(
       new Request(`http://localhost:8787/api/public/signing/${token}/submit`, {
@@ -297,6 +312,14 @@ describe("public API", () => {
 
     const activityRows = await db.select().from(activity);
     expect(activityRows.map((a) => a.action).sort()).toEqual([
+      "document.completed",
+      "recipient.signed",
+    ]);
+
+    // SEA-64 reopen: public-submit must enqueue webhook deliveries (not
+    // waitUntil fire-and-forget with zero rows).
+    const deliveries = await db.select().from(webhookDeliveries);
+    expect(deliveries.map((d) => d.eventType).sort()).toEqual([
       "document.completed",
       "recipient.signed",
     ]);
