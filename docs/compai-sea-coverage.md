@@ -17,7 +17,7 @@ Updated with SEA-50 (Certificate of Completion / EVID-2).
 | SEA-53 | `fnd_6ab563f6cb3383f010948219` (soc2) | medium | backlog | Secret scanning in CI |
 | SEA-54 | `fnd_6ab563f60a74553c6d277135` (soc2) | medium | backlog | External security audit / pen test |
 | SEA-55 | `fnd_6ab563f6c6010aa7fade2e30` (soc2) | high | backlog | Backup/DR for signed docs + audit |
-| SEA-56 | `fnd_6ab563f69ddf3aae4a95e3ae` (soc2) | high | **in progress → this PR** | Alert on audit-log write failures |
+| SEA-56 | `fnd_6ab563f69ddf3aae4a95e3ae` (soc2) | high | **done** | Alert on audit-log write failures |
 | SEA-57 | `fnd_6ab563f53c4f6314a654ecd3` (soc2) | high | backlog | Legal review of consent / retention / attribution |
 | SEA-58 | `fnd_6ab563f5d67363c2a3e06fb8` (soc2) | high | backlog | ESIGN opt-out / manual-signature path |
 
@@ -27,6 +27,7 @@ Adjacent (not CompAI findings, but trust spine):
 | --- | --- | --- |
 | SEA-63 | **done** | Atomic sign + first-writer-wins + audited expiry |
 | SEA-59 | **done** | Seal-only Vortex signing path (ADR-005) |
+| SEA-64 | **in progress → this PR** | Near-realtime webhooks + declined/voided/expired + delivery retry |
 
 ## SEA-50 / EVID-2 acceptance
 
@@ -70,6 +71,15 @@ Seal coverage in this change:
 | Clear counter on successful write | `recordAuditWriteSuccess` |
 | Alert workspace owners/admins after 3 failures | scheduled `runAuditHealthAlerts` (24h cooldown) |
 | Email template | `AuditWriteFailureAlert` |
+
+## SEA-64 / Webhook realtime + lifecycle (Vortex VOR-571)
+
+| Requirement | Where |
+| --- | --- |
+| First delivery attempt on emit | `emitWebhookEvent` → `processWebhookDeliveries` |
+| Retry drain every 5 minutes | wrangler cron `*/5 * * * *` |
+| `recipient.declined` / `document.voided` / `document.expired` | public submit, void, expiry sweep |
+| Retry failed delivery | `POST /webhooks/deliveries/{id}/retry` |
 
 ## SEA-45 / ESIGN consent
 

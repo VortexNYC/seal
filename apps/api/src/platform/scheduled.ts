@@ -10,17 +10,17 @@ import {
 import { commitDocumentExpiry } from "./document-expiry.js";
 import { runDunningEmails } from "./dunning.js";
 import {
-  sendAuditWriteFailureAlertEmail,
   sendDocumentExpiredEmail,
   sendDocumentExpirationAlertEmail,
   sendDocumentReminderEmail,
+  sendAuditWriteFailureAlertEmail,
 } from "./email.js";
 import {
   listAuditHealthAlertCandidates,
   listOrganizationAdminEmails,
   markAuditHealthAlerted,
 } from "./audit-health.js";
-import { processWebhookDeliveries } from "./webhook-events.js";
+import { emitWebhookEvent, processWebhookDeliveries } from "./webhook-events.js";
 
 const MS_PER_DAY = 86_400_000;
 const MAX_REMINDERS = 5;
@@ -70,6 +70,19 @@ async function runExpiredDocumentSweep(env: CloudflareBindings): Promise<void> {
       if (!won) {
         return;
       }
+
+      await emitWebhookEvent(env, {
+        organizationId: doc.organizationId,
+        eventType: "document.expired",
+        payload: {
+          documentId: doc.id,
+          publicId: doc.publicId,
+          deadline: doc.deadline?.getTime() ?? null,
+          pendingRecipientCount: pendingRecipients.length,
+        },
+      }).catch((err) => {
+        console.error("[webhooks] document.expired emit failed:", err);
+      });
 
       const [owner] = await db
         .select({ name: userTable.name, email: userTable.email })

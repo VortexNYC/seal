@@ -1082,6 +1082,33 @@ app.openapi(submitRouteDef, async (c) => {
       }
     }
 
+    if (input.status === "declined") {
+      const emitPromise = emitWebhookEvent(c.env, {
+        organizationId: doc.organizationId,
+        eventType: "recipient.declined",
+        payload: {
+          documentId: doc.id,
+          publicId: doc.publicId,
+          recipientId: recipient.id,
+          name: recipient.name,
+          email: recipient.email,
+          declinedAt: nowDate.getTime(),
+          hasReason: Boolean(input.declineReason),
+        },
+      }).catch((err) => {
+        console.error("[webhooks] recipient.declined emit failed:", err);
+      });
+      try {
+        if (c.executionCtx?.waitUntil) {
+          c.executionCtx.waitUntil(emitPromise);
+        } else {
+          await emitPromise;
+        }
+      } catch {
+        await emitPromise;
+      }
+    }
+
     if (doc.allowDictateNextSigner) {
       const placeholderRows = await db
         .select()

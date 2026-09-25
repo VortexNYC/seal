@@ -56,6 +56,7 @@ import { selfhostUrlConfigError } from "./platform/selfhost-urls.js";
 import { getSessionUser } from "./platform/session.js";
 import type { Variables } from "./platform/types.js";
 import { projectPayableObjectUpdated } from "./platform/vortex_billing.js";
+import { processWebhookDeliveries } from "./platform/webhook-events.js";
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
@@ -825,6 +826,11 @@ export class InternalApi extends WorkerEntrypoint<CloudflareBindings> {
 
 export const scheduled: ExportedHandlerScheduledHandler<
   CloudflareBindings
-> = async (_event, env, _ctx) => {
+> = async (event, env, _ctx) => {
+  // SEA-64: five-minute cron only drains webhook retries.
+  if (event.cron === "*/5 * * * *") {
+    await processWebhookDeliveries(env);
+    return;
+  }
   await runScheduledTasks(env);
 };

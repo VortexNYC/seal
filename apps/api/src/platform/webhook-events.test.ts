@@ -8,6 +8,7 @@ import {
   deliverToWebhook,
   emitWebhookEvent,
   processWebhookDeliveries,
+  retryWebhookDelivery,
 } from "./webhook-events.js";
 
 async function seedOrg() {
@@ -63,11 +64,15 @@ describe("webhook-events", () => {
       events: ["document.completed"],
     });
 
-    const result = await emitWebhookEvent(env, {
-      organizationId: orgId,
-      eventType: "document.sent",
-      payload: { documentId: crypto.randomUUID() },
-    });
+    const result = await emitWebhookEvent(
+      env,
+      {
+        organizationId: orgId,
+        eventType: "document.sent",
+        payload: { documentId: crypto.randomUUID() },
+      },
+      { flushImmediately: false }
+    );
 
     expect(result.deliveryCount).toBe(1);
 
@@ -80,6 +85,34 @@ describe("webhook-events", () => {
     expect(rows[0]?.eventType).toBe("document.sent");
   });
 
+  it("flushes deliveries immediately on emit (SEA-64)", async () => {
+    const { orgId, db } = await seedOrg();
+    await createWebhook(db, {
+      organizationId: orgId,
+      url: "https://example.com/hook-flush",
+      events: ["document.completed"],
+    });
+
+    const result = await emitWebhookEvent(
+      env,
+      {
+        organizationId: orgId,
+        eventType: "document.completed",
+        payload: { documentId: crypto.randomUUID() },
+      },
+      {
+        fetchImpl: async () => new Response("ok", { status: 200 }),
+      }
+    );
+
+    expect(result.deliveryCount).toBe(1);
+    const rows = await db
+      .select()
+      .from(webhookDeliveries)
+      .where(eq(webhookDeliveries.organizationId, orgId));
+    expect(rows[0]?.status).toBe("delivered");
+  });
+
   it("delivers pending webhooks and updates status", async () => {
     const { orgId, db } = await seedOrg();
     const url = "https://example.com/hook";
@@ -89,11 +122,15 @@ describe("webhook-events", () => {
       events: ["document.sent"],
     });
 
-    await emitWebhookEvent(env, {
-      organizationId: orgId,
-      eventType: "document.sent",
-      payload: { documentId: crypto.randomUUID() },
-    });
+    await emitWebhookEvent(
+      env,
+      {
+        organizationId: orgId,
+        eventType: "document.sent",
+        payload: { documentId: crypto.randomUUID() },
+      },
+      { flushImmediately: false }
+    );
 
     const result = await processWebhookDeliveries(env, {
       organizationId: orgId,
@@ -131,11 +168,15 @@ describe("webhook-events", () => {
       events: ["document.sent"],
     });
 
-    await emitWebhookEvent(env, {
-      organizationId: orgId,
-      eventType: "document.sent",
-      payload: { documentId: crypto.randomUUID() },
-    });
+    await emitWebhookEvent(
+      env,
+      {
+        organizationId: orgId,
+        eventType: "document.sent",
+        payload: { documentId: crypto.randomUUID() },
+      },
+      { flushImmediately: false }
+    );
 
     const delivery = await db
       .select()
@@ -176,11 +217,15 @@ describe("webhook-events", () => {
       status: "paused",
     });
 
-    await emitWebhookEvent(env, {
-      organizationId: orgId,
-      eventType: "document.sent",
-      payload: { documentId: crypto.randomUUID() },
-    });
+    await emitWebhookEvent(
+      env,
+      {
+        organizationId: orgId,
+        eventType: "document.sent",
+        payload: { documentId: crypto.randomUUID() },
+      },
+      { flushImmediately: false }
+    );
 
     const result = await processWebhookDeliveries(env, {
       organizationId: orgId,
@@ -197,6 +242,55 @@ describe("webhook-events", () => {
       .where(eq(webhookDeliveries.organizationId, orgId));
     expect(rows[0]?.status).toBe("failed");
     expect(rows[0]?.lastError).toBe("webhook is not active");
+  });
+
+  it("retries a failed delivery via retryWebhookDelivery (SEA-64)", async () => {
+    const { orgId, db } = await seedOrg();
+    await createWebhook(db, {
+      organizationId: orgId,
+      url: "https://example.com/hook-retry",
+      events: ["document.sent"],
+    });
+
+    await emitWebhookEvent(
+      env,
+      {
+        organizationId: orgId,
+        eventType: "document.sent",
+        payload: { documentId: crypto.randomUUID() },
+      },
+      {
+        fetchImpl: async () => new Response("nope", { status: 500 }),
+      }
+    );
+
+    // Exhaust attempts quickly
+    const [failed] = await db
+      .select()
+      .from(webhookDeliveries)
+      .where(eq(webhookDeliveries.organizationId, orgId));
+    expect(failed?.status).toBe("pending");
+    await db
+      .update(webhookDeliveries)
+      .set({
+        status: "failed",
+        attemptCount: 10,
+        maxAttempts: 10,
+      })
+      .where(eq(webhookDeliveries.id, failed!.id));
+
+    const retried = await retryWebhookDelivery(env, {
+      organizationId: orgId,
+      deliveryId: failed!.id,
+      fetchImpl: async () => new Response("ok", { status: 200 }),
+    });
+    expect(retried.ok).toBe(true);
+
+    const [after] = await db
+      .select()
+      .from(webhookDeliveries)
+      .where(eq(webhookDeliveries.id, failed!.id));
+    expect(after?.status).toBe("delivered");
   });
 
   it("delivers with a valid HMAC signature", async () => {
