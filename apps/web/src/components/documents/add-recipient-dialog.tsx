@@ -63,6 +63,10 @@ export function AddRecipientDialog({
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState<"signer" | "viewer" | "approver">("signer");
+  const [authMethod, setAuthMethod] = useState<
+    "none" | "access_code" | "email_otp"
+  >("none");
+  const [accessCode, setAccessCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -88,6 +92,8 @@ export function AddRecipientDialog({
       email: string;
       name?: string;
       role: "signer" | "viewer" | "approver";
+      authMethod?: "none" | "access_code" | "email_otp";
+      accessCode?: string;
     }) => addRecipients(organizationSlug, documentPublicId, [input]),
   });
 
@@ -134,6 +140,11 @@ export function AddRecipientDialog({
       recipientName = name.trim() || undefined;
     }
 
+    if (authMethod === "access_code" && accessCode.trim().length < 4) {
+      toast.error("Access code must be at least 4 characters");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -141,6 +152,9 @@ export function AddRecipientDialog({
         email: recipientEmail,
         name: recipientName,
         role,
+        authMethod,
+        accessCode:
+          authMethod === "access_code" ? accessCode.trim() : undefined,
       });
 
       toast.success("Recipient added successfully");
@@ -148,6 +162,8 @@ export function AddRecipientDialog({
       setEmail("");
       setName("");
       setRole("signer");
+      setAuthMethod("none");
+      setAccessCode("");
       setSelectedMember(null);
       onOpenChange(false);
       onSuccess?.();
@@ -163,7 +179,8 @@ export function AddRecipientDialog({
   const isSubmitDisabled =
     loading ||
     (activeTab === "team" && !selectedMember) ||
-    (activeTab === "outsider" && (!email || !email.includes("@")));
+    (activeTab === "outsider" && (!email || !email.includes("@"))) ||
+    (authMethod === "access_code" && accessCode.trim().length < 4);
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -342,6 +359,44 @@ export function AddRecipientDialog({
                 "This person must approve before signing can proceed."}
             </p>
           </div>
+
+          <div className="space-y-2">
+            <Select
+              value={authMethod}
+              label="Authentication"
+              onValueChange={(v) => {
+                if (v === "none" || v === "access_code" || v === "email_otp") {
+                  setAuthMethod(v);
+                }
+              }}
+            >
+              <Select.Option value="none">None (link only)</Select.Option>
+              <Select.Option value="email_otp">Email OTP</Select.Option>
+              <Select.Option value="access_code">Access code</Select.Option>
+            </Select>
+            <p className="text-muted-foreground text-xs">
+              {authMethod === "none" &&
+                "Anyone with the signing link can act."}
+              {authMethod === "email_otp" &&
+                "Signer must enter a one-time code sent to their email."}
+              {authMethod === "access_code" &&
+                "Signer must enter a shared access code before signing."}
+            </p>
+          </div>
+
+          {authMethod === "access_code" ? (
+            <div className="space-y-2">
+              <Label htmlFor="access-code">Access code</Label>
+              <Input
+                id="access-code"
+                data-testid="recipient-access-code"
+                value={accessCode}
+                onChange={(e) => setAccessCode(e.target.value)}
+                placeholder="Shared secret"
+                autoComplete="off"
+              />
+            </div>
+          ) : null}
 
           <div className="mt-4 flex flex-col-reverse justify-end gap-2 sm:flex-row">
             <Button

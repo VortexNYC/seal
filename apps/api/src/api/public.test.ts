@@ -378,4 +378,89 @@ describe("public API", () => {
     );
     expect(signedAudits).toHaveLength(1);
   });
+
+  it("blocks submit until access code is verified", async () => {
+    const db = createD1(env.D1);
+    const { hashAccessCode } = await import("../platform/signer-auth.js");
+
+    await db.insert(organization).values({
+      id: "org_auth",
+      name: "Auth Org",
+      slug: "auth-org",
+    });
+    await db.insert(documents).values({
+      id: "doc_auth",
+      publicId: "doc_pub_auth",
+      organizationId: "org_auth",
+      name: "Auth Document",
+      status: "sent",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const token = "sign-token-auth";
+    await db.insert(recipients).values({
+      id: "rec_auth",
+      publicId: "rec_pub_auth",
+      documentId: "doc_auth",
+      email: "auth@example.com",
+      name: "Auth Signer",
+      role: "signer",
+      status: "pending",
+      signingToken: token,
+      tokenExpiresAt: new Date(Date.now() + 60_000),
+      authMethod: "access_code",
+      accessCodeHash: await hashAccessCode("pass-1234"),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const app = createApp();
+    const blocked = await app.fetch(
+      new Request(`http://localhost:8787/api/public/signing/${token}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "signed",
+          signatureData: "Auth Signer",
+          signatureType: "type",
+          ipAddress: "203.0.113.30",
+          userAgent: "seal-test/1.0",
+        }),
+      }),
+      env
+    );
+    expect(blocked.status).toBe(403);
+
+    const verified = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/public/signing/${token}/auth/verify`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: "pass-1234" }),
+        }
+      ),
+      env
+    );
+    expect(verified.status).toBe(200);
+
+    const signed = await app.fetch(
+      new Request(`http://localhost:8787/api/public/signing/${token}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "signed",
+          signatureData: "Auth Signer",
+          signatureType: "type",
+          ipAddress: "203.0.113.30",
+          userAgent: "seal-test/1.0",
+        }),
+      }),
+      env
+    );
+    expect(signed.status).toBe(200);
+  });
 });

@@ -7,6 +7,7 @@ import {
   renderDocumentViewed,
   renderOwnershipTransferred,
   renderSigningComplete,
+  renderSigningOtp,
 } from "@seal/transactional";
 
 export interface EmailSendResult {
@@ -302,6 +303,29 @@ export async function sendOwnershipTransferredEmail(
   return sendEmail(env, {
     to: params.to,
     subject: `You are now the owner of "${params.documentName}"`,
+    html,
+  });
+}
+
+export async function sendSigningOtpEmail(
+  env: EmailEnv,
+  params: {
+    to: string;
+    recipientName: string;
+    documentName: string;
+    code: string;
+    expiresInMinutes: number;
+  }
+): Promise<EmailSendResult> {
+  const html = await renderSigningOtp({
+    recipientName: params.recipientName,
+    documentName: params.documentName,
+    code: params.code,
+    expiresInMinutes: params.expiresInMinutes,
+  });
+  return sendEmail(env, {
+    to: params.to,
+    subject: `Your Seal verification code for "${params.documentName}"`,
     html,
   });
 }

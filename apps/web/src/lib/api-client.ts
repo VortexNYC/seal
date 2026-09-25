@@ -1557,6 +1557,8 @@ export async function addRecipients(
     role?: "signer" | "viewer" | "approver";
     order?: number;
     isPlaceholder?: boolean;
+    authMethod?: "none" | "access_code" | "email_otp";
+    accessCode?: string;
   }>
 ): Promise<ApiRecipient[]> {
   return apiFetch(
@@ -2186,6 +2188,9 @@ const publicSigningRecipientSchema = z.object({
   signedAt: z.number().nullable().optional(),
   approvedAt: z.number().nullable().optional(),
   declinedAt: z.number().nullable().optional(),
+  authMethod: z.enum(["none", "access_code", "email_otp"]).optional(),
+  authVerified: z.boolean().optional(),
+  authEmailMasked: z.string().nullable().optional(),
 });
 const publicSigningDocumentSchema = z.object({
   _id: z.string(),
@@ -2231,6 +2236,38 @@ export async function getSigningByToken(
   return apiFetch(
     `/api/public/signing/${encodeURIComponent(token)}`,
     publicSigningTokenResponseSchema
+  );
+}
+
+export async function challengePublicSigningAuth(
+  token: string
+): Promise<{
+  method: "email_otp";
+  maskedEmail: string;
+  expiresInSeconds: number;
+}> {
+  return apiFetch(
+    `/api/public/signing/${encodeURIComponent(token)}/auth/challenge`,
+    z.object({
+      method: z.literal("email_otp"),
+      maskedEmail: z.string(),
+      expiresInSeconds: z.number().int(),
+    }),
+    { method: "POST", body: {} }
+  );
+}
+
+export async function verifyPublicSigningAuth(
+  token: string,
+  code: string
+): Promise<{ success: boolean; method: string }> {
+  return apiFetch(
+    `/api/public/signing/${encodeURIComponent(token)}/auth/verify`,
+    z.object({
+      success: z.boolean(),
+      method: z.string(),
+    }),
+    { method: "POST", body: { code } }
   );
 }
 const publicSigningFieldSchema = z.object({

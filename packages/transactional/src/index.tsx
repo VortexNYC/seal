@@ -36,6 +36,10 @@ import {
   SigningComplete,
   type SigningCompleteProps,
 } from "./emails/signing-complete.js";
+import {
+  SigningOtp,
+  type SigningOtpProps,
+} from "./emails/signing-otp.js";
 
 // Re-export components for direct use
 export {
@@ -47,6 +51,7 @@ export {
   DocumentShared,
   DocumentViewed,
   SigningComplete,
+  SigningOtp,
   OwnershipTransferred,
 };
 
@@ -54,6 +59,7 @@ export {
 export type {
   DocumentInvitationProps,
   SigningCompleteProps,
+  SigningOtpProps,
   DocumentCompletedProps,
   DocumentExpirationAlertProps,
   DocumentExpiredProps,
@@ -142,4 +148,13 @@ export async function renderOwnershipTransferred(
   props: OwnershipTransferredProps
 ): Promise<string> {
   return render(<OwnershipTransferred {...props} />);
+}
+
+/**
+ * Render SigningOtp email to HTML string
+ */
+export async function renderSigningOtp(
+  props: SigningOtpProps
+): Promise<string> {
+  return render(<SigningOtp {...props} />);
 }
