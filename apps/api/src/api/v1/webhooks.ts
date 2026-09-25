@@ -429,6 +429,12 @@ app.get("/event-types", async (c) => {
       category: "template",
       description: "A document was created from a template",
     },
+    {
+      type: "audit.entry.created",
+      category: "audit",
+      description:
+        "A sealed workspace audit log entry was written (SIEM stream — SEA-67). Subscribe with audit.entry.created, audit.*, or *.",
+    },
   ];
 
   return c.json(eventTypes);

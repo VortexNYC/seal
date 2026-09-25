@@ -3114,6 +3114,88 @@ paths:
         "403":
           description: Forbidden
 
+  /organizations/{organizationSlug}/audit/export:
+    get:
+      tags: [Audit]
+      operationId: exportAuditLogNdjson
+      summary: Export sealed audit entries as NDJSON for SIEM pull (SEA-67)
+      description: |
+        Admin-only pull export for SIEM / log pipeline backfill.
+        Returns one JSON object per line (`application/x-ndjson`), ordered by
+        sealed `sequence`. Pass `after_sequence` from the prior response's
+        `x-seal-next-sequence` header to page.
+
+        **Retention:** workspace audit entries (including IP when present via
+        Cloudflare connecting IP) are retained for the life of the organization
+        unless the org is deleted. Export to your SIEM for customer-controlled
+        retention.
+
+        **Push alternative:** create a webhook subscribed to `audit.entry.created`,
+        `audit.*`, or `*`. Seal fans sealed rows out on the */5 cron (and via
+        `POST .../audit/siem/flush`).
+      parameters:
+        - name: organizationSlug
+          in: path
+          required: true
+          schema: { type: string }
+        - name: after_sequence
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
+      responses:
+        "200":
+          description: NDJSON audit entries
+          headers:
+            x-seal-next-sequence:
+              schema: { type: string }
+              description: Highest sequence in this page (pass as after_sequence)
+            x-seal-has-more:
+              schema: { type: string, enum: ["0", "1"] }
+          content:
+            application/x-ndjson:
+              schema:
+                type: string
+                description: One AuditSiemEntry JSON object per line
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Forbidden
+
+  /organizations/{organizationSlug}/audit/siem/flush:
+    post:
+      tags: [Audit]
+      operationId: flushAuditSiemStream
+      summary: Enqueue sealed audit rows to SIEM webhooks (SEA-67)
+      description: |
+        Advances the org SIEM cursor and enqueues `audit.entry.created`
+        deliveries for subscribed webhooks, then attempts immediate delivery.
+      parameters:
+        - name: organizationSlug
+          in: path
+          required: true
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 200, default: 100 }
+      responses:
+        "200":
+          description: Flush result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, organizations, entriesEnqueued]
+                properties:
+                  success: { type: boolean }
+                  organizations: { type: integer }
+                  entriesEnqueued: { type: integer }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Forbidden
+
   /search:
     get:
       tags: [Search]
