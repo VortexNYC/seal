@@ -1,0 +1,90 @@
+---
+title: HIPAA scoping
+description: When Seal becomes a business associate, what we do not claim, and the gate before health customers
+---
+
+# HIPAA scoping
+
+CompAI / SEA-51. Product decision for health-document signing — **not** a HIPAA
+certification and **not** a substitute for counsel.
+
+## Decision (current)
+
+**Seal declines healthcare / PHI workloads until a signed BAA and PHI control
+program are in place.**
+
+| Question | Answer today |
+| --- | --- |
+| Is Seal HIPAA-compliant / HITRUST certified? | **No. Do not claim this.** |
+| Can a covered entity use Seal for intake, consent, or health records that include PHI? | **Not yet** — that relationship makes Seal a **business associate** under HIPAA. |
+| Default product posture | General e-sign (contracts, commercial agreements, HR, etc.). Healthcare is an **explicit expand** decision. |
+| Gate before first health customer | (1) Counsel-approved **BAA** template + countersign process, (2) PHI control checklist below green, (3) founder/ops accept the BA risk. |
+
+If a prospect’s documents contain PHI (or they are a covered entity / BA sending
+PHI through Seal), **stop the sale** and route to the expand path — do not “just
+use the normal API.”
+
+## When Seal becomes a business associate
+
+Under HIPAA, a vendor that creates, receives, maintains, or transmits PHI for a
+covered entity is typically a **business associate**. Signing workflows for:
+
+- patient intake / consent forms with identifiers or clinical content
+- medical records, Rx, discharge paperwork
+- any PDF where PHI is in the file bytes, fields, or metadata
+
+…put Seal in BA territory. Email of a patient + DOB on a form is enough to
+trigger the analysis — do not invent a loophole.
+
+Non-health commercial MSAs, vendor agreements, and similar **without PHI** are
+outside this ticket’s expand gate.
+
+## What Seal already has (necessary, not sufficient)
+
+These help any regulated customer; they do **not** equal HIPAA readiness:
+
+| Control | Where |
+| --- | --- |
+| Sealed audit trail | SEA-44 hash chain + `/audit/verify` |
+| Consent / privacy / opt-out | SEA-45 / SEA-52 / SEA-58 |
+| Final PDF integrity | SEA-49 Level 1 PAdES-B |
+| Certificate of Completion | SEA-50 |
+| Backup / retention primitives | SEA-55 (D1 Time Travel, R2 locks) |
+| Encryption in transit | HTTPS to Workers / R2 |
+| Access via org-scoped API keys + roles | Vortex Auth / MCP scopes |
+
+## PHI control gaps (must close before accepting health)
+
+Track as eng/ops before flipping the decision to **accept**:
+
+1. **BAA** — counsel-drafted Business Associate Agreement; countersign before any PHI org is provisioned.
+2. **PHI data map** — which tables/objects can hold PHI (PDF bytes in R2, field values, audit metadata, email bodies, webhooks).
+3. **Minimum necessary / retention** — documented retention + deletion for PHI orgs; webhook payloads must not leak PHI to unconstrained endpoints.
+4. **Access controls** — workforce access to prod D1/R2 for PHI orgs; admin break-glass logging.
+5. **Breach process** — BA notification timelines wired to on-call (HIPAA breach rule).
+6. **Subprocessors** — Cloudflare (and any email/convert workers) listed and covered under BA / CUA as counsel requires.
+7. **Optional hardening** — customer-managed keys, stricter region pinning, disable AI/anydoc features that send document bytes to models for PHI orgs.
+
+Until that list is owned and green, marketing and sales copy stay: **“Seal is not
+offered for HIPAA-regulated PHI workloads.”**
+
+## Expand path (accept healthcare later)
+
+1. Legal: BAA template + playbook (SEA-57 adjacent).
+2. Eng: PHI org flag / plan entitlement that gates AI features and documents subprocessors.
+3. Ops: onboarding checklist — BAA signed, webhook URL review, retention settings.
+4. Flip this page’s Decision table to **accept** with date + owner.
+5. Only then allow health customers onto `api.seal.nyc` (or a dedicated HIPAA env if counsel requires isolation).
+
+## For RFPs and CompAI
+
+Answer with this page. Correct phrase:
+
+> Seal today supports general electronic signatures with a sealed audit trail.
+> We do not currently offer a HIPAA Business Associate relationship or claim
+> HIPAA compliance. Healthcare / PHI use is declined until a BAA and PHI
+> control program are in place.
+
+See also: [Trust & evidence](/getting-started/trust-and-evidence),
+[eIDAS levels](/getting-started/eidas),
+[Production checklist](/getting-started/production).
