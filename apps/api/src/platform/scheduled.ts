@@ -7,6 +7,7 @@ import {
   recipients,
   user as userTable,
 } from "../global/schema.js";
+import { commitDocumentExpiry } from "./document-expiry.js";
 import { runDunningEmails } from "./dunning.js";
 import {
   sendDocumentExpiredEmail,
@@ -27,6 +28,8 @@ async function runExpiredDocumentSweep(env: CloudflareBindings): Promise<void> {
       id: documents.id,
       name: documents.name,
       ownerId: documents.ownerId,
+      organizationId: documents.organizationId,
+      publicId: documents.publicId,
       deadline: documents.deadline,
     })
     .from(documents)
@@ -40,20 +43,27 @@ async function runExpiredDocumentSweep(env: CloudflareBindings): Promise<void> {
 
   await Promise.all(
     expiredDocuments.map(async (doc) => {
-      await db
-        .update(documents)
-        .set({ status: "expired", updatedAt: now })
-        .where(eq(documents.id, doc.id));
-
-      await db
-        .update(recipients)
-        .set({ status: "expired", updatedAt: now })
+      const pendingRecipients = await db
+        .select({ id: recipients.id })
+        .from(recipients)
         .where(
           and(
             eq(recipients.documentId, doc.id),
             eq(recipients.status, "pending")
           )
         );
+
+      const won = await commitDocumentExpiry(db, {
+        documentId: doc.id,
+        organizationId: doc.organizationId,
+        publicId: doc.publicId,
+        deadline: doc.deadline,
+        pendingRecipientIds: pendingRecipients.map((r) => r.id),
+        now,
+      });
+      if (!won) {
+        return;
+      }
 
       const [owner] = await db
         .select({ name: userTable.name, email: userTable.email })
