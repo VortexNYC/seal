@@ -1166,6 +1166,7 @@ async function handleSendDocument(
       id: r.id,
       email: r.email,
       name: r.name,
+      role: r.role,
       signing_url: r.signingUrl,
       expires_at: deadline.getTime(),
       ...(notify ? { email_sent: r.emailSent } : {}),
