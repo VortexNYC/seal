@@ -41,6 +41,7 @@ import webhooksV1 from "./api/v1/webhooks.js";
 import { createD1 } from "./global/db.js";
 import {
   documentInvoices,
+  documents as documentsTable,
   paymentFieldConfigs,
   subscriptions,
 } from "./global/schema.js";
@@ -48,6 +49,10 @@ import {
   isApiTokenFormat,
   loadApiTokenContext,
 } from "./platform/api-token-auth.js";
+import {
+  getAuditRequestMeta,
+  writeAuditLog,
+} from "./platform/audit-log.js";
 import { createAuth } from "./platform/auth.js";
 import { sendEmail } from "./platform/email.js";
 import { verifyMcpAccessToken } from "./platform/mcp-auth.js";
@@ -814,6 +819,92 @@ app.post("/internal/webhooks/flush", async (c) => {
   );
   const result = await processWebhookDeliveries(c.env, { limit });
   return c.json({ success: true, ...result });
+});
+
+/**
+ * SEA-68 — logged break-glass read of a customer document from R2.
+ * Requires internal auth (same as other /internal/*). Always writes a sealed
+ * audit row before returning bytes. Prefer this over raw `wrangler r2 object get`.
+ */
+const breakGlassReadBody = z.object({
+  organizationId: z.string().min(1),
+  documentId: z.string().min(1),
+  reason: z.string().min(12).max(2000),
+  operatorEmail: z.string().email(),
+  ticketRef: z.string().min(1).max(200).optional(),
+});
+
+app.post("/internal/break-glass/document-read", async (c) => {
+  const parsed = breakGlassReadBody.safeParse(await c.req.json());
+  if (!parsed.success) {
+    return c.json({ error: "validation_error", details: parsed.error.flatten() }, 400);
+  }
+
+  const {
+    organizationId,
+    documentId,
+    reason,
+    operatorEmail,
+    ticketRef,
+  } = parsed.data;
+
+  const db = createD1(c.env.D1);
+  const [doc] = await db
+    .select({
+      id: documentsTable.id,
+      organizationId: documentsTable.organizationId,
+      storageKey: documentsTable.storageKey,
+      publicId: documentsTable.publicId,
+      name: documentsTable.name,
+    })
+    .from(documentsTable)
+    .where(
+      and(
+        eq(documentsTable.id, documentId),
+        eq(documentsTable.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  if (!doc?.storageKey) {
+    return c.json({ error: "not_found" }, 404);
+  }
+
+  const bucket = c.env.DOCUMENTS_BUCKET;
+  if (!bucket) {
+    return c.json({ error: "storage_unavailable" }, 503);
+  }
+
+  await writeAuditLog(db, {
+    organizationId,
+    actor: { type: "user", id: `break-glass:${operatorEmail}` },
+    action: "admin.break_glass.read",
+    resourceType: "document",
+    resourceId: doc.id,
+    metadata: {
+      via: "break-glass",
+      reason,
+      operatorEmail,
+      ...(ticketRef ? { ticketRef } : {}),
+      publicId: doc.publicId,
+      storageKey: doc.storageKey,
+      documentName: doc.name,
+    },
+    ...getAuditRequestMeta(c),
+  });
+
+  const object = await bucket.get(doc.storageKey);
+  if (!object?.body) {
+    return c.json({ error: "object_missing" }, 404);
+  }
+
+  return new Response(object.body, {
+    headers: {
+      "content-type": object.httpMetadata?.contentType || "application/pdf",
+      "content-disposition": `attachment; filename="${doc.publicId || doc.id}.pdf"`,
+      "x-seal-break-glass": "1",
+    },
+  });
 });
 
 export default app;

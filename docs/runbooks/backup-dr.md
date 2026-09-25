@@ -37,6 +37,9 @@ Contents: every org's `audit_chain_tips` row (tip hash + sequence) plus document
 
 ## D1 restore (break-glass)
 
+See also: [break-glass data access](./break-glass-data-access.md) (SEA-68) for
+R2 document reads. D1 Time Travel restore:
+
 1. Capture current bookmark (do this before restore):
 
 ```bash

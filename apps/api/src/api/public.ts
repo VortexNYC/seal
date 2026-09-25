@@ -57,6 +57,10 @@ import {
 } from "../platform/signing-submit.js";
 import { recordUsageEvent } from "../platform/usage-events.js";
 import { emitWebhookEvent } from "../platform/webhook-events.js";
+import {
+  auditMetaFromContext,
+  tryAuditDocumentByteAccess,
+} from "../platform/document-access-audit.js";
 
 /**
  * SEA-64 reopen (Vortex live evidence 2026-09-25): public-submit path used
@@ -1365,6 +1369,20 @@ app.openapi(pdfRouteDef, async (c) => {
   if (!object || !object.body) {
     return c.json({ error: "Document or file not found" }, 404);
   }
+
+  // SEA-68: signing preview is a document byte read — log it.
+  await tryAuditDocumentByteAccess(
+    db,
+    {
+      organizationId: doc.organizationId,
+      actor: { type: "user", id: recipient.id },
+      documentId: doc.id,
+      via: "signing-pdf-preview",
+      metadata: { publicId: doc.publicId, recipientId: recipient.id },
+      ...auditMetaFromContext(c),
+    },
+    "signing-pdf-preview"
+  );
 
   const headers: Record<string, string> = {
     "content-type": object.httpMetadata?.contentType || "application/pdf",
