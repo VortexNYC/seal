@@ -1242,6 +1242,27 @@ async function handleVoidDocument(
     });
   }
 
+  const emitPromise = emitWebhookEvent(c.env, {
+    organizationId,
+    eventType: "document.voided",
+    payload: {
+      documentId: row.id,
+      publicId: row.publicId,
+      previousStatus: row.status,
+    },
+  }).catch((err) => {
+    console.error("[webhooks] document.voided emit failed:", err);
+  });
+  try {
+    if (c.executionCtx?.waitUntil) {
+      c.executionCtx.waitUntil(emitPromise);
+    } else {
+      await emitPromise;
+    }
+  } catch {
+    await emitPromise;
+  }
+
   return c.json({ success: true });
 }
 
@@ -1441,6 +1462,18 @@ app.post("/bulk-void", async (c) => {
           ...getAuditRequestMeta(c),
         });
       }
+
+      await emitWebhookEvent(c.env, {
+        organizationId,
+        eventType: "document.voided",
+        payload: {
+          documentId: row.id,
+          publicId: row.publicId,
+          previousStatus: row.status,
+        },
+      }).catch((err) => {
+        console.error("[webhooks] document.voided emit failed:", err);
+      });
 
       return { id, success: true };
     })

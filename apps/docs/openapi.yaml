@@ -2841,6 +2841,34 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /webhooks/deliveries/{deliveryId}/retry:
+    post:
+      tags: [Webhooks]
+      operationId: retryWebhookDelivery
+      summary: Re-queue a failed webhook delivery for another attempt (SEA-64)
+      parameters:
+        - name: deliveryId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Delivery re-queued and flushed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, delivery_id]
+                properties:
+                  success: { type: boolean }
+                  delivery_id: { type: string }
+        "400":
+          description: Delivery is not failed, or webhook inactive
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Delivery not found
+
   # ──────────────────────────────────────────────────────────────────────────
   # Members
   # ──────────────────────────────────────────────────────────────────────────

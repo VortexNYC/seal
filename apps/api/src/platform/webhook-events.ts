@@ -18,6 +18,15 @@ export interface EmitWebhookEventInput {
   payload: WebhookEventPayload;
 }
 
+export interface EmitWebhookEventOptions {
+  /**
+   * Attempt delivery in-process after enqueue (SEA-64).
+   * Default true so hooks are near-realtime; tests may disable.
+   */
+  flushImmediately?: boolean;
+  fetchImpl?: typeof fetch;
+}
+
 export interface EmitWebhookEventResult {
   eventId: string;
   deliveryCount: number;
@@ -57,7 +66,8 @@ async function hmacSha256(secret: string, message: string): Promise<string> {
 
 export async function emitWebhookEvent(
   env: CloudflareBindings,
-  input: EmitWebhookEventInput
+  input: EmitWebhookEventInput,
+  options: EmitWebhookEventOptions = {}
 ): Promise<EmitWebhookEventResult> {
   const db = createD1(env.D1);
   const eventId = crypto.randomUUID();
@@ -105,6 +115,19 @@ export async function emitWebhookEvent(
       .onConflictDoNothing({
         target: [webhookDeliveries.webhookId, webhookDeliveries.eventId],
       });
+
+    // SEA-64: first attempt immediately — do not wait for the daily cron.
+    if (options.flushImmediately !== false) {
+      try {
+        await processWebhookDeliveries(env, {
+          organizationId: input.organizationId,
+          limit: Math.max(values.length, 50),
+          fetchImpl: options.fetchImpl,
+        });
+      } catch (err) {
+        console.error("[webhooks] immediate flush failed:", err);
+      }
+    }
   }
 
   return { eventId, deliveryCount: values.length };
@@ -336,4 +359,73 @@ export async function processWebhookDeliveries(
   }
 
   return { processed: toProcess.length, succeeded, failed };
+}
+
+export type RetryWebhookDeliveryResult =
+  | { ok: true; deliveryId: string }
+  | { ok: false; error: "not_found" | "not_failed" | "webhook_inactive" };
+
+/**
+ * Re-queue a failed (or exhausted) delivery for another attempt budget (SEA-64).
+ */
+export async function retryWebhookDelivery(
+  env: CloudflareBindings,
+  params: {
+    organizationId: string;
+    deliveryId: string;
+    fetchImpl?: typeof fetch;
+  }
+): Promise<RetryWebhookDeliveryResult> {
+  const db = createD1(env.D1);
+  const now = new Date();
+
+  const rows = await db
+    .select({
+      id: webhookDeliveries.id,
+      status: webhookDeliveries.status,
+      webhookId: webhookDeliveries.webhookId,
+      webhookStatus: webhooks.status,
+    })
+    .from(webhookDeliveries)
+    .innerJoin(webhooks, eq(webhooks.id, webhookDeliveries.webhookId))
+    .where(
+      and(
+        eq(webhookDeliveries.id, params.deliveryId),
+        eq(webhookDeliveries.organizationId, params.organizationId)
+      )
+    )
+    .limit(1);
+
+  const row = rows[0];
+  if (!row) {
+    return { ok: false, error: "not_found" };
+  }
+  if (row.status !== "failed") {
+    return { ok: false, error: "not_failed" };
+  }
+  if (row.webhookStatus !== "active") {
+    return { ok: false, error: "webhook_inactive" };
+  }
+
+  await db
+    .update(webhookDeliveries)
+    .set({
+      status: "pending",
+      attemptCount: 0,
+      nextRetryAt: now,
+      lockedAt: null,
+      lastError: null,
+      responseStatus: null,
+      responseBody: null,
+      deliveredAt: null,
+    })
+    .where(eq(webhookDeliveries.id, row.id));
+
+  await processWebhookDeliveries(env, {
+    organizationId: params.organizationId,
+    limit: 10,
+    fetchImpl: params.fetchImpl,
+  });
+
+  return { ok: true, deliveryId: row.id };
 }

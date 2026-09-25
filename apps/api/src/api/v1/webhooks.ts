@@ -5,6 +5,7 @@ import { z } from "zod";
 import { createD1 } from "../../global/db.js";
 import { webhookDeliveries, webhooks } from "../../global/schema.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
+import { retryWebhookDelivery } from "../../platform/webhook-events.js";
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
@@ -484,6 +485,40 @@ app.get("/deliveries", async (c) => {
       createdAt: row.createdAt?.toISOString() ?? null,
     }))
   );
+});
+
+app.post("/deliveries/:deliveryId/retry", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "webhooks:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const deliveryId = c.req.param("deliveryId");
+  if (!deliveryId) {
+    return c.json({ error: "missing_delivery_id" }, 400);
+  }
+
+  const result = await retryWebhookDelivery(c.env, {
+    organizationId,
+    deliveryId,
+  });
+
+  if (!result.ok) {
+    if (result.error === "not_found") {
+      return c.json({ error: "not_found" }, 404);
+    }
+    if (result.error === "not_failed") {
+      return c.json({ error: "delivery_not_failed" }, 400);
+    }
+    return c.json({ error: "webhook_inactive" }, 400);
+  }
+
+  return c.json({ success: true, delivery_id: result.deliveryId });
 });
 
 export default app;
