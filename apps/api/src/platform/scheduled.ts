@@ -21,6 +21,7 @@ import {
   markAuditHealthAlerted,
 } from "./audit-health.js";
 import { emitWebhookEvent, processWebhookDeliveries } from "./webhook-events.js";
+import { writeDailyAuditBackup } from "./backup-dr.js";
 
 const MS_PER_DAY = 86_400_000;
 const MAX_REMINDERS = 5;
@@ -269,6 +270,20 @@ export async function runScheduledTasks(
   await runAuditHealthAlerts(env);
   await runDunningEmails(env);
   await processWebhookDeliveries(env);
+  await runDailyAuditBackup(env);
+}
+
+async function runDailyAuditBackup(env: CloudflareBindings): Promise<void> {
+  const result = await writeDailyAuditBackup(env);
+  if (!result.success) {
+    console.error("[scheduled/backup-dr] audit backup failed", result);
+    return;
+  }
+  console.log("[scheduled/backup-dr] audit backup written", {
+    key: result.key,
+    tipCount: result.tipCount,
+    documentCount: result.documentCount,
+  });
 }
 
 async function runAuditHealthAlerts(env: CloudflareBindings): Promise<void> {

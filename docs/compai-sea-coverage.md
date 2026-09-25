@@ -16,7 +16,7 @@ Updated with SEA-50 (Certificate of Completion / EVID-2).
 | SEA-52 | `fnd_6ab57d53cb550d31b62425d7` + `fnd_6ab57d541b22e8a67eda3def` | high | **done** | Signer privacy notice + CCPA disclosures |
 | SEA-53 | `fnd_6ab563f6cb3383f010948219` (soc2) | medium | backlog | Secret scanning in CI |
 | SEA-54 | `fnd_6ab563f60a74553c6d277135` (soc2) | medium | backlog | External security audit / pen test |
-| SEA-55 | `fnd_6ab563f6c6010aa7fade2e30` (soc2) | high | backlog | Backup/DR for signed docs + audit |
+| SEA-55 | `fnd_6ab563f6c6010aa7fade2e30` (soc2) | high | **done** | Backup/DR for signed docs + audit |
 | SEA-56 | `fnd_6ab563f69ddf3aae4a95e3ae` (soc2) | high | **done** | Alert on audit-log write failures |
 | SEA-57 | `fnd_6ab563f53c4f6314a654ecd3` (soc2) | high | backlog | Legal review of consent / retention / attribution |
 | SEA-58 | `fnd_6ab563f5d67363c2a3e06fb8` (soc2) | high | **done** | ESIGN opt-out / manual-signature path |
@@ -114,4 +114,14 @@ Seal coverage in this change:
 | Notify sender to fulfill offline | `DocumentEsignOptOut` email |
 | Webhook for integrations | `recipient.esign_opt_out` |
 | CoC surfaces opt-out if recorded | Certificate party line |
+
+## SEA-55 / Backup & DR
+
+| Requirement | Where |
+| --- | --- |
+| D1 point-in-time recovery | Cloudflare Time Travel on `seal-global` (runbook) |
+| R2 retention for signed PDFs / certificates | Bucket locks `all-objects-7y` + `certificates-7y` (2555 days) |
+| Offline audit tip evidence | Daily cron → `backups/audit/{date}/manifest.json` |
+| Restore procedure | `docs/runbooks/backup-dr.md` |
+| Prove | `pnpm run prove:backup-dr` |
 
