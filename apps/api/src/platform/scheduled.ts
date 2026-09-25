@@ -20,7 +20,7 @@ import {
   listOrganizationAdminEmails,
   markAuditHealthAlerted,
 } from "./audit-health.js";
-import { emitWebhookEvent, processWebhookDeliveries } from "./webhook-events.js";
+import { emitWebhookEvent } from "./webhook-events.js";
 import { writeDailyAuditBackup } from "./backup-dr.js";
 
 const MS_PER_DAY = 86_400_000;
@@ -269,7 +269,7 @@ export async function runScheduledTasks(
   await runExpirationAlerts(env);
   await runAuditHealthAlerts(env);
   await runDunningEmails(env);
-  await processWebhookDeliveries(env);
+  // Webhook drain runs in the scheduled handler before this (every cron).
   await runDailyAuditBackup(env);
 }
 

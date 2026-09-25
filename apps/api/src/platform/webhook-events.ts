@@ -199,7 +199,6 @@ export async function processWebhookDeliveries(
 
   const conditions = [
     eq(webhookDeliveries.status, "pending"),
-    eq(webhookDeliveries.organizationId, webhooks.organizationId),
     lte(webhookDeliveries.nextRetryAt, now),
     or(
       isNull(webhookDeliveries.lockedAt),
@@ -363,10 +362,10 @@ export async function processWebhookDeliveries(
 
 export type RetryWebhookDeliveryResult =
   | { ok: true; deliveryId: string }
-  | { ok: false; error: "not_found" | "not_failed" | "webhook_inactive" };
+  | { ok: false; error: "not_found" | "not_retryable" | "webhook_inactive" };
 
 /**
- * Re-queue a failed (or exhausted) delivery for another attempt budget (SEA-64).
+ * Re-queue a failed or stuck-pending delivery for another attempt budget (SEA-64).
  */
 export async function retryWebhookDelivery(
   env: CloudflareBindings,
@@ -400,8 +399,8 @@ export async function retryWebhookDelivery(
   if (!row) {
     return { ok: false, error: "not_found" };
   }
-  if (row.status !== "failed") {
-    return { ok: false, error: "not_failed" };
+  if (row.status !== "failed" && row.status !== "pending") {
+    return { ok: false, error: "not_retryable" };
   }
   if (row.webhookStatus !== "active") {
     return { ok: false, error: "webhook_inactive" };

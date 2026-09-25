@@ -684,8 +684,9 @@ app.delete("/delete", async (c) => {
   return c.json({ success: true });
 });
 
-const useTemplateSchema = z.object({
-  id: z.string(),
+const useTemplateBodySchema = z.object({
+  /** Optional when `id` is passed as the OpenAPI query param (SEA-65). */
+  id: z.string().optional(),
   title: z.string().min(1).optional(),
   description: z.string().optional(),
 });
@@ -701,13 +702,29 @@ app.post("/use", async (c) => {
     return c.json({ error: "organization_required" }, 403);
   }
 
-  const rawBody: unknown = await c.req.json();
-  const parsed = useTemplateSchema.safeParse(rawBody);
+  // SEA-65: OpenAPI requires `id` as query; older clients send it in the body.
+  // Accept either. Empty body is allowed when id is query-only.
+  let rawBody: unknown = {};
+  try {
+    const text = await c.req.text();
+    if (text.trim() !== "") {
+      rawBody = JSON.parse(text) as unknown;
+    }
+  } catch {
+    return c.json({ error: "validation_error" }, 400);
+  }
+
+  const parsed = useTemplateBodySchema.safeParse(rawBody);
   if (!parsed.success) {
     return c.json({ error: "validation_error" }, 400);
   }
 
-  const { id, title, description } = parsed.data;
+  const id = c.req.query("id") ?? parsed.data.id;
+  if (!id) {
+    return c.json({ error: "validation_error" }, 400);
+  }
+
+  const { title, description } = parsed.data;
 
   const db = createD1(c.env.D1);
   const templateRows = await db

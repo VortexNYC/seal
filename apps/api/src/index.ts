@@ -805,6 +805,16 @@ app.route("/api/v1/templates", templatesV1);
 app.route("/api/v1/uploads", uploadsV1);
 app.route("/api/v1/webhooks", webhooksV1);
 
+app.post("/internal/webhooks/flush", async (c) => {
+  const limitRaw = c.req.query("limit");
+  const limit = Math.min(
+    Math.max(parseInt(limitRaw ?? "100", 10) || 100, 1),
+    500
+  );
+  const result = await processWebhookDeliveries(c.env, { limit });
+  return c.json({ success: true, ...result });
+});
+
 export default app;
 
 /**
@@ -827,9 +837,12 @@ export class InternalApi extends WorkerEntrypoint<CloudflareBindings> {
 export const scheduled: ExportedHandlerScheduledHandler<
   CloudflareBindings
 > = async (event, env, _ctx) => {
-  // SEA-64: five-minute cron only drains webhook retries.
+  // Always drain webhooks first — SEA-64 reopen showed deliveries can sit
+  // pending for hours if the cron branch is skipped or the daily job faults.
+  await processWebhookDeliveries(env);
+
+  // Five-minute cron is webhooks-only.
   if (event.cron === "*/5 * * * *") {
-    await processWebhookDeliveries(env);
     return;
   }
   await runScheduledTasks(env);
