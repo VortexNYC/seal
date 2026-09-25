@@ -27,6 +27,7 @@
     "ci:publish": "pnpm --filter @vortex-api/seal run build && changeset publish",
     "dogfood": "node scripts/dogfood-cli.mjs",
     "prove:golden-path": "node scripts/prove-golden-path.mjs",
+    "prove:backup-dr": "node scripts/prove-backup-dr.mjs",
     "fix": "vp lint --fix && vp fmt",
     "verify": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run knip",
     "verify:clean": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run knip",

@@ -11,7 +11,7 @@ Operational items that must be completed before public launch. These are not cod
 
 ## Infrastructure
 
-- [ ] Backup and disaster recovery procedures documented
+- [x] Backup and disaster recovery procedures documented
 - [ ] Monitoring and alerting for audit system health
 - [ ] Alert workspace admin when audit logging consistently fails
 
