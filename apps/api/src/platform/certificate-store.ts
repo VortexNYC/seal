@@ -89,6 +89,8 @@ export async function generateAndStoreCertificateOfCompletion(params: {
       consentTextHash: r.esignConsentTextHash ?? null,
       privacyNoticeAt: formatTs(r.privacyNoticeAt),
       privacyNoticeTextHash: r.privacyNoticeTextHash ?? null,
+      esignOptOutAt: formatTs(r.esignOptOutAt),
+      esignOptOutMethod: r.esignOptOutMethod ?? null,
     };
   });
 

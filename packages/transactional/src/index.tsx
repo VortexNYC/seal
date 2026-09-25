@@ -13,6 +13,10 @@ import {
   type DocumentExpirationAlertProps,
 } from "./emails/document-expiration-alert.js";
 import {
+  DocumentEsignOptOut,
+  type DocumentEsignOptOutProps,
+} from "./emails/document-esign-opt-out.js";
+import {
   DocumentExpired,
   type DocumentExpiredProps,
 } from "./emails/document-expired.js";
@@ -50,6 +54,7 @@ export {
   AuditWriteFailureAlert,
   DocumentInvitation,
   DocumentCompleted,
+  DocumentEsignOptOut,
   DocumentExpirationAlert,
   DocumentExpired,
   DocumentReminder,
@@ -67,6 +72,7 @@ export type {
   SigningCompleteProps,
   SigningOtpProps,
   DocumentCompletedProps,
+  DocumentEsignOptOutProps,
   DocumentExpirationAlertProps,
   DocumentExpiredProps,
   DocumentReminderProps,
@@ -145,6 +151,15 @@ export async function renderDocumentViewed(
   props: DocumentViewedProps
 ): Promise<string> {
   return render(<DocumentViewed {...props} />);
+}
+
+/**
+ * Render DocumentEsignOptOut email to HTML string
+ */
+export async function renderDocumentEsignOptOut(
+  props: DocumentEsignOptOutProps
+): Promise<string> {
+  return render(<DocumentEsignOptOut {...props} />);
 }
 
 /**

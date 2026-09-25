@@ -1,5 +1,6 @@
 import {
   renderDocumentCompleted,
+  renderDocumentEsignOptOut,
   renderDocumentExpired,
   renderDocumentExpirationAlert,
   renderDocumentInvitation,
@@ -223,6 +224,40 @@ export async function sendDocumentViewedEmail(
   return sendEmail(env, {
     to: params.to,
     subject: `${params.recipientName} viewed "${params.documentName}"`,
+    html,
+  });
+}
+
+export async function sendDocumentEsignOptOutEmail(
+  env: EmailEnv,
+  params: {
+    to: string;
+    ownerName: string;
+    documentName: string;
+    documentSlug: string;
+    documentPublicId: string;
+    recipientName: string;
+    recipientEmail: string;
+    methodLabel: string;
+    optedOutAt: number;
+  }
+): Promise<EmailSendResult> {
+  const html = await renderDocumentEsignOptOut({
+    ownerName: params.ownerName,
+    documentName: params.documentName,
+    documentUrl: buildDocumentUrl(
+      env,
+      params.documentSlug,
+      params.documentPublicId
+    ),
+    recipientName: params.recipientName,
+    recipientEmail: params.recipientEmail,
+    methodLabel: params.methodLabel,
+    optedOutAt: params.optedOutAt,
+  });
+  return sendEmail(env, {
+    to: params.to,
+    subject: `${params.recipientName} opted out of e-sign for "${params.documentName}"`,
     html,
   });
 }

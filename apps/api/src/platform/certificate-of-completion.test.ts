@@ -40,6 +40,8 @@ describe("certificate-of-completion", () => {
           consentTextHash: "sha256:abc123",
           privacyNoticeAt: "2026-09-24T11:58:00.000Z",
           privacyNoticeTextHash: "sha256:privacyabc",
+          esignOptOutAt: null,
+          esignOptOutMethod: null,
         },
         {
           name: "Bob CC",
@@ -53,6 +55,8 @@ describe("certificate-of-completion", () => {
           consentTextHash: null,
           privacyNoticeAt: null,
           privacyNoticeTextHash: null,
+          esignOptOutAt: null,
+          esignOptOutMethod: null,
         },
       ],
       events: [
