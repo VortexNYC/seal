@@ -9,9 +9,9 @@ import {
   Transformer,
 } from "react-konva";
 
+import { FIELD_TYPE_LABELS, type FieldType } from "@/lib/field-types";
 import { formatMoney, money } from "@/lib/money";
 
-import type { FieldType } from "./field-toolbar";
 import {
   getRecipientColorById,
   type RecipientColor,
@@ -32,28 +32,7 @@ function useSealIcon(): HTMLImageElement | null {
 
 // Helper to get field type label for display
 function getFieldTypeLabel(fieldType: FieldType): string {
-  switch (fieldType) {
-    case "signature":
-      return "Signature";
-    case "text":
-      return "Text";
-    case "number":
-      return "Number";
-    case "date":
-      return "Date";
-    case "checkbox":
-      return "Checkbox";
-    case "dropdown":
-      return "Dropdown";
-    case "radio":
-      return "Radio";
-    case "attachment":
-      return "Attachment";
-    case "payment":
-      return "Payment";
-    default:
-      return fieldType;
-  }
+  return FIELD_TYPE_LABELS[fieldType] ?? fieldType;
 }
 
 export interface PlacedField {
@@ -139,34 +118,14 @@ type FormattedSignatureDate = {
  * Field type labels
  */
 const FIELD_LABELS: Record<FieldType, string> = {
-  signature: "Signature",
-  text: "Text",
-  number: "Number",
-  date: "Date",
+  ...FIELD_TYPE_LABELS,
   checkbox: "",
-  dropdown: "Select",
-  radio: "Choice",
-  attachment: "File",
-  payment: "Payment",
 };
 
 /**
- * Default field dimensions
+ * Default field dimensions — re-exported for placement / toolbar
  */
-export const FIELD_DIMENSIONS: Record<
-  FieldType,
-  { width: number; height: number }
-> = {
-  signature: { width: 200, height: 50 },
-  text: { width: 180, height: 36 },
-  number: { width: 180, height: 36 },
-  date: { width: 140, height: 36 },
-  checkbox: { width: 28, height: 28 },
-  dropdown: { width: 180, height: 36 },
-  radio: { width: 140, height: 36 },
-  attachment: { width: 180, height: 44 },
-  payment: { width: 220, height: 60 },
-};
+export { FIELD_DIMENSIONS } from "@/lib/field-types";
 
 /**
  * Convert RecipientColor to the color format used by field rendering

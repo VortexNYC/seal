@@ -7,13 +7,13 @@ import {
   deleteSignatureField as deleteSignatureFieldApi,
   repositionSignatureField as repositionSignatureFieldApi,
 } from "@/lib/api-client";
+import { FIELD_TYPE_LABELS, FIELD_TYPES, type FieldType } from "@/lib/field-types";
 import { type Id, parseId } from "@/lib/ids";
 import { toast } from "@/lib/toast";
 
 import { parseSelectValue } from "../../../lib/select-values";
 import { FIELD_DIMENSIONS, type PlacedField } from "../draggable-field";
 import { type FieldOptionsConfig } from "../field-options-dialog";
-import { FIELD_TYPES, type FieldType } from "../field-toolbar";
 
 type Recipient = {
   _id: Id<"document_recipients">;
@@ -66,25 +66,15 @@ interface UseFieldPlacementOptions {
 }
 
 function formatFieldTypeLabel(fieldType: FieldType): string {
-  const typeLabels: Record<FieldType, string> = {
-    signature: "Signature",
-    text: "Text",
-    number: "Number",
-    date: "Date",
-    checkbox: "Checkbox",
-    dropdown: "Dropdown",
-    radio: "Radio",
-    attachment: "Attachment",
-    payment: "Payment",
-  };
-  return `${typeLabels[fieldType]} Field`;
+  return `${FIELD_TYPE_LABELS[fieldType]} Field`;
 }
 
 function fieldTypeRequiresOptions(fieldType: FieldType): boolean {
   return (
     fieldType === "checkbox" ||
     fieldType === "dropdown" ||
-    fieldType === "radio"
+    fieldType === "radio" ||
+    fieldType === "multi_select"
   );
 }
 

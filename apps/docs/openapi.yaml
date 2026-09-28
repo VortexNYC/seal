@@ -57,7 +57,32 @@ components:
 
     FieldType:
       type: string
-      enum: [signature, text, date, checkbox, dropdown, radio, attachment]
+      enum:
+        [
+          signature,
+          free_signature,
+          initials,
+          name,
+          email,
+          text,
+          number,
+          date,
+          date_signed,
+          checkbox,
+          radio,
+          dropdown,
+          multi_select,
+          attachment,
+          image,
+          payment,
+          phone,
+          cells,
+          stamp,
+          heading,
+          strikethrough,
+          verification,
+          kba,
+        ]
 
     Document:
       type: object
@@ -1088,7 +1113,32 @@ paths:
                 id: { type: string }
                 field_type:
                   type: string
-                  enum: [signature, text, number, date, checkbox, dropdown, radio, attachment, payment]
+                  enum:
+                    [
+                      signature,
+                      free_signature,
+                      initials,
+                      name,
+                      email,
+                      text,
+                      number,
+                      date,
+                      date_signed,
+                      checkbox,
+                      dropdown,
+                      radio,
+                      multi_select,
+                      attachment,
+                      image,
+                      payment,
+                      phone,
+                      cells,
+                      stamp,
+                      heading,
+                      strikethrough,
+                      verification,
+                      kba,
+                    ]
                 label: { type: string }
                 is_required: { type: boolean }
                 page: { type: integer }

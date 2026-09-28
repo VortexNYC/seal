@@ -10,9 +10,12 @@ import {
 describe("field-geometry", () => {
   it("maps candidate types to Seal field types", () => {
     expect(mapCandidateTypeToFieldType("signature")).toBe("signature");
-    expect(mapCandidateTypeToFieldType("initials")).toBe("text");
-    expect(mapCandidateTypeToFieldType("name")).toBe("text");
+    expect(mapCandidateTypeToFieldType("initials")).toBe("initials");
+    expect(mapCandidateTypeToFieldType("name")).toBe("name");
+    expect(mapCandidateTypeToFieldType("email")).toBe("email");
     expect(mapCandidateTypeToFieldType("date")).toBe("date");
+    expect(mapCandidateTypeToFieldType("phone")).toBe("phone");
+    expect(mapCandidateTypeToFieldType("cells")).toBe("cells");
   });
 
   it("estimates geometry from line index within page bounds", () => {

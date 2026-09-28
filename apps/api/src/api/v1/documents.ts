@@ -35,6 +35,7 @@ import {
   writeAuditLog,
 } from "../../platform/audit-log.js";
 import { validateFieldGeometry } from "../../platform/field-geometry.js";
+import { FieldTypeEnum as placeableFieldTypeSchema } from "../../platform/field-types.js";
 import {
   mergeFieldProperties,
   parseFieldProperties,
@@ -1940,17 +1941,6 @@ app.get("/fields", async (c) => {
 });
 
 
-const placeableFieldTypeSchema = z.enum([
-  "signature",
-  "text",
-  "number",
-  "date",
-  "checkbox",
-  "dropdown",
-  "radio",
-  "attachment",
-  "payment",
-]);
 
 const createFieldSchema = z.object({
   id: z.string().min(1),

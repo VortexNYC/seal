@@ -9,13 +9,26 @@ import { getErrorMessage } from "@/lib/utils";
 
 import {
   AttachmentFieldInput,
+  CellsFieldInput,
   CheckboxFieldInput,
   DateFieldInput,
+  DateSignedFieldInput,
   DropdownFieldInput,
+  EmailFieldInput,
+  HeadingFieldInput,
+  ImageFieldInput,
+  InitialsFieldInput,
+  KbaFieldInput,
+  MultiSelectFieldInput,
+  NameFieldInput,
   NumberFieldInput,
   PaymentFieldSummary,
+  PhoneFieldInput,
   RadioFieldInput,
+  StampFieldInput,
+  StrikethroughFieldInput,
   TextFieldInput,
+  VerificationFieldInput,
 } from "./field-inputs";
 import { SignatureCapture } from "./signature-capture";
 
@@ -36,6 +49,7 @@ interface FieldInputManagerProps {
     minLength?: number;
     pattern?: string;
     helpText?: string;
+    cellCount?: number;
   };
   validationRules?: {
     min?: number;
@@ -78,6 +92,18 @@ type FieldRendererProps = FieldInputContentProps & {
   commonProps: CommonFieldInputProps;
 };
 
+const signatureRenderer = ({
+  recipientName,
+  onSignatureCapture,
+  onCancelSignature,
+}: FieldRendererProps): ReactNode => (
+  <SignatureCapture
+    recipientName={recipientName}
+    onSignatureCapture={onSignatureCapture}
+    onCancel={onCancelSignature}
+  />
+);
+
 const FIELD_INPUT_RENDERERS: Record<
   string,
   (props: FieldRendererProps) => ReactNode
@@ -100,8 +126,15 @@ const FIELD_INPUT_RENDERERS: Record<
     />
   ),
   date: ({ commonProps }) => <DateFieldInput {...commonProps} />,
+  date_signed: ({ commonProps }) => <DateSignedFieldInput {...commonProps} />,
   checkbox: ({ commonProps, properties }) => (
     <CheckboxFieldInput {...commonProps} options={properties?.options || []} />
+  ),
+  multi_select: ({ commonProps, properties }) => (
+    <MultiSelectFieldInput
+      {...commonProps}
+      options={properties?.options || []}
+    />
   ),
   dropdown: ({ commonProps, properties }) => (
     <DropdownFieldInput {...commonProps} options={properties?.options || []} />
@@ -111,6 +144,12 @@ const FIELD_INPUT_RENDERERS: Record<
   ),
   attachment: ({ commonProps, signingToken }) => (
     <AttachmentFieldInput {...commonProps} signingToken={signingToken} />
+  ),
+  image: ({ commonProps, signingToken }) => (
+    <ImageFieldInput {...commonProps} signingToken={signingToken} />
+  ),
+  stamp: ({ commonProps, signingToken }) => (
+    <StampFieldInput {...commonProps} signingToken={signingToken} />
   ),
   payment: ({ fieldId, signingToken }) =>
     signingToken ? (
@@ -124,23 +163,40 @@ const FIELD_INPUT_RENDERERS: Record<
         showInlinePayment={!!signingToken}
       />
     ),
-  signature: ({ recipientName, onSignatureCapture, onCancelSignature }) => (
-    <SignatureCapture
-      recipientName={recipientName}
-      onSignatureCapture={onSignatureCapture}
-      onCancel={onCancelSignature}
+  signature: signatureRenderer,
+  free_signature: signatureRenderer,
+  initials: ({ commonProps }) => <InitialsFieldInput {...commonProps} />,
+  name: ({ commonProps, properties }) => (
+    <NameFieldInput {...commonProps} placeholder={properties?.placeholder} />
+  ),
+  email: ({ commonProps }) => <EmailFieldInput {...commonProps} />,
+  phone: ({ commonProps }) => <PhoneFieldInput {...commonProps} />,
+  cells: ({ commonProps, properties }) => (
+    <CellsFieldInput
+      {...commonProps}
+      cellCount={properties?.cellCount ?? 6}
     />
   ),
+  heading: ({ commonProps }) => <HeadingFieldInput {...commonProps} />,
+  strikethrough: ({ commonProps }) => (
+    <StrikethroughFieldInput {...commonProps} />
+  ),
+  verification: ({ commonProps }) => (
+    <VerificationFieldInput {...commonProps} />
+  ),
+  kba: ({ commonProps }) => <KbaFieldInput {...commonProps} />,
 };
 
 function getDialogClassName(fieldType: string): string {
-  if (fieldType === "signature") return "max-w-2xl";
+  if (fieldType === "signature" || fieldType === "free_signature") {
+    return "max-w-2xl";
+  }
   if (fieldType === "payment") return "max-w-lg";
   return "max-w-md";
 }
 
 function getDialogText(fieldType: string, isRequired: boolean) {
-  if (fieldType === "signature") {
+  if (fieldType === "signature" || fieldType === "free_signature") {
     return {
       title: "Sign Here",
       description: "Draw, type, or upload your signature below.",

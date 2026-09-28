@@ -13,6 +13,7 @@ import {
 import { forwardRef } from "react";
 
 import { formatMoney, money } from "@/lib/money";
+import { FIELD_TYPE_LABELS, isFieldType } from "@/lib/field-types";
 import { cn } from "@/lib/utils";
 
 interface SignatureDetails {
@@ -53,20 +54,31 @@ interface FillableFieldOverlayProps {
 function getFieldIcon(fieldType: string) {
   switch (fieldType) {
     case "signature":
+    case "free_signature":
       return <PenToolIcon className="h-3 w-3" />;
     case "text":
+    case "name":
+    case "email":
+    case "initials":
+    case "heading":
+    case "strikethrough":
       return <TypeIcon className="h-3 w-3" />;
     case "number":
+    case "cells":
       return <HashIcon className="h-3 w-3" />;
     case "date":
+    case "date_signed":
       return <CalendarIcon className="h-3 w-3" />;
     case "checkbox":
+    case "multi_select":
       return <CheckSquareIcon className="h-3 w-3" />;
     case "dropdown":
       return <ChevronDownIcon className="h-3 w-3" />;
     case "radio":
       return <CircleDotIcon className="h-3 w-3" />;
     case "attachment":
+    case "image":
+    case "stamp":
       return <FileIcon className="h-3 w-3" />;
     case "payment":
       return <CreditCardIcon className="h-3 w-3" />;
@@ -76,28 +88,10 @@ function getFieldIcon(fieldType: string) {
 }
 
 function getFieldTypeLabel(fieldType: string): string {
-  switch (fieldType) {
-    case "signature":
-      return "Signature";
-    case "text":
-      return "Text";
-    case "number":
-      return "Number";
-    case "date":
-      return "Date";
-    case "checkbox":
-      return "Checkbox";
-    case "dropdown":
-      return "Dropdown";
-    case "radio":
-      return "Radio";
-    case "attachment":
-      return "Attachment";
-    case "payment":
-      return "Payment";
-    default:
-      return fieldType;
+  if (isFieldType(fieldType)) {
+    return FIELD_TYPE_LABELS[fieldType];
   }
+  return fieldType;
 }
 
 // Format date for signature stamp display

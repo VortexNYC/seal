@@ -17,11 +17,10 @@ import {
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useRef } from "react";
 
+import { FIELD_TYPE_LABELS, type FieldType } from "@/lib/field-types";
 import { type Id } from "@/lib/ids";
 import { formatMoney, money } from "@/lib/money";
 import { cn } from "@/lib/utils";
-
-import type { FieldType } from "./field-toolbar";
 
 interface FieldListItem {
   _id: Id<"signature_fields">;
@@ -59,45 +58,70 @@ interface FieldListProps {
 
 const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
   signature: <Pencil className="size-4" />,
+  free_signature: <Pencil className="size-4" />,
+  initials: <TextT className="size-4" />,
+  name: <TextT className="size-4" />,
+  email: <TextT className="size-4" />,
   text: <TextT className="size-4" />,
   number: <Hash className="size-4" />,
   date: <CalendarBlank className="size-4" />,
+  date_signed: <CalendarBlank className="size-4" />,
   checkbox: <CheckSquare className="size-4" />,
   dropdown: <CaretDown className="size-4" />,
   radio: <RadioButton className="size-4" />,
+  multi_select: <CheckSquare className="size-4" />,
   attachment: <Paperclip className="size-4" />,
+  image: <Paperclip className="size-4" />,
   payment: <CreditCard className="size-4" />,
+  phone: <TextT className="size-4" />,
+  cells: <Hash className="size-4" />,
+  stamp: <Paperclip className="size-4" />,
+  heading: <TextT className="size-4" />,
+  strikethrough: <TextT className="size-4" />,
+  verification: <Gear className="size-4" />,
+  kba: <Gear className="size-4" />,
 };
 
 const FIELD_COLORS: Record<FieldType, string> = {
   signature:
     "bg-field-signature-surface text-field-signature border-field-signature-border",
+  free_signature:
+    "bg-field-signature-surface text-field-signature border-field-signature-border",
+  initials:
+    "bg-field-initials-surface text-field-initials border-field-initials-border",
+  name: "bg-field-name-surface text-field-name border-field-name-border",
+  email: "bg-field-email-surface text-field-email border-field-email-border",
   text: "bg-field-text-surface text-field-text border-field-text-border",
   number:
     "bg-field-number-surface text-field-number border-field-number-border",
   date: "bg-field-date-surface text-field-date border-field-date-border",
+  date_signed:
+    "bg-field-date-signed-surface text-field-date-signed border-field-date-signed-border",
   checkbox:
     "bg-field-checkbox-surface text-field-checkbox border-field-checkbox-border",
   dropdown:
     "bg-field-dropdown-surface text-field-dropdown border-field-dropdown-border",
   radio: "bg-field-radio-surface text-field-radio border-field-radio-border",
+  multi_select:
+    "bg-field-multi-select-surface text-field-multi-select border-field-multi-select-border",
   attachment:
     "bg-field-attachment-surface text-field-attachment border-field-attachment-border",
+  image: "bg-field-image-surface text-field-image border-field-image-border",
   payment:
     "bg-field-payment-surface text-field-payment border-field-payment-border",
+  phone: "bg-field-phone-surface text-field-phone border-field-phone-border",
+  cells: "bg-field-cells-surface text-field-cells border-field-cells-border",
+  stamp: "bg-field-stamp-surface text-field-stamp border-field-stamp-border",
+  heading:
+    "bg-field-heading-surface text-field-heading border-field-heading-border",
+  strikethrough:
+    "bg-field-strikethrough-surface text-field-strikethrough border-field-strikethrough-border",
+  verification:
+    "bg-field-verification-surface text-field-verification border-field-verification-border",
+  kba: "bg-field-kba-surface text-field-kba border-field-kba-border",
 };
 
-const FIELD_LABELS: Record<FieldType, string> = {
-  signature: "Signature",
-  text: "Text",
-  number: "Number",
-  date: "Date",
-  checkbox: "Checkbox",
-  dropdown: "Dropdown",
-  radio: "Radio",
-  attachment: "Attachment",
-  payment: "Payment",
-};
+const FIELD_LABELS = FIELD_TYPE_LABELS;
 
 const PAYMENT_TYPE_LABELS: Record<string, string> = {
   one_time: "One-time",
