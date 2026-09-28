@@ -255,11 +255,118 @@ async function ab(argv) {
   if (code !== 0) {
     throw new Error(`agent-browser ${argv.join(" ")} exit ${code}`);
   }
-  return stdout;
+  // agent-browser prints interactive snapshots on stderr; merge both.
+  return `${stdout}\n${stderr}`;
 }
 
 console.log("\n--- agent-browser contact sheet ---");
 await ab(["--session", "seal-signer-proof", "open", signingUrl]);
+
+// Pace like a human — capture temporal paint.
+await new Promise((r) => setTimeout(r, 1200));
+
+async function clickMatching(snap, patterns, { role, skipDisabled } = {}) {
+  for (const pattern of patterns) {
+    const re = new RegExp(pattern, "i");
+    const line = snap.split(/\r?\n/).find((l) => {
+      if (!re.test(l) || !/ref=e\d+/.test(l)) return false;
+      if (skipDisabled && /\[disabled|\bdisabled\b/i.test(l)) return false;
+      if (role) {
+        // agent-browser: `button "Start" [ref=e4]` or `role=button`
+        const roleOk =
+          new RegExp(`role=${role}\\b`, "i").test(l) ||
+          new RegExp(`^\\s*-\\s*${role}\\b`, "i").test(l);
+        if (!roleOk) return false;
+      }
+      return true;
+    });
+    if (!line) continue;
+    // refs appear as `[ref=e4]` or `[checked=false, ref=e8]`
+    const ref = /(?:\[|, )\s*ref=(e\d+)/.exec(line)?.[1];
+    if (!ref) continue;
+    await ab(["--session", "seal-signer-proof", "click", `@${ref}`]);
+    await new Promise((r) => setTimeout(r, 900));
+    return true;
+  }
+  return false;
+}
+
+async function ensureCheckboxThenContinue(snap) {
+  // Prefer a11y checkbox ref; fall back to label ref.
+  const uncheckedLine = snap
+    .split(/\r?\n/)
+    .find((l) => /checkbox/i.test(l) && /checked\s*=\s*false/i.test(l));
+  let ref =
+    uncheckedLine && /(?:\[|, )\s*ref=(e\d+)/.exec(uncheckedLine)?.[1];
+  if (!ref) {
+    const label = snap
+      .split(/\r?\n/)
+      .find(
+        (l) =>
+          /LabelText/i.test(l) &&
+          /acknowledge this privacy notice|I consent to use electronic/i.test(
+            l
+          )
+      );
+    ref = label && /(?:\[|, )\s*ref=(e\d+)/.exec(label)?.[1];
+  }
+  if (ref) {
+    console.log(`gate  check @${ref}`);
+    try {
+      await ab(["--session", "seal-signer-proof", "check", `@${ref}`]);
+    } catch {
+      await ab(["--session", "seal-signer-proof", "click", `@${ref}`]);
+    }
+    await new Promise((r) => setTimeout(r, 800));
+  } else {
+    console.log("gate  no checkbox/label ref");
+  }
+  const snap2 = await ab([
+    "--session",
+    "seal-signer-proof",
+    "snapshot",
+    "-i",
+  ]);
+  return clickMatching(
+    snap2,
+    [
+      "Continue to Document",
+      "Accept electronic signature consent",
+      "\\bContinue\\b",
+    ],
+    { role: "button", skipDisabled: true }
+  );
+}
+
+// Clear invite/privacy/consent BEFORE recording so the sheet captures paint,
+// not gate clicks — and so snapshot -i keeps nested checkbox refs.
+for (let gate = 0; gate < 8; gate++) {
+  const snap = await ab([
+    "--session",
+    "seal-signer-proof",
+    "snapshot",
+    "-i",
+  ]);
+  if (
+    /pdf-signing-document|data-engine|Decline to sign|All fields/i.test(snap)
+  ) {
+    break;
+  }
+  if (await clickMatching(snap, ["\\bStart\\b"], { role: "button" })) continue;
+  if (/Privacy notice|Electronic Signature Consent|I consent to use electronic/i.test(snap)) {
+    if (await ensureCheckboxThenContinue(snap)) continue;
+  }
+  if (
+    await clickMatching(snap, ["\\bContinue\\b"], {
+      role: "button",
+      skipDisabled: true,
+    })
+  ) {
+    continue;
+  }
+  break;
+}
+
 await ab([
   "--session",
   "seal-signer-proof",
@@ -272,61 +379,6 @@ await ab([
   "10",
 ]);
 
-// Pace like a human — capture temporal paint.
-await new Promise((r) => setTimeout(r, 1200));
-
-async function clickMatching(snap, patterns) {
-  for (const pattern of patterns) {
-    const re = new RegExp(pattern, "i");
-    const line = snap
-      .split("\n")
-      .find((l) => re.test(l) && /\[ref=e\d+\]/.test(l));
-    if (!line) continue;
-    const ref = /\[ref=(e\d+)\]/.exec(line)?.[1];
-    if (!ref) continue;
-    await ab(["--session", "seal-signer-proof", "click", `@${ref}`]);
-    await new Promise((r) => setTimeout(r, 900));
-    return true;
-  }
-  return false;
-}
-
-for (let gate = 0; gate < 4; gate++) {
-  const snap = await ab([
-    "--session",
-    "seal-signer-proof",
-    "snapshot",
-    "-i",
-  ]);
-  if (/pdf-signing-document|data-engine|Decline to sign|All fields/i.test(snap)) {
-    break;
-  }
-  // Invite START (SEA-78)
-  if (await clickMatching(snap, ["\\bStart\\b"])) continue;
-  // Privacy accept
-  if (await clickMatching(snap, ["I understand", "Acknowledge", "Continue"])) continue;
-  // Consent checkbox then Continue (SEA-75)
-  const checked = await clickMatching(snap, [
-    "checkbox.*consent",
-    "I consent to use electronic signatures",
-  ]);
-  if (checked) {
-    const snap2 = await ab([
-      "--session",
-      "seal-signer-proof",
-      "snapshot",
-      "-i",
-    ]);
-    await clickMatching(snap2, [
-      "Continue to Document",
-      "Accept electronic signature consent",
-      "Continue",
-    ]);
-    await new Promise((r) => setTimeout(r, 2000));
-    continue;
-  }
-  break;
-}
 
 // Wait for PDF paint testid / img
 let painted = false;
