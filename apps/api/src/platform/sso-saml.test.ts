@@ -10,11 +10,7 @@ import app from "../index.js";
 import { createAuth } from "../platform/auth.js";
 
 const origin = (
-  (
-    env.ALLOWED_ORIGINS ??
-    env.BETTER_AUTH_URL ??
-    "http://localhost:8787"
-  )
+  (env.ALLOWED_ORIGINS ?? env.BETTER_AUTH_URL ?? "http://localhost:8787")
     .toString()
     .split(",")[0] ?? "http://localhost:8787"
 ).trim();
@@ -150,12 +146,12 @@ describe("SEA-66 SAML SSO handshake", () => {
     expect(spMetadata).toContain("EntityDescriptor");
 
     const sp = samlify.ServiceProvider({ metadata: spMetadata });
+    // IdentityProvider is a factory; settings must match IdentityProviderSettings.
     const idp = samlify.IdentityProvider({
       metadata: idpMetadata,
       privateKey: keyPem,
-      isAssertionSigned: true,
-      encNameIDFormat: "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress",
-    } as ConstructorParameters<typeof samlify.IdentityProvider>[0]);
+      nameIDFormat: ["urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"],
+    });
 
     const signIn = await app.fetch(
       new Request(new URL("/api/auth/sign-in/sso", origin), {
@@ -205,10 +201,7 @@ describe("SEA-66 SAML SSO handshake", () => {
       .from(member)
       .innerJoin(user, eq(user.id, member.userId))
       .where(
-        and(
-          eq(member.organizationId, organizationId!),
-          eq(user.email, email)
-        )
+        and(eq(member.organizationId, organizationId!), eq(user.email, email))
       );
     expect(rows).toEqual([{ role: "member" }]);
   });

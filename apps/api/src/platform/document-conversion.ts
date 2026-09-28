@@ -66,9 +66,14 @@ export async function convertBytesToPdf(
     );
   }
 
-  const file = new File([input.bytes], `${input.name}${extension}`, {
-    type: input.contentType,
-  });
+  // File/Blob reject Uint8Array<ArrayBufferLike> under TS 5.7+.
+  const file = new File(
+    [new Uint8Array(input.bytes)],
+    `${input.name}${extension}`,
+    {
+      type: input.contentType,
+    }
+  );
 
   const form = new FormData();
   form.append("files", file);

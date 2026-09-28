@@ -129,7 +129,8 @@ describe("POST /api/v1/uploads", () => {
         `http://localhost:8787/api/v1/uploads?token=${encodeURIComponent(uploadToken!)}`,
         {
           method: "POST",
-          body: createPdfBytes(),
+          // Request body needs ArrayBuffer-backed bytes (TS 5.7+ BodyInit).
+          body: new Uint8Array(createPdfBytes()),
           headers: { "content-type": "application/pdf" },
         }
       ),
@@ -182,7 +183,7 @@ describe("POST /api/v1/uploads", () => {
         `http://localhost:8787/api/v1/uploads?token=${encodeURIComponent(uploadToken!)}`,
         {
           method: "POST",
-          body: createDocxBytes(),
+          body: new Uint8Array(createDocxBytes()),
           headers: {
             "content-type":
               "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
