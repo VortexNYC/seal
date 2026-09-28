@@ -31,7 +31,12 @@ type PageRaster = {
 
 /**
  * Multi-page signing surface — PDFium rasters + Seal fillable overlays.
- * Strongest PDF engine; signing UX stays Seal-owned.
+ *
+ * SEA-74: use the direct (main-thread) engine. EmbedPDF's worker build boots
+ * from a blob: URL (opaque origin); fetching /assets/*.wasm from that worker
+ * is cross-origin and fails without CORS, so the engine never goes ready and
+ * the signer stays on an empty white surface. Direct mode loads wasm from the
+ * page origin and paints.
  */
 export function PdfSigningDocumentSurface({
   src,
@@ -43,7 +48,7 @@ export function PdfSigningDocumentSurface({
   const { engine, isLoading: engineLoading, error: engineError } =
     usePdfiumEngine({
       wasmUrl: pdfiumWasmUrl,
-      worker: true,
+      worker: false,
     });
 
   const [doc, setDoc] = useState<PdfDocumentObject | null>(null);
@@ -51,6 +56,7 @@ export function PdfSigningDocumentSurface({
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">(
     "idle"
   );
+  const [loadError, setLoadError] = useState<string | null>(null);
   const docRef = useRef<PdfDocumentObject | null>(null);
   const pageUrlsRef = useRef<string[]>([]);
   const onLoadRef = useRef(onDocumentLoadSuccess);
@@ -62,9 +68,13 @@ export function PdfSigningDocumentSurface({
 
     void (async () => {
       setStatus("loading");
+      setLoadError(null);
       setPages([]);
       try {
         const response = await fetch(src);
+        if (!response.ok) {
+          throw new Error(`PDF fetch failed (${response.status})`);
+        }
         const content = await response.arrayBuffer();
         if (cancelled) return;
 
@@ -90,8 +100,13 @@ export function PdfSigningDocumentSurface({
         docRef.current = opened;
         setDoc(opened);
         onLoadRef.current?.({ numPages: opened.pages.length });
-      } catch {
-        if (!cancelled) setStatus("error");
+      } catch (err) {
+        if (!cancelled) {
+          setStatus("error");
+          setLoadError(
+            err instanceof Error ? err.message : "Failed to open PDF"
+          );
+        }
       }
     })();
 
@@ -120,6 +135,7 @@ export function PdfSigningDocumentSurface({
 
     void (async () => {
       setStatus("loading");
+      setLoadError(null);
       try {
         const dpr =
           typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
@@ -155,8 +171,13 @@ export function PdfSigningDocumentSurface({
         pageUrlsRef.current = newUrls;
         setPages(rasters);
         setStatus("ready");
-      } catch {
-        if (!cancelled) setStatus("error");
+      } catch (err) {
+        if (!cancelled) {
+          setStatus("error");
+          setLoadError(
+            err instanceof Error ? err.message : "Failed to render PDF"
+          );
+        }
       }
     })();
 
@@ -178,10 +199,11 @@ export function PdfSigningDocumentSurface({
       <div
         className="border-kumo-danger/30 bg-kumo-elevated rounded-lg border p-16 text-center shadow-sm"
         role="alert"
+        data-testid="pdf-signing-error"
       >
         <p className="text-kumo-danger font-medium">Failed to load PDF</p>
         <p className="text-kumo-secondary mt-1 text-sm">
-          Please try refreshing the page
+          {loadError ?? engineError?.message ?? "Please try refreshing the page"}
         </p>
       </div>
     );
@@ -193,11 +215,13 @@ export function PdfSigningDocumentSurface({
         className="border-kumo-hairline/50 bg-kumo-elevated rounded-lg border p-16 text-center shadow-sm"
         role="status"
         aria-live="polite"
+        data-testid="pdf-signing-loading"
       >
+        <p className="text-kumo-secondary mb-4 text-sm">Loading document…</p>
         <div className="animate-pulse space-y-4">
-          <div className="bg-kumo-elevated mx-auto h-4 w-1/3 rounded" />
-          <div className="bg-kumo-elevated mx-auto h-4 w-1/2 rounded" />
-          <div className="bg-kumo-elevated mx-auto h-4 w-2/5 rounded" />
+          <div className="bg-kumo-hairline mx-auto h-4 w-1/3 rounded" />
+          <div className="bg-kumo-hairline mx-auto h-4 w-1/2 rounded" />
+          <div className="bg-kumo-hairline mx-auto h-4 w-2/5 rounded" />
         </div>
       </div>
     );
@@ -209,6 +233,7 @@ export function PdfSigningDocumentSurface({
     <div
       data-kumo-docs="pdf-signing-document"
       data-engine="pdfium"
+      data-testid="pdf-signing-document"
       className={cn("space-y-4", className)}
     >
       {pages.map((page) => (

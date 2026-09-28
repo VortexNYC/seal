@@ -3,16 +3,17 @@
  */
 
 import {
-  createPdfiumWorkerEngine,
+  createPdfiumDirectEngine,
   type PdfEngine,
 } from "@embedpdf/engines/pdfium";
 import pdfiumWasmUrl from "@embedpdf/pdfium/pdfium.wasm?url";
 
-let engineSingleton: PdfEngine<Blob> | null = null;
+let engineSingleton: Promise<PdfEngine<Blob>> | null = null;
 
-function getEngine(): PdfEngine<Blob> {
+/** SEA-74: direct engine — EmbedPDF worker boots from blob: (opaque origin); wasm fetch needs CORS. */
+function getEngine(): Promise<PdfEngine<Blob>> {
   if (!engineSingleton) {
-    engineSingleton = createPdfiumWorkerEngine(pdfiumWasmUrl);
+    engineSingleton = createPdfiumDirectEngine(pdfiumWasmUrl);
   }
   return engineSingleton;
 }
@@ -77,7 +78,7 @@ export async function generateThumbnailFromUrl(
     }
     const arrayBuffer = await response.arrayBuffer();
     return renderPageDataUrl(
-      getEngine(),
+      await getEngine(),
       arrayBuffer,
       0,
       maxWidth,
@@ -97,7 +98,7 @@ export async function extractPdfMetadata(file: File): Promise<{
   thumbnail: string | null;
 }> {
   try {
-    const engine = getEngine();
+    const engine = await getEngine();
     const content = await file.arrayBuffer();
     const doc = await engine
       .openDocumentBuffer({
@@ -149,7 +150,7 @@ export async function generatePageThumbnailsFromUrl(
       throw new Error(`Failed to fetch PDF: ${response.status}`);
     }
 
-    const engine = getEngine();
+    const engine = await getEngine();
     const content = await response.arrayBuffer();
     const doc = await engine
       .openDocumentBuffer({

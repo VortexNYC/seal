@@ -33,7 +33,8 @@
     "fix": "vp lint --fix && vp fmt",
     "verify": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run knip",
     "verify:clean": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run knip",
-    "clean": "(cd apps/web && pnpm run clean) && git clean -xdf .cache dist node_modules"
+    "clean": "(cd apps/web && pnpm run clean) && git clean -xdf .cache dist node_modules",
+    "prove:signer-contact-sheet": "node scripts/prove-signer-contact-sheet.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "3.0.1",
