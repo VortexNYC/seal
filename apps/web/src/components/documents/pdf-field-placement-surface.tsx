@@ -52,10 +52,11 @@ export function PdfFieldPlacementSurface({
   onPageDimensions,
   onPageRef,
 }: PdfFieldPlacementSurfaceProps): JSX.Element {
+  // SEA-74: direct engine — blob workers cannot fetch same-origin wasm (opaque origin, no CORS).
   const { engine, isLoading: engineLoading, error: engineError } =
     usePdfiumEngine({
       wasmUrl: pdfiumWasmUrl,
-      worker: true,
+      worker: false,
     });
 
   const [doc, setDoc] = useState<PdfDocumentObject | null>(null);

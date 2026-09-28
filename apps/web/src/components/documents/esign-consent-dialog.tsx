@@ -286,12 +286,30 @@ export function EsignConsentDialog({
           </LayerCard>
         </div>
 
-        <Checkbox
-          label="I consent to use electronic signatures as described above"
-          checked={isChecked}
-          onCheckedChange={setIsChecked}
-          className="mt-0.5"
-        />
+        {/* SEA-75: large hit target — probe could not toggle the tiny checkbox control. */}
+        <div
+          role="checkbox"
+          aria-checked={isChecked}
+          tabIndex={0}
+          className="border-border hover:bg-muted/40 flex w-full cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors"
+          onClick={() => setIsChecked((prev) => !prev)}
+          onKeyDown={(event) => {
+            if (event.key === " " || event.key === "Enter") {
+              event.preventDefault();
+              setIsChecked((prev) => !prev);
+            }
+          }}
+        >
+          <Checkbox
+            checked={isChecked}
+            onCheckedChange={setIsChecked}
+            className="pointer-events-none mt-0.5 size-5 shrink-0"
+            aria-hidden
+          />
+          <span className="text-sm leading-snug">
+            I consent to use electronic signatures as described above
+          </span>
+        </div>
 
         <div className="space-y-3">
           <Button

@@ -9,25 +9,17 @@
 import { Textarea } from "@cloudflare/kumo";
 import { Button } from "@cloudflare/kumo/components/button";
 import { buttonVariants } from "@cloudflare/kumo/components/button";
-import { Collapsible } from "@cloudflare/kumo/components/collapsible";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Label } from "@cloudflare/kumo/components/label";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import {
-  ArrowDown,
-  ArrowUp,
-  CaretDown,
-  CaretUp,
   CheckCircle,
   Clock,
   CreditCard,
   Download,
   FileText,
   Pen,
-  PlayCircle,
-  ShieldCheck,
   Spinner,
-  User,
   WarningCircle,
   WifiSlash,
   XCircle,
@@ -53,6 +45,8 @@ import { FieldInputManager } from "@/components/documents/field-input-manager";
 import { FillableFieldOverlay } from "@/components/documents/fillable-field-overlay";
 import { PdfSigningDocumentSurface } from "@/components/documents/pdf-signing-document-surface";
 import { SignatureCapture } from "@/components/documents/signature-capture";
+import { SigningInviteGate } from "@/components/signing/signing-invite-gate";
+import { SigningShell } from "@/components/signing/signing-shell";
 import { SealLogo } from "@/components/seal-logo";
 import { DictateNextSignerDialog } from "@/components/signing/dictate-next-signer-dialog";
 import { DocumentExpiredPage } from "@/components/signing/document-expired-page";
@@ -251,57 +245,8 @@ const capitalizeFieldLabel = (label: string): string => {
     .join(" ");
 };
 
-function formatDate(dateString: string | number): string {
-  return new Date(dateString).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
-function getRoleIcon(role: string): ReactElement {
-  switch (role) {
-    case "signer":
-      return <Pen className="h-4 w-4" />;
-    case "approver":
-      return <ShieldCheck className="h-4 w-4" />;
-    default:
-      return <User className="h-4 w-4" />;
-  }
-}
 
-function getStatusBadge(status: string): {
-  className: string;
-  icon: ReactElement;
-} {
-  const baseStyles =
-    "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium";
-  switch (status) {
-    case "signed":
-    case "approved":
-      return {
-        className: cn(baseStyles, "bg-kumo-success-tint text-kumo-success"),
-        icon: <CheckCircle className="h-3 w-3" />,
-      };
-    case "declined":
-      return {
-        className: cn(baseStyles, "bg-kumo-danger/10 text-kumo-danger"),
-        icon: <XCircle className="h-3 w-3" />,
-      };
-    case "viewed":
-      return {
-        className: cn(baseStyles, "bg-kumo-info-tint text-kumo-info"),
-        icon: <Clock className="h-3 w-3" />,
-      };
-    default:
-      return {
-        className: cn(baseStyles, "bg-kumo-warning-tint text-kumo-warning"),
-        icon: <Clock className="h-3 w-3" />,
-      };
-  }
-}
 
 function SigningPage() {
   const { token } = Route.useParams();
@@ -330,6 +275,14 @@ function SigningPage() {
   const [isPrivacySubmitting, setIsPrivacySubmitting] = useState(false);
   const [hasConsented, setHasConsented] = useState(!!recipient.esignConsentAt);
   const [isConsentSubmitting, setIsConsentSubmitting] = useState(false);
+  // DocuSeal-style START gate — skip when consent/privacy already recorded
+  const [hasStarted, setHasStarted] = useState(
+    !!recipient.privacyNoticeAt ||
+      !!recipient.esignConsentAt ||
+      recipient.status === "signed" ||
+      recipient.status === "approved" ||
+      recipient.status === "declined"
+  );
   const [authVerified, setAuthVerified] = useState(
     recipient.authVerified ??
       (!recipient.authMethod || recipient.authMethod === "none")
@@ -368,7 +321,6 @@ function SigningPage() {
   }, [paymentConfigs]);
 
   // PDF viewer state
-  const [numPages, setNumPages] = useState<number | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   // Field input state
   const [activeFieldId, setActiveFieldId] = useState<string | null>(null);
@@ -380,7 +332,6 @@ function SigningPage() {
   const [declineReason, setDeclineReason] = useState("");
 
   // Field navigation state
-  const [currentFieldIndex, setCurrentFieldIndex] = useState(0);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
   const fieldRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
 
@@ -554,12 +505,8 @@ function SigningPage() {
     void markAsViewed();
   }, [token, recipient.status, clientIp]);
 
-  const onDocumentLoadSuccess = ({
-    numPages: loadedPageCount,
-  }: {
-    numPages: number;
-  }) => {
-    setNumPages(loadedPageCount);
+  const onDocumentLoadSuccess = (_info: { numPages: number }) => {
+    // Page count kept internal to the PDF surface; chrome no longer shows it.
   };
 
   // Signature submission mutation
@@ -868,33 +815,6 @@ function SigningPage() {
     }
   }, []);
 
-  // Navigate to next unfilled field
-  const navigateToNextField = useCallback(() => {
-    if (unfilledFields.length === 0) return;
-
-    const nextIndex = (currentFieldIndex + 1) % unfilledFields.length;
-    setCurrentFieldIndex(nextIndex);
-    const nextField = unfilledFields[nextIndex];
-    if (nextField) {
-      scrollToField(nextField._id);
-    }
-  }, [currentFieldIndex, unfilledFields, scrollToField]);
-
-  // Navigate to previous unfilled field
-  const navigateToPreviousField = useCallback(() => {
-    if (unfilledFields.length === 0) return;
-
-    const prevIndex =
-      currentFieldIndex === 0
-        ? unfilledFields.length - 1
-        : currentFieldIndex - 1;
-    setCurrentFieldIndex(prevIndex);
-    const prevField = unfilledFields[prevIndex];
-    if (prevField) {
-      scrollToField(prevField._id);
-    }
-  }, [currentFieldIndex, unfilledFields, scrollToField]);
-
   // Auto-scroll to first unfilled field on load
   useEffect(() => {
     if (unfilledFields.length > 0 && !isCompleted) {
@@ -909,11 +829,6 @@ function SigningPage() {
     }
     return undefined;
   }, [unfilledFields, isCompleted, scrollToField]);
-
-  // State for collapsible sections on mobile
-  const [isInfoExpanded, setIsInfoExpanded] = useState(false);
-
-  const statusBadge = getStatusBadge(recipient.status);
 
   // Expiration gate — block access if recipient's deadline has passed
   if (recipient.expiresAt && recipient.expiresAt < Date.now()) {
@@ -980,6 +895,20 @@ function SigningPage() {
     );
   }
 
+  // DocuSeal invite START — appears once before privacy/consent (SEA-78)
+  if (!hasStarted && !isCompleted) {
+    return (
+      <SigningInviteGate
+        documentTitle={doc.name}
+        invitedBy={doc.ownerEmail ?? undefined}
+        email={recipient.email}
+        emailReadOnly
+        onStart={() => setHasStarted(true)}
+        brandName={branding?.logoUrl ? undefined : "Seal"}
+      />
+    );
+  }
+
   // Show privacy notice before ESIGN consent (SEA-52)
   if (!hasPrivacyAck && !isCompleted) {
     return (
@@ -1014,942 +943,316 @@ function SigningPage() {
     ? { "--brand-primary": branding.brandColor }
     : {};
 
-  return (
-    <div
-      className="dark:bg-background bg-background flex h-dvh flex-col overflow-hidden"
-      style={brandStyle}
-      data-embedded={isEmbedded ? "true" : undefined}
-    >
-      <h1 className="sr-only">{doc.name} — Sign Document</h1>
+  const remainingCount = unfilledFields.length;
+  const progressLabel =
+    requiredFields.length === 0
+      ? "Ready to sign"
+      : remainingCount === 0
+        ? "All fields completed"
+        : `${remainingCount} field${remainingCount === 1 ? "" : "s"} remaining`;
 
-      {/* Offline Banner - Global */}
+  const documentSurface = (
+    <div ref={pdfContainerRef} className="w-full">
+      {pdfUrl ? (
+        <div className="space-y-4">
+          <PdfSigningDocumentSurface
+            src={pdfUrl}
+            width={pdfWidth}
+            onDocumentLoadSuccess={onDocumentLoadSuccess}
+            renderPageOverlays={({ pageNumber, pageWidth, pageHeight }) => {
+              const fieldsOnPage = fields.filter((f) => f.page === pageNumber);
+              return (
+                <>
+                  {fieldsOnPage.map((field) => (
+                    <FillableFieldOverlay
+                      key={field._id}
+                      ref={(el: HTMLButtonElement | null) => {
+                        if (el) {
+                          fieldRefs.current.set(field._id, el);
+                        } else {
+                          fieldRefs.current.delete(field._id);
+                        }
+                      }}
+                      fieldId={field._id}
+                      fieldType={field.fieldType}
+                      label={field.label}
+                      isRequired={field.isRequired}
+                      isMainSignature={field.isMainSignature}
+                      x={field.x}
+                      y={field.y}
+                      width={field.width}
+                      height={field.height}
+                      page={field.page}
+                      currentPage={pageNumber}
+                      pdfPageWidth={pageWidth}
+                      pdfPageHeight={pageHeight}
+                      isFilled={field.isFilled}
+                      isActive={!isCompleted && activeFieldId === field._id}
+                      signatureDetails={field.signatureDetails}
+                      paymentInfo={paymentInfoByFieldId.get(field._id)}
+                      onClick={isCompleted ? () => {} : handleFieldClick}
+                    />
+                  ))}
+                </>
+              );
+            }}
+          />
+
+          {isCompleted &&
+            fields.length === 0 &&
+            recipient.status === "signed" && (
+              <div className="border-kumo-hairline/50 bg-kumo-elevated mx-auto mt-4 max-w-md rounded-lg border p-4 shadow-sm">
+                <div className="text-kumo-success mb-3 flex items-center gap-2">
+                  <CheckCircle className="h-6 w-6" />
+                  <span className="text-lg font-medium">Document Signed</span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-kumo-secondary text-sm">Signed by:</span>
+                    <span className="text-kumo-primary text-sm font-semibold">
+                      {recipient.name || recipient.email}
+                    </span>
+                  </div>
+                  {recipient.signedAt && (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-kumo-secondary text-sm">Date:</span>
+                      <span className="text-kumo-primary text-sm">
+                        {new Date(recipient.signedAt).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+        </div>
+      ) : (
+        <div
+          className="border-kumo-hairline/50 bg-kumo-elevated rounded-lg border p-16 text-center shadow-sm"
+          role="status"
+        >
+          <p className="text-kumo-secondary mb-4 text-sm">Loading document…</p>
+          <div className="animate-pulse space-y-4">
+            <div className="bg-kumo-hairline mx-auto h-4 w-1/3 rounded" />
+            <div className="bg-kumo-hairline mx-auto h-4 w-1/2 rounded" />
+            <div className="bg-kumo-hairline mx-auto h-4 w-2/5 rounded" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const actionWidget = (
+    <div className="space-y-4">
       {!isOnline && (
         <div
-          className="border-warning-surface bg-kumo-warning-tint fixed top-0 right-0 left-0 z-50 border-b px-4 py-2"
+          className="border-warning-surface bg-kumo-warning-tint rounded-lg border px-3 py-2"
           role="status"
-          aria-live="polite"
         >
-          <div className="text-kumo-warning flex items-center justify-center gap-2">
-            <WifiSlash className="h-4 w-4" />
-            <span className="text-sm font-medium">
-              You're offline. Your progress has been saved.
-            </span>
+          <div className="text-kumo-warning flex items-center gap-2 text-sm">
+            <WifiSlash className="h-4 w-4 shrink-0" />
+            <span>Offline — progress is saved locally.</span>
           </div>
         </div>
       )}
 
-      {/* Desktop Header - Full width top bar (hidden in embedded mode) */}
-      <header
-        className={cn(
-          "border-kumo-hairline/50 bg-kumo-elevated hidden shrink-0 border-b lg:block",
-          isEmbedded && "!hidden"
-        )}
-      >
-        <div className="flex h-14 items-center justify-between px-6">
-          {/* Left: Logo + Document context */}
-          <div className="flex items-center gap-4">
-            <a
-              href="/"
-              aria-label="Go to sign-in page"
-              className="flex items-center gap-2.5 transition-opacity hover:opacity-80"
-            >
-              {branding?.logoUrl ? (
-                <img
-                  src={branding.logoUrl}
-                  alt="Logo"
-                  className="h-8 max-w-[160px] object-contain"
-                />
-              ) : (
-                <>
-                  <SealLogo size={32} variant="color" />
-                  <span className="font-semibold tracking-tight">Seal</span>
-                </>
-              )}
-            </a>
-            <div className="bg-border/60 h-5 w-px" />
-            <div className="flex items-center gap-2">
-              <Pen className="text-kumo-secondary h-4 w-4" />
-              <span className="text-kumo-secondary text-sm">Sign</span>
-              <span className="text-kumo-secondary/40">·</span>
-              <span className="max-w-[300px] truncate text-sm font-medium">
-                {doc.name}
-              </span>
-              {!isCompleted && (
-                <>
-                  <span className="text-kumo-secondary/40">·</span>
-                  <span className="text-kumo-secondary max-w-[280px] truncate text-sm">
-                    Your signature is needed — then you can close this tab
-                  </span>
-                </>
-              )}
-              {/* Completion status inline with document title */}
-              {isCompleted && (
-                <>
-                  <span className="text-kumo-secondary/40">·</span>
-                  <span
-                    role="status"
-                    aria-live="polite"
-                    className={cn(
-                      "inline-flex items-center gap-1.5 text-sm font-medium",
-                      recipient.status === "declined"
-                        ? "text-kumo-danger"
-                        : "text-kumo-success"
-                    )}
-                  >
-                    {recipient.status === "declined" ? (
-                      <XCircle className="h-4 w-4" />
-                    ) : (
-                      <CheckCircle className="h-4 w-4" />
-                    )}
-                    {recipient.status === "declined" ? "Declined" : "Completed"}
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Right: Status badge + Progress (when applicable) */}
-          <div className="flex items-center gap-4">
-            {!isCompleted && fields.length > 0 && (
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <div className="bg-kumo-elevated h-1.5 w-20 overflow-hidden rounded-full">
-                    <div
-                      className="bg-kumo-primary h-full rounded-full transition-[width] duration-500 ease-out"
-                      style={{ width: `${fieldCompletionPercent}%` }}
-                    />
-                  </div>
-                  <span className="text-kumo-secondary text-xs font-medium tabular-nums">
-                    {fieldCompletionPercent}%
-                  </span>
-                </div>
-                <div className="bg-border/60 h-5 w-px" />
-              </div>
-            )}
-            <span
-              className={statusBadge.className}
-              role="status"
-              aria-live="polite"
-            >
-              {statusBadge.icon}
-              {recipient.status.charAt(0).toUpperCase() +
-                recipient.status.slice(1)}
+      {!isCompleted && fields.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium">{progressLabel}</p>
+            <span className="text-kumo-secondary text-xs tabular-nums">
+              {filledRequiredFields.length}/{requiredFields.length}
             </span>
           </div>
-        </div>
-      </header>
-
-      {/* Mobile Header - Only visible on small screens (hidden in embedded mode) */}
-      <header
-        className={cn(
-          "border-kumo-hairline/50 bg-kumo-base/80 sticky top-0 z-40 border-b backdrop-blur-xl lg:hidden",
-          isEmbedded && "!hidden"
-        )}
-      >
-        <div className="px-4 py-3">
-          <div className="flex items-center justify-between">
-            <a
-              href="/"
-              aria-label="Go to sign-in page"
-              className="flex items-center gap-2.5 transition-opacity hover:opacity-80"
-            >
-              {branding?.logoUrl ? (
-                <img
-                  src={branding.logoUrl}
-                  alt="Logo"
-                  className="h-8 max-w-[120px] object-contain"
-                />
-              ) : (
-                <>
-                  <SealLogo size={32} variant="color" />
-                  <span className="text-sm font-semibold tracking-tight">
-                    Seal
-                  </span>
-                </>
-              )}
-            </a>
-            {!isCompleted && fields.length > 0 && (
-              <div className="flex items-center gap-2">
-                <div className="bg-kumo-elevated h-1.5 w-16 overflow-hidden rounded-full">
-                  <div
-                    className="bg-kumo-primary h-full rounded-full transition-[width] duration-500 ease-out"
-                    style={{ width: `${fieldCompletionPercent}%` }}
-                  />
-                </div>
-                <span className="text-xs font-medium tabular-nums">
-                  {fieldCompletionPercent}%
-                </span>
-              </div>
-            )}
-            {/* Completion status on mobile header */}
-            {isCompleted && (
-              <span
-                role="status"
-                aria-live="polite"
-                className={cn(
-                  "inline-flex items-center gap-1.5 text-xs font-medium",
-                  recipient.status === "declined"
-                    ? "text-kumo-danger"
-                    : "text-kumo-success"
-                )}
-              >
-                {recipient.status === "declined" ? (
-                  <XCircle className="h-3.5 w-3.5" />
-                ) : (
-                  <CheckCircle className="h-3.5 w-3.5" />
-                )}
-                {recipient.status === "declined" ? "Declined" : "Completed"}
-              </span>
-            )}
+          <div
+            className="bg-kumo-elevated h-2 overflow-hidden rounded-full"
+            role="progressbar"
+            aria-valuenow={fieldCompletionPercent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="Field completion progress"
+          >
+            <div
+              className="bg-kumo-primary h-full rounded-full transition-[width] duration-500 ease-out"
+              style={{ width: `${fieldCompletionPercent}%` }}
+            />
           </div>
+          {remainingCount > 0 && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 px-0"
+              onClick={() => {
+                const next = unfilledFields[0];
+                if (next) scrollToField(next._id);
+              }}
+            >
+              Continue to next field
+            </Button>
+          )}
         </div>
+      )}
 
-        {/* Mobile Document Info - Collapsible */}
-        <Collapsible.Root
-          open={isInfoExpanded}
-          onOpenChange={setIsInfoExpanded}
-        >
-          <Collapsible.Trigger
-            aria-expanded={isInfoExpanded}
-            aria-controls="signing-mobile-info"
-            className="bg-kumo-elevated/30 border-kumo-hairline/30 hover:bg-kumo-elevated/50 flex w-full items-center justify-between border-t px-4 py-2.5 transition-colors"
-          >
-            <div className="flex min-w-0 flex-1 items-center gap-2 text-left">
-              <span className="truncate text-sm font-medium">{doc.name}</span>
-              <span
-                className={statusBadge.className}
-                role="status"
-                aria-live="polite"
-              >
-                {statusBadge.icon}
-                {recipient.status.charAt(0).toUpperCase() +
-                  recipient.status.slice(1)}
-              </span>
-            </div>
-            {isInfoExpanded ? (
-              <CaretUp className="text-kumo-secondary h-4 w-4 shrink-0" />
-            ) : (
-              <CaretDown className="text-kumo-secondary h-4 w-4 shrink-0" />
-            )}
-          </Collapsible.Trigger>
-          <Collapsible.Panel
-            id="signing-mobile-info"
-            className="border-kumo-hairline/30 bg-kumo-elevated border-t"
-          >
-            <div className="space-y-4 px-4 py-4">
-              {doc.description && (
-                <p className="text-kumo-secondary text-sm">{doc.description}</p>
-              )}
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="space-y-1">
-                  <span className="text-kumo-secondary text-xs tracking-wider uppercase">
-                    Recipient
-                  </span>
-                  <p className="truncate font-medium">
-                    {recipient.name || recipient.email}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-kumo-secondary text-xs tracking-wider uppercase">
-                    Role
-                  </span>
-                  <p className="flex items-center gap-1.5 font-medium">
-                    {getRoleIcon(recipient.role)}
-                    {recipient.role.charAt(0).toUpperCase() +
-                      recipient.role.slice(1)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </Collapsible.Panel>
-        </Collapsible.Root>
-      </header>
-
-      {/* Main Layout - Side by side on desktop */}
-      <div className="min-h-0 flex-1 overflow-hidden lg:flex">
-        {/* Right Sidebar - Document Info (Desktop only) - Uses order-2 to appear on right */}
-        <aside className="border-kumo-hairline/50 bg-kumo-elevated hidden overflow-hidden lg:order-2 lg:flex lg:w-[380px] lg:flex-col lg:border-l xl:w-[420px]">
-          {/* Sidebar Header - Document Details */}
-          {doc.description && (
-            <div className="border-kumo-hairline/50 border-b p-6">
-              <h3 className="text-kumo-secondary mb-2 text-xs font-medium tracking-wider uppercase">
-                About this document
-              </h3>
-              <p className="text-kumo-secondary text-sm leading-relaxed">
-                {doc.description}
+      {!isCompleted && hasUnpaidPayments && paymentConfigs.length > 0 && (
+        <div className="border-warning-surface bg-kumo-warning-tint/50 space-y-2 rounded-xl border p-3">
+          <div className="flex items-start gap-2">
+            <CreditCard className="text-kumo-warning mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <p className="text-sm font-medium">Payment required</p>
+              <p className="text-kumo-secondary text-xs">
+                Complete payment before signing.
               </p>
             </div>
-          )}
-
-          {/* Sidebar Content - Scrollable */}
-          <div className="flex-1 space-y-6 overflow-y-auto p-6">
-            {/* Progress Section - Only when not completed and has fields */}
-            {!isCompleted && fields.length > 0 && (
-              <>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-kumo-secondary text-xs font-medium tracking-wider uppercase">
-                      Progress
-                    </h3>
-                    <span className="text-sm font-medium tabular-nums">
-                      {filledRequiredFields.length}/{requiredFields.length}
-                    </span>
-                  </div>
-                  <div
-                    className="bg-kumo-elevated h-2 overflow-hidden rounded-full"
-                    role="progressbar"
-                    aria-valuenow={fieldCompletionPercent}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label="Field completion progress"
-                  >
-                    <div
-                      className="bg-kumo-primary h-full rounded-full transition-[width] duration-500 ease-out"
-                      style={{ width: `${fieldCompletionPercent}%` }}
-                    />
-                  </div>
-                  {!allRequiredFieldsFilled && (
-                    <p className="text-kumo-secondary text-xs">
-                      Complete all required fields to sign
-                    </p>
-                  )}
-                </div>
-                <hr className="border-kumo-hairline" />
-              </>
-            )}
-
-            {/* Recipient Info */}
-            <div className="space-y-4">
-              <h3 className="text-kumo-secondary text-xs font-medium tracking-wider uppercase">
-                Recipient Details
-              </h3>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="bg-kumo-elevated flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
-                    <User className="text-kumo-secondary h-4 w-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">
-                      {recipient.name || "Not provided"}
-                    </p>
-                    <p className="text-kumo-secondary truncate text-xs">
-                      {recipient.email}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="bg-kumo-elevated flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
-                    {getRoleIcon(recipient.role)}
-                  </div>
-                  <div>
-                    <p className="font-medium">
-                      {recipient.role.charAt(0).toUpperCase() +
-                        recipient.role.slice(1)}
-                    </p>
-                    <p className="text-kumo-secondary text-xs">Assigned role</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <hr className="border-kumo-hairline" />
-
-            {/* Timeline / Activity */}
-            <div className="space-y-4">
-              <h3 className="text-kumo-secondary text-xs font-medium tracking-wider uppercase">
-                Activity
-              </h3>
-              <div className="space-y-3">
-                {recipient.signedAt && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <div className="bg-kumo-success-tint flex h-8 w-8 items-center justify-center rounded-full">
-                      <CheckCircle className="text-kumo-success h-4 w-4" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Signed</p>
-                      <p className="text-kumo-secondary text-xs">
-                        {formatDate(recipient.signedAt)}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                {recipient.approvedAt && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <div className="bg-kumo-success-tint flex h-8 w-8 items-center justify-center rounded-full">
-                      <ShieldCheck className="text-kumo-success h-4 w-4" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Approved</p>
-                      <p className="text-kumo-secondary text-xs">
-                        {formatDate(recipient.approvedAt)}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                {recipient.declinedAt && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <div className="bg-kumo-danger/10 flex h-8 w-8 items-center justify-center rounded-full">
-                      <XCircle className="text-kumo-danger h-4 w-4" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Declined</p>
-                      <p className="text-kumo-secondary text-xs">
-                        {formatDate(recipient.declinedAt)}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                {recipient.viewedAt && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <div className="bg-kumo-info-tint flex h-8 w-8 items-center justify-center rounded-full">
-                      <Clock className="text-kumo-info h-4 w-4" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Viewed</p>
-                      <p className="text-kumo-secondary text-xs">
-                        {formatDate(recipient.viewedAt)}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                {!recipient.signedAt &&
-                  !recipient.approvedAt &&
-                  !recipient.declinedAt &&
-                  !recipient.viewedAt && (
-                    <div className="flex items-center gap-3 text-sm">
-                      <div className="bg-kumo-warning-tint flex h-8 w-8 items-center justify-center rounded-full">
-                        <Clock className="text-kumo-warning h-4 w-4" />
-                      </div>
-                      <div>
-                        <p className="font-medium">Pending</p>
-                        <p className="text-kumo-secondary text-xs">
-                          Awaiting your action
-                        </p>
-                      </div>
-                    </div>
-                  )}
-              </div>
-            </div>
-
-            {/* Resume Banner */}
-            {!isCompleted &&
-              filledRequiredFields.length > 0 &&
-              filledRequiredFields.length < requiredFields.length && (
-                <>
-                  <hr className="border-kumo-hairline" />
-                  <div className="border-info-surface bg-kumo-info-tint/50 rounded-xl border p-4">
-                    <div className="flex items-start gap-3">
-                      <PlayCircle className="text-kumo-info mt-0.5 h-5 w-5 shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-kumo-primary text-sm font-medium">
-                          Resume where you left off
-                        </p>
-                        <p className="text-kumo-secondary mt-0.5 text-xs">
-                          {filledRequiredFields.length} of{" "}
-                          {requiredFields.length} fields completed
-                        </p>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-kumo-info hover:bg-kumo-info-tint mt-2 h-8 px-0"
-                          onClick={() => {
-                            if (unfilledFields.length > 0) {
-                              scrollToField(
-                                sealAssertPresent(unfilledFields[0])._id
-                              );
-                            }
-                          }}
-                          aria-label="Jump to the next incomplete field"
-                        >
-                          Continue
-                          <ArrowDown className="ml-1 h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-
-            {/* Payment Section — shown before signing when payment is required */}
-            {!isCompleted && hasUnpaidPayments && paymentConfigs.length > 0 && (
-              <>
-                <hr className="border-kumo-hairline" />
-                <div className="space-y-4">
-                  <div className="border-warning-surface bg-kumo-warning-tint/50 rounded-xl border p-4">
-                    <div className="flex items-start gap-3">
-                      <CreditCard className="text-kumo-warning mt-0.5 h-5 w-5 shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-kumo-primary text-sm font-medium">
-                          Payment Required
-                        </p>
-                        <p className="text-kumo-secondary mt-0.5 text-xs">
-                          Please complete payment below before signing.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  {paymentConfigs
-                    .filter(
-                      (c) =>
-                        c.paymentStatus !== "paid" &&
-                        c.paymentStatus !== "cancelled"
-                    )
-                    .map((config) => (
-                      <div
-                        key={config._id}
-                        className="border-kumo-hairline/50 bg-kumo-elevated/20 rounded-lg border p-3"
-                      >
-                        <p className="text-kumo-primary text-sm font-medium">
-                          {config.paymentType}
-                        </p>
-                        <p className="text-kumo-secondary mt-0.5 text-xs">
-                          {formatMoney(
-                            money(
-                              config.totalAmountCents,
-                              (config.currency || "usd").toUpperCase()
-                            )
-                          )}{" "}
-                          - {config.paymentStatus || "pending"}
-                        </p>
-                      </div>
-                    ))}
-                </div>
-              </>
-            )}
-
-            {/* Payment Section — shown after signing when document is waiting for payment */}
-            {isCompleted &&
-              isWaitingForPayment &&
-              paymentConfigs.length > 0 && (
-                <>
-                  <hr className="border-kumo-hairline" />
-                  <div className="space-y-4">
-                    <div className="border-warning-surface bg-kumo-warning-tint/50 rounded-xl border p-4">
-                      <div className="flex items-start gap-3">
-                        <CreditCard className="text-kumo-warning mt-0.5 h-5 w-5 shrink-0" />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-kumo-primary text-sm font-medium">
-                            Payment Required
-                          </p>
-                          <p className="text-kumo-secondary mt-0.5 text-xs">
-                            All signatures collected. Please complete payment
-                            below.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    {paymentConfigs
-                      .filter(
-                        (c) =>
-                          c.paymentStatus !== "paid" &&
-                          c.paymentStatus !== "cancelled"
-                      )
-                      .map((config) => (
-                        <div
-                          key={config._id}
-                          className="border-kumo-hairline/50 bg-kumo-elevated/20 rounded-lg border p-3"
-                        >
-                          <p className="text-kumo-primary text-sm font-medium">
-                            {config.paymentType}
-                          </p>
-                          <p className="text-kumo-secondary mt-0.5 text-xs">
-                            {formatMoney(
-                              money(
-                                config.totalAmountCents,
-                                (config.currency || "usd").toUpperCase()
-                              )
-                            )}{" "}
-                            - {config.paymentStatus || "pending"}
-                          </p>
-                        </div>
-                      ))}
-                  </div>
-                </>
-              )}
           </div>
+          {paymentConfigs
+            .filter(
+              (c) =>
+                c.paymentStatus !== "paid" && c.paymentStatus !== "cancelled"
+            )
+            .map((config) => (
+              <p key={config._id} className="text-kumo-secondary text-xs">
+                {config.paymentType}:{" "}
+                {formatMoney(
+                  money(
+                    config.totalAmountCents,
+                    (config.currency || "usd").toUpperCase()
+                  )
+                )}{" "}
+                ({config.paymentStatus || "pending"})
+              </p>
+            ))}
+        </div>
+      )}
 
-          {/* Sidebar Footer - Actions */}
-          {!isCompleted && !showSignatureCapture && (
-            <div className="border-kumo-hairline/50 bg-kumo-elevated/20 border-t p-6">
-              <div className="space-y-3">
-                <Button
-                  size="lg"
-                  className="h-12 w-full text-base font-medium shadow-sm transition-shadow hover:shadow"
-                  style={
-                    branding?.brandColor
-                      ? {
-                          backgroundColor: branding.brandColor,
-                          borderColor: branding.brandColor,
-                        }
-                      : undefined
+      {!isCompleted && !showSignatureCapture && (
+        <div className="space-y-2">
+          <Button
+            size="lg"
+            className="h-12 w-full text-base font-medium"
+            style={
+              branding?.brandColor
+                ? {
+                    backgroundColor: branding.brandColor,
+                    borderColor: branding.brandColor,
                   }
-                  onClick={handleSignButtonClick}
-                  disabled={isSigningActionDisabled}
-                  aria-label={signingButtonLabel}
-                >
-                  {submitSignatureMutation.isPending ? (
-                    "Submitting..."
-                  ) : (
-                    <>
-                      <Pen className="mr-2 h-4 w-4" />
-                      {signingButtonLabel}
-                    </>
-                  )}
-                </Button>
-                {!(isEmbedded && embedParams.hideDecline) && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-kumo-secondary hover:text-kumo-primary w-full"
-                    onClick={handleDeclineClick}
-                    disabled={declineMutation.isPending}
-                    aria-label="Open decline confirmation"
-                  >
-                    Decline to sign
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Completed state footer */}
-          {isCompleted && recipient.status !== "declined" && (
-            <div className="border-kumo-hairline/50 bg-kumo-success-tint/30 space-y-4 border-t p-6">
-              <div className="text-kumo-success flex flex-col items-center gap-2 text-center">
-                <div className="flex items-center justify-center gap-2">
-                  <CheckCircle className="h-5 w-5" />
-                  <span className="text-sm font-semibold">
-                    {recipient.status === "approved"
-                      ? "Document Approved"
-                      : "Document Signed"}
-                  </span>
-                </div>
-                <p className="text-kumo-secondary text-sm">
-                  You&apos;re done — you can close this tab. The agent will
-                  continue.
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                size="lg"
-                className="h-12 w-full"
-                onClick={handleDownload}
-                disabled={isDownloading}
-                aria-label="Download the signed document"
-              >
-                {isDownloading ? (
-                  <Spinner className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="mr-2 h-4 w-4" />
-                )}
-                {isDownloading ? "Preparing..." : "Download Document"}
-              </Button>
-              {showRedirect && doc.redirectUrl && (
-                <RedirectCountdown
-                  redirectUrl={doc.redirectUrl}
-                  recipientEmail={recipient.email}
-                  recipientName={recipient.name ?? recipient.email}
-                  onStayHere={() => setShowRedirect(false)}
-                />
-              )}
-            </div>
-          )}
-        </aside>
-
-        {/* Main Content Area - PDF Viewer (now on left with order-1) */}
-        <main className="flex min-h-0 flex-1 flex-col overflow-hidden lg:order-1">
-          {/* Field Navigation Bar */}
-          {!isCompleted && fields.length > 0 && (
-            <div className="border-kumo-hairline/50 bg-kumo-base/80 sticky top-0 z-30 border-b px-4 py-2.5 backdrop-blur-xl lg:top-0">
-              <div className="mx-auto flex max-w-4xl items-center justify-between">
-                <div className="hidden items-center gap-4 sm:flex">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-kumo-elevated h-1.5 w-24 overflow-hidden rounded-full">
-                      <div
-                        className="bg-kumo-primary h-full rounded-full transition-[width] duration-500 ease-out"
-                        style={{ width: `${fieldCompletionPercent}%` }}
-                      />
-                    </div>
-                    <span className="text-sm font-medium tabular-nums">
-                      {fieldCompletionPercent}%
-                    </span>
-                  </div>
-                  <span className="text-kumo-secondary text-sm">
-                    {filledRequiredFields.length} of {requiredFields.length}{" "}
-                    fields
-                  </span>
-                </div>
-
-                <div className="flex w-full items-center justify-center gap-2 sm:w-auto sm:justify-end">
-                  {unfilledFields.length > 0 ? (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-9"
-                        onClick={navigateToPreviousField}
-                        disabled={unfilledFields.length <= 1}
-                        aria-label="Navigate to previous required field"
-                      >
-                        <ArrowUp className="h-4 w-4 sm:mr-1" />
-                        <span className="hidden sm:inline">Prev</span>
-                      </Button>
-                      <span className="text-kumo-secondary min-w-[60px] px-2 text-center text-sm tabular-nums">
-                        {currentFieldIndex + 1} / {unfilledFields.length}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-9"
-                        onClick={navigateToNextField}
-                        disabled={unfilledFields.length <= 1}
-                        aria-label="Navigate to next required field"
-                      >
-                        <span className="hidden sm:inline">Next</span>
-                        <ArrowDown className="h-4 w-4 sm:ml-1" />
-                      </Button>
-                    </>
-                  ) : (
-                    <div className="text-kumo-success animate-in fade-in slide-in-from-bottom-1 flex items-center gap-2 duration-300">
-                      <CheckCircle className="h-5 w-5" />
-                      <span className="text-sm font-semibold">
-                        All fields completed — ready to sign
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* PDF Viewer Area */}
-          <div
-            ref={pdfContainerRef}
-            className="bg-kumo-elevated dark:bg-kumo-elevated/30 flex-1 overflow-auto"
+                : undefined
+            }
+            onClick={handleSignButtonClick}
+            disabled={isSigningActionDisabled}
+            aria-label={signingButtonLabel}
           >
-            <div className="p-4 sm:p-6 lg:p-8">
-              <div className="mx-auto max-w-4xl">
-                {/* Page count header */}
-                {numPages && (
-                  <div className="mb-4 flex items-center justify-between">
-                    <div className="text-kumo-secondary flex items-center gap-2 text-sm">
-                      <FileText className="h-4 w-4" />
-                      <span>
-                        {numPages} page{numPages > 1 ? "s" : ""}
-                      </span>
-                    </div>
-                    {numPages > 1 && (
-                      <span className="text-kumo-secondary text-xs">
-                        Scroll to view all pages
-                      </span>
-                    )}
-                  </div>
-                )}
+            {submitSignatureMutation.isPending ? (
+              "Submitting..."
+            ) : (
+              <>
+                <Pen className="mr-2 h-4 w-4" />
+                {signingButtonLabel}
+              </>
+            )}
+          </Button>
+          {!(isEmbedded && embedParams.hideDecline) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-kumo-secondary hover:text-kumo-primary w-full"
+              onClick={handleDeclineClick}
+              disabled={declineMutation.isPending}
+            >
+              Decline to sign
+            </Button>
+          )}
+        </div>
+      )}
 
-                {/* PDF Document */}
-                {pdfUrl ? (
-                  <div className="space-y-4">
-                    <PdfSigningDocumentSurface
-                      src={pdfUrl}
-                      width={pdfWidth}
-                      onDocumentLoadSuccess={onDocumentLoadSuccess}
-                      renderPageOverlays={({
-                        pageNumber,
-                        pageWidth,
-                        pageHeight,
-                      }) => {
-                        const fieldsOnPage = fields.filter(
-                          (f) => f.page === pageNumber
-                        );
-                        return (
-                          <>
-                            {fieldsOnPage.map((field) => (
-                              <FillableFieldOverlay
-                                key={field._id}
-                                ref={(el: HTMLButtonElement | null) => {
-                                  if (el) {
-                                    fieldRefs.current.set(field._id, el);
-                                  } else {
-                                    fieldRefs.current.delete(field._id);
-                                  }
-                                }}
-                                fieldId={field._id}
-                                fieldType={field.fieldType}
-                                label={field.label}
-                                isRequired={field.isRequired}
-                                isMainSignature={field.isMainSignature}
-                                x={field.x}
-                                y={field.y}
-                                width={field.width}
-                                height={field.height}
-                                page={field.page}
-                                currentPage={pageNumber}
-                                pdfPageWidth={pageWidth}
-                                pdfPageHeight={pageHeight}
-                                isFilled={field.isFilled}
-                                isActive={
-                                  !isCompleted && activeFieldId === field._id
-                                }
-                                signatureDetails={field.signatureDetails}
-                                paymentInfo={paymentInfoByFieldId.get(
-                                  field._id
-                                )}
-                                onClick={
-                                  isCompleted ? () => {} : handleFieldClick
-                                }
-                              />
-                            ))}
-                          </>
-                        );
-                      }}
-                    />
+      {isCompleted && recipient.status !== "declined" && (
+        <div className="space-y-3">
+          <div className="text-kumo-success flex items-center gap-2">
+            <CheckCircle className="h-5 w-5" />
+            <span className="text-sm font-semibold">
+              {recipient.status === "approved"
+                ? "Document approved"
+                : "Document signed"}
+            </span>
+          </div>
+          <p className="text-kumo-secondary text-sm">
+            You&apos;re done — you can close this tab.
+          </p>
+          <Button
+            variant="outline"
+            size="lg"
+            className="h-12 w-full"
+            onClick={handleDownload}
+            disabled={isDownloading}
+          >
+            {isDownloading ? (
+              <Spinner className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 h-4 w-4" />
+            )}
+            {isDownloading ? "Preparing..." : "Download document"}
+          </Button>
+          {showRedirect && doc.redirectUrl && (
+            <RedirectCountdown
+              redirectUrl={doc.redirectUrl}
+              recipientEmail={recipient.email}
+              recipientName={recipient.name ?? recipient.email}
+              onStayHere={() => setShowRedirect(false)}
+            />
+          )}
+        </div>
+      )}
 
-                    {/* Signature Stamp - shown when document is completed with no positioned fields */}
-                    {isCompleted &&
-                      fields.length === 0 &&
-                      recipient.status === "signed" && (
-                        <div className="border-kumo-hairline/50 bg-kumo-elevated mx-auto mt-4 max-w-md rounded-lg border p-4 shadow-sm">
-                          <div className="border-kumo-hairline overflow-hidden rounded-md border">
-                            {/* Signature details stamp - Name, date and time only */}
-                            <div className="bg-kumo-elevated px-4 py-4">
-                              <div className="text-kumo-success mb-3 flex items-center gap-2">
-                                <CheckCircle className="h-6 w-6" />
-                                <span className="text-lg font-medium">
-                                  Document Signed
-                                </span>
-                              </div>
-                              <div className="flex flex-col gap-2">
-                                <div className="flex items-baseline gap-2">
-                                  <span className="text-kumo-secondary text-sm">
-                                    Signed by:
-                                  </span>
-                                  <span className="text-kumo-primary text-sm font-semibold">
-                                    {recipient.name || recipient.email}
-                                  </span>
-                                </div>
-                                {recipient.signedAt && (
-                                  <div className="flex items-baseline gap-2">
-                                    <span className="text-kumo-secondary text-sm">
-                                      Date:
-                                    </span>
-                                    <span className="text-kumo-primary text-sm">
-                                      {new Date(
-                                        recipient.signedAt
-                                      ).toLocaleDateString(undefined, {
-                                        year: "numeric",
-                                        month: "short",
-                                        day: "numeric",
-                                      })}{" "}
-                                      at{" "}
-                                      {new Date(
-                                        recipient.signedAt
-                                      ).toLocaleTimeString(undefined, {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                        hour12: true,
-                                      })}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                  </div>
-                ) : (
-                  <div className="border-kumo-hairline/50 bg-kumo-elevated rounded-lg border p-16 text-center shadow-sm">
-                    <div className="animate-pulse space-y-4">
-                      <div className="bg-kumo-elevated mx-auto h-4 w-1/3 rounded" />
-                      <div className="bg-kumo-elevated mx-auto h-4 w-1/2 rounded" />
-                      <div className="bg-kumo-elevated mx-auto h-4 w-2/5 rounded" />
-                    </div>
-                  </div>
-                )}
+      {isCompleted && recipient.status === "declined" && (
+        <p className="text-kumo-secondary text-sm">
+          You declined this document.
+        </p>
+      )}
+
+      {isCompleted &&
+        isWaitingForPayment &&
+        paymentConfigs.length > 0 && (
+          <div className="border-warning-surface bg-kumo-warning-tint/50 space-y-2 rounded-xl border p-3">
+            <div className="flex items-start gap-2">
+              <CreditCard className="text-kumo-warning mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                <p className="text-sm font-medium">Payment still required</p>
+                <p className="text-kumo-secondary text-xs">
+                  Signatures collected — complete payment below.
+                </p>
               </div>
             </div>
           </div>
+        )}
+    </div>
+  );
 
-          {/* Mobile Action Bar - Fixed at bottom on mobile */}
-          {!isCompleted && !showSignatureCapture && (
-            <div
-              className={cn(
-                "border-kumo-hairline/50 bg-kumo-base/95 sticky bottom-0 z-40 border-t p-4 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden",
-                isEmbedded && "!block"
-              )}
-            >
-              <div className="flex gap-3">
-                {!(isEmbedded && embedParams.hideDecline) && (
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="h-12 flex-1"
-                    onClick={handleDeclineClick}
-                    disabled={declineMutation.isPending}
-                    aria-label="Decline document"
-                  >
-                    Decline
-                  </Button>
-                )}
-                <Button
-                  size="lg"
-                  className="h-12 flex-1 font-medium"
-                  onClick={handleSignButtonClick}
-                  disabled={isSigningActionDisabled}
-                  aria-label={signingButtonLabel}
-                >
-                  {submitSignatureMutation.isPending ? (
-                    "Submitting..."
-                  ) : (
-                    <>
-                      {recipient.role === "signer" && (
-                        <Pen className="mr-2 h-4 w-4" />
-                      )}
-                      {signingButtonLabel}
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Mobile Completed Footer */}
-          {isCompleted && (
-            <div className="border-kumo-hairline/50 bg-kumo-base/95 sticky bottom-0 z-40 border-t p-4 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
-              {recipient.status !== "declined" ? (
-                <div className="space-y-3">
-                  <div className="text-kumo-success flex items-center justify-center gap-2">
-                    <CheckCircle className="h-4 w-4" />
-                    <span className="text-xs font-semibold">
-                      {recipient.status === "approved" ? "Approved" : "Signed"}{" "}
-                      successfully
-                    </span>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="h-12 w-full"
-                    onClick={handleDownload}
-                    disabled={isDownloading}
-                    aria-label="Download the final signed document"
-                  >
-                    {isDownloading ? (
-                      <Spinner className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Download className="mr-2 h-4 w-4" />
-                    )}
-                    {isDownloading ? "Preparing..." : "Download Document"}
-                  </Button>
-                </div>
-              ) : (
-                <p className="text-kumo-secondary text-center text-sm">
-                  You have declined this document.
-                </p>
-              )}
-            </div>
-          )}
-        </main>
-      </div>
+  return (
+    <div
+      className="bg-background min-h-dvh"
+      style={brandStyle}
+      data-embedded={isEmbedded ? "true" : undefined}
+    >
+      <SigningShell
+        title={doc.name}
+        instruction={
+          isCompleted
+            ? undefined
+            : doc.ownerEmail
+              ? `From ${doc.ownerEmail}`
+              : "Your signature is needed"
+        }
+        document={documentSurface}
+        widget={actionWidget}
+        headerActions={
+          branding?.logoUrl ? (
+            <img
+              src={branding.logoUrl}
+              alt=""
+              className="h-8 max-w-[140px] object-contain"
+            />
+          ) : undefined
+        }
+      />
 
       {/* Signature Capture Modal */}
       <Dialog.Root
@@ -2043,27 +1346,12 @@ function SigningPage() {
         />
       )}
 
-      {/* Branding footer (hidden in embedded mode) */}
-      {!isEmbedded && !branding?.hideSealBranding && (
-        <div className="border-kumo-hairline/50 text-kumo-secondary hidden shrink-0 border-t py-2 text-center text-xs lg:block">
-          {branding?.customFooterText || (
-            <a
-              href="https://seal.nyc"
-              rel="noopener noreferrer"
-              className="hover:text-kumo-primary transition-colors"
-            >
-              Powered by Seal
-            </a>
-          )}
+      {/* Custom footer only when org supplies one — no default "Powered by Seal" (SEA-78). */}
+      {!isEmbedded && branding?.customFooterText ? (
+        <div className="text-kumo-secondary px-4 py-3 text-center text-xs">
+          {branding.customFooterText}
         </div>
-      )}
-      {!isEmbedded &&
-        branding?.hideSealBranding &&
-        branding?.customFooterText && (
-          <div className="border-kumo-hairline/50 text-kumo-secondary hidden shrink-0 border-t py-2 text-center text-xs lg:block">
-            {branding.customFooterText}
-          </div>
-        )}
+      ) : null}
     </div>
   );
 }

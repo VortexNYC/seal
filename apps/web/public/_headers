@@ -6,6 +6,12 @@
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   Permissions-Policy: camera=(), microphone=(), geolocation=()
 
+# SEA-74: EmbedPDF blob workers have an opaque origin; wasm must allow CORS
+# so any leftover worker path can fetch /assets/*.wasm.
+/assets/*.wasm
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Methods: GET, HEAD, OPTIONS
+
 /sign/*
   Content-Security-Policy: frame-ancestors 'self' *
   X-Content-Type-Options: nosniff
