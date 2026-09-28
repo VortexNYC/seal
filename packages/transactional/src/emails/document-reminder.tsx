@@ -23,7 +23,7 @@ interface ReminderMeta {
 
 function getReminderMeta(
   expiresAt: number | undefined,
-  reminderCount: number
+  _reminderCount: number
 ): ReminderMeta {
   const expirationDate = expiresAt
     ? new Date(expiresAt).toLocaleDateString("en-US", {
@@ -36,12 +36,11 @@ function getReminderMeta(
   const isUrgent = expiresAt
     ? expiresAt - Date.now() < URGENT_REMINDER_WINDOW_MS
     : false;
-  const reminderSuffix = reminderCount > 1 ? ` #${reminderCount}` : "";
 
   return {
     expirationDate,
     isUrgent,
-    badgeLabel: `${isUrgent ? "Urgent" : "Friendly"} Reminder${reminderSuffix}`,
+    badgeLabel: isUrgent ? "Urgent reminder" : "Reminder",
   };
 }
 

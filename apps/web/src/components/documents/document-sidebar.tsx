@@ -12,7 +12,6 @@ import {
   Loader2Icon,
   PlusIcon,
   SaveIcon,
-  FileTextIcon,
   ScanSearchIcon,
   ScissorsIcon,
   SendIcon,
@@ -30,13 +29,11 @@ import {
   CitationReviewPanel,
   DocumentPdfOpsPanel,
   DocumentSplitsPanel,
-  PreviewPane,
   createInitialSplits,
   type BindingRow,
   type DocumentSplitGroup,
 } from "@/components/kumo-docs";
 import {
-  getDocumentPreview,
   getDocuments,
   mergeDocumentPdf,
   rotateDocumentPdf,
@@ -984,75 +981,6 @@ function FieldBindingsSection({
   );
 }
 
-function OriginalPreviewSection({
-  slug,
-  documentPublicId,
-  open,
-  onOpenChange,
-}: {
-  slug: string;
-  documentPublicId: string;
-  open: boolean;
-  onOpenChange: () => void;
-}) {
-  const previewQuery = useQuery({
-    queryKey: ["documents", documentPublicId, "power", "preview"],
-    queryFn: () => getDocumentPreview(slug, documentPublicId),
-    staleTime: 60_000,
-  });
-
-  const preview = previewQuery.data;
-  const show =
-    preview &&
-    (preview.format === "csv" ||
-      preview.format === "text" ||
-      preview.format === "html" ||
-      preview.format === "docx" ||
-      preview.format === "xlsx" ||
-      preview.format === "pptx") &&
-    (Boolean(preview.content) || Boolean(preview.download_url));
-
-  if (previewQuery.isLoading) return null;
-  if (!show || !preview) return null;
-
-  return (
-    <Collapsible.Root
-      open={open}
-      onOpenChange={onOpenChange}
-      className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
-    >
-      <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
-        <div className="flex items-center gap-3">
-          <div className="bg-muted text-foreground flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
-            <FileTextIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
-          </div>
-          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
-            Original preview
-          </span>
-        </div>
-        <ChevronDownIcon
-          className={cn(
-            "text-muted-foreground h-4 w-4 transition-transform duration-200",
-            open && "rotate-180"
-          )}
-        />
-      </Collapsible.Trigger>
-      <Collapsible.Panel className="border-border/50 border-t">
-        <PreviewPane
-          className="max-h-80"
-          format={preview.format}
-          title="Source file"
-          content={preview.content}
-          downloadUrl={preview.download_url}
-          organizationSlug={slug}
-          documentPublicId={documentPublicId}
-          pageCount={preview.page_count}
-        />
-      </Collapsible.Panel>
-    </Collapsible.Root>
-  );
-}
-
 function DocumentDetailsSection({
   open,
   onOpenChange,
@@ -1208,22 +1136,27 @@ function ActivitySection({
 export function DocumentSidebar(props: DocumentSidebarProps) {
   // Normalize null → undefined for components that don't accept null
   const normalizedWorkflowStatus = props.workflowStatus ?? undefined;
-  const visibleProgress =
-    normalizedWorkflowStatus !== "draft" ? props.progress : null;
+  const isDraft = normalizedWorkflowStatus === "draft";
+  const isDraftBuilder = props.canEdit && isDraft;
+  const isOversight = !isDraft;
+  const visibleProgress = isOversight ? props.progress : null;
   const signingRecipient =
     props.currentUserRecipient !== null &&
-    normalizedWorkflowStatus !== "draft" &&
+    isOversight &&
     normalizedWorkflowStatus !== "completed" &&
     (props.currentUserRecipient.role === "signer" ||
       props.currentUserRecipient.role === "approver")
       ? props.currentUserRecipient
       : null;
+  const advancedOpen =
+    props.openSections.has("pdf-ops") || props.openSections.has("splits");
 
   return (
     <div className="flex flex-col gap-5 sm:gap-4">
       <DocumentStatusHero
         workflowStatus={normalizedWorkflowStatus}
         createdAt={props.createdAt}
+        compact={isDraftBuilder}
       />
       {visibleProgress && <DocumentProgressRing progress={visibleProgress} />}
       {signingRecipient && (
@@ -1246,51 +1179,6 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
         onAddRecipient={props.onAddRecipient}
         onRecipientOptions={props.onRecipientOptions}
       />
-      {props.canEdit && normalizedWorkflowStatus === "draft" && (
-        <DocumentSettingsSection
-          open={props.openSections.has("doc-settings")}
-          onOpenChange={() => props.toggleSection("doc-settings")}
-          redirectUrlInput={props.redirectUrlInput}
-          redirectUrlError={props.redirectUrlError}
-          isSavingRedirect={props.isSavingRedirect}
-          onRedirectUrlChange={props.onRedirectUrlChange}
-          onSaveRedirectUrl={props.onSaveRedirectUrl}
-        />
-      )}
-      <AIInsightsSection
-        canEdit={props.canEdit}
-        aiEnabled={props.aiEnabled}
-        documentAnnotations={props.documentAnnotations}
-        aiProcessingStatus={props.aiProcessingStatus}
-        open={props.openSections.has("insights")}
-        onOpenChange={() => props.toggleSection("insights")}
-        onPageJump={props.onPageJump}
-      />
-      <OriginalPreviewSection
-        slug={props.slug}
-        documentPublicId={props.documentPublicId}
-        open={props.openSections.has("original-preview")}
-        onOpenChange={() => props.toggleSection("original-preview")}
-      />
-      <DocumentPdfOpsSection
-        slug={props.slug}
-        documentPublicId={props.documentPublicId}
-        pageCount={props.numPages ?? props.pageCount ?? 0}
-        currentPage={props.currentPage ?? 1}
-        canEdit={props.canEdit && normalizedWorkflowStatus === "draft"}
-        open={props.openSections.has("pdf-ops")}
-        onOpenChange={() => props.toggleSection("pdf-ops")}
-        onPdfChanged={props.onPdfChanged}
-      />
-      <DocumentSplitsSection
-        slug={props.slug}
-        documentPublicId={props.documentPublicId}
-        pageCount={props.numPages ?? props.pageCount ?? 0}
-        canEdit={props.canEdit && normalizedWorkflowStatus === "draft"}
-        open={props.openSections.has("splits")}
-        onOpenChange={() => props.toggleSection("splits")}
-        onPageJump={props.onPageJump}
-      />
       <SignatureFieldsSection
         documentId={props.documentId}
         recipients={props.recipients}
@@ -1307,30 +1195,109 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
         onFieldDragStart={props.onFieldDragStart}
         onFieldDragEnd={props.onFieldDragEnd}
       />
-      <FieldBindingsSection
-        slug={props.slug}
-        documentPublicId={props.documentPublicId}
-        fields={props.bindingFields}
-        canEdit={props.canEdit && normalizedWorkflowStatus === "draft"}
-        open={props.openSections.has("bindings")}
-        onOpenChange={() => props.toggleSection("bindings")}
-        onSaved={props.onBindingsSaved}
+      {isDraftBuilder && (
+        <DocumentSettingsSection
+          open={props.openSections.has("doc-settings")}
+          onOpenChange={() => props.toggleSection("doc-settings")}
+          redirectUrlInput={props.redirectUrlInput}
+          redirectUrlError={props.redirectUrlError}
+          isSavingRedirect={props.isSavingRedirect}
+          onRedirectUrlChange={props.onRedirectUrlChange}
+          onSaveRedirectUrl={props.onSaveRedirectUrl}
+        />
+      )}
+      {isDraftBuilder && (
+        <FieldBindingsSection
+          slug={props.slug}
+          documentPublicId={props.documentPublicId}
+          fields={props.bindingFields}
+          canEdit
+          open={props.openSections.has("bindings")}
+          onOpenChange={() => props.toggleSection("bindings")}
+          onSaved={props.onBindingsSaved}
+        />
+      )}
+      <AIInsightsSection
+        canEdit={props.canEdit}
+        aiEnabled={props.aiEnabled}
+        documentAnnotations={props.documentAnnotations}
+        aiProcessingStatus={props.aiProcessingStatus}
+        open={props.openSections.has("insights")}
+        onOpenChange={() => props.toggleSection("insights")}
+        onPageJump={props.onPageJump}
       />
-      <DocumentDetailsSection
-        open={props.openSections.has("details")}
-        onOpenChange={() => props.toggleSection("details")}
-        fileSize={props.fileSize}
-        pageCount={props.pageCount}
-        numPages={props.numPages}
-        createdAt={props.createdAt}
-        signatureFields={props.signatureFields}
-        description={props.description}
-      />
-      <ActivitySection
-        open={props.openSections.has("activity")}
-        onOpenChange={() => props.toggleSection("activity")}
-        activityEvents={props.activityEvents}
-      />
+      {isDraftBuilder && (
+        <Collapsible.Root
+          open={advancedOpen}
+          onOpenChange={(next) => {
+            if (next) {
+              if (!props.openSections.has("pdf-ops")) {
+                props.toggleSection("pdf-ops");
+              }
+              return;
+            }
+            if (props.openSections.has("pdf-ops")) {
+              props.toggleSection("pdf-ops");
+            }
+            if (props.openSections.has("splits")) {
+              props.toggleSection("splits");
+            }
+          }}
+        >
+          <Collapsible.Trigger className="border-border bg-card hover:bg-muted/40 flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left shadow-sm">
+            <span className="flex items-center gap-2 text-sm font-medium">
+              <ScissorsIcon className="h-4 w-4" />
+              Advanced PDF
+            </span>
+            <ChevronDownIcon
+              className={cn(
+                "text-muted-foreground h-4 w-4 transition-transform",
+                advancedOpen && "rotate-180"
+              )}
+            />
+          </Collapsible.Trigger>
+          <Collapsible.Panel className="mt-2 flex flex-col gap-2">
+            <DocumentPdfOpsSection
+              slug={props.slug}
+              documentPublicId={props.documentPublicId}
+              pageCount={props.numPages ?? props.pageCount ?? 0}
+              currentPage={props.currentPage ?? 1}
+              canEdit
+              open={props.openSections.has("pdf-ops")}
+              onOpenChange={() => props.toggleSection("pdf-ops")}
+              onPdfChanged={props.onPdfChanged}
+            />
+            <DocumentSplitsSection
+              slug={props.slug}
+              documentPublicId={props.documentPublicId}
+              pageCount={props.numPages ?? props.pageCount ?? 0}
+              canEdit
+              open={props.openSections.has("splits")}
+              onOpenChange={() => props.toggleSection("splits")}
+              onPageJump={props.onPageJump}
+            />
+          </Collapsible.Panel>
+        </Collapsible.Root>
+      )}
+      {isOversight && (
+        <DocumentDetailsSection
+          open={props.openSections.has("details")}
+          onOpenChange={() => props.toggleSection("details")}
+          fileSize={props.fileSize}
+          pageCount={props.pageCount}
+          numPages={props.numPages}
+          createdAt={props.createdAt}
+          signatureFields={props.signatureFields}
+          description={props.description}
+        />
+      )}
+      {isOversight && (
+        <ActivitySection
+          open={props.openSections.has("activity")}
+          onOpenChange={() => props.toggleSection("activity")}
+          activityEvents={props.activityEvents}
+        />
+      )}
     </div>
   );
 }

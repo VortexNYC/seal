@@ -10,11 +10,14 @@ import type { DocumentWorkflowStatus } from "./workflow-status-badge";
 interface DocumentStatusHeroProps {
   workflowStatus: DocumentWorkflowStatus | undefined;
   createdAt: number;
+  /** Draft builder — status only, no ceremony chrome. */
+  compact?: boolean;
 }
 
 export function DocumentStatusHero({
   workflowStatus,
   createdAt,
+  compact = false,
 }: DocumentStatusHeroProps) {
   const getStatusStyles = () => {
     switch (workflowStatus) {
@@ -40,25 +43,31 @@ export function DocumentStatusHero({
   return (
     <div
       className={cn(
-        "rounded-2xl border p-6 text-center shadow-sm sm:rounded-xl sm:p-5",
+        "rounded-2xl border text-center shadow-sm sm:rounded-xl",
+        compact ? "px-4 py-3 sm:py-3" : "p-6 sm:p-5",
         getStatusStyles()
       )}
       aria-live="polite"
     >
-      <div className="text-muted-foreground mb-2 text-xs font-semibold tracking-[0.16em] uppercase">
-        Document Status
-      </div>
+      {!compact && (
+        <div className="text-muted-foreground mb-2 text-xs font-semibold tracking-[0.16em] uppercase">
+          Document Status
+        </div>
+      )}
       <div
         className={cn(
-          "mb-1 text-3xl font-semibold sm:text-2xl",
+          "font-semibold",
+          compact ? "text-lg sm:text-base" : "mb-1 text-3xl sm:text-2xl",
           getTextStyles()
         )}
       >
         {getStatusLabel(workflowStatus)}
       </div>
-      <div className="text-muted-foreground text-sm font-medium sm:text-xs">
-        Created {formatDate(createdAt)}
-      </div>
+      {!compact && (
+        <div className="text-muted-foreground text-sm font-medium sm:text-xs">
+          Created {formatDate(createdAt)}
+        </div>
+      )}
     </div>
   );
 }
