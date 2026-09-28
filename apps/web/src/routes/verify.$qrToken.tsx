@@ -16,12 +16,17 @@ import {
   type VerifyDocumentResult,
 } from "@/lib/api-client";
 import { SealLogo } from "@/components/seal-logo";
+import { muteGuestAnalytics, useGuestAnalyticsMute } from "@/lib/guest-analytics";
 
 export const Route = createFileRoute("/verify/$qrToken")({
+  beforeLoad: () => {
+    muteGuestAnalytics();
+  },
   component: VerifyPage,
 });
 
 function VerifyPage() {
+  useGuestAnalyticsMute();
   const { qrToken } = Route.useParams();
   const { data: result } = useSuspenseQuery({
     queryKey: ["verify", qrToken],

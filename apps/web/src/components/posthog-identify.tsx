@@ -12,6 +12,7 @@ import { useEffect } from "react";
 
 import { useAnalytics } from "@/hooks/use-analytics";
 import { useCurrentUser as useUser } from "@/hooks/use-current-user";
+import { unmuteAuthenticatedAnalytics } from "@/lib/guest-analytics";
 
 interface PostHogIdentifyProps {
   organization: {
@@ -27,6 +28,10 @@ export function PostHogIdentify({ organization }: PostHogIdentifyProps) {
 
   useEffect(() => {
     if (!isLoaded || !user) return;
+
+    // Guest signer/verify mutes PostHog (SEA-73). Re-enable for the
+    // authenticated product surface before identifying.
+    unmuteAuthenticatedAnalytics();
 
     // Identify the user with their user id and properties
     identify({

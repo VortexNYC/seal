@@ -53,6 +53,7 @@ import { DocumentExpiredPage } from "@/components/signing/document-expired-page"
 import { RedirectCountdown } from "@/components/signing/redirect-countdown";
 import { SignerAuthGate } from "@/components/signing/signer-auth-gate";
 import { useAnalytics } from "@/hooks/use-analytics";
+import { muteGuestAnalytics, useGuestAnalyticsMute } from "@/lib/guest-analytics";
 import {
   getClientIp,
   getPublicSigningPaymentConfigs,
@@ -221,6 +222,9 @@ function SigningErrorComponent({ error }: ErrorComponentProps) {
 }
 
 export const Route = createFileRoute("/sign/$token")({
+  beforeLoad: () => {
+    muteGuestAnalytics();
+  },
   component: SigningPage,
   errorComponent: SigningErrorComponent,
   head: () => ({
@@ -251,6 +255,7 @@ const capitalizeFieldLabel = (label: string): string => {
 function SigningPage() {
   const { token } = Route.useParams();
   const { track } = useAnalytics();
+  useGuestAnalyticsMute();
   const { isEmbedded, embedParams } = useEmbeddedSigning(token);
 
   // Fetch recipient and document data using the signing token
