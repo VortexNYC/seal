@@ -26,7 +26,11 @@ export type FlattenFinalPdfResult = {
 
 /** SHA-256 of raw PDF bytes as `sha256:<hex>`. */
 export async function sha256PdfBytes(bytes: Uint8Array): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    // SubtleCrypto requires ArrayBuffer-backed BufferSource (TS 5.7+).
+    new Uint8Array(bytes)
+  );
   const hex = [...new Uint8Array(digest)]
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
@@ -72,7 +76,9 @@ function parseDataUrl(
 function isTruthyCheckbox(value: string | null): boolean {
   if (!value) return false;
   const v = value.trim().toLowerCase();
-  return v === "true" || v === "1" || v === "yes" || v === "on" || v === "checked";
+  return (
+    v === "true" || v === "1" || v === "yes" || v === "on" || v === "checked"
+  );
 }
 
 /**
