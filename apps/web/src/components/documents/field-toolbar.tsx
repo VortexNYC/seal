@@ -1,43 +1,38 @@
 import {
+  CalendarCheckIcon,
   CalendarIcon,
   CheckSquareIcon,
   ChevronDownSquareIcon,
   CircleDotIcon,
+  Columns3Icon,
   CreditCardIcon,
   GripVerticalIcon,
   HashIcon,
+  HeadingIcon,
+  IdCardIcon,
+  ImageIcon,
+  ListChecksIcon,
   PaperclipIcon,
+  PenLineIcon,
   PenToolIcon,
+  PhoneIcon,
+  StampIcon,
+  StrikethroughIcon,
   TypeIcon,
+  UserIcon,
+  ShieldCheckIcon,
 } from "lucide-react";
 import { useState } from "react";
 
+import {
+  FIELD_DIMENSIONS,
+  FIELD_TYPE_LABELS,
+  FIELD_TYPES,
+  type FieldType,
+} from "@/lib/field-types";
 import { cn } from "@/lib/utils";
 
-import { FIELD_DIMENSIONS } from "./draggable-field";
-
-export type FieldType =
-  | "signature"
-  | "text"
-  | "number"
-  | "date"
-  | "checkbox"
-  | "dropdown"
-  | "radio"
-  | "attachment"
-  | "payment";
-
-export const FIELD_TYPES = [
-  "signature",
-  "text",
-  "number",
-  "date",
-  "checkbox",
-  "dropdown",
-  "radio",
-  "attachment",
-  "payment",
-] as const satisfies readonly FieldType[];
+export { FIELD_TYPES, type FieldType } from "@/lib/field-types";
 
 interface FieldToolbarProps {
   onFieldDragStart?: (fieldType: FieldType) => void;
@@ -57,69 +52,58 @@ interface FieldButtonProps {
   disabledReason?: string;
 }
 
-/**
- * Field type configurations
- */
-const FIELD_CONFIG: Record<
-  FieldType,
-  {
-    label: string;
-    accentColor: string;
-  }
-> = {
-  signature: {
-    label: "Signature",
-    accentColor: "var(--field-signature)",
-  },
-  text: {
-    label: "Text",
-    accentColor: "var(--field-text)",
-  },
-  number: {
-    label: "Number",
-    accentColor: "var(--field-number)",
-  },
-  date: {
-    label: "Date",
-    accentColor: "var(--field-date)",
-  },
-  checkbox: {
-    label: "Check",
-    accentColor: "var(--field-checkbox)",
-  },
-  dropdown: {
-    label: "Select",
-    accentColor: "var(--field-dropdown)",
-  },
-  radio: {
-    label: "Choice",
-    accentColor: "var(--field-radio)",
-  },
-  attachment: {
-    label: "File",
-    accentColor: "var(--field-attachment)",
-  },
-  payment: {
-    label: "Payment",
-    accentColor: "var(--field-payment)",
-  },
+const FIELD_ACCENT: Record<FieldType, string> = {
+  signature: "var(--field-signature)",
+  free_signature: "var(--field-signature)",
+  initials: "var(--field-initials)",
+  name: "var(--field-name)",
+  email: "var(--field-email)",
+  text: "var(--field-text)",
+  number: "var(--field-number)",
+  date: "var(--field-date)",
+  date_signed: "var(--field-date-signed)",
+  checkbox: "var(--field-checkbox)",
+  dropdown: "var(--field-dropdown)",
+  radio: "var(--field-radio)",
+  multi_select: "var(--field-multi-select)",
+  attachment: "var(--field-attachment)",
+  image: "var(--field-image)",
+  payment: "var(--field-payment)",
+  phone: "var(--field-phone)",
+  cells: "var(--field-cells)",
+  stamp: "var(--field-stamp)",
+  heading: "var(--field-heading)",
+  strikethrough: "var(--field-strikethrough)",
+  verification: "var(--field-verification)",
+  kba: "var(--field-kba)",
 };
 
 const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
   signature: <PenToolIcon className="h-4 w-4" />,
+  free_signature: <PenLineIcon className="h-4 w-4" />,
+  initials: <TypeIcon className="h-4 w-4" />,
+  name: <UserIcon className="h-4 w-4" />,
+  email: <TypeIcon className="h-4 w-4" />,
   text: <TypeIcon className="h-4 w-4" />,
   number: <HashIcon className="h-4 w-4" />,
   date: <CalendarIcon className="h-4 w-4" />,
+  date_signed: <CalendarCheckIcon className="h-4 w-4" />,
   checkbox: <CheckSquareIcon className="h-4 w-4" />,
   dropdown: <ChevronDownSquareIcon className="h-4 w-4" />,
   radio: <CircleDotIcon className="h-4 w-4" />,
+  multi_select: <ListChecksIcon className="h-4 w-4" />,
   attachment: <PaperclipIcon className="h-4 w-4" />,
+  image: <ImageIcon className="h-4 w-4" />,
   payment: <CreditCardIcon className="h-4 w-4" />,
+  phone: <PhoneIcon className="h-4 w-4" />,
+  cells: <Columns3Icon className="h-4 w-4" />,
+  stamp: <StampIcon className="h-4 w-4" />,
+  heading: <HeadingIcon className="h-4 w-4" />,
+  strikethrough: <StrikethroughIcon className="h-4 w-4" />,
+  verification: <IdCardIcon className="h-4 w-4" />,
+  kba: <ShieldCheckIcon className="h-4 w-4" />,
 };
 
-/**
- * Draggable field button
- */
 function FieldButton({
   type,
   icon,
@@ -131,7 +115,7 @@ function FieldButton({
 }: FieldButtonProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const config = FIELD_CONFIG[type];
+  const accentColor = FIELD_ACCENT[type];
 
   const handleDragStart = (e: React.DragEvent) => {
     if (disabled) {
@@ -142,7 +126,6 @@ function FieldButton({
     e.dataTransfer.effectAllowed = "copy";
     e.dataTransfer.setData("fieldType", type);
 
-    // Create drag image
     const dimensions = FIELD_DIMENSIONS[type];
     const dragImage = document.createElement("div");
     dragImage.style.cssText = `
@@ -150,8 +133,8 @@ function FieldButton({
 			top: -9999px;
 			width: ${dimensions.width}px;
 			height: ${dimensions.height}px;
-			background: ${config.accentColor}10;
-			border: 2px dashed ${config.accentColor};
+			background: color-mix(in oklab, ${accentColor} 12%, transparent);
+			border: 2px dashed ${accentColor};
 			border-radius: 6px;
 			display: flex;
 			align-items: center;
@@ -163,7 +146,7 @@ function FieldButton({
 			letter-spacing: 0.5px;
 			text-transform: uppercase;
 		`;
-    dragImage.textContent = config.label;
+    dragImage.textContent = label;
 
     document.body.appendChild(dragImage);
     e.dataTransfer.setDragImage(
@@ -208,8 +191,8 @@ function FieldButton({
       <div
         className="flex h-7 w-7 items-center justify-center rounded-md border transition-colors"
         style={{
-          backgroundColor: isHovered ? config.accentColor : "var(--card)",
-          borderColor: isHovered ? config.accentColor : "var(--border)",
+          backgroundColor: isHovered ? accentColor : "var(--card)",
+          borderColor: isHovered ? accentColor : "var(--border)",
           color: isHovered
             ? "var(--primary-foreground)"
             : "var(--muted-foreground)",
@@ -229,7 +212,7 @@ function getPaymentDisabledReason(merchantPaymentsReady: boolean): string {
 }
 
 /**
- * Field toolbar - Provides draggable field types for document annotation
+ * Field toolbar — all Documenso + DocuSeal placeable types (Kumo/lucide chrome).
  */
 export function FieldToolbar({
   onFieldDragStart,
@@ -255,10 +238,10 @@ export function FieldToolbar({
           Fields
         </span>
       </div>
-      <div className="grid grid-cols-1 gap-2">
+      <div className="grid max-h-[70vh] grid-cols-1 gap-2 overflow-y-auto">
         {FIELD_TYPES.map((type) => {
           const isPayment = type === "payment";
-          const isDisabled = disabled || (isPayment && true); // Payment fields disabled while Vortex Payments is rewired
+          const isDisabled = disabled || isPayment;
           const disabledReason = isPayment
             ? getPaymentDisabledReason(merchantPaymentsReady)
             : "Document fields are temporarily disabled while the field editor is migrated to the Worker backend.";
@@ -268,7 +251,7 @@ export function FieldToolbar({
               key={type}
               type={type}
               icon={FIELD_ICONS[type]}
-              label={FIELD_CONFIG[type].label}
+              label={FIELD_TYPE_LABELS[type]}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
               disabled={isDisabled}

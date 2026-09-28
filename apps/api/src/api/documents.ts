@@ -56,6 +56,8 @@ import {
 } from "../platform/document-access-audit.js";
 import { organizationMiddleware } from "../platform/organization-middleware.js";
 import type { Variables } from "../platform/types.js";
+import { FieldTypeEnum } from "../platform/field-types.js";
+import { ZFieldPropertiesFlat } from "../platform/field-meta.js";
 import ai from "./ai.js";
 import documentPower from "./document-power.js";
 import {
@@ -913,17 +915,6 @@ const updateDocumentBodySchema = z.object({
   allowDictateNextSigner: z.boolean().optional(),
 });
 
-const FieldTypeEnum = z.enum([
-  "signature",
-  "text",
-  "number",
-  "date",
-  "checkbox",
-  "dropdown",
-  "radio",
-  "attachment",
-  "payment",
-]);
 
 function validateFieldPosition(
   x: number,
@@ -1787,22 +1778,7 @@ app.openapi(resendRecipientRouteDef, async (c) => {
   return c.json({ success: true });
 });
 
-const FieldPropertiesSchema = z
-  .object({
-    placeholder: z.string().optional(),
-    defaultValue: z.string().optional(),
-    options: z.array(z.string()).optional(),
-    maxLength: z.number().optional(),
-    minLength: z.number().optional(),
-    pattern: z.string().optional(),
-    helpText: z.string().optional(),
-    /** External structured-data key (GitHub #604 / proposal field binding). */
-    bindingKey: z.string().optional(),
-    binding_key: z.string().optional(),
-  })
-  .partial()
-  .passthrough()
-  .nullable();
+const FieldPropertiesSchema = ZFieldPropertiesFlat.nullable();
 
 const FieldValidationRulesSchema = z
   .object({

@@ -127,6 +127,15 @@
   --field-signature: oklch(0.55 0.18 255); /* blue */
   --field-signature-surface: oklch(0.962 0.018 255);
   --field-signature-border: oklch(0.84 0.06 255);
+  --field-initials: oklch(0.58 0.14 255);
+  --field-initials-surface: oklch(0.962 0.014 255);
+  --field-initials-border: oklch(0.84 0.05 255);
+  --field-name: oklch(0.58 0.14 152);
+  --field-name-surface: oklch(0.962 0.014 152);
+  --field-name-border: oklch(0.84 0.05 152);
+  --field-email: oklch(0.6 0.12 152);
+  --field-email-surface: oklch(0.962 0.012 152);
+  --field-email-border: oklch(0.84 0.05 152);
   --field-text: oklch(0.58 0.16 152); /* green */
   --field-text-surface: oklch(0.962 0.018 152);
   --field-text-border: oklch(0.84 0.06 152);
@@ -136,6 +145,9 @@
   --field-date: oklch(0.52 0.22 295); /* purple */
   --field-date-surface: oklch(0.962 0.018 295);
   --field-date-border: oklch(0.84 0.07 295);
+  --field-date-signed: oklch(0.55 0.18 295);
+  --field-date-signed-surface: oklch(0.962 0.016 295);
+  --field-date-signed-border: oklch(0.84 0.06 295);
   --field-checkbox: oklch(0.65 0.18 50); /* orange */
   --field-checkbox-surface: oklch(0.97 0.025 50);
   --field-checkbox-border: oklch(0.86 0.07 50);
@@ -145,12 +157,39 @@
   --field-radio: oklch(0.58 0.2 340); /* pink */
   --field-radio-surface: oklch(0.97 0.018 340);
   --field-radio-border: oklch(0.86 0.07 340);
+  --field-multi-select: oklch(0.6 0.16 340);
+  --field-multi-select-surface: oklch(0.97 0.016 340);
+  --field-multi-select-border: oklch(0.86 0.06 340);
   --field-attachment: oklch(0.68 0.16 120); /* lime/yellow-green */
   --field-attachment-surface: oklch(0.97 0.025 120);
   --field-attachment-border: oklch(0.86 0.07 120);
+  --field-image: oklch(0.65 0.14 120);
+  --field-image-surface: oklch(0.97 0.02 120);
+  --field-image-border: oklch(0.86 0.06 120);
   --field-payment: oklch(0.58 0.15 165); /* emerald */
   --field-payment-surface: oklch(0.962 0.018 165);
   --field-payment-border: oklch(0.84 0.06 165);
+  --field-phone: oklch(0.6 0.12 210);
+  --field-phone-surface: oklch(0.962 0.014 210);
+  --field-phone-border: oklch(0.84 0.05 210);
+  --field-cells: oklch(0.7 0.14 80);
+  --field-cells-surface: oklch(0.97 0.025 80);
+  --field-cells-border: oklch(0.86 0.06 80);
+  --field-stamp: oklch(0.62 0.16 45);
+  --field-stamp-surface: oklch(0.97 0.02 45);
+  --field-stamp-border: oklch(0.86 0.06 45);
+  --field-heading: oklch(0.45 0.02 260);
+  --field-heading-surface: oklch(0.96 0.005 260);
+  --field-heading-border: oklch(0.84 0.02 260);
+  --field-strikethrough: oklch(0.55 0.18 25);
+  --field-strikethrough-surface: oklch(0.97 0.02 25);
+  --field-strikethrough-border: oklch(0.86 0.06 25);
+  --field-verification: oklch(0.52 0.16 255);
+  --field-verification-surface: oklch(0.962 0.016 255);
+  --field-verification-border: oklch(0.84 0.05 255);
+  --field-kba: oklch(0.5 0.16 280);
+  --field-kba-surface: oklch(0.962 0.016 280);
+  --field-kba-border: oklch(0.84 0.05 280);
 
   /* ── Document status surface colors ─────────────────────────────────────── */
   --status-completed-surface: oklch(0.962 0.03 152);
@@ -291,6 +330,15 @@
   --field-signature: oklch(0.7 0.15 255);
   --field-signature-surface: oklch(0.2 0.03 255);
   --field-signature-border: oklch(0.3 0.06 255);
+  --field-initials: oklch(0.72 0.12 255);
+  --field-initials-surface: oklch(0.2 0.025 255);
+  --field-initials-border: oklch(0.3 0.05 255);
+  --field-name: oklch(0.72 0.12 152);
+  --field-name-surface: oklch(0.2 0.025 152);
+  --field-name-border: oklch(0.3 0.05 152);
+  --field-email: oklch(0.74 0.1 152);
+  --field-email-surface: oklch(0.2 0.02 152);
+  --field-email-border: oklch(0.3 0.04 152);
   --field-text: oklch(0.7 0.14 152);
   --field-text-surface: oklch(0.2 0.03 152);
   --field-text-border: oklch(0.3 0.05 152);
@@ -300,6 +348,9 @@
   --field-date: oklch(0.72 0.18 295);
   --field-date-surface: oklch(0.2 0.035 295);
   --field-date-border: oklch(0.3 0.06 295);
+  --field-date-signed: oklch(0.74 0.14 295);
+  --field-date-signed-surface: oklch(0.2 0.03 295);
+  --field-date-signed-border: oklch(0.3 0.05 295);
   --field-checkbox: oklch(0.75 0.15 50);
   --field-checkbox-surface: oklch(0.2 0.03 50);
   --field-checkbox-border: oklch(0.3 0.06 50);
@@ -309,12 +360,39 @@
   --field-radio: oklch(0.72 0.18 340);
   --field-radio-surface: oklch(0.2 0.03 340);
   --field-radio-border: oklch(0.3 0.06 340);
+  --field-multi-select: oklch(0.74 0.14 340);
+  --field-multi-select-surface: oklch(0.2 0.025 340);
+  --field-multi-select-border: oklch(0.3 0.05 340);
   --field-attachment: oklch(0.75 0.14 120);
   --field-attachment-surface: oklch(0.2 0.03 120);
   --field-attachment-border: oklch(0.3 0.06 120);
+  --field-image: oklch(0.76 0.12 120);
+  --field-image-surface: oklch(0.2 0.025 120);
+  --field-image-border: oklch(0.3 0.05 120);
   --field-payment: oklch(0.72 0.13 165);
   --field-payment-surface: oklch(0.2 0.03 165);
   --field-payment-border: oklch(0.3 0.055 165);
+  --field-phone: oklch(0.72 0.1 210);
+  --field-phone-surface: oklch(0.2 0.02 210);
+  --field-phone-border: oklch(0.3 0.04 210);
+  --field-cells: oklch(0.76 0.12 80);
+  --field-cells-surface: oklch(0.2 0.025 80);
+  --field-cells-border: oklch(0.3 0.05 80);
+  --field-stamp: oklch(0.74 0.14 45);
+  --field-stamp-surface: oklch(0.2 0.025 45);
+  --field-stamp-border: oklch(0.3 0.05 45);
+  --field-heading: oklch(0.7 0.02 260);
+  --field-heading-surface: oklch(0.22 0.01 260);
+  --field-heading-border: oklch(0.32 0.02 260);
+  --field-strikethrough: oklch(0.7 0.14 25);
+  --field-strikethrough-surface: oklch(0.2 0.03 25);
+  --field-strikethrough-border: oklch(0.3 0.05 25);
+  --field-verification: oklch(0.7 0.14 255);
+  --field-verification-surface: oklch(0.2 0.03 255);
+  --field-verification-border: oklch(0.3 0.05 255);
+  --field-kba: oklch(0.7 0.14 280);
+  --field-kba-surface: oklch(0.2 0.03 280);
+  --field-kba-border: oklch(0.3 0.05 280);
 
   /* ── Document status surface colors — dark mode ──────────────────────────── */
   --status-completed-surface: oklch(0.16 0.04 152);
@@ -492,6 +570,15 @@
   --color-field-signature: var(--field-signature);
   --color-field-signature-surface: var(--field-signature-surface);
   --color-field-signature-border: var(--field-signature-border);
+  --color-field-initials: var(--field-initials);
+  --color-field-initials-surface: var(--field-initials-surface);
+  --color-field-initials-border: var(--field-initials-border);
+  --color-field-name: var(--field-name);
+  --color-field-name-surface: var(--field-name-surface);
+  --color-field-name-border: var(--field-name-border);
+  --color-field-email: var(--field-email);
+  --color-field-email-surface: var(--field-email-surface);
+  --color-field-email-border: var(--field-email-border);
   --color-field-text: var(--field-text);
   --color-field-text-surface: var(--field-text-surface);
   --color-field-text-border: var(--field-text-border);
@@ -501,6 +588,9 @@
   --color-field-date: var(--field-date);
   --color-field-date-surface: var(--field-date-surface);
   --color-field-date-border: var(--field-date-border);
+  --color-field-date-signed: var(--field-date-signed);
+  --color-field-date-signed-surface: var(--field-date-signed-surface);
+  --color-field-date-signed-border: var(--field-date-signed-border);
   --color-field-checkbox: var(--field-checkbox);
   --color-field-checkbox-surface: var(--field-checkbox-surface);
   --color-field-checkbox-border: var(--field-checkbox-border);
@@ -510,12 +600,39 @@
   --color-field-radio: var(--field-radio);
   --color-field-radio-surface: var(--field-radio-surface);
   --color-field-radio-border: var(--field-radio-border);
+  --color-field-multi-select: var(--field-multi-select);
+  --color-field-multi-select-surface: var(--field-multi-select-surface);
+  --color-field-multi-select-border: var(--field-multi-select-border);
   --color-field-attachment: var(--field-attachment);
   --color-field-attachment-surface: var(--field-attachment-surface);
   --color-field-attachment-border: var(--field-attachment-border);
+  --color-field-image: var(--field-image);
+  --color-field-image-surface: var(--field-image-surface);
+  --color-field-image-border: var(--field-image-border);
   --color-field-payment: var(--field-payment);
   --color-field-payment-surface: var(--field-payment-surface);
   --color-field-payment-border: var(--field-payment-border);
+  --color-field-phone: var(--field-phone);
+  --color-field-phone-surface: var(--field-phone-surface);
+  --color-field-phone-border: var(--field-phone-border);
+  --color-field-cells: var(--field-cells);
+  --color-field-cells-surface: var(--field-cells-surface);
+  --color-field-cells-border: var(--field-cells-border);
+  --color-field-stamp: var(--field-stamp);
+  --color-field-stamp-surface: var(--field-stamp-surface);
+  --color-field-stamp-border: var(--field-stamp-border);
+  --color-field-heading: var(--field-heading);
+  --color-field-heading-surface: var(--field-heading-surface);
+  --color-field-heading-border: var(--field-heading-border);
+  --color-field-strikethrough: var(--field-strikethrough);
+  --color-field-strikethrough-surface: var(--field-strikethrough-surface);
+  --color-field-strikethrough-border: var(--field-strikethrough-border);
+  --color-field-verification: var(--field-verification);
+  --color-field-verification-surface: var(--field-verification-surface);
+  --color-field-verification-border: var(--field-verification-border);
+  --color-field-kba: var(--field-kba);
+  --color-field-kba-surface: var(--field-kba-surface);
+  --color-field-kba-border: var(--field-kba-border);
 
   /* Document status surface colors */
   --color-status-completed-surface: var(--status-completed-surface);

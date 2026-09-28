@@ -31,7 +31,7 @@ import { type Id } from "@/lib/ids";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
-import type { FieldType } from "./field-toolbar";
+import { FIELD_TYPE_LABELS, type FieldType } from "@/lib/field-types";
 
 // Common validation patterns
 type ValidationPatternOption = {
@@ -745,45 +745,57 @@ function FieldPropertiesFooter({
 
 const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
   signature: <PenToolIcon className="h-4 w-4" />,
+  free_signature: <PenToolIcon className="h-4 w-4" />,
+  initials: <TypeIcon className="h-4 w-4" />,
+  name: <TypeIcon className="h-4 w-4" />,
+  email: <TypeIcon className="h-4 w-4" />,
   text: <TypeIcon className="h-4 w-4" />,
   number: <HashIcon className="h-4 w-4" />,
   date: <CalendarIcon className="h-4 w-4" />,
+  date_signed: <CalendarIcon className="h-4 w-4" />,
   checkbox: <CheckSquareIcon className="h-4 w-4" />,
   dropdown: <TypeIcon className="h-4 w-4" />,
   radio: <CheckSquareIcon className="h-4 w-4" />,
+  multi_select: <CheckSquareIcon className="h-4 w-4" />,
   attachment: <TypeIcon className="h-4 w-4" />,
+  image: <TypeIcon className="h-4 w-4" />,
   payment: <CreditCardIcon className="h-4 w-4" />,
+  phone: <TypeIcon className="h-4 w-4" />,
+  cells: <HashIcon className="h-4 w-4" />,
+  stamp: <TypeIcon className="h-4 w-4" />,
+  heading: <TypeIcon className="h-4 w-4" />,
+  strikethrough: <TypeIcon className="h-4 w-4" />,
+  verification: <TypeIcon className="h-4 w-4" />,
+  kba: <TypeIcon className="h-4 w-4" />,
 };
 
 const FIELD_COLORS: Record<FieldType, string> = {
-  signature:
-    "bg-field-signature-surface text-field-signature border-field-signature-border",
+  signature: "bg-field-signature-surface text-field-signature border-field-signature-border",
+  free_signature: "bg-field-signature-surface text-field-signature border-field-signature-border",
+  initials: "bg-field-initials-surface text-field-initials border-field-initials-border",
+  name: "bg-field-name-surface text-field-name border-field-name-border",
+  email: "bg-field-email-surface text-field-email border-field-email-border",
   text: "bg-field-text-surface text-field-text border-field-text-border",
-  number:
-    "bg-field-number-surface text-field-number border-field-number-border",
+  number: "bg-field-number-surface text-field-number border-field-number-border",
   date: "bg-field-date-surface text-field-date border-field-date-border",
-  checkbox:
-    "bg-field-checkbox-surface text-field-checkbox border-field-checkbox-border",
-  dropdown:
-    "bg-field-dropdown-surface text-field-dropdown border-field-dropdown-border",
+  date_signed: "bg-field-date-signed-surface text-field-date-signed border-field-date-signed-border",
+  checkbox: "bg-field-checkbox-surface text-field-checkbox border-field-checkbox-border",
+  dropdown: "bg-field-dropdown-surface text-field-dropdown border-field-dropdown-border",
   radio: "bg-field-radio-surface text-field-radio border-field-radio-border",
-  attachment:
-    "bg-field-attachment-surface text-field-attachment border-field-attachment-border",
-  payment:
-    "bg-field-payment-surface text-field-payment border-field-payment-border",
+  multi_select: "bg-field-multi-select-surface text-field-multi-select border-field-multi-select-border",
+  attachment: "bg-field-attachment-surface text-field-attachment border-field-attachment-border",
+  image: "bg-field-image-surface text-field-image border-field-image-border",
+  payment: "bg-field-payment-surface text-field-payment border-field-payment-border",
+  phone: "bg-field-phone-surface text-field-phone border-field-phone-border",
+  cells: "bg-field-cells-surface text-field-cells border-field-cells-border",
+  stamp: "bg-field-stamp-surface text-field-stamp border-field-stamp-border",
+  heading: "bg-field-heading-surface text-field-heading border-field-heading-border",
+  strikethrough: "bg-field-strikethrough-surface text-field-strikethrough border-field-strikethrough-border",
+  verification: "bg-field-verification-surface text-field-verification border-field-verification-border",
+  kba: "bg-field-kba-surface text-field-kba border-field-kba-border",
 };
 
-const FIELD_TYPE_LABELS: Record<FieldType, string> = {
-  signature: "Signature",
-  text: "Text",
-  number: "Number",
-  date: "Date",
-  checkbox: "Checkbox",
-  dropdown: "Dropdown",
-  radio: "Radio",
-  attachment: "Attachment",
-  payment: "Payment",
-};
+
 
 export function FieldPropertiesPanel({
   organizationSlug,

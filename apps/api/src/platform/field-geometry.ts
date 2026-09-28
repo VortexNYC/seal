@@ -4,16 +4,13 @@
  * placeable fields for agents and the AI-suggest UI.
  */
 
-export type PlaceableFieldType =
-  | "signature"
-  | "text"
-  | "number"
-  | "date"
-  | "checkbox"
-  | "dropdown"
-  | "radio"
-  | "attachment"
-  | "payment";
+import {
+  DEFAULT_FIELD_SIZE_PERCENT,
+  type FieldType,
+  mapCandidateTypeToFieldType as mapCandidate,
+} from "./field-types";
+
+export type PlaceableFieldType = FieldType;
 
 export type FieldGeometry = {
   x: number;
@@ -22,55 +19,12 @@ export type FieldGeometry = {
   height: number;
 };
 
-/** Default sizes as % of page — aligned with apps/web draggable-field.tsx */
-const DEFAULT_SIZE: Record<
-  PlaceableFieldType,
-  { width: number; height: number }
-> = {
-  signature: { width: 33, height: 6 },
-  text: { width: 30, height: 5 },
-  number: { width: 30, height: 5 },
-  date: { width: 23, height: 5 },
-  checkbox: { width: 5, height: 4 },
-  dropdown: { width: 30, height: 5 },
-  radio: { width: 23, height: 5 },
-  attachment: { width: 30, height: 6 },
-  payment: { width: 36, height: 8 },
-};
-
 const LINES_PER_PAGE = 50;
 const LEFT_MARGIN = 10;
 
-/**
- * Map anydoc / heuristic candidate type strings onto Seal field types.
- */
-export function mapCandidateTypeToFieldType(type: string): PlaceableFieldType {
-  switch (type.toLowerCase()) {
-    case "signature":
-      return "signature";
-    case "initials":
-      return "text";
-    case "date":
-      return "date";
-    case "name":
-      return "text";
-    case "checkbox":
-      return "checkbox";
-    case "number":
-      return "number";
-    case "dropdown":
-      return "dropdown";
-    case "radio":
-      return "radio";
-    case "attachment":
-      return "attachment";
-    case "payment":
-      return "payment";
-    case "text":
-    default:
-      return "text";
-  }
-}
+export {
+  mapCandidateTypeToFieldType,
+} from "./field-types";
 
 /**
  * Estimate page-percent geometry from a markdown line index.
@@ -80,7 +34,7 @@ export function geometryFromLine(
   fieldType: PlaceableFieldType,
   line: number
 ): FieldGeometry {
-  const size = DEFAULT_SIZE[fieldType];
+  const size = DEFAULT_FIELD_SIZE_PERCENT[fieldType];
   const clampedLine = Math.max(0, line);
   const y = Math.min(
     100 - size.height,
@@ -121,15 +75,18 @@ export function validateFieldGeometry(geometry: FieldGeometry): {
 }
 
 export function confidenceForCandidateType(type: string): number {
-  switch (type.toLowerCase()) {
+  switch (mapCandidate(type)) {
     case "signature":
+    case "free_signature":
       return 0.85;
     case "date":
+    case "date_signed":
       return 0.8;
     case "checkbox":
       return 0.75;
     case "name":
     case "initials":
+    case "email":
       return 0.7;
     default:
       return 0.55;
