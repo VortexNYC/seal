@@ -100,7 +100,7 @@ No schema gap blocks shipping. Next embed work is chrome thinness inside `?embed
 | Activity / audit on signer | **skip** | Sender/oversight only |
 | Agree.com-style marketing signer | **skip** | Not Seal's job (ADR-007) |
 
-SEA-76 follow-through: sender builder density pass is the next UI cut after field-types land.
+SEA-76 follow-through: **SEA-79** sender builder density cut (draft chrome).
 
 ---
 
@@ -114,4 +114,5 @@ SEA-76 follow-through: sender builder density pass is the next UI cut after fiel
 | SEA-74 PDF paint | **Fixed** on main |
 | SEA-75 / SEA-78 chrome | **Fixed** on main |
 | SEA-73 PostHog guest mute | PR #775 |
-| SEA-72 money-path probe | Guest path green (`painted=true`); sender/sealed-download still open |
+| SEA-72 money-path probe | Guest path green; sealed PDF prove green (`prove-sealed-pdf.mjs`) |
+| SEA-79 sender density | Draft builder: recipients + fields first; activity/details oversight-only; advanced PDF collapsed |
