@@ -265,25 +265,42 @@ await ab(["--session", "seal-signer-proof", "open", signingUrl]);
 // Pace like a human — capture temporal paint.
 await new Promise((r) => setTimeout(r, 1200));
 
+function parseA11yRef(line) {
+  // Legacy: `[ref=e4]` / `[checked=false, ref=e8]`
+  // agent-browser 0.38+: `[4] @e4 button "Start"`
+  return (
+    /(?:\[|, )\s*ref=(e\d+)/.exec(line)?.[1] ??
+    /(?:^|\s)@(e\d+)\b/.exec(line)?.[1] ??
+    null
+  );
+}
+
+function lineHasRef(line) {
+  return parseA11yRef(line) !== null;
+}
+
+function lineMatchesRole(line, role) {
+  return (
+    new RegExp(`role=${role}\\b`, "i").test(line) ||
+    new RegExp(`^\\s*-\\s*${role}\\b`, "i").test(line) ||
+    // agent-browser 0.38+: `button "Start"` / `[4] @e4 button "Start"`
+    new RegExp(`(?:^|\\s)${role}\\b`, "i").test(line)
+  );
+}
+
 async function clickMatching(snap, patterns, { role, skipDisabled } = {}) {
   for (const pattern of patterns) {
     const re = new RegExp(pattern, "i");
     const line = snap.split(/\r?\n/).find((l) => {
-      if (!re.test(l) || !/ref=e\d+/.test(l)) return false;
+      if (!re.test(l) || !lineHasRef(l)) return false;
       if (skipDisabled && /\[disabled|\bdisabled\b/i.test(l)) return false;
-      if (role) {
-        // agent-browser: `button "Start" [ref=e4]` or `role=button`
-        const roleOk =
-          new RegExp(`role=${role}\\b`, "i").test(l) ||
-          new RegExp(`^\\s*-\\s*${role}\\b`, "i").test(l);
-        if (!roleOk) return false;
-      }
+      if (role && !lineMatchesRole(l, role)) return false;
       return true;
     });
     if (!line) continue;
-    // refs appear as `[ref=e4]` or `[checked=false, ref=e8]`
-    const ref = /(?:\[|, )\s*ref=(e\d+)/.exec(line)?.[1];
+    const ref = parseA11yRef(line);
     if (!ref) continue;
+    console.log(`gate  click @${ref} ← ${line.trim().slice(0, 80)}`);
     await ab(["--session", "seal-signer-proof", "click", `@${ref}`]);
     await new Promise((r) => setTimeout(r, 900));
     return true;
@@ -296,19 +313,18 @@ async function ensureCheckboxThenContinue(snap) {
   const uncheckedLine = snap
     .split(/\r?\n/)
     .find((l) => /checkbox/i.test(l) && /checked\s*=\s*false/i.test(l));
-  let ref =
-    uncheckedLine && /(?:\[|, )\s*ref=(e\d+)/.exec(uncheckedLine)?.[1];
+  let ref = uncheckedLine ? parseA11yRef(uncheckedLine) : null;
   if (!ref) {
     const label = snap
       .split(/\r?\n/)
       .find(
         (l) =>
-          /LabelText/i.test(l) &&
-          /acknowledge this privacy notice|I consent to use electronic/i.test(
+          /LabelText|checkbox|Privacy notice|consent/i.test(l) &&
+          /acknowledge this privacy notice|I consent to use electronic|Privacy notice/i.test(
             l
           )
       );
-    ref = label && /(?:\[|, )\s*ref=(e\d+)/.exec(label)?.[1];
+    ref = label ? parseA11yRef(label) : null;
   }
   if (ref) {
     console.log(`gate  check @${ref}`);
