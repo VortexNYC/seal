@@ -12,6 +12,17 @@
   Access-Control-Allow-Origin: *
   Access-Control-Allow-Methods: GET, HEAD, OPTIONS
 
+# Email clients + cross-origin font loads for transactional templates
+/fonts/*
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Methods: GET, HEAD, OPTIONS
+  Cache-Control: public, max-age=31536000, immutable
+
+/logo/*
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Methods: GET, HEAD, OPTIONS
+  Cache-Control: public, max-age=86400
+
 /sign/*
   Content-Security-Policy: frame-ancestors 'self' *
   X-Content-Type-Options: nosniff

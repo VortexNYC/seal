@@ -159,6 +159,7 @@ function NotificationSettings() {
                 <Input
                   type="number"
                   min={1}
+                  aria-label="Add reminder day"
                   placeholder="Add day..."
                   value={newReminderDay}
                   onChange={(e) => setNewReminderDay(e.target.value)}
@@ -188,12 +189,10 @@ function NotificationSettings() {
           </LayerCard.Secondary>
           <LayerCard.Primary>
             <div className="flex items-center gap-2">
-              <Label htmlFor="expiration-alert-days" className="sr-only">
-                Days before expiry
-              </Label>
               <div className="w-24">
                 <Input
                   id="expiration-alert-days"
+                  aria-label="Days before expiry"
                   type="number"
                   min={1}
                   max={30}

@@ -1,6 +1,5 @@
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
-import { Label } from "@cloudflare/kumo/components/label";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { ShieldCheck, Spinner } from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
@@ -82,13 +81,15 @@ export function SignerAuthGate({
       : "This envelope requires an access code from the sender before you can sign.";
 
   return (
-    <div className="flex min-h-[60vh] items-center justify-center px-4">
-      <LayerCard className="w-full max-w-md p-6">
+    <div className="flex min-h-dvh w-full items-center justify-center px-[max(1rem,env(safe-area-inset-left))] py-8 pr-[max(1rem,env(safe-area-inset-right))]">
+      <LayerCard className="w-full max-w-lg p-[clamp(1rem,4vw,2rem)]">
         <div className="mb-4 flex items-center gap-2">
-          <ShieldCheck className="size-5" weight="duotone" />
-          <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
+          <ShieldCheck className="size-6 shrink-0" weight="duotone" />
+          <h1 className="text-xl font-semibold tracking-tight text-balance">
+            {title}
+          </h1>
         </div>
-        <p className="mb-6 text-sm text-muted-foreground">
+        <p className="text-muted-foreground mb-6 text-sm text-pretty">
           {challengeSent || method === "access_code"
             ? description
             : "Sending a verification code…"}
@@ -105,24 +106,25 @@ export function SignerAuthGate({
           }}
         >
           <div className="space-y-2">
-            <Label htmlFor="signer-auth-code">
-              {method === "email_otp" ? "Verification code" : "Access code"}
-            </Label>
             <Input
               id="signer-auth-code"
               data-testid="signer-auth-code"
+              label={
+                method === "email_otp" ? "Verification code" : "Access code"
+              }
               autoComplete="one-time-code"
               inputMode={method === "email_otp" ? "numeric" : "text"}
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder={method === "email_otp" ? "123456" : "Access code"}
+              className="min-h-12 w-full text-base"
             />
           </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="flex w-full flex-col gap-3">
             <Button
               type="submit"
-              className="flex-1"
+              className="min-h-12 w-full text-base"
               disabled={!code.trim() || verifyMutation.isPending}
               data-testid="signer-auth-verify"
             >
@@ -136,6 +138,7 @@ export function SignerAuthGate({
               <Button
                 type="button"
                 variant="outline"
+                className="min-h-12 w-full text-base"
                 disabled={challengeMutation.isPending}
                 onClick={() => challengeMutation.mutate()}
                 data-testid="signer-auth-resend"

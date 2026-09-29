@@ -274,8 +274,10 @@ function TemplatesList({
                             <FolderIcon className="text-kumo-secondary h-5 w-5" />
                           </div>
                         </Table.Cell>
-                        <Table.Cell>
-                          <p className="font-medium">{folder.name}</p>
+                        <Table.Cell className="max-w-[min(28rem,40vw)]">
+                          <p className="truncate font-medium" title={folder.name}>
+                            {folder.name}
+                          </p>
                           <p className="text-kumo-secondary text-xs">Folder</p>
                         </Table.Cell>
                         <Table.Cell>
@@ -404,7 +406,9 @@ function TemplatesList({
                       <div className="p-4">
                         <p className="flex items-center gap-2 text-sm font-medium">
                           <FolderIcon className="h-4 w-4 shrink-0" />
-                          <span className="line-clamp-2">{folder.name}</span>
+                          <span className="line-clamp-2 break-all" title={folder.name}>
+                            {folder.name}
+                          </span>
                         </p>
                         <p className="text-kumo-secondary text-sm">Folder</p>
                       </div>
@@ -772,11 +776,11 @@ function TemplatesPage() {
           <div className="relative max-w-sm flex-1">
             <SearchIcon className="text-kumo-secondary absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
+              aria-label="Search templates"
               placeholder="Search templates..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
-              aria-label="Search templates"
             />
           </div>
 

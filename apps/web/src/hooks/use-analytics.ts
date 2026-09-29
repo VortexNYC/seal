@@ -161,6 +161,25 @@ export function useAnalytics() {
     [posthog]
   );
 
+  const signatureViewed = useCallback(
+    (properties?: SignatureProperties) => {
+      // Recipient path — documentId/recipientId only; never email/name (SEA-73).
+      posthog?.capture("signature_viewed", properties);
+    },
+    [posthog]
+  );
+
+  const signingAuthVerified = useCallback(
+    (
+      properties?: SignatureProperties & {
+        authMethod?: "email_otp" | "access_code";
+      }
+    ) => {
+      posthog?.capture("signing_auth_verified", properties);
+    },
+    [posthog]
+  );
+
   const signatureCompleted = useCallback(
     (properties?: SignatureProperties) => {
       posthog?.capture("signature_completed", properties);
@@ -170,7 +189,13 @@ export function useAnalytics() {
 
   const signatureDeclined = useCallback(
     (properties?: SignatureProperties & { reason?: string }) => {
-      posthog?.capture("signature_declined", properties);
+      // Decline reason can contain free text — omit from PostHog; keep IDs only.
+      posthog?.capture("signature_declined", {
+        documentId: properties?.documentId,
+        recipientId: properties?.recipientId,
+        fieldType: properties?.fieldType,
+        fieldCount: properties?.fieldCount,
+      });
     },
     [posthog]
   );
@@ -192,6 +217,8 @@ export function useAnalytics() {
       templateUsed,
       templateEdited,
       templateDeleted,
+      signatureViewed,
+      signingAuthVerified,
       signatureCompleted,
       signatureDeclined,
     },

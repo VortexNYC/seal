@@ -2,6 +2,7 @@ import { describe, test, expect } from "vitest";
 
 import {
   MAX_FILE_SIZE,
+  MIN_PDF_SIZE,
   DROPZONE_ACCEPT_TYPES,
   formatFileSize,
   getMaxFileSizeDisplay,
@@ -71,7 +72,7 @@ describe("upload-validation", () => {
 
   describe("validateFileForUpload", () => {
     test("accepts a valid PDF file", () => {
-      const file = new File(["pdf content"], "document.pdf", {
+      const file = new File(["%PDF-1.4\n" + "x".repeat(120)], "document.pdf", {
         type: "application/pdf",
       });
       const result = validateFileForUpload(file);
@@ -100,6 +101,15 @@ describe("upload-validation", () => {
       const result = validateFileForUpload(file);
       expect(result.valid).toBe(false);
       expect(result.errors).toContain("File is empty");
+    });
+
+    test("rejects a trailer-only PDF stub", () => {
+      const stub = "%PDF-1.4\ntrailer<<>>\n%%EOF\n";
+      const file = new File([stub], "empty.pdf", { type: "application/pdf" });
+      expect(file.size).toBeLessThan(MIN_PDF_SIZE);
+      const result = validateFileForUpload(file);
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain("PDF appears empty or corrupt");
     });
 
     test("rejects an oversized file", () => {
@@ -133,7 +143,7 @@ describe("upload-validation", () => {
     });
 
     test("rejects a file with wrong extension", () => {
-      const file = new File(["content"], "image.png", {
+      const file = new File(["%PDF-1.4\n" + "x".repeat(120)], "image.png", {
         type: "application/pdf",
       });
       const result = validateFileForUpload(file);
@@ -151,7 +161,7 @@ describe("upload-validation", () => {
     });
 
     test("handles uppercase .PDF extension as valid", () => {
-      const file = new File(["content"], "DOCUMENT.PDF", {
+      const file = new File(["%PDF-1.4\n" + "x".repeat(120)], "DOCUMENT.PDF", {
         type: "application/pdf",
       });
       const result = validateFileForUpload(file);
@@ -161,6 +171,7 @@ describe("upload-validation", () => {
           e.includes("Only PDF, DOCX, XLSX, PPTX, and CSV files are supported")
         )
       ).toBe(false);
+      expect(result.valid).toBe(true);
     });
   });
 });

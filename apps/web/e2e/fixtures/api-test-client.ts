@@ -128,7 +128,13 @@ export type ApiRecipient = {
 export async function addRecipient(
   request: APIRequestContext,
   documentPublicId: string,
-  recipient: { email: string; name?: string; role?: string }
+  recipient: {
+    email: string;
+    name?: string;
+    role?: string;
+    authMethod?: "none" | "access_code" | "email_otp";
+    accessCode?: string;
+  }
 ): Promise<ApiRecipient> {
   const results = await apiRequest<ApiRecipient[]>(
     request,
@@ -140,6 +146,8 @@ export async function addRecipient(
           email: recipient.email,
           name: recipient.name ?? null,
           role: recipient.role ?? "signer",
+          authMethod: recipient.authMethod,
+          accessCode: recipient.accessCode,
         },
       ],
     }
@@ -150,6 +158,22 @@ export async function addRecipient(
     throw new Error("addRecipient returned no recipients");
   }
   return first;
+}
+
+export async function updateSigningSettings(
+  request: APIRequestContext,
+  input: {
+    requireRecipientAuth?: boolean;
+    requireSignerAccount?: boolean;
+    defaultRecipientAuthMethod?: "email_otp" | "access_code";
+  }
+): Promise<void> {
+  await apiRequest(
+    request,
+    "patch",
+    `/api/organizations/${encodeURIComponent(organizationSlug())}/signing`,
+    input
+  );
 }
 
 export type ApiSignatureField = {

@@ -5,13 +5,23 @@ import {
   Head,
   Heading,
   Html,
+  Img,
   Preview,
   Section,
   Text,
 } from "@react-email/components";
 import type { ReactNode } from "react";
 
-import { containers, email, fonts, surfaces, text } from "../styles.js";
+import { containers, email, fonts, status, surfaces, text } from "../styles.js";
+
+/** Hosted from apps/web/public after deploy. */
+const SEAL_LOCKUP_LIGHT_URL =
+  "https://app.seal.nyc/logo/seal-lockup-light.png";
+const SEAL_LOCKUP_DARK_URL = "https://app.seal.nyc/logo/seal-lockup-dark.png";
+const HEDVIG_SANS_URL =
+  "https://app.seal.nyc/fonts/hedvig-letters-sans.woff2";
+const HEDVIG_SERIF_URL =
+  "https://app.seal.nyc/fonts/hedvig-letters-serif.woff2";
 
 const sealEmailBrand = {
   name: "Seal",
@@ -39,7 +49,28 @@ export function EmailLayout({
 }: EmailLayoutProps) {
   return (
     <Html lang="en">
-      <Head />
+      <Head>
+        <style>{`
+          @font-face {
+            font-family: "Hedvig Letters Sans";
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: url("${HEDVIG_SANS_URL}") format("woff2");
+          }
+          @font-face {
+            font-family: "Hedvig Letters Serif";
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: url("${HEDVIG_SERIF_URL}") format("woff2");
+          }
+          @media (prefers-color-scheme: dark) {
+            .seal-lockup-light { display: none !important; }
+            .seal-lockup-dark { display: block !important; }
+          }
+        `}</style>
+      </Head>
       <Preview>{preview}</Preview>
       <Body
         style={{
@@ -49,8 +80,42 @@ export function EmailLayout({
         }}
       >
         <Container style={containers.card}>
-          <Section style={{ marginBottom: "24px" }}>
-            <Heading as="h1" style={text.heading}>
+          <Section style={{ marginBottom: "28px" }}>
+            <Img
+              className="seal-lockup-light"
+              src={SEAL_LOCKUP_LIGHT_URL}
+              alt="Seal"
+              width={140}
+              height={36}
+              style={{
+                display: "block",
+                margin: "0 0 20px 0",
+                border: "0",
+                outline: "none",
+                textDecoration: "none",
+              }}
+            />
+            <Img
+              className="seal-lockup-dark"
+              src={SEAL_LOCKUP_DARK_URL}
+              alt="Seal"
+              width={140}
+              height={36}
+              style={{
+                display: "none",
+                margin: "0 0 20px 0",
+                border: "0",
+                outline: "none",
+                textDecoration: "none",
+              }}
+            />
+            <Heading
+              as="h1"
+              style={{
+                ...text.heading,
+                fontFamily: fonts.serif,
+              }}
+            >
               {subtitle}
             </Heading>
           </Section>
@@ -58,6 +123,9 @@ export function EmailLayout({
           {footerText ? (
             <Text style={surfaces.footer}>{footerText}</Text>
           ) : null}
+          <Text style={surfaces.footer}>
+            {sealEmailBrand.name} · {sealEmailBrand.supportEmail}
+          </Text>
         </Container>
       </Body>
     </Html>
@@ -75,14 +143,14 @@ export const emailStyles = {
   },
   /** Secondary/lighter body text */
   bodyTextMuted: {
-    color: "#6b6560",
+    color: email.mutedForeground,
     fontSize: "16px",
     lineHeight: "26px",
     margin: "0 0 16px 0",
   },
   /** Large body text with bottom margin */
   bodyTextSpaced: {
-    color: "#6b6560",
+    color: email.mutedForeground,
     fontSize: "16px",
     lineHeight: "26px",
     margin: "0 0 24px 0",
@@ -96,7 +164,7 @@ export const emailStyles = {
   },
   /** Informational small text (no margin) */
   infoText: {
-    color: "#6b6560",
+    color: email.mutedForeground,
     fontSize: "14px",
     lineHeight: "22px",
     margin: "0",
@@ -105,6 +173,19 @@ export const emailStyles = {
   strong: {
     color: email.foreground,
     fontWeight: "600" as const,
+  },
+  /** Centered CTA row — email clients ignore Tailwind className */
+  ctaSection: {
+    textAlign: "center" as const,
+    margin: "32px 0",
+  },
+  ctaSectionCompact: {
+    textAlign: "center" as const,
+    margin: "24px 0 0 0",
+  },
+  ctaSectionTight: {
+    textAlign: "center" as const,
+    marginTop: "12px",
   },
   /** Primary CTA button */
   ctaButton: {
@@ -117,10 +198,10 @@ export const emailStyles = {
     textAlign: "center" as const,
     textDecoration: "none",
   },
-  /** Secondary/info CTA button */
+  /** Secondary/info CTA — functional status.info, not a brand accent */
   ctaButtonSecondary: {
-    backgroundColor: "#2563eb",
-    color: "#ffffff",
+    backgroundColor: status.info,
+    color: status.infoForeground,
     borderRadius: "6px",
     fontSize: "14px",
     fontWeight: "500" as const,
@@ -156,6 +237,6 @@ export const emailStyles = {
     padding: "12px 12px 12px 16px",
     marginBottom: "24px",
   },
-  /** Link color */
+  /** Link color — brand primary */
   linkColor: email.primary,
 } as const;

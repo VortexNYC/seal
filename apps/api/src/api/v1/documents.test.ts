@@ -283,7 +283,7 @@ describe("GET /api/v1/documents", () => {
     const storageId = "uploads/test-pdf";
     await env.DOCUMENTS_BUCKET.put(
       storageId,
-      new TextEncoder().encode("%PDF-1.4 test"),
+      new TextEncoder().encode("%PDF-1.4 test\n" + "x".repeat(120)),
       {
         httpMetadata: { contentType: "application/pdf" },
       }

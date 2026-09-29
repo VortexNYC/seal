@@ -132,6 +132,31 @@ describe("api v1 tokens", () => {
     expect(revokeRes.status).toBe(200);
   });
 
+  it("rejects a member-role admin-scoped token from creating tokens", async () => {
+    const { slug, plaintext } = await seedTokenContext({
+      role: "member",
+      tokenScopes: ["admin"],
+    });
+
+    const res = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/v1/organizations/${encodeURIComponent(
+          slug
+        )}/tokens`,
+        {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${plaintext}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({ name: "Try", scopes: ["read"] }),
+        }
+      ),
+      env
+    );
+    expect(res.status).toBe(403);
+  });
+
   it("rejects a non-admin token from creating tokens", async () => {
     const { slug, plaintext } = await seedTokenContext({
       role: "member",

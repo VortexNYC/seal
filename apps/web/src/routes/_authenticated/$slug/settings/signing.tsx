@@ -9,7 +9,6 @@ import { Textarea } from "@cloudflare/kumo";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
 import { Input } from "@cloudflare/kumo/components/input";
-import { Label } from "@cloudflare/kumo/components/label";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
 import { useQuery } from "@tanstack/react-query";
@@ -49,11 +48,15 @@ function SigningSettings() {
     esignConsentText: string;
     privacyNoticeText: string;
     defaultDeadlineDays: number;
+    requireRecipientAuth: boolean;
+    requireSignerAccount: boolean;
   }>({
     allowedSignatureTypes: [...SIGNATURE_TYPE_OPTIONS],
     esignConsentText: "",
     privacyNoticeText: "",
     defaultDeadlineDays: 30,
+    requireRecipientAuth: true,
+    requireSignerAccount: true,
   });
 
   useEffect(() => {
@@ -63,6 +66,8 @@ function SigningSettings() {
         esignConsentText: signingSettings.esignConsentText ?? "",
         privacyNoticeText: signingSettings.privacyNoticeText ?? "",
         defaultDeadlineDays: signingSettings.defaultDeadlineDays,
+        requireRecipientAuth: signingSettings.requireRecipientAuth,
+        requireSignerAccount: signingSettings.requireSignerAccount,
       });
     }
   }, [signingSettings]);
@@ -103,6 +108,9 @@ function SigningSettings() {
         esignConsentText: formData.esignConsentText || undefined,
         privacyNoticeText: formData.privacyNoticeText || undefined,
         defaultDeadlineDays: formData.defaultDeadlineDays,
+        requireRecipientAuth: formData.requireRecipientAuth,
+        requireSignerAccount: formData.requireSignerAccount,
+        defaultRecipientAuthMethod: "email_otp",
       });
       toast.success("Signing settings updated");
     } catch (error) {
@@ -140,6 +148,7 @@ function SigningSettings() {
             <div className="space-y-4">
               {SIGNATURE_TYPE_OPTIONS.map((type) => (
                 <Checkbox
+                  key={type}
                   checked={formData.allowedSignatureTypes.includes(type)}
                   disabled={isSubmitting}
                   onCheckedChange={(checked) =>
@@ -158,6 +167,44 @@ function SigningSettings() {
           </LayerCard.Primary>
         </LayerCard>
 
+        <LayerCard className="md:col-span-2">
+          <LayerCard.Secondary>
+            <Text as="h2" variant="heading">
+              Identity &amp; audit
+            </Text>
+            <Text variant="secondary">
+              Defaults for every envelope. Recipients prove inbox control and
+              (optionally) create a Seal account before they can complete.
+            </Text>
+          </LayerCard.Secondary>
+          <LayerCard.Primary>
+            <div className="space-y-4">
+              <Checkbox
+                checked={formData.requireRecipientAuth}
+                disabled={isSubmitting}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    requireRecipientAuth: checked === true,
+                  }))
+                }
+                label="Require email OTP or access code for signers"
+              />
+              <Checkbox
+                checked={formData.requireSignerAccount}
+                disabled={isSubmitting}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    requireSignerAccount: checked === true,
+                  }))
+                }
+                label="Require Seal account before signing"
+              />
+            </div>
+          </LayerCard.Primary>
+        </LayerCard>
+
         <LayerCard>
           <LayerCard.Secondary>
             <Text as="h2" variant="heading">
@@ -170,12 +217,10 @@ function SigningSettings() {
           </LayerCard.Secondary>
           <LayerCard.Primary>
             <div className="flex items-center gap-2">
-              <Label htmlFor="default-deadline-days" className="sr-only">
-                Default deadline in days
-              </Label>
               <div className="w-24">
                 <Input
                   id="default-deadline-days"
+                  aria-label="Default deadline in days"
                   type="number"
                   min={1}
                   max={365}

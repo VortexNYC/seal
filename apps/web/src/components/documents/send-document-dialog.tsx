@@ -25,6 +25,7 @@ import { useState } from "react";
 import { z } from "zod";
 
 import { type DocumentDetailPaymentConfig } from "@/data/document-detail";
+import { useAnalytics } from "@/hooks/use-analytics";
 import { sendDocument } from "@/lib/api-client";
 import { type Id } from "@/lib/ids";
 import { formatMoney, money } from "@/lib/money";
@@ -114,6 +115,7 @@ export function SendDocumentDialog({
   defaultDeadlineDays,
   organizationSlug,
 }: SendDocumentDialogProps) {
+  const { track } = useAnalytics();
   const [customMessage, setCustomMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
 
@@ -229,6 +231,8 @@ export function SendDocumentDialog({
             : undefined,
         expirationPeriod,
       });
+
+      track.documentSent({ documentId: documentPublicId });
 
       const emailsSent = pendingRecipients.length;
       toast.success(

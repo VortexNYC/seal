@@ -1136,7 +1136,8 @@ function ActivitySection({
 export function DocumentSidebar(props: DocumentSidebarProps) {
   // Normalize null → undefined for components that don't accept null
   const normalizedWorkflowStatus = props.workflowStatus ?? undefined;
-  const isDraft = normalizedWorkflowStatus === "draft";
+  const isDraft =
+    !normalizedWorkflowStatus || normalizedWorkflowStatus === "draft";
   const isDraftBuilder = props.canEdit && isDraft;
   const isOversight = !isDraft;
   const visibleProgress = isOversight ? props.progress : null;

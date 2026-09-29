@@ -11,7 +11,7 @@ import { useState } from "react";
 import { z } from "zod";
 
 import { useOrganizationMembers } from "@/hooks/use-organization-members";
-import { addRecipients, getContacts } from "@/lib/api-client";
+import { addRecipients, getContacts, getSigningSettings } from "@/lib/api-client";
 import { toast } from "@/lib/toast";
 import { cn, getErrorMessage } from "@/lib/utils";
 
@@ -19,6 +19,7 @@ import { parseSelectValue } from "../../lib/select-values";
 
 const RECIPIENT_TABS = ["team", "outsider"] as const;
 const RECIPIENT_ROLES = ["signer", "viewer", "approver"] as const;
+type RecipientAuthMethod = "none" | "access_code" | "email_otp";
 
 const outsiderSchema = z.object({
   email: z.email("Please enter a valid email address"),
@@ -63,15 +64,27 @@ export function AddRecipientDialog({
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState<"signer" | "viewer" | "approver">("signer");
-  const [authMethod, setAuthMethod] = useState<
-    "none" | "access_code" | "email_otp"
-  >("none");
+  const [authMethod, setAuthMethod] = useState<RecipientAuthMethod | null>(
+    null
+  );
   const [accessCode, setAccessCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
 
   const { data: members } = useOrganizationMembers(slug, open);
+
+  const { data: signingSettings } = useQuery({
+    queryKey: ["signing", organizationSlug],
+    queryFn: () => getSigningSettings(organizationSlug),
+    enabled: open,
+  });
+
+  const resolvedAuthMethod: RecipientAuthMethod =
+    authMethod ??
+    signingSettings?.defaultRecipientAuthMethod ??
+    "email_otp";
+  const requireRecipientAuth = signingSettings?.requireRecipientAuth ?? true;
 
   const { data: contactSuggestions } = useQuery({
     queryKey: ["contacts", "suggest", email],
@@ -92,7 +105,7 @@ export function AddRecipientDialog({
       email: string;
       name?: string;
       role: "signer" | "viewer" | "approver";
-      authMethod?: "none" | "access_code" | "email_otp";
+      authMethod?: RecipientAuthMethod;
       accessCode?: string;
     }) => addRecipients(organizationSlug, documentPublicId, [input]),
   });
@@ -140,7 +153,18 @@ export function AddRecipientDialog({
       recipientName = name.trim() || undefined;
     }
 
-    if (authMethod === "access_code" && accessCode.trim().length < 4) {
+    if (
+      requireRecipientAuth &&
+      resolvedAuthMethod === "none" &&
+      (role === "signer" || role === "approver")
+    ) {
+      toast.error(
+        "This workspace requires email OTP or an access code for signers"
+      );
+      return;
+    }
+
+    if (resolvedAuthMethod === "access_code" && accessCode.trim().length < 4) {
       toast.error("Access code must be at least 4 characters");
       return;
     }
@@ -152,17 +176,19 @@ export function AddRecipientDialog({
         email: recipientEmail,
         name: recipientName,
         role,
-        authMethod,
+        authMethod: resolvedAuthMethod,
         accessCode:
-          authMethod === "access_code" ? accessCode.trim() : undefined,
+          resolvedAuthMethod === "access_code"
+            ? accessCode.trim()
+            : undefined,
       });
 
       toast.success("Recipient added successfully");
-      // Reset form
+      // Reset form — next open picks org default again
       setEmail("");
       setName("");
       setRole("signer");
-      setAuthMethod("none");
+      setAuthMethod(null);
       setAccessCode("");
       setSelectedMember(null);
       onOpenChange(false);
@@ -180,7 +206,7 @@ export function AddRecipientDialog({
     loading ||
     (activeTab === "team" && !selectedMember) ||
     (activeTab === "outsider" && (!email || !email.includes("@"))) ||
-    (authMethod === "access_code" && accessCode.trim().length < 4);
+    (resolvedAuthMethod === "access_code" && accessCode.trim().length < 4);
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -215,7 +241,7 @@ export function AddRecipientDialog({
                   <Loader2Icon className="text-muted-foreground h-6 w-6 animate-spin" />
                 </div>
               ) : eligibleMembers && eligibleMembers.length > 0 ? (
-                <div className="max-h-[200px] space-y-1 overflow-y-auto rounded-md border p-2">
+                <div className="max-h-[min(12rem,40vh)] space-y-1 overflow-y-auto rounded-md border p-2">
                   {eligibleMembers.map((member) => (
                     <button
                       key={member.userId}
@@ -362,7 +388,7 @@ export function AddRecipientDialog({
 
           <div className="space-y-2">
             <Select
-              value={authMethod}
+              value={resolvedAuthMethod}
               label="Authentication"
               onValueChange={(v) => {
                 if (v === "none" || v === "access_code" || v === "email_otp") {
@@ -370,25 +396,30 @@ export function AddRecipientDialog({
                 }
               }}
             >
-              <Select.Option value="none">None (link only)</Select.Option>
               <Select.Option value="email_otp">Email OTP</Select.Option>
               <Select.Option value="access_code">Access code</Select.Option>
+              {!requireRecipientAuth ? (
+                <Select.Option value="none">None (link only)</Select.Option>
+              ) : null}
             </Select>
             <p className="text-muted-foreground text-xs">
-              {authMethod === "none" &&
+              {resolvedAuthMethod === "none" &&
                 "Anyone with the signing link can act."}
-              {authMethod === "email_otp" &&
-                "Signer must enter a one-time code sent to their email."}
-              {authMethod === "access_code" &&
+              {resolvedAuthMethod === "email_otp" &&
+                "Signer must enter a one-time code sent to their email before signing."}
+              {resolvedAuthMethod === "access_code" &&
                 "Signer must enter a shared access code before signing."}
+              {requireRecipientAuth
+                ? " Workspace policy requires authenticated recipients."
+                : null}
             </p>
           </div>
 
-          {authMethod === "access_code" ? (
+          {resolvedAuthMethod === "access_code" ? (
             <div className="space-y-2">
-              <Label htmlFor="access-code">Access code</Label>
               <Input
                 id="access-code"
+                label="Access code"
                 data-testid="recipient-access-code"
                 value={accessCode}
                 onChange={(e) => setAccessCode(e.target.value)}

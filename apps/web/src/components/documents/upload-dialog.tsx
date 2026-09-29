@@ -293,10 +293,10 @@ function useUploadController({
 function UploadDialogHeader() {
   return (
     <>
-      <Dialog.Title>Upload Documents</Dialog.Title>
+      <Dialog.Title>Upload Document</Dialog.Title>
       <Dialog.Description>
-        Drag and drop files here or click to browse. Maximum file size:{" "}
-        {getMaxFileSizeDisplay()}. Supported types:{" "}
+        Drag and drop a file here or click to browse. One file at a time.
+        Maximum file size: {getMaxFileSizeDisplay()}. Supported types:{" "}
         {getSupportedFileTypesDisplay()}.
       </Dialog.Description>
     </>
@@ -381,10 +381,10 @@ function DescriptionField({
 
   return (
     <div className="grid gap-2">
-      <Label htmlFor="description">Description (optional)</Label>
       <Input
         id="description"
         type="text"
+        label="Description (optional)"
         placeholder="Add a description..."
         value={controller.description}
         onChange={(event) => controller.setDescription(event.target.value)}

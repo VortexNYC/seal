@@ -268,9 +268,15 @@ function DocumentDetailPage() {
   const [showAiSuggestions, setShowAiSuggestions] = useState(true);
 
   // ── Derived state ───────────────────────────────────────────────────────
+  // API maps documents.status → workflowStatus. Prep states: draft, and legacy
+  // "uploaded" left by older upload handlers before they stopped overwriting draft.
+  const prepStatuses = new Set(["draft", "uploaded"]);
+  const isPrepStatus =
+    !documentData.workflowStatus ||
+    prepStatuses.has(documentData.workflowStatus);
+
   const canEdit =
-    documentData.status === "active" &&
-    (documentData.workflowStatus === "draft" || !documentData.workflowStatus);
+    documentData.status === "active" && isPrepStatus;
 
   const isExpired = documentData.workflowStatus === "expired";
 
@@ -283,7 +289,7 @@ function DocumentDetailPage() {
   }
 
   const getSendDocumentValidation = () => {
-    const canSendStatus = documentData.workflowStatus === "draft" || isExpired;
+    const canSendStatus = isPrepStatus || isExpired;
     if (!canSendStatus || recipients.length === 0 || (!canEdit && !isExpired)) {
       return {
         canSend: false,
@@ -415,8 +421,10 @@ function DocumentDetailPage() {
     }
   };
 
-  const handleAddMyselfConfirm = async () => {
-    if (!user?.primaryEmailAddress?.emailAddress) {
+  const handleAddMyselfConfirm = async (): Promise<void> => {
+    const email =
+      userEmail ?? user?.primaryEmailAddress?.emailAddress ?? undefined;
+    if (!email) {
       toast.error("Could not get your email address");
       docState.setAddMyselfOpen(false);
       return;
@@ -425,8 +433,8 @@ function DocumentDetailPage() {
     try {
       await addRecipients([
         {
-          email: user.primaryEmailAddress.emailAddress,
-          name: user.fullName || undefined,
+          email,
+          name: user?.fullName || undefined,
           role: "signer",
         },
       ]);
@@ -973,7 +981,9 @@ function DocumentDetailPage() {
           selectedRecipientId={fieldPlacement.selectedRecipientId}
           onRecipientSelect={fieldPlacement.setSelectedRecipientId}
           onConfirm={fieldPlacement.handleConfirmFieldPlacement}
-          fieldType={fieldPlacement.pendingFieldData?.fieldType || "field"}
+          fieldType={
+            fieldPlacement.pendingFieldData?.fieldType || "signature"
+          }
           pageNumber={fieldPlacement.pendingFieldData?.page || 1}
         />
 

@@ -16,6 +16,7 @@ const ORGANIZATION_ROUTE_SEGMENTS = new Set([
   "goals",
   "transactions",
   "settings",
+  "onboarding",
 ]);
 
 interface SplitPathResult {

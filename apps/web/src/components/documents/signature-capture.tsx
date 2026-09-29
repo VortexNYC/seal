@@ -8,7 +8,6 @@ import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Input } from "@cloudflare/kumo/components/input";
-import { Label } from "@cloudflare/kumo/components/label";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Tabs } from "@cloudflare/kumo/components/tabs";
 import {
@@ -22,7 +21,7 @@ import {
   Trash,
 } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type JSX } from "react";
+import { useEffect, useState, type JSX } from "react";
 
 import {
   ESignature,
@@ -37,6 +36,7 @@ import {
   updateSavedSignature,
   type ApiSavedSignature,
 } from "@/lib/api-client";
+import { cropTransparentDataUrl } from "@/lib/crop-transparent-canvas";
 import { parseSelectValue } from "@/lib/select-values";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -105,6 +105,31 @@ export function SignatureCapture({
     enabled: showLibrary,
   });
 
+  const isFirstAdopt = showLibrary && savedSignatures.length === 0;
+
+  // DocuSeal-class: remember a default signature and land on it next time.
+  useEffect(() => {
+    if (!showLibrary || savedSignatures.length === 0) return;
+    const preferred =
+      savedSignatures.find((s) => s.isDefault) ?? savedSignatures[0];
+    if (preferred && !selectedSavedSignature) {
+      setSelectedSavedSignature(preferred.id);
+      setActiveTab("saved");
+    }
+  }, [showLibrary, savedSignatures, selectedSavedSignature]);
+
+  // First-run adopt: prefill save-as-default like DocuSeal profile signature.
+  useEffect(() => {
+    if (isFirstAdopt && showSaveDialog) {
+      setSaveAsDefault(true);
+      if (!saveSignatureName.trim()) {
+        setSaveSignatureName(
+          recipientName?.trim() ? `${recipientName.trim()}'s signature` : "My signature"
+        );
+      }
+    }
+  }, [isFirstAdopt, showSaveDialog, recipientName, saveSignatureName]);
+
   const saveSignatureMutation = useMutation({
     mutationFn: createSavedSignature,
     onSuccess: () => {
@@ -148,7 +173,8 @@ export function SignatureCapture({
       // Non-critical
     }
 
-    onSignatureCapture(signature.signatureImageUrl, signature.signatureType);
+    const cropped = await cropTransparentDataUrl(signature.signatureImageUrl);
+    onSignatureCapture(cropped, signature.signatureType);
   };
 
   const handleSaveToLibrary = async (): Promise<void> => {
@@ -160,9 +186,10 @@ export function SignatureCapture({
     }
 
     try {
+      const cropped = await cropTransparentDataUrl(pendingSignatureData.data);
       await saveSignatureMutation.mutateAsync({
         name: saveSignatureName.trim(),
-        signatureImageUrl: pendingSignatureData.data,
+        signatureImageUrl: cropped,
         signatureType: pendingSignatureData.type,
         setAsDefault: saveAsDefault,
       });
@@ -171,7 +198,7 @@ export function SignatureCapture({
       setShowSaveDialog(false);
       setSaveSignatureName("");
       setSaveAsDefault(false);
-      onSignatureCapture(pendingSignatureData.data, pendingSignatureData.type);
+      onSignatureCapture(cropped, pendingSignatureData.type);
     } catch (error) {
       toast.error("Failed to save signature", {
         description: error instanceof Error ? error.message : "Unknown error",
@@ -218,15 +245,24 @@ export function SignatureCapture({
       setShowSaveDialog(true);
       return;
     }
-    onSignatureCapture(data, type);
+    void (async () => {
+      const cropped = await cropTransparentDataUrl(data);
+      onSignatureCapture(cropped, type);
+    })();
   };
 
   const handleSubmitWithoutSaving = (): void => {
-    if (pendingSignatureData) {
-      onSignatureCapture(pendingSignatureData.data, pendingSignatureData.type);
+    if (!pendingSignatureData) {
+      setShowSaveDialog(false);
+      return;
     }
+    const { data, type } = pendingSignatureData;
     setShowSaveDialog(false);
     setPendingSignatureData(null);
+    void (async () => {
+      const cropped = await cropTransparentDataUrl(data);
+      onSignatureCapture(cropped, type);
+    })();
   };
 
   const handleAccept = (): void => {
@@ -475,10 +511,13 @@ export function SignatureCapture({
 
       <Dialog.Root open={showSaveDialog} onOpenChange={setShowSaveDialog}>
         <Dialog>
-          <Dialog.Title>Save to Signature Library?</Dialog.Title>
+          <Dialog.Title>
+            {isFirstAdopt ? "Adopt your signature" : "Save to Signature Library?"}
+          </Dialog.Title>
           <Dialog.Description>
-            Would you like to save this signature for quick reuse in future
-            documents?
+            {isFirstAdopt
+              ? "Save this as your default signature so the next document is one click."
+              : "Would you like to save this signature for quick reuse in future documents?"}
           </Dialog.Description>
           <div className="space-y-4 py-4">
             {pendingSignatureData ? (
@@ -494,13 +533,12 @@ export function SignatureCapture({
               </div>
             ) : null}
             <div className="space-y-2">
-              <Label htmlFor="signature-name">Signature name</Label>
               <Input
                 id="signature-name"
+                label="Signature name"
                 value={saveSignatureName}
                 onChange={(e) => setSaveSignatureName(e.target.value)}
                 placeholder="e.g., My Personal Signature"
-                aria-label="Signature name"
               />
             </div>
             <Checkbox
@@ -515,7 +553,7 @@ export function SignatureCapture({
               onClick={handleSubmitWithoutSaving}
               className="flex-1"
             >
-              Skip & Sign
+              {isFirstAdopt ? "Skip for now" : "Skip & Sign"}
             </Button>
             <Button
               onClick={() => {
@@ -525,7 +563,7 @@ export function SignatureCapture({
               className="flex-1"
             >
               <Plus className="mr-2 h-4 w-4" />
-              Save & Sign
+              {isFirstAdopt ? "Adopt & Sign" : "Save & Sign"}
             </Button>
           </div>
         </Dialog>

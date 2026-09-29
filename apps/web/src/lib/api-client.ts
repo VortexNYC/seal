@@ -187,6 +187,13 @@ function getBaseUrl(): string {
   }
   return "";
 }
+/** Many mutation routes return `{ success: true }` rather than 204/empty. */
+const mutationOkSchema = z.union([
+  z.undefined(),
+  z.null(),
+  z.object({ success: z.literal(true) }),
+]);
+
 async function apiFetch<T>(
   path: string,
   schema: z.ZodType<T>,
@@ -543,6 +550,9 @@ const signingSettingsSchema = z.object({
   esignConsentText: z.string().nullable().optional(),
   privacyNoticeText: z.string().nullable().optional(),
   defaultDeadlineDays: z.number().int(),
+  requireRecipientAuth: z.boolean(),
+  requireSignerAccount: z.boolean(),
+  defaultRecipientAuthMethod: z.enum(["email_otp", "access_code"]),
 });
 export type ApiSigningSettings = z.infer<typeof signingSettingsSchema>;
 export async function getSigningSettings(
@@ -560,6 +570,9 @@ export async function updateSigningSettings(
     esignConsentText?: string;
     privacyNoticeText?: string;
     defaultDeadlineDays?: number;
+    requireRecipientAuth?: boolean;
+    requireSignerAccount?: boolean;
+    defaultRecipientAuthMethod?: "email_otp" | "access_code";
   }
 ): Promise<ApiSigningSettings> {
   return apiFetch(
@@ -1198,7 +1211,7 @@ export async function sendDocument(
 ): Promise<void> {
   await apiFetch(
     `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/send`,
-    z.void(),
+    mutationOkSchema,
     {
       method: "POST",
       body: JSON.stringify(options ?? {}),
@@ -1211,7 +1224,7 @@ export async function cancelDocument(
 ): Promise<void> {
   await apiFetch(
     `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/cancel`,
-    z.void(),
+    mutationOkSchema,
     { method: "POST" }
   );
 }
@@ -2239,6 +2252,7 @@ const publicSigningTokenResponseSchema = z.object({
       esignConsentVersion: z.string().optional(),
       privacyNoticeText: z.string().nullable().optional(),
       privacyNoticeVersion: z.string().optional(),
+      requireSignerAccount: z.boolean().optional(),
     })
     .optional(),
 });
@@ -2395,12 +2409,24 @@ export async function getPublicSigningPaymentConfigs(
 }
 export async function getPublicSigningPdf(token: string): Promise<Blob> {
   const response = await fetch(
-    `${getBaseUrl()}/api/public/signing/${encodeURIComponent(token)}/pdf`
+    `${getBaseUrl()}/api/public/signing/${encodeURIComponent(token)}/pdf`,
+    { credentials: "include" }
   );
   if (!response.ok) {
     throw new Error("Failed to load PDF");
   }
-  return response.blob();
+  const blob = await response.blob();
+  const contentType = (blob.type || response.headers.get("content-type") || "")
+    .split(";")[0]
+    .trim()
+    .toLowerCase();
+  if (contentType && contentType !== "application/pdf") {
+    throw new Error("Failed to load PDF");
+  }
+  if (blob.size < 100) {
+    throw new Error("Failed to load PDF");
+  }
+  return blob;
 }
 export async function recordPublicSigningConsent(
   token: string,

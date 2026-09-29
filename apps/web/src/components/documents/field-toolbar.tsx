@@ -149,10 +149,16 @@ function FieldButton({
     dragImage.textContent = label;
 
     document.body.appendChild(dragImage);
+    // Signature-like: hotspot at bottom-center so cursor marks the rule.
+    const bottomAnchored =
+      type === "signature" ||
+      type === "free_signature" ||
+      type === "initials" ||
+      type === "stamp";
     e.dataTransfer.setDragImage(
       dragImage,
       dimensions.width / 2,
-      dimensions.height / 2
+      bottomAnchored ? dimensions.height : dimensions.height / 2
     );
 
     requestAnimationFrame(() => {

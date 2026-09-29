@@ -37,6 +37,10 @@ type PageRaster = {
  * is cross-origin and fails without CORS, so the engine never goes ready and
  * the signer stays on an empty white surface. Direct mode loads wasm from the
  * page origin and paints.
+ *
+ * Progressive paint: long packets (50+ pages) used to block on "Loading
+ * document…" until every page finished rasterizing. Paint each page as it
+ * completes so signers can reach mid-document fields immediately.
  */
 export function PdfSigningDocumentSurface({
   src,
@@ -53,12 +57,15 @@ export function PdfSigningDocumentSurface({
 
   const [doc, setDoc] = useState<PdfDocumentObject | null>(null);
   const [pages, setPages] = useState<PageRaster[]>([]);
+  const [numPages, setNumPages] = useState(0);
+  const [isRasterizing, setIsRasterizing] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">(
     "idle"
   );
   const [loadError, setLoadError] = useState<string | null>(null);
   const docRef = useRef<PdfDocumentObject | null>(null);
   const pageUrlsRef = useRef<string[]>([]);
+  const hasPaintedRef = useRef(false);
   const onLoadRef = useRef(onDocumentLoadSuccess);
   onLoadRef.current = onDocumentLoadSuccess;
 
@@ -70,6 +77,8 @@ export function PdfSigningDocumentSurface({
       setStatus("loading");
       setLoadError(null);
       setPages([]);
+      setNumPages(0);
+      hasPaintedRef.current = false;
       try {
         const response = await fetch(src);
         if (!response.ok) {
@@ -99,6 +108,7 @@ export function PdfSigningDocumentSurface({
         }
         docRef.current = opened;
         setDoc(opened);
+        setNumPages(opened.pages.length);
         onLoadRef.current?.({ numPages: opened.pages.length });
       } catch (err) {
         if (!cancelled) {
@@ -134,13 +144,19 @@ export function PdfSigningDocumentSurface({
     let cancelled = false;
 
     void (async () => {
-      setStatus("loading");
+      // Keep prior rasters visible while re-painting on width change so
+      // portrait/resize does not flash back to a full-page skeleton.
+      if (!hasPaintedRef.current) {
+        setStatus("loading");
+      }
+      setIsRasterizing(true);
       setLoadError(null);
       try {
         const dpr =
           typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
         const rasters: PageRaster[] = [];
         const newUrls: string[] = [];
+        const previousUrls = pageUrlsRef.current;
 
         for (const page of doc.pages) {
           if (cancelled) return;
@@ -158,6 +174,11 @@ export function PdfSigningDocumentSurface({
             width,
             height: renderedHeight,
           });
+          // Progressive: first page unlocks the surface; later pages append.
+          hasPaintedRef.current = true;
+          setPages([...rasters]);
+          setStatus("ready");
+          pageUrlsRef.current = [...newUrls];
         }
 
         if (cancelled) {
@@ -165,8 +186,10 @@ export function PdfSigningDocumentSurface({
           return;
         }
 
-        for (const url of pageUrlsRef.current) {
-          URL.revokeObjectURL(url);
+        for (const url of previousUrls) {
+          if (!newUrls.includes(url)) {
+            URL.revokeObjectURL(url);
+          }
         }
         pageUrlsRef.current = newUrls;
         setPages(rasters);
@@ -177,6 +200,10 @@ export function PdfSigningDocumentSurface({
           setLoadError(
             err instanceof Error ? err.message : "Failed to render PDF"
           );
+        }
+      } finally {
+        if (!cancelled) {
+          setIsRasterizing(false);
         }
       }
     })();
@@ -209,7 +236,7 @@ export function PdfSigningDocumentSurface({
     );
   }
 
-  if (engineLoading || status === "loading" || pages.length === 0) {
+  if (engineLoading || (status === "loading" && pages.length === 0)) {
     return (
       <div
         className="border-kumo-hairline/50 bg-kumo-elevated rounded-lg border p-16 text-center shadow-sm"
@@ -227,7 +254,7 @@ export function PdfSigningDocumentSurface({
     );
   }
 
-  const numPages = pages.length;
+  const totalPages = numPages > 0 ? numPages : pages.length;
 
   return (
     <div
@@ -240,6 +267,7 @@ export function PdfSigningDocumentSurface({
         <div
           key={`page_${page.pageNumber}`}
           data-page-number={page.pageNumber}
+          data-testid={`pdf-signing-page-${page.pageNumber}`}
           className="border-kumo-hairline/50 bg-kumo-elevated relative mb-4 overflow-hidden rounded-lg border shadow-sm last:mb-0"
         >
           <img
@@ -254,16 +282,26 @@ export function PdfSigningDocumentSurface({
             pageNumber: page.pageNumber,
             pageWidth: page.width,
             pageHeight: page.height,
-            numPages,
+            numPages: totalPages,
           })}
-          {numPages > 1 ? (
+          {totalPages > 1 ? (
             // vortex-allow-color: signing-view scrim dims content uniformly in both themes
             <div className="absolute right-3 bottom-3 rounded-md bg-black/60 px-2 py-1 text-xs text-white backdrop-blur-sm">
-              {page.pageNumber} / {numPages}
+              {page.pageNumber} / {totalPages}
             </div>
           ) : null}
         </div>
       ))}
+      {isRasterizing && pages.length < totalPages ? (
+        <div
+          className="text-kumo-secondary py-2 text-center text-xs"
+          role="status"
+          aria-live="polite"
+          data-testid="pdf-signing-pages-loading"
+        >
+          Loading pages {pages.length}/{totalPages}…
+        </div>
+      ) : null}
     </div>
   );
 }

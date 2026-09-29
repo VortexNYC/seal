@@ -7,13 +7,14 @@
 import { Button } from "@cloudflare/kumo/components/button";
 import { Empty } from "@cloudflare/kumo/components/empty";
 import { Input } from "@cloudflare/kumo/components/input";
-import { Label } from "@cloudflare/kumo/components/label";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Table } from "@cloudflare/kumo/components/table";
 import { Text } from "@cloudflare/kumo/components/text";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+
+import { isOrganizationAdminRole } from "@vortex-api/better-auth-ui";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
@@ -76,8 +77,7 @@ function AuditLogPage() {
       }),
   });
 
-  const isAdmin =
-    organization?.userRole === "owner" || organization?.userRole === "admin";
+  const isAdmin = isOrganizationAdminRole(organization?.userRole);
 
   if (!isAdmin) {
     return (
@@ -145,45 +145,45 @@ function AuditLogPage() {
           </Text>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="grid gap-2">
-              <Label htmlFor="audit-action">Action</Label>
               <Input
                 id="audit-action"
+                label="Action"
                 placeholder="e.g. document.sent"
                 value={action}
                 onChange={(e) => setAction(e.target.value)}
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="audit-resource-type">Resource type</Label>
               <Input
                 id="audit-resource-type"
+                label="Resource type"
                 placeholder="e.g. document"
                 value={resourceType}
                 onChange={(e) => setResourceType(e.target.value)}
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="audit-actor">Actor</Label>
               <Input
                 id="audit-actor"
+                label="Actor"
                 placeholder="Actor ID"
                 value={actor}
                 onChange={(e) => setActor(e.target.value)}
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="audit-from">From</Label>
               <Input
                 id="audit-from"
+                label="From"
                 type="datetime-local"
                 value={from}
                 onChange={(e) => setFrom(e.target.value)}
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="audit-to">To</Label>
               <Input
                 id="audit-to"
+                label="To"
                 type="datetime-local"
                 value={to}
                 onChange={(e) => setTo(e.target.value)}

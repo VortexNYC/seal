@@ -18,6 +18,14 @@ import {
 } from "../global/schema.js";
 import publicRoute from "./public.js";
 
+/** Existing public submit tests exercise token/auth gates without a Seal session. */
+const ANONYMOUS_SIGN_ORG_METADATA = JSON.stringify({
+  signingSettings: {
+    requireSignerAccount: false,
+    requireRecipientAuth: false,
+  },
+});
+
 function createApp() {
   const app = new OpenAPIHono<{ Bindings: CloudflareBindings }>();
   app.route("/api/public", publicRoute);
@@ -223,6 +231,7 @@ describe("public API", () => {
       id: "org_sign",
       name: "Sign Org",
       slug: "sign-org",
+      metadata: ANONYMOUS_SIGN_ORG_METADATA,
     });
 
     await db.insert(documents).values({
@@ -332,6 +341,7 @@ describe("public API", () => {
       id: "org_race",
       name: "Race Org",
       slug: "race-org",
+      metadata: ANONYMOUS_SIGN_ORG_METADATA,
     });
 
     await db.insert(documents).values({
@@ -427,6 +437,7 @@ describe("public API", () => {
       id: "org_auth",
       name: "Auth Org",
       slug: "auth-org",
+      metadata: ANONYMOUS_SIGN_ORG_METADATA,
     });
     await db.insert(documents).values({
       id: "doc_auth",

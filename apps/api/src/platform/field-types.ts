@@ -39,9 +39,10 @@ export const DEFAULT_FIELD_SIZE_PERCENT: Record<
   FieldType,
   { width: number; height: number }
 > = {
-  signature: { width: 33, height: 6 },
-  free_signature: { width: 33, height: 6 },
-  initials: { width: 13, height: 5 },
+  // Height kept short so the field bottom can sit on a printed signature rule.
+  signature: { width: 33, height: 5 },
+  free_signature: { width: 33, height: 5 },
+  initials: { width: 13, height: 4 },
   name: { width: 30, height: 5 },
   email: { width: 33, height: 5 },
   text: { width: 30, height: 5 },

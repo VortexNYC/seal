@@ -2,8 +2,9 @@
  * Public Signing Page
  * Route: /sign/$token
  *
- * Allows recipients to view and sign documents using their unique signing token.
- * This is an unauthenticated route - no login required.
+ * Recipients open their signing link from email. Org settings may require
+ * email OTP / access code and a Seal account matching the invited email
+ * before fields and consent (audit identity).
  */
 
 import { Textarea } from "@cloudflare/kumo";
@@ -22,7 +23,6 @@ import {
   Spinner,
   WarningCircle,
   WifiSlash,
-  XCircle,
 } from "@phosphor-icons/react";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import {
@@ -36,7 +36,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type ReactElement,
 } from "react";
 
 import { EsignConsentDialog } from "@/components/documents/esign-consent-dialog";
@@ -47,11 +46,12 @@ import { PdfSigningDocumentSurface } from "@/components/documents/pdf-signing-do
 import { SignatureCapture } from "@/components/documents/signature-capture";
 import { SigningInviteGate } from "@/components/signing/signing-invite-gate";
 import { SigningShell } from "@/components/signing/signing-shell";
-import { SealLogo } from "@/components/seal-logo";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { DictateNextSignerDialog } from "@/components/signing/dictate-next-signer-dialog";
 import { DocumentExpiredPage } from "@/components/signing/document-expired-page";
 import { RedirectCountdown } from "@/components/signing/redirect-countdown";
 import { SignerAuthGate } from "@/components/signing/signer-auth-gate";
+import { SignerAccountGate } from "@/components/signing/signer-account-gate";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { muteGuestAnalytics, useGuestAnalyticsMute } from "@/lib/guest-analytics";
 import {
@@ -71,15 +71,6 @@ import { formatMoney, money } from "@/lib/money";
 import { pageSEO } from "@/lib/seo";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-function sealAssertPresent<T>(
-  value: T | null | undefined,
-  message = "Expected value to be present."
-): NonNullable<T> {
-  if (value === null || value === undefined) {
-    throw new Error(message);
-  }
-  return value;
-}
 
 function asFieldProperties(value: unknown):
   | {
@@ -257,6 +248,7 @@ function SigningPage() {
   const { track } = useAnalytics();
   useGuestAnalyticsMute();
   const { isEmbedded, embedParams } = useEmbeddedSigning(token);
+  const { isSignedIn } = useCurrentUser();
 
   // Fetch recipient and document data using the signing token
   const { data } = useSuspenseQuery({
@@ -292,6 +284,21 @@ function SigningPage() {
     recipient.authVerified ??
       (!recipient.authMethod || recipient.authMethod === "none")
   );
+  const [accountReady, setAccountReady] = useState(false);
+  const markAccountReady = useCallback(() => {
+    setAccountReady(true);
+  }, []);
+  const signatureViewedRef = useRef(false);
+
+  // Recipient funnel (SEA-73): IDs only — never email, name, or document title.
+  useEffect(() => {
+    if (signatureViewedRef.current) return;
+    signatureViewedRef.current = true;
+    track.signatureViewed({
+      documentId: doc._id,
+      recipientId: recipient._id,
+    });
+  }, [doc._id, recipient._id, track]);
 
   // Fetch fields assigned to this recipient
   const { data: fields, refetch: refetchFields } = useSuspenseQuery({
@@ -325,8 +332,9 @@ function SigningPage() {
     return paymentConfigs.some((config) => config.paymentStatus !== "paid");
   }, [paymentConfigs]);
 
-  // PDF viewer state
+  // PDF viewer state — width follows the container (ResizeObserver), no fixed cap
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfWidth, setPdfWidth] = useState<number | null>(null);
   // Field input state
   const [activeFieldId, setActiveFieldId] = useState<string | null>(null);
   const [showFieldInput, setShowFieldInput] = useState(false);
@@ -339,9 +347,6 @@ function SigningPage() {
   // Field navigation state
   const pdfContainerRef = useRef<HTMLDivElement>(null);
   const fieldRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
-
-  // Responsive PDF width
-  const [pdfWidth, setPdfWidth] = useState(700);
 
   // Network status for session recovery
   const [isOnline, setIsOnline] = useState(
@@ -449,46 +454,111 @@ function SigningPage() {
     };
   }, []);
 
-  // Update PDF width based on container size
+  // PDF width tracks the live container — ResizeObserver, not a hardcoded max.
+  // The PDF shell only mounts after OTP / account / START / privacy / ESIGN
+  // gates. A mount-time effect that bails when `pdfContainerRef` is still null
+  // never re-attaches, so pdfWidth stays null and the signer is stuck on
+  // "Loading document…" forever after consent. Re-run when gates clear, and
+  // rAF-poll until the node exists / has non-zero width.
   useEffect(() => {
-    const updatePdfWidth = () => {
-      if (pdfContainerRef.current) {
-        const containerWidth = pdfContainerRef.current.clientWidth;
-        const availableWidth = containerWidth - 32;
-        setPdfWidth(Math.max(280, Math.min(700, availableWidth)));
+    let rafId = 0;
+    let attempts = 0;
+    let observer: ResizeObserver | null = null;
+    let cancelled = false;
+
+    const updatePdfWidth = (el: HTMLElement): boolean => {
+      const availableWidth = el.clientWidth;
+      if (availableWidth > 0) {
+        setPdfWidth(availableWidth);
+        return true;
       }
+      // Fallback when the flex child reports 0 but the viewport is ready.
+      const fallback = Math.max(0, window.innerWidth - 48);
+      if (fallback > 0) {
+        setPdfWidth(Math.min(fallback, 960));
+        return true;
+      }
+      return false;
     };
 
-    // Initial calculation after mount
-    const timer = setTimeout(updatePdfWidth, 100);
+    const attach = (): void => {
+      if (cancelled) {
+        return;
+      }
+      const el = pdfContainerRef.current;
+      if (!el) {
+        // ~3s of frames — covers gate → shell transitions on slow mobiles.
+        if (attempts >= 180) {
+          return;
+        }
+        attempts += 1;
+        rafId = requestAnimationFrame(attach);
+        return;
+      }
 
-    // Throttled resize handler
-    let rafId: number;
-    const handleResize = () => {
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(updatePdfWidth);
+      updatePdfWidth(el);
+
+      let wideAttempts = 0;
+      const retryUntilWide = (): void => {
+        if (cancelled || updatePdfWidth(el) || wideAttempts >= 30) {
+          return;
+        }
+        wideAttempts += 1;
+        rafId = requestAnimationFrame(retryUntilWide);
+      };
+      rafId = requestAnimationFrame(retryUntilWide);
+
+      observer = new ResizeObserver(() => {
+        cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          updatePdfWidth(el);
+        });
+      });
+      observer.observe(el);
     };
 
-    window.addEventListener("resize", handleResize);
+    attach();
 
     return () => {
-      clearTimeout(timer);
+      cancelled = true;
       cancelAnimationFrame(rafId);
-      window.removeEventListener("resize", handleResize);
+      observer?.disconnect();
     };
-  }, []);
+    // `recipient.status` covers completed signers who skip the gates on first
+    // paint; gate flags cover OTP → consent transitions that mount the shell later.
+  }, [
+    accountReady,
+    hasConsented,
+    hasPrivacyAck,
+    hasStarted,
+    recipient.status,
+  ]);
 
   // Fetch PDF using signing token (no auth required)
   useEffect(() => {
+    let objectUrl: string | null = null;
+    let cancelled = false;
     const fetchPdfUrl = async () => {
       try {
         const blob = await getPublicSigningPdf(token);
-        setPdfUrl(URL.createObjectURL(blob));
+        if (cancelled) {
+          return;
+        }
+        objectUrl = URL.createObjectURL(blob);
+        setPdfUrl(objectUrl);
       } catch {
-        toast.error("Failed to load PDF");
+        if (!cancelled) {
+          toast.error("Failed to load PDF");
+        }
       }
     };
     void fetchPdfUrl();
+    return () => {
+      cancelled = true;
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
   }, [token]);
 
   // Track document view automatically when page loads (only if not already viewed)
@@ -587,19 +657,16 @@ function SigningPage() {
       return;
     }
 
-    // If the main signature field is already filled, submit directly
-    if (
-      mainSignatureField?.fieldType === "signature" &&
-      isMainSignatureFilled
-    ) {
-      const signatureData = mainSignatureField.currentSignatureImageUrl;
-      if (!signatureData) {
-        toast.error("Main signature is missing data. Please sign again.");
-        return;
-      }
-
+    // Prefer the main signature field; fall back to any filled signature so
+    // co-signers whose only field wasn't flagged isMainSignature can still
+    // submit without opening capture again.
+    const filledSignature =
+      (mainSignatureField?.isFilled ? mainSignatureField : null) ??
+      fields.find((f) => f.fieldType === "signature" && f.isFilled) ??
+      null;
+    if (filledSignature?.currentSignatureImageUrl) {
       submitSignatureMutation.mutate({
-        signatureData,
+        signatureData: filledSignature.currentSignatureImageUrl,
         signatureType: "drawn",
       });
       return;
@@ -738,7 +805,10 @@ function SigningPage() {
     if (!allRequiredFieldsFilled) {
       return `Please complete ${unfilledRequiredCount} more required field${unfilledRequiredCount === 1 ? "" : "s"}`;
     }
-    if (mainSignatureField && isMainSignatureFilled) {
+    const hasFilledSignature =
+      isMainSignatureFilled ||
+      fields.some((f) => f.fieldType === "signature" && f.isFilled);
+    if (hasFilledSignature) {
       return recipient.role === "signer"
         ? "Submit Signature"
         : recipient.role === "approver"
@@ -753,8 +823,8 @@ function SigningPage() {
   }, [
     allRequiredFieldsFilled,
     hasUnpaidPayments,
-    mainSignatureField,
     isMainSignatureFilled,
+    fields,
     recipient.role,
     unfilledRequiredCount,
   ]);
@@ -851,7 +921,29 @@ function SigningPage() {
         token={token}
         method={authMethod}
         maskedEmail={recipient.authEmailMasked ?? null}
-        onVerified={() => setAuthVerified(true)}
+        onVerified={() => {
+          track.signingAuthVerified({
+            documentId: doc._id,
+            recipientId: recipient._id,
+            authMethod,
+          });
+          setAuthVerified(true);
+        }}
+      />
+    );
+  }
+
+  const needsAccount =
+    signingSettings?.requireSignerAccount === true &&
+    (recipient.role === "signer" || recipient.role === "approver") &&
+    !isCompleted;
+
+  if (needsAccount && !accountReady) {
+    return (
+      <SignerAccountGate
+        token={token}
+        recipientEmail={recipient.email}
+        onReady={markAccountReady}
       />
     );
   }
@@ -957,8 +1049,8 @@ function SigningPage() {
         : `${remainingCount} field${remainingCount === 1 ? "" : "s"} remaining`;
 
   const documentSurface = (
-    <div ref={pdfContainerRef} className="w-full">
-      {pdfUrl ? (
+    <div ref={pdfContainerRef} className="w-full min-w-0">
+      {pdfUrl && pdfWidth !== null ? (
         <div className="space-y-4">
           <PdfSigningDocumentSurface
             src={pdfUrl}
@@ -1271,6 +1363,7 @@ function SigningPage() {
             onSignatureCapture={handleSignatureCapture}
             onCancel={handleCancelSignature}
             allowedSignatureTypes={undefined}
+            showLibrary={isSignedIn}
           />
         </Dialog>
       </Dialog.Root>

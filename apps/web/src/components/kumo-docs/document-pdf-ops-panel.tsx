@@ -123,6 +123,7 @@ export function DocumentPdfOpsPanel({
           </ul>
         )}
         <Input
+          label="Merged document title"
           placeholder="Merged document title (optional)"
           value={mergeTitle}
           onChange={(e) => setMergeTitle(e.target.value)}

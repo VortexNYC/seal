@@ -51,7 +51,7 @@ export function OwnershipTransferred({
         </Text>
 
         {/* CTA Button */}
-        <Section className="my-[32px] text-center">
+        <Section style={emailStyles.ctaSection}>
           <Button style={emailStyles.ctaButton} href={documentUrl}>
             View Document
           </Button>

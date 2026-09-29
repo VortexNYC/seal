@@ -10,6 +10,7 @@ import { DefaultCatchBoundary } from "./components/default-catch-boundary";
 import Loader from "./components/loader";
 import { NotFound } from "./components/not-found";
 import { ThemeProvider } from "./components/theme-provider";
+import { isGuestAnalyticsSurface } from "./lib/posthog-proxy";
 import { routeTree } from "./routeTree.gen";
 
 import "./styles.css";
@@ -75,6 +76,7 @@ if (!rootElement) {
 
 const RAW_POSTHOG_KEY: unknown = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
 const POSTHOG_KEY = typeof RAW_POSTHOG_KEY === "string" ? RAW_POSTHOG_KEY : "";
+const guestSurface = isGuestAnalyticsSurface(window.location.pathname);
 const posthogInitOptions = {
   apiHost: "/ingest",
   uiHost: "https://us.i.posthog.com",
@@ -93,9 +95,18 @@ if (POSTHOG_KEY) {
     persistence: posthogInitOptions.persistence,
     person_profiles: "identified_only",
     secure_cookie: true,
-    enable_heatmaps: true,
+    enable_heatmaps: !guestSurface,
+    // Replay console logs stay off — signer PII can appear in app logs.
     enable_recording_console_log: false,
-    capture_performance: false,
+    // Web vitals + resource timing for sender SPA performance (project Opt-in).
+    capture_performance: true,
+    // Unhandled errors + promise rejections → Error Tracking. Project setting
+    // autocapture_exceptions_opt_in must also be true (server-side kill switch).
+    capture_exceptions: true,
+    // SEA-73: no Replay/surveys on /sign or /verify. Funnel events still capture
+    // anonymously (person_profiles: identified_only; no identify on guests).
+    disable_session_recording: guestSurface,
+    disable_surveys: guestSurface,
     session_recording: {
       maskAllInputs: true,
       maskTextSelector: "[data-ph-mask]",

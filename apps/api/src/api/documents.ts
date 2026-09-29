@@ -47,6 +47,15 @@ import {
   normalizeAuthMethod,
 } from "../platform/signer-auth.js";
 import {
+  getAuditActor,
+  getAuditRequestMeta,
+  writeAuditLog,
+} from "../platform/audit-log.js";
+import {
+  readOrgSigningCompliance,
+  resolveRecipientAuthMethod,
+} from "../platform/signing-settings.js";
+import {
   sendDocumentInvitationEmail,
   sendOwnershipTransferredEmail,
 } from "../platform/email.js";
@@ -337,6 +346,19 @@ app.openapi(createRouteDef, async (c) => {
     metadata: JSON.stringify({ documentId, publicId }),
     createdAt: now,
   });
+
+  const createAuditActor = getAuditActor({ user: c.get("user") });
+  if (createAuditActor) {
+    await writeAuditLog(db, {
+      organizationId,
+      actor: createAuditActor,
+      action: "document.created",
+      resourceType: "document",
+      resourceId: documentId,
+      metadata: { publicId, name: input.name },
+      ...getAuditRequestMeta(c),
+    });
+  }
 
   const rows = await db
     .select()
@@ -1146,6 +1168,17 @@ app.openapi(uploadRouteDef, async (c) => {
 
   const bytes = base64ToBytes(input.contentBase64);
   const contentType = input.contentType || "application/octet-stream";
+
+  // Trailer-only PDF stubs (~27B) are not usable documents
+  const MIN_PDF_SIZE = 100;
+  if (
+    contentType === "application/pdf" &&
+    bytes.byteLength > 0 &&
+    bytes.byteLength < MIN_PDF_SIZE
+  ) {
+    return c.json({ error: "PDF appears empty or corrupt" }, 400);
+  }
+
   const key = r2Key(organizationId, publicId);
 
   const metadata = {
@@ -1198,13 +1231,15 @@ app.openapi(uploadRouteDef, async (c) => {
     });
   }
 
+  // Keep pipeline status as draft — "uploaded" was stranding docs where the UI
+  // canEdit/send gates only accept draft/expired (classic prepare → send path).
   await db
     .update(documents)
     .set({
       storageKey: key,
       contentType: finalContentType,
       size: finalBytes.byteLength,
-      status: "uploaded",
+      updatedAt: new Date(),
     })
     .where(eq(documents.id, doc.id));
 
@@ -1395,10 +1430,12 @@ const addRecipientsRouteDef = createRoute({
 });
 
 app.openapi(addRecipientsRouteDef, async (c) => {
-  const organizationId = c.get("organization").id;
+  const org = c.get("organization");
+  const organizationId = org.id;
   const userId = c.get("user")!.user.id;
   const { publicId } = c.req.valid("param");
   const input = c.req.valid("json");
+  const compliance = readOrgSigningCompliance(org.metadata);
 
   const db = createD1(c.env.D1);
   const docRows = await db
@@ -1445,7 +1482,24 @@ app.openapi(addRecipientsRouteDef, async (c) => {
   const tokenExpiration = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
   for (const recipientInput of input.recipients) {
-    const authMethod = normalizeAuthMethod(recipientInput.authMethod);
+    const authMethod = resolveRecipientAuthMethod(
+      recipientInput.authMethod,
+      org.metadata
+    );
+    const role = recipientInput.role ?? "signer";
+    if (
+      compliance.requireRecipientAuth &&
+      authMethod === "none" &&
+      (role === "signer" || role === "approver")
+    ) {
+      return c.json(
+        {
+          error:
+            "Recipient authentication is required. Choose email OTP or an access code.",
+        },
+        400
+      );
+    }
     if (authMethod === "access_code" && !recipientInput.accessCode) {
       return c.json(
         { error: "accessCode is required when authMethod is access_code" },
@@ -1456,7 +1510,10 @@ app.openapi(addRecipientsRouteDef, async (c) => {
 
   const recipientValues = await Promise.all(
     input.recipients.map(async (recipientInput, index) => {
-      const authMethod = normalizeAuthMethod(recipientInput.authMethod);
+      const authMethod = resolveRecipientAuthMethod(
+        recipientInput.authMethod,
+        org.metadata
+      );
       const accessCodeHash =
         authMethod === "access_code" && recipientInput.accessCode
           ? await hashAccessCode(recipientInput.accessCode)
@@ -3643,6 +3700,8 @@ app.openapi(signRouteDef, async (c) => {
   });
 
   if (recipient.role === "signer") {
+    // "viewed" still owes a signature — counting only "pending" completes
+    // early when co-signers have opened but not signed.
     const pendingSigners = await db
       .select({ value: count() })
       .from(recipients)
@@ -3650,7 +3709,7 @@ app.openapi(signRouteDef, async (c) => {
         and(
           eq(recipients.documentId, doc.id),
           eq(recipients.role, "signer"),
-          eq(recipients.status, "pending")
+          inArray(recipients.status, ["pending", "viewed"])
         )
       );
 
@@ -4152,7 +4211,11 @@ app.openapi(sendRouteDef, async (c) => {
   if (doc.ownerId !== userId) {
     return c.json({ error: "Forbidden" }, 403);
   }
-  if (doc.status !== "draft" && doc.status !== "expired") {
+  if (
+    doc.status !== "draft" &&
+    doc.status !== "uploaded" &&
+    doc.status !== "expired"
+  ) {
     return c.json(
       { error: `Cannot send document with status: ${doc.status}` },
       400
@@ -4167,6 +4230,33 @@ app.openapi(sendRouteDef, async (c) => {
           ? 7 * 24 * 60 * 60 * 1000
           : 30 * 24 * 60 * 60 * 1000)
     : undefined;
+
+  const org = c.get("organization");
+  const compliance = readOrgSigningCompliance(org.metadata);
+  if (compliance.requireRecipientAuth) {
+    const recipientAuthRows = await db
+      .select({
+        email: recipients.email,
+        role: recipients.role,
+        authMethod: recipients.authMethod,
+      })
+      .from(recipients)
+      .where(eq(recipients.documentId, doc.id));
+    const unauthenticated = recipientAuthRows.filter(
+      (row) =>
+        (row.role === "signer" || row.role === "approver") &&
+        normalizeAuthMethod(row.authMethod) === "none"
+    );
+    if (unauthenticated.length > 0) {
+      return c.json(
+        {
+          error:
+            "Cannot send: every signer and approver must use email OTP or an access code.",
+        },
+        400
+      );
+    }
+  }
 
   const senderName =
     c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown";
@@ -4196,6 +4286,25 @@ app.openapi(sendRouteDef, async (c) => {
     }),
     createdAt: sentAt,
   });
+
+  // Sealed workspace audit (Settings → Audit Log / SIEM). The activity row
+  // above feeds the in-app feed only — without this, SPA sends never appear
+  // in audit_logs (v1/MCP send already writes here).
+  const auditActor = getAuditActor({ user: c.get("user") });
+  if (auditActor) {
+    await writeAuditLog(db, {
+      organizationId,
+      actor: auditActor,
+      action: "document.sent",
+      resourceType: "document",
+      resourceId: doc.id,
+      metadata: {
+        publicId,
+        recipientCount: sentRecipients.length,
+      },
+      ...getAuditRequestMeta(c),
+    });
+  }
 
   return c.json({ success: true });
 });
@@ -4261,6 +4370,19 @@ app.openapi(cancelRouteDef, async (c) => {
     .update(documents)
     .set({ status: "cancelled", updatedAt: new Date() })
     .where(eq(documents.id, doc.id));
+
+  const cancelAuditActor = getAuditActor({ user: c.get("user") });
+  if (cancelAuditActor) {
+    await writeAuditLog(db, {
+      organizationId,
+      actor: cancelAuditActor,
+      action: "document.cancelled",
+      resourceType: "document",
+      resourceId: doc.id,
+      metadata: { publicId },
+      ...getAuditRequestMeta(c),
+    });
+  }
 
   return c.json({ success: true });
 });

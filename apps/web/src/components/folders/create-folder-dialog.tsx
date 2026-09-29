@@ -54,6 +54,10 @@ export function CreateFolderDialog({
   const handleCreate = useCallback(async () => {
     const trimmed = name.trim();
     if (!trimmed) return;
+    if (trimmed.length > 100) {
+      toast.error("Folder name must be 100 characters or fewer");
+      return;
+    }
 
     setIsCreating(true);
     try {
@@ -112,9 +116,10 @@ export function CreateFolderDialog({
           id="folder-name"
           label="Folder name"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => setName(e.target.value.slice(0, 100))}
           onKeyDown={handleKeyDown}
           placeholder="e.g. Contracts, HR Forms..."
+          maxLength={100}
         />
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="outline" onClick={() => setOpen(false)}>
@@ -122,7 +127,7 @@ export function CreateFolderDialog({
           </Button>
           <Button
             onClick={() => void handleCreate()}
-            disabled={!name.trim() || isCreating}
+            disabled={!name.trim() || name.trim().length > 100 || isCreating}
           >
             {isCreating ? "Creating..." : "Create"}
           </Button>

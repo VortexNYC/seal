@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 const mockUseOrganizationMembers = vi.hoisted(() => vi.fn());
 const mockAddRecipients = vi.hoisted(() => vi.fn());
 const mockGetContacts = vi.hoisted(() => vi.fn());
+const mockGetSigningSettings = vi.hoisted(() => vi.fn());
 
 vi.mock("@/hooks/use-organization-members", () => ({
   useOrganizationMembers: (...args: unknown[]) =>
@@ -15,6 +16,7 @@ vi.mock("@/hooks/use-organization-members", () => ({
 vi.mock("@/lib/api-client", () => ({
   addRecipients: mockAddRecipients,
   getContacts: mockGetContacts,
+  getSigningSettings: mockGetSigningSettings,
 }));
 
 vi.mock("@/lib/toast", () => ({
@@ -94,8 +96,16 @@ describe("AddRecipientDialog", () => {
     mockAddRecipients.mockReset();
     mockGetContacts.mockReset();
     mockUseOrganizationMembers.mockReset();
+    mockGetSigningSettings.mockReset();
     mockAddRecipients.mockResolvedValue(undefined);
     mockGetContacts.mockResolvedValue([]);
+    mockGetSigningSettings.mockResolvedValue({
+      allowedSignatureTypes: ["draw", "type", "upload"],
+      defaultDeadlineDays: 30,
+      requireRecipientAuth: true,
+      requireSignerAccount: true,
+      defaultRecipientAuthMethod: "email_otp",
+    });
     mockUseOrganizationMembers.mockReturnValue({ data: [] });
   });
 
@@ -399,7 +409,7 @@ describe("AddRecipientDialog", () => {
           email: "alice@example.com",
           name: "Alice Smith",
           role: "signer",
-          authMethod: "none",
+          authMethod: "email_otp",
           accessCode: undefined,
         },
       ]);
@@ -456,7 +466,7 @@ describe("AddRecipientDialog", () => {
           email: "external@example.com",
           name: "Jane Doe",
           role: "signer",
-          authMethod: "none",
+          authMethod: "email_otp",
           accessCode: undefined,
         },
       ]);

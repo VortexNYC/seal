@@ -22,7 +22,15 @@ describe("field-geometry", () => {
     const geo = geometryFromLine("signature", 10);
     expect(geo.x).toBe(10);
     expect(geo.width).toBe(33);
-    expect(geo.height).toBe(6);
+    expect(geo.height).toBe(5);
+    // Line index ≈ rule under the signature → field bottom at lineY
+    expect(geo.y + geo.height).toBe(18);
+    expect(validateFieldGeometry(geo).valid).toBe(true);
+  });
+
+  it("anchors text fields from the line top, not the bottom", () => {
+    const geo = geometryFromLine("text", 10);
+    expect(geo.y).toBe(18);
     expect(validateFieldGeometry(geo).valid).toBe(true);
   });
 

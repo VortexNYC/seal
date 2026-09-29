@@ -92,6 +92,7 @@ sample-doc.pdf
 
 # Real assets, not ad-hoc screenshots
 !apps/site/public/*.png
+!apps/web/public/logo/*.png
 !packages/tokens/src/assets/**/*.png
 
 # Generated reference docs

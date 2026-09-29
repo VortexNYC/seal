@@ -75,7 +75,8 @@ async function seedOrgAndUser() {
 }
 
 function createPdfBytes(): Uint8Array {
-  return new TextEncoder().encode("%PDF-1.4 test");
+  // Must clear MIN_PDF_SIZE (100) — header alone is not enough.
+  return new TextEncoder().encode("%PDF-1.4 test\n" + "x".repeat(120));
 }
 
 function createDocxBytes(): Uint8Array {

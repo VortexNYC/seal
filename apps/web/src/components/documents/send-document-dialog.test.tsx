@@ -14,6 +14,14 @@ vi.mock("@/lib/toast", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
+vi.mock("@/hooks/use-analytics", () => ({
+  useAnalytics: () => ({
+    track: {
+      documentSent: vi.fn(),
+    },
+  }),
+}));
+
 import { SendDocumentDialog } from "./send-document-dialog";
 
 const FAKE_FIELD_ID_1 = parseId("signature_fields", "field_1");
