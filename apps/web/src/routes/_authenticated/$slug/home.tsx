@@ -10,7 +10,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Suspense } from "react";
 
 import { AllClear } from "@/components/dashboard/all-clear";
-import { ExportDataDialog } from "@/components/dashboard/export-data-dialog";
 import { NeedsAttention } from "@/components/dashboard/needs-attention";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { RecentDocuments } from "@/components/dashboard/recent-documents";
@@ -71,7 +70,7 @@ function WorkspaceHome(): React.ReactElement {
   const issueCount = attention?.totalIssues ?? 0;
 
   return (
-    <PageWrapper title="Dashboard" headerActions={<ExportDataDialog />}>
+    <PageWrapper title="Dashboard">
       <div
         className="mx-auto flex max-w-5xl flex-col gap-5"
         data-seal-stagger
