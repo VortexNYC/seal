@@ -8,14 +8,12 @@ import {
 import { DropdownMenu } from "@cloudflare/kumo/components/dropdown";
 import {
   ArrowLeftIcon,
-  EyeIcon,
-  EyeOffIcon,
   Loader2Icon,
   MoreHorizontalIcon,
   SaveIcon,
   SendIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 
 import { FIELD_TYPES } from "@/components/documents/field-toolbar";
@@ -47,11 +45,6 @@ import {
   AIAnnotationOverlays,
   useDocumentAnnotations,
 } from "../../../../components/documents/ai-annotation-overlays";
-import {
-  AIFieldOverlays,
-  AIFieldReviewBar,
-  useAIFieldSuggestions,
-} from "../../../../components/documents/ai-field-suggestions";
 import { DeleteFieldDialog } from "../../../../components/documents/delete-field-dialog";
 import { DocumentPdfAnnotatePanel } from "../../../../components/documents/document-pdf-annotate-panel";
 import { DocumentOfficeEditPanel } from "../../../../components/documents/document-office-edit-panel";
@@ -297,11 +290,6 @@ function DocumentDetailPage() {
     }
   }, [focus, openSections, toggleSection, docState]);
 
-  const aiSuggestions = useAIFieldSuggestions(documentPublicId, {
-    enabled: showAiFeatures,
-  });
-  const [showAiSuggestions, setShowAiSuggestions] = useState(false);
-
   // ── Derived state ───────────────────────────────────────────────────────
   // API maps documents.status → workflowStatus. Prep states: draft, and legacy
   // "uploaded" left by older upload handlers before they stopped overwriting draft.
@@ -414,10 +402,6 @@ function DocumentDetailPage() {
   }, [documentData.aiProcessingStatus]);
 
   // ── Handlers ────────────────────────────────────────────────────────────
-  const handleToggleAiSuggestions = useCallback(() => {
-    setShowAiSuggestions((prev) => !prev);
-  }, []);
-
   const handleRemoveRecipientConfirm = async () => {
     if (!docState.recipientToRemove) return;
 
@@ -539,36 +523,6 @@ function DocumentDetailPage() {
   // ── Header action elements ───────────────────────────────────────────────
   const sendButtonLabel = isExpired ? "Re-send Document" : "Send Document";
 
-  const aiSuggestionsToggle =
-    canEdit && showAiFeatures ? (
-      <div key="ai-toggle" className="flex items-center gap-1.5 sm:flex-none">
-        {documentData.aiProcessingStatus === "processing" && (
-          <span className="text-ai-accent flex items-center gap-1.5 text-xs">
-            <Loader2Icon className="h-3 w-3 animate-spin" />
-            Analyzing...
-          </span>
-        )}
-        {documentData.aiProcessingStatus === "failed" && (
-          <span className="text-warning flex items-center gap-1.5 text-xs">
-            Analysis incomplete
-          </span>
-        )}
-        <Button
-          onClick={handleToggleAiSuggestions}
-          size="sm"
-          variant="ghost"
-          className="text-ai-accent"
-        >
-          {showAiSuggestions ? (
-            <EyeIcon className="mr-1.5 h-3.5 w-3.5" />
-          ) : (
-            <EyeOffIcon className="mr-1.5 h-3.5 w-3.5" />
-          )}
-          <span className="truncate text-xs">AI Suggestions</span>
-        </Button>
-      </div>
-    ) : null;
-
   const saveAsTemplateButton =
     canEdit && signatureFields.length > 0 ? (
       <div key="save-template" className="flex-1 sm:flex-none">
@@ -614,6 +568,7 @@ function DocumentDetailPage() {
   return (
     <PageWrapper
       title={documentData.name}
+      dense
       headerActions={
         <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
           <Button
@@ -633,7 +588,6 @@ function DocumentDetailPage() {
           </Button>
           <DocumentPresence documentId={documentId} />
           {sendDocumentButton}
-          {aiSuggestionsToggle}
           {saveAsTemplateButton}
         </div>
       }
@@ -816,20 +770,6 @@ function DocumentDetailPage() {
 
                       {canEdit &&
                         showAiFeatures &&
-                        showAiSuggestions &&
-                        aiSuggestions.suggestions && (
-                          <AIFieldOverlays
-                            suggestions={aiSuggestions.suggestions}
-                            selectedIndices={aiSuggestions.selectedIndices}
-                            toggleField={aiSuggestions.toggleField}
-                            currentPage={pdfViewer.currentPage}
-                            pdfPageWidth={pdfViewer.pdfWidth}
-                            pdfPageHeight={pdfViewer.pdfHeight}
-                          />
-                        )}
-
-                      {canEdit &&
-                        showAiFeatures &&
                         documentAnnotations.annotations && (
                           <AIAnnotationOverlays
                             annotations={documentAnnotations.annotations}
@@ -843,38 +783,6 @@ function DocumentDetailPage() {
                         )}
                     </div>
                   </TransformComponent>
-
-                  {canEdit &&
-                    aiEnabled &&
-                    showAiSuggestions &&
-                    aiSuggestions.suggestions && (
-                      <div className="mt-3">
-                        <AIFieldReviewBar
-                          suggestions={aiSuggestions.suggestions}
-                          selectedIndices={aiSuggestions.selectedIndices}
-                          isApplying={aiSuggestions.isApplying}
-                          selectAll={aiSuggestions.selectAll}
-                          selectHighConfidence={
-                            aiSuggestions.selectHighConfidence
-                          }
-                          handleApply={aiSuggestions.handleApply}
-                          handleDismiss={aiSuggestions.handleDismiss}
-                        />
-                      </div>
-                    )}
-
-                  {canEdit &&
-                    aiEnabled &&
-                    showAiSuggestions &&
-                    !aiSuggestions.suggestions &&
-                    documentData.aiProcessingStatus === "processing" && (
-                      <div className="border-ai-accent/40 bg-ai-accent/10 mt-3 flex items-center gap-3 rounded-xl border border-dashed px-4 py-3">
-                        <Loader2Icon className="text-ai-accent h-4 w-4 animate-spin" />
-                        <span className="text-ai-accent font-sans text-xs">
-                          Detecting form fields...
-                        </span>
-                      </div>
-                    )}
                 </TransformWrapper>
               ) : (
                 <>
