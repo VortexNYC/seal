@@ -52,10 +52,10 @@ function ContactDetailSkeleton(): ReactElement {
   return (
     <PageWrapper title="Contact">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
-        <div className="bg-muted h-8 w-40 animate-pulse rounded-md" />
+        <SkeletonLine className="h-8 w-40" />
         <div className="grid gap-4 lg:grid-cols-3">
-          <div className="bg-muted h-64 animate-pulse rounded-xl lg:col-span-2" />
-          <div className="bg-muted h-64 animate-pulse rounded-xl" />
+          <SkeletonLine className="h-64 w-full rounded-xl lg:col-span-2" />
+          <SkeletonLine className="h-64 w-full rounded-xl" />
         </div>
       </div>
     </PageWrapper>

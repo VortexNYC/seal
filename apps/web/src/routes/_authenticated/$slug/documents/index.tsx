@@ -7,6 +7,7 @@ import { Empty } from "@cloudflare/kumo/components/empty";
 import { Input } from "@cloudflare/kumo/components/input";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Popover } from "@cloudflare/kumo/components/popover";
+import { SkeletonLine } from "@cloudflare/kumo/components/loader";
 import { Table } from "@cloudflare/kumo/components/table";
 import { Tooltip } from "@cloudflare/kumo/components/tooltip";
 import {
@@ -105,7 +106,7 @@ function DocumentsSkeleton(): JSX.Element {
   return (
     <PageWrapper title="Documents">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
-        <div className="bg-muted h-10 w-full max-w-md animate-pulse rounded-md" />
+        <SkeletonLine className="h-10 w-full max-w-md" />
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <CardSkeleton showDescription showFooter={false} />
           <CardSkeleton showDescription showFooter={false} />

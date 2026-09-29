@@ -1,10 +1,11 @@
-import type { ReactNode } from "react";
+import type { ReactElement, ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
 /**
  * Shared settings content shell — one width + gap rhythm for every settings page.
- * Default: form density (max-w-2xl). Wide: tables / two-column (max-w-4xl).
+ * Uses Tailwind scale tokens only (max-w-2xl / max-w-4xl). Layout via flex+gap,
+ * never space-y — matches Kumo/shadcn spacing guidance.
  */
 export function SettingsBody({
   children,
@@ -14,7 +15,7 @@ export function SettingsBody({
   children: ReactNode;
   wide?: boolean;
   className?: string;
-}): React.ReactElement {
+}): ReactElement {
   return (
     <div
       className={cn(

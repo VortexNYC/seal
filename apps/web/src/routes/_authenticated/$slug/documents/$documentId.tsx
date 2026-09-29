@@ -620,7 +620,6 @@ function DocumentDetailPage() {
           {/* Left column: PDF Preview — Kumo viewer shell + thumbnail rail */}
           <div className="lg:col-span-2">
             <DocumentViewerShell
-              className="min-h-[520px] rounded-xl sm:min-h-[400px]"
               left={
                 <ThumbnailSidebar
                   pages={pageThumbnails.pages}
@@ -632,7 +631,7 @@ function DocumentDetailPage() {
               main={
             <div
               ref={pdfViewer.pdfWrapperRef}
-              className="bg-muted/80 dark:bg-background relative min-h-[520px] p-3 sm:min-h-[400px] sm:p-3 md:p-4"
+              className="bg-muted/80 relative min-h-full p-3 md:p-4"
             >
               {canEdit ? (
                 <div className="border-border bg-muted/40 mb-3 flex flex-wrap gap-1 rounded-lg border p-1">
@@ -855,8 +854,11 @@ function DocumentDetailPage() {
                       )}
                     </div>
                   </div>
-                  <div className="border-border bg-card text-muted-foreground dark:border-border/80 dark:bg-card relative overflow-hidden rounded-lg border p-16 text-center shadow-sm">
-                    <div className="animate-pulse">Loading document...</div>
+                  <div className="border-border bg-card text-muted-foreground relative overflow-hidden rounded-lg border p-16 text-center shadow-sm">
+                    <div className="flex flex-col items-center gap-3">
+                      <Loader2Icon className="size-5 animate-spin" />
+                      <span>Loading document…</span>
+                    </div>
                   </div>
                 </>
               )}

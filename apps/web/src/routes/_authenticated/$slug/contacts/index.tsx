@@ -60,7 +60,7 @@ function ContactsPageSkeleton(): ReactElement {
   return (
     <PageWrapper title="Contacts">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
-        <div className="bg-muted h-10 w-full max-w-md animate-pulse rounded-md" />
+        <SkeletonLine className="h-10 w-full max-w-md" />
         <ContactsTableSkeleton />
       </div>
     </PageWrapper>
