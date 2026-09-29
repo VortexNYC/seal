@@ -30,12 +30,15 @@ import {
   resolveEsignOptOutMethod,
 } from "../platform/esign-opt-out.js";
 import {
+  buildDocumentUrl,
+  buildSignedPdfDownloadUrl,
   sendDocumentCompletedEmail,
   sendDocumentEsignOptOutEmail,
   sendDocumentViewedEmail,
   sendSigningCompleteEmail,
   sendSigningOtpEmail,
 } from "../platform/email.js";
+import { autoStampRecipientFields } from "../platform/auto-sign-fields.js";
 import { generateAndStoreCertificateOfCompletion } from "../platform/certificate-store.js";
 import { certificateStorageKey } from "../platform/certificate-of-completion.js";
 import { generateAndStoreFinalPdf } from "../platform/final-pdf-store.js";
@@ -1044,6 +1047,24 @@ app.openapi(submitRouteDef, async (c) => {
     };
   }
 
+  if (input.status === "signed" || input.status === "approved") {
+    // Documenso-class: stamp date_signed / name / email / initials server-side
+    // so the signer does not click through identity fields.
+    try {
+      await autoStampRecipientFields(db, {
+        documentId: doc.id,
+        recipientId: recipient.id,
+        recipientName: recipient.name,
+        recipientEmail: recipient.email,
+        signedAt: nowDate,
+        ipAddress: input.ipAddress,
+        userAgent: input.userAgent,
+      });
+    } catch (err) {
+      console.error("[public/submit] auto-stamp fields failed:", err);
+    }
+  }
+
   try {
     await commitSigningSubmit(db, {
       recipientId: recipient.id,
@@ -1096,25 +1117,6 @@ app.openapi(submitRouteDef, async (c) => {
   }
 
   if (input.status === "signed" || input.status === "approved") {
-    if (recipient.email) {
-      const role: "signer" | "approver" | "viewer" =
-        recipient.role === "approver"
-          ? "approver"
-          : recipient.role === "viewer"
-            ? "viewer"
-            : "signer";
-      const result = await sendSigningCompleteEmail(c.env, {
-        to: recipient.email,
-        recipientName: recipient.name ?? recipient.email,
-        documentName: doc.name,
-        signedAt: nowDate.getTime(),
-        role,
-      });
-      if (!result.success) {
-        console.error("[public/submit] signing complete email failed:", result);
-      }
-    }
-
     if (input.status === "signed" || input.status === "approved") {
       await emitSigningWebhook(c.env, {
         organizationId: doc.organizationId,
@@ -1165,6 +1167,28 @@ app.openapi(submitRouteDef, async (c) => {
       );
 
     const pendingCount = pendingSigners[0]?.value ?? 0;
+
+    // Interim ack only when more signers remain — final sealed copy goes out
+    // to everyone when pendingCount === 0 (Documenso-class completion mail).
+    if (pendingCount > 0 && recipient.email) {
+      const role: "signer" | "approver" | "viewer" =
+        recipient.role === "approver"
+          ? "approver"
+          : recipient.role === "viewer"
+            ? "viewer"
+            : "signer";
+      const result = await sendSigningCompleteEmail(c.env, {
+        to: recipient.email,
+        recipientName: recipient.name ?? recipient.email,
+        documentName: doc.name,
+        signedAt: nowDate.getTime(),
+        role,
+      });
+      if (!result.success) {
+        console.error("[public/submit] signing complete email failed:", result);
+      }
+    }
+
     if (pendingCount === 0) {
       await db
         .update(documents)
@@ -1220,14 +1244,37 @@ app.openapi(submitRouteDef, async (c) => {
 
       const bucket = c.env.DOCUMENTS_BUCKET;
       const appUrl = c.env.APP_URL;
+      let sealedPdfAttachment:
+        | { filename: string; content: Uint8Array; type: string }
+        | undefined;
+
       if (bucket) {
         try {
-          await generateAndStoreFinalPdf({
+          const finalPdf = await generateAndStoreFinalPdf({
             db,
             bucket,
             documentId: doc.id,
             env: c.env,
           });
+          if (finalPdf?.storageKey) {
+            const object = await bucket.get(finalPdf.storageKey);
+            if (object) {
+              const bytes = new Uint8Array(await object.arrayBuffer());
+              // Cap attachment size — large tax PDFs still get a download link.
+              const MAX_ATTACH_BYTES = 8 * 1024 * 1024;
+              if (bytes.byteLength > 0 && bytes.byteLength <= MAX_ATTACH_BYTES) {
+                const safeName = (doc.name || "document")
+                  .replace(/[^\w.\- ]+/g, "")
+                  .trim()
+                  .slice(0, 80);
+                sealedPdfAttachment = {
+                  filename: `${safeName || "document"}-signed.pdf`,
+                  content: bytes,
+                  type: "application/pdf",
+                };
+              }
+            }
+          }
         } catch (err) {
           console.error("[public/submit] final PDF flatten/seal failed:", err);
         }
@@ -1248,37 +1295,78 @@ app.openapi(submitRouteDef, async (c) => {
         }
       }
 
-      if (owner?.email) {
-        const allRecipients = await db
-          .select({
-            name: recipients.name,
-            email: recipients.email,
-            role: recipients.role,
-            status: recipients.status,
-            signedAt: recipients.signedAt,
-            approvedAt: recipients.approvedAt,
-            viewedAt: recipients.viewedAt,
-          })
-          .from(recipients)
-          .where(eq(recipients.documentId, doc.id));
+      const allRecipients = await db
+        .select({
+          id: recipients.id,
+          name: recipients.name,
+          email: recipients.email,
+          role: recipients.role,
+          status: recipients.status,
+          signedAt: recipients.signedAt,
+          approvedAt: recipients.approvedAt,
+          viewedAt: recipients.viewedAt,
+          signingToken: recipients.signingToken,
+        })
+        .from(recipients)
+        .where(eq(recipients.documentId, doc.id));
 
-        const recipientsSummary = allRecipients
-          .filter((r) => r.status !== "pending")
-          .map((r) => ({
-            name: r.name ?? r.email ?? "Unknown",
-            email: r.email,
-            role:
-              r.role === "approver"
-                ? ("approver" as const)
-                : r.role === "viewer"
-                  ? ("viewer" as const)
-                  : ("signer" as const),
-            completedAt:
-              r.signedAt?.getTime() ??
-              r.approvedAt?.getTime() ??
-              r.viewedAt?.getTime() ??
-              nowDate.getTime(),
-          }));
+      const recipientsSummary = allRecipients
+        .filter((r) => r.status !== "pending")
+        .map((r) => ({
+          name: r.name ?? r.email ?? "Unknown",
+          email: r.email,
+          role:
+            r.role === "approver"
+              ? ("approver" as const)
+              : r.role === "viewer"
+                ? ("viewer" as const)
+                : ("signer" as const),
+          completedAt:
+            r.signedAt?.getTime() ??
+            r.approvedAt?.getTime() ??
+            r.viewedAt?.getTime() ??
+            nowDate.getTime(),
+        }));
+
+      // Documenso-class: every party gets download link (+ PDF when small enough).
+      for (const r of allRecipients) {
+        if (!r.email || !r.signingToken) continue;
+        if (r.status === "pending" || r.status === "declined") continue;
+        const role: "signer" | "approver" | "viewer" =
+          r.role === "approver"
+            ? "approver"
+            : r.role === "viewer"
+              ? "viewer"
+              : "signer";
+        const downloadUrl = buildSignedPdfDownloadUrl(c.env, r.signingToken);
+        const result = await sendSigningCompleteEmail(c.env, {
+          to: r.email,
+          recipientName: r.name ?? r.email,
+          documentName: doc.name,
+          signedAt: nowDate.getTime(),
+          role,
+          downloadUrl,
+          sealedPdf: sealedPdfAttachment,
+        });
+        if (!result.success) {
+          console.error(
+            "[public/submit] sealed copy email failed:",
+            r.email,
+            result
+          );
+        }
+      }
+
+      if (owner?.email) {
+        // Prefer a recipient token download when owner also signed; else dashboard.
+        const ownerAsRecipient = allRecipients.find(
+          (r) =>
+            r.email?.toLowerCase() === owner.email.toLowerCase() &&
+            r.signingToken
+        );
+        const ownerDownloadUrl = ownerAsRecipient?.signingToken
+          ? buildSignedPdfDownloadUrl(c.env, ownerAsRecipient.signingToken)
+          : buildDocumentUrl(c.env, orgSlug, doc.publicId);
 
         const result = await sendDocumentCompletedEmail(c.env, {
           to: owner.email,
@@ -1288,6 +1376,8 @@ app.openapi(submitRouteDef, async (c) => {
           documentPublicId: doc.publicId,
           completedAt: nowDate.getTime(),
           recipientsSummary,
+          downloadUrl: ownerDownloadUrl,
+          sealedPdf: sealedPdfAttachment,
         });
         if (!result.success) {
           console.error("[public/submit] completed email failed:", result);
