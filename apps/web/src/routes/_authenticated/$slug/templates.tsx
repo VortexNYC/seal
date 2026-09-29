@@ -776,11 +776,11 @@ function TemplatesPage() {
           <div className="relative max-w-sm flex-1">
             <SearchIcon className="text-kumo-secondary absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
+              aria-label="Search templates"
               placeholder="Search templates..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
-              aria-label="Search templates"
             />
           </div>
 

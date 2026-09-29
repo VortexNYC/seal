@@ -1,7 +1,6 @@
 import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Input } from "@cloudflare/kumo/components/input";
-import { Label } from "@cloudflare/kumo/components/label";
 import { UserPlus } from "@phosphor-icons/react";
 import { useState } from "react";
 
@@ -66,9 +65,9 @@ export function DictateNextSignerDialog({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="next-name">Full name</Label>
             <Input
               id="next-name"
+              label="Full name"
               placeholder="Jane Smith"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -77,9 +76,9 @@ export function DictateNextSignerDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="next-email">Email address</Label>
             <Input
               id="next-email"
+              label="Email address"
               type="email"
               placeholder="jane@example.com"
               value={email}

@@ -417,9 +417,9 @@ export function AddRecipientDialog({
 
           {resolvedAuthMethod === "access_code" ? (
             <div className="space-y-2">
-              <Label htmlFor="access-code">Access code</Label>
               <Input
                 id="access-code"
+                label="Access code"
                 data-testid="recipient-access-code"
                 value={accessCode}
                 onChange={(e) => setAccessCode(e.target.value)}

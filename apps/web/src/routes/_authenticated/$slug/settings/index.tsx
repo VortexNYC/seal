@@ -1,6 +1,5 @@
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
-import { Label } from "@cloudflare/kumo/components/label";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
 import { FloppyDisk } from "@phosphor-icons/react";
@@ -187,9 +186,9 @@ function GeneralSettingsContent() {
           <LayerCard.Primary>
             <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="timezone">Timezone</Label>
                 <Input
                   id="timezone"
+                  label="Timezone"
                   value={product.timezone}
                   onChange={(event) =>
                     setProduct((prev) => ({
@@ -202,9 +201,9 @@ function GeneralSettingsContent() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="currency">Currency</Label>
                 <Input
                   id="currency"
+                  label="Currency"
                   value={product.currency}
                   onChange={(event) =>
                     setProduct((prev) => ({
@@ -217,9 +216,9 @@ function GeneralSettingsContent() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="currencyKind">Currency kind</Label>
                 <Input
                   id="currencyKind"
+                  label="Currency kind"
                   value={product.currencyKind}
                   onChange={(event) =>
                     setProduct((prev) => ({

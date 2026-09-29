@@ -9,7 +9,6 @@ import { Textarea } from "@cloudflare/kumo";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
 import { Input } from "@cloudflare/kumo/components/input";
-import { Label } from "@cloudflare/kumo/components/label";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
 import { useQuery } from "@tanstack/react-query";
@@ -218,12 +217,10 @@ function SigningSettings() {
           </LayerCard.Secondary>
           <LayerCard.Primary>
             <div className="flex items-center gap-2">
-              <Label htmlFor="default-deadline-days" className="sr-only">
-                Default deadline in days
-              </Label>
               <div className="w-24">
                 <Input
                   id="default-deadline-days"
+                  aria-label="Default deadline in days"
                   type="number"
                   min={1}
                   max={365}

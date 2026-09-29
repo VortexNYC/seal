@@ -64,6 +64,7 @@ export function BindingsPanel({
               <Label className="text-xs">{row.fieldLabel}</Label>
               <div className="flex items-center gap-1.5">
                 <Input
+                  aria-label={`Binding key for ${row.fieldLabel}`}
                   value={row.bindingKey}
                   onChange={(e) => setKey(row.fieldId, e.target.value)}
                   placeholder="binding_key"

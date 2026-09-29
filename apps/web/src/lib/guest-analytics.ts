@@ -11,13 +11,15 @@ type GuestAnalyticsClient = {
   set_config?: (config: {
     disable_session_recording?: boolean;
     disable_surveys?: boolean;
+    enable_heatmaps?: boolean;
   }) => void;
 };
 
 /**
  * SEA-73 — guest surfaces (`/sign/*`, `/verify/*`) show signer email, name,
- * and document titles. Mute PostHog capturing + session recording so those
- * never leave the browser.
+ * and document titles. Disable session recording / surveys / heatmaps so that
+ * PII never lands in Replay. Product funnel events (signature_completed, etc.)
+ * stay allowed with `person_profiles: identified_only` and no identify() call.
  */
 export function muteGuestAnalytics(
   client: GuestAnalyticsClient = posthog
@@ -25,12 +27,12 @@ export function muteGuestAnalytics(
   client.set_config?.({
     disable_session_recording: true,
     disable_surveys: true,
+    enable_heatmaps: false,
   });
   client.stopSessionRecording?.();
-  client.opt_out_capturing?.();
 }
 
-/** Re-enable capturing after an authenticated identity is established. */
+/** Re-enable recording after an authenticated identity is established. */
 export function unmuteAuthenticatedAnalytics(
   client: GuestAnalyticsClient = posthog
 ): void {
@@ -38,6 +40,7 @@ export function unmuteAuthenticatedAnalytics(
   client.set_config?.({
     disable_session_recording: false,
     disable_surveys: false,
+    enable_heatmaps: true,
   });
   client.startSessionRecording?.();
 }

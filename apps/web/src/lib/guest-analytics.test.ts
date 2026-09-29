@@ -6,7 +6,7 @@ import {
 } from "./guest-analytics";
 
 describe("guest-analytics", () => {
-  test("mute opts out, stops recording, and disables surveys", () => {
+  test("mute stops recording and surveys without opting out of capture", () => {
     const client = {
       opt_out_capturing: vi.fn(),
       stopSessionRecording: vi.fn(),
@@ -16,9 +16,10 @@ describe("guest-analytics", () => {
     expect(client.set_config).toHaveBeenCalledWith({
       disable_session_recording: true,
       disable_surveys: true,
+      enable_heatmaps: false,
     });
     expect(client.stopSessionRecording).toHaveBeenCalledOnce();
-    expect(client.opt_out_capturing).toHaveBeenCalledOnce();
+    expect(client.opt_out_capturing).not.toHaveBeenCalled();
   });
 
   test("unmute opts in and starts session recording for authenticated app", () => {
@@ -32,6 +33,7 @@ describe("guest-analytics", () => {
     expect(client.set_config).toHaveBeenCalledWith({
       disable_session_recording: false,
       disable_surveys: false,
+      enable_heatmaps: true,
     });
     expect(client.startSessionRecording).toHaveBeenCalledOnce();
   });

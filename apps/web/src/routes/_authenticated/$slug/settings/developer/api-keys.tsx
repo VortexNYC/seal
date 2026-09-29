@@ -194,9 +194,9 @@ function ApiKeysPage() {
           </Dialog.Description>
           <form onSubmit={handleCreate} className="mt-4 space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="token-name">Name</Label>
               <Input
                 id="token-name"
+                label="Name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Production CI"

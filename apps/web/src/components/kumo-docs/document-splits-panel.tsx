@@ -147,10 +147,10 @@ export function DocumentSplitsPanel({
           >
             <div className="flex items-center gap-2">
               <Input
+                aria-label="Split group title"
                 value={group.title}
                 onChange={(e) => updateTitle(group.id, e.target.value)}
                 className="h-8 flex-1 text-sm"
-                aria-label="Split title"
               />
               <Button
                 type="button"

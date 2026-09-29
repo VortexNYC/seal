@@ -162,6 +162,7 @@ export function SchemaBuilderPanel({
                 className="border-border grid gap-2 rounded-lg border p-2 sm:grid-cols-[1fr_8rem_1fr_auto]"
               >
                 <Input
+                  aria-label="Property key"
                   value={prop.key}
                   onChange={(e) => updateProp(prop.id, { key: e.target.value })}
                   placeholder="property_key"
@@ -183,6 +184,7 @@ export function SchemaBuilderPanel({
                   ))}
                 </Select>
                 <Input
+                  aria-label="Property description"
                   value={prop.description ?? ""}
                   onChange={(e) =>
                     updateProp(prop.id, { description: e.target.value })

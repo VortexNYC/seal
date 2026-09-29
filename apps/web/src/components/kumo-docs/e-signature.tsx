@@ -325,9 +325,9 @@ export function ESignature({
 
       {method === "typed" ? (
         <div className="space-y-2">
-          <Label htmlFor="esign-typed">Type your full name</Label>
           <Input
             id="esign-typed"
+            label="Type your full name"
             value={typedName}
             onChange={(e) => {
               setTypedName(e.target.value);
@@ -337,7 +337,6 @@ export function ESignature({
             autoComplete="name"
             autoCapitalize="words"
             enterKeyHint="done"
-            aria-label="Type your full name"
           />
           {fonts.length > 1 ? (
             <div className="space-y-2">
