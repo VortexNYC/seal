@@ -143,6 +143,7 @@ export function SendDocumentDialog({
   );
   const [allowDictateNextSigner, setAllowDictateNextSigner] = useState(false);
   const [expirationError, setExpirationError] = useState<string | null>(null);
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
 
   // Check if any recipients have order values set (enables sequential option)
   const hasOrderValues = recipients.some(
@@ -260,13 +261,14 @@ export function SendDocumentDialog({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog className="flex max-h-[90vh] flex-col sm:max-w-[600px]">
-        <Dialog.Title>Send Document</Dialog.Title>
+        <Dialog.Title>Send for signature</Dialog.Title>
         <Dialog.Description>
-          Send "{documentName}" to {pendingRecipients.length} recipient
-          {pendingRecipients.length !== 1 ? "s" : ""} for signing.
+          {pendingRecipients.length} recipient
+          {pendingRecipients.length !== 1 ? "s" : ""} get a link for &ldquo;
+          {documentName}&rdquo;. Optional extras stay under More options.
         </Dialog.Description>
 
-        <div className="-mx-6 flex-1 space-y-4 overflow-y-auto px-6 py-4">
+        <div className="-mx-6 flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-4">
           {/* Payment Fields Summary */}
           {paymentConfigs && paymentConfigs.length > 0 && (
             <div className="border-field-payment-border bg-field-payment-surface rounded-md border p-4">
@@ -280,7 +282,7 @@ export function SendDocumentDialog({
                       ? "Payment will be included"
                       : `${paymentConfigs.length} payments will be included`}
                   </p>
-                  <div className="mt-1 space-y-0.5">
+                  <div className="mt-1 flex flex-col gap-0.5">
                     {paymentConfigs.map((config) => (
                       <p
                         key={config.fieldId}
@@ -301,190 +303,166 @@ export function SendDocumentDialog({
             </div>
           )}
 
-          {/* SEA-119: Recipients list with per-recipient message */}
-          <div>
-            <Label className="mb-2 text-sm font-medium">Recipients</Label>
-            <div className="mt-2 space-y-2">
+          <div className="flex flex-col gap-2">
+            <Label className="text-sm font-medium">Recipients</Label>
+            <ul className="flex flex-col gap-1.5 rounded-md border p-3">
               {pendingRecipients.map((recipient) => (
-                <Collapsible.Root
+                <li
                   key={recipient._id}
-                  open={expandedRecipient === recipient._id}
-                  onOpenChange={(isExpanded) =>
-                    setExpandedRecipient(isExpanded ? recipient._id : null)
-                  }
+                  className="flex items-center justify-between gap-2 text-sm"
                 >
-                  <div className="overflow-hidden rounded-md border">
-                    <Collapsible.Trigger className="bg-muted hover:bg-muted/80 flex w-full items-center justify-between p-3 transition-colors">
-                      <div className="flex min-w-0 flex-1 items-center gap-3">
-                        <div className="bg-primary/10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium">
-                          {(recipient.name || recipient.email)[0].toUpperCase()}
-                        </div>
-                        <div className="min-w-0 flex-1 text-left">
-                          <p className="truncate text-sm font-medium">
-                            {recipient.name || recipient.email}
-                          </p>
-                          <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
-                            {recipient.name && (
-                              <span className="max-w-[180px] truncate">
-                                {recipient.email}
-                              </span>
-                            )}
-                            {recipient.name && <span>•</span>}
-                            <span className="shrink-0 capitalize">
-                              {recipient.role}
-                            </span>
-                            {getRecipientMessage(recipient._id) && (
-                              <>
-                                <span>•</span>
-                                <span className="text-primary shrink-0">
-                                  Custom message
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="ml-2 flex shrink-0 items-center gap-2">
-                        {fieldCountsByRecipient && (
-                          <span className="bg-background rounded border px-2 py-1 text-xs font-medium">
-                            {fieldCountsByRecipient.get(recipient._id) ?? 0}{" "}
-                            {(fieldCountsByRecipient.get(recipient._id) ??
-                              0) === 1
-                              ? "field"
-                              : "fields"}
-                          </span>
-                        )}
+                  <span className="min-w-0 truncate font-medium">
+                    {recipient.name || recipient.email}
+                  </span>
+                  <span className="text-muted-foreground shrink-0 text-xs capitalize">
+                    {recipient.role}
+                    {fieldCountsByRecipient
+                      ? ` · ${fieldCountsByRecipient.get(recipient._id) ?? 0} fields`
+                      : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <Collapsible.Root
+            open={showMoreOptions}
+            onOpenChange={setShowMoreOptions}
+          >
+            <Collapsible.Trigger className="text-muted-foreground hover:text-foreground flex w-full items-center justify-between rounded-md border px-3 py-2 text-sm font-medium transition-colors">
+              More options
+              {showMoreOptions ? (
+                <ChevronUpIcon className="size-4" />
+              ) : (
+                <ChevronDownIcon className="size-4" />
+              )}
+            </Collapsible.Trigger>
+            <Collapsible.Panel className="mt-3 flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <Label className="text-sm font-medium">
+                  Per-recipient messages
+                </Label>
+                {pendingRecipients.map((recipient) => (
+                  <Collapsible.Root
+                    key={recipient._id}
+                    open={expandedRecipient === recipient._id}
+                    onOpenChange={(isExpanded) =>
+                      setExpandedRecipient(isExpanded ? recipient._id : null)
+                    }
+                  >
+                    <div className="overflow-hidden rounded-md border">
+                      <Collapsible.Trigger className="bg-muted hover:bg-muted/80 flex w-full items-center justify-between p-3 transition-colors">
+                        <span className="truncate text-sm font-medium">
+                          {recipient.name || recipient.email}
+                        </span>
                         {expandedRecipient === recipient._id ? (
-                          <ChevronUpIcon className="text-muted-foreground h-4 w-4" />
+                          <ChevronUpIcon className="text-muted-foreground size-4" />
                         ) : (
-                          <ChevronDownIcon className="text-muted-foreground h-4 w-4" />
+                          <ChevronDownIcon className="text-muted-foreground size-4" />
                         )}
-                      </div>
-                    </Collapsible.Trigger>
-                    <Collapsible.Panel>
-                      <div className="space-y-2 border-t p-3">
-                        <Textarea
-                          placeholder={`Custom message for ${recipient.name || recipient.email}...`}
-                          value={getRecipientMessage(recipient._id)}
-                          onChange={(e) =>
-                            setRecipientMessage(recipient._id, e.target.value)
-                          }
-                          className="min-h-[80px]"
-                          maxLength={500}
-                          aria-label="Custom message"
-                        />
+                      </Collapsible.Trigger>
+                      <Collapsible.Panel>
+                        <div className="flex flex-col gap-2 border-t p-3">
+                          <Textarea
+                            placeholder={`Custom message for ${recipient.name || recipient.email}...`}
+                            value={getRecipientMessage(recipient._id)}
+                            onChange={(e) =>
+                              setRecipientMessage(recipient._id, e.target.value)
+                            }
+                            className="min-h-[80px]"
+                            maxLength={500}
+                            aria-label="Custom message"
+                          />
+                        </div>
+                      </Collapsible.Panel>
+                    </div>
+                  </Collapsible.Root>
+                ))}
+              </div>
+
+              <div>
+                <Label htmlFor="message" className="text-sm font-medium">
+                  Default message (optional)
+                </Label>
+                <Textarea
+                  id="message"
+                  placeholder="Add a personal message for all recipients..."
+                  value={customMessage}
+                  onChange={(e) => setCustomMessage(e.target.value)}
+                  className="mt-2 min-h-[80px]"
+                  maxLength={500}
+                  aria-label="Default message"
+                />
+              </div>
+
+              {recipients.length > 1 && (
+                <div>
+                  <Label className="text-sm font-medium">Signing order</Label>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSigningMode("parallel")}
+                      className={cn(
+                        "flex items-center gap-2 rounded-md border p-3 text-left text-sm transition-colors",
+                        signingMode === "parallel"
+                          ? "border-primary bg-primary/5 ring-primary/20 ring-1"
+                          : "hover:bg-muted"
+                      )}
+                    >
+                      <UsersIcon className="text-muted-foreground size-4 shrink-0" />
+                      <div>
+                        <p className="font-medium">All at once</p>
                         <p className="text-muted-foreground text-xs">
-                          {getRecipientMessage(recipient._id).length}/500
-                          characters (leave empty to use default message)
+                          Everyone signs simultaneously
                         </p>
                       </div>
-                    </Collapsible.Panel>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSigningMode("sequential")}
+                      className={cn(
+                        "flex items-center gap-2 rounded-md border p-3 text-left text-sm transition-colors",
+                        signingMode === "sequential"
+                          ? "border-primary bg-primary/5 ring-primary/20 ring-1"
+                          : "hover:bg-muted"
+                      )}
+                    >
+                      <ListOrderedIcon className="text-muted-foreground size-4 shrink-0" />
+                      <div>
+                        <p className="font-medium">In order</p>
+                        <p className="text-muted-foreground text-xs">
+                          One {hasOrderValues ? "group" : "person"} at a time
+                        </p>
+                      </div>
+                    </button>
                   </div>
-                </Collapsible.Root>
-              ))}
-            </div>
-          </div>
-
-          {/* Default message for all (used when no per-recipient message) */}
-          <div>
-            <Label htmlFor="message" className="text-sm font-medium">
-              Default Message (Optional)
-            </Label>
-            <p className="text-muted-foreground mb-2 text-xs">
-              Used for recipients without a custom message
-            </p>
-            <Textarea
-              id="message"
-              placeholder="Add a personal message for all recipients..."
-              value={customMessage}
-              onChange={(e) => setCustomMessage(e.target.value)}
-              className="min-h-[80px]"
-              maxLength={500}
-              aria-label="Default message"
-            />
-            <p className="text-muted-foreground mt-1 text-xs">
-              {customMessage.length}/500 characters
-            </p>
-          </div>
-
-          {/* Signing Mode Toggle */}
-          {recipients.length > 1 && (
-            <div>
-              <Label className="text-sm font-medium">Signing Order</Label>
-              <p className="text-muted-foreground mb-2 text-xs">
-                {hasOrderValues
-                  ? "Recipients have order values assigned"
-                  : "Choose how recipients sign the document"}
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setSigningMode("parallel")}
-                  className={cn(
-                    "flex items-center gap-2 rounded-md border p-3 text-left text-sm transition-colors",
-                    signingMode === "parallel"
-                      ? "border-primary bg-primary/5 ring-primary/20 ring-1"
-                      : "hover:bg-muted"
+                  {signingMode === "sequential" && (
+                    <div className="mt-3 flex items-start justify-between gap-4 rounded-md border p-3">
+                      <div className="flex flex-col gap-0.5">
+                        <Label className="text-sm font-medium">
+                          Signers choose next recipient
+                        </Label>
+                        <p className="text-muted-foreground text-xs">
+                          Allow each signer to designate who signs after them.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={allowDictateNextSigner}
+                        onCheckedChange={setAllowDictateNextSigner}
+                        aria-label="Signers choose next recipient"
+                      />
+                    </div>
                   )}
-                >
-                  <UsersIcon className="text-muted-foreground size-4 shrink-0" />
-                  <div>
-                    <p className="font-medium">All at once</p>
-                    <p className="text-muted-foreground text-xs">
-                      Everyone signs simultaneously
-                    </p>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSigningMode("sequential")}
-                  className={cn(
-                    "flex items-center gap-2 rounded-md border p-3 text-left text-sm transition-colors",
-                    signingMode === "sequential"
-                      ? "border-primary bg-primary/5 ring-primary/20 ring-1"
-                      : "hover:bg-muted"
-                  )}
-                >
-                  <ListOrderedIcon className="text-muted-foreground size-4 shrink-0" />
-                  <div>
-                    <p className="font-medium">In order</p>
-                    <p className="text-muted-foreground text-xs">
-                      Sign one {hasOrderValues ? "group" : "person"} at a time
-                    </p>
-                  </div>
-                </button>
-              </div>
-              {signingMode === "sequential" && !hasOrderValues && (
-                <p className="text-muted-foreground mt-2 text-xs">
-                  Recipients will sign in the order listed above. To customize
-                  the order, set order values on recipients before sending.
-                </p>
-              )}
-              {signingMode === "sequential" && (
-                <div className="mt-3 flex items-start justify-between gap-4 rounded-md border p-3">
-                  <div className="space-y-0.5">
-                    <Label className="text-sm font-medium">
-                      Signers choose next recipient
-                    </Label>
-                    <p className="text-muted-foreground text-xs">
-                      Allow each signer to designate who signs after them.
-                    </p>
-                  </div>
-                  <Switch
-                    checked={allowDictateNextSigner}
-                    onCheckedChange={setAllowDictateNextSigner}
-                    aria-label="Signers choose next recipient"
-                  />
                 </div>
               )}
-            </div>
-          )}
+            </Collapsible.Panel>
+          </Collapsible.Root>
 
           {/* Expiration Period */}
           <div>
-            <Label className="text-sm font-medium">Expiration (Optional)</Label>
+            <Label className="text-sm font-medium">Deadline (optional)</Label>
             <p className="text-muted-foreground mb-2 text-xs">
-              Set how long recipients have to sign after sending
+              How long recipients have to sign after send
             </p>
             <Select
               value={expirationPreset}

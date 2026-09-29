@@ -58,6 +58,10 @@ import {
   type DocumentNextActionModel,
 } from "./document-next-action";
 import { DocumentProgressRing } from "./document-progress-ring";
+import {
+  DocumentSendSteps,
+  resolveSendStep,
+} from "./document-send-steps";
 import { FieldList } from "./field-list";
 import { FieldToolbar } from "./field-toolbar";
 import { InAppSigningSection } from "./in-app-signing-section";
@@ -1248,8 +1252,39 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
     waitingDetail,
   });
 
+  const sendStep = resolveSendStep({
+    recipientCount: props.recipients.length,
+    fieldCount: props.signatureFields.length,
+    canSend: props.canSend,
+  });
+
   return (
     <div className="flex flex-col gap-5 sm:gap-4">
+      {isDraftBuilder ? (
+        <DocumentSendSteps
+          current={sendStep}
+          onSelect={(step) => {
+            if (step === 1) {
+              props.onEnsureSection("recipients");
+              if (props.recipients.length === 0) {
+                props.onAddRecipient();
+              }
+              return;
+            }
+            if (step === 2) {
+              props.onEnsureSection("fields");
+              return;
+            }
+            if (props.canSend) {
+              props.onSendDocument();
+            } else {
+              props.onEnsureSection(
+                props.recipients.length === 0 ? "recipients" : "fields"
+              );
+            }
+          }}
+        />
+      ) : null}
       <DocumentNextAction
         workflowStatus={normalizedWorkflowStatus}
         createdAt={props.createdAt}

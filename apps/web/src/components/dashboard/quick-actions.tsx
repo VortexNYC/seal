@@ -5,12 +5,7 @@
 
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { useRouter } from "@tanstack/react-router";
-import {
-  BarChart3Icon,
-  FileTextIcon,
-  LayoutTemplateIcon,
-  UploadIcon,
-} from "lucide-react";
+import { FileTextIcon, LayoutTemplateIcon, UploadIcon } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 interface QuickActionItem {
@@ -29,7 +24,7 @@ export function QuickActions({ slug }: QuickActionsProps): React.ReactElement {
 
   const actions: QuickActionItem[] = [
     {
-      label: "Upload document",
+      label: "Upload PDF",
       icon: UploadIcon,
       to: "/$slug/documents",
       search: { folderId: undefined },
@@ -46,17 +41,12 @@ export function QuickActions({ slug }: QuickActionsProps): React.ReactElement {
       to: "/$slug/documents",
       search: { folderId: undefined },
     },
-    {
-      label: "Analytics",
-      icon: BarChart3Icon,
-      to: "/$slug/analytics",
-    },
   ];
 
   return (
     <LayerCard>
       <LayerCard.Secondary className="px-4 pt-4 pb-2">
-        <h3 className="text-sm font-semibold">Quick actions</h3>
+        <h3 className="text-sm font-semibold">Start</h3>
       </LayerCard.Secondary>
       <LayerCard.Primary className="flex flex-col gap-0.5 px-2 pb-2">
         {actions.map((action) => {

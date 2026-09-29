@@ -85,6 +85,12 @@ export const Route = createFileRoute(
   component: DocumentDetailPage,
   pendingComponent: DocumentDetailSkeleton,
   errorComponent: DocumentErrorComponent,
+  validateSearch: (search: Record<string, unknown>): { focus?: "recipients" | "send" } => {
+    if (search.focus === "recipients" || search.focus === "send") {
+      return { focus: search.focus };
+    }
+    return {};
+  },
   head: () => ({
     meta: [
       { title: "Document - Seal" },
@@ -121,6 +127,7 @@ function DocumentErrorComponent(props: ErrorComponentProps) {
 
 function DocumentDetailPage() {
   const { slug, documentId } = Route.useParams();
+  const { focus } = Route.useSearch();
   const documentPublicId = documentId;
   const router = useRouter();
 
@@ -273,6 +280,20 @@ function DocumentDetailPage() {
   const { openSections, toggleSection } = useSectionState(
     documentAnnotations.annotations !== null
   );
+
+  const focusAppliedRef = useRef(false);
+  useEffect(() => {
+    if (focusAppliedRef.current || focus === undefined) {
+      return;
+    }
+    focusAppliedRef.current = true;
+    if (focus === "recipients" && !openSections.has("recipients")) {
+      toggleSection("recipients");
+    }
+    if (focus === "send") {
+      docState.setSendDocumentOpen(true);
+    }
+  }, [focus, openSections, toggleSection, docState]);
 
   const aiSuggestions = useAIFieldSuggestions(documentPublicId, {
     enabled: showAiFeatures,

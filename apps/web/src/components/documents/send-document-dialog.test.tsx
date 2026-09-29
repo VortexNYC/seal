@@ -109,13 +109,13 @@ describe("SendDocumentDialog", () => {
 
   test("does not render dialog content when open is false", () => {
     renderDialog({ open: false });
-    expect(screen.queryByText("Send Document")).not.toBeInTheDocument();
+    expect(screen.queryByText("Send for signature")).not.toBeInTheDocument();
   });
 
-  test("renders dialog title 'Send Document' when open is true", () => {
+  test("renders dialog title when open is true", () => {
     renderDialog({ open: true });
     expect(
-      screen.getByRole("heading", { name: "Send Document" })
+      screen.getByRole("heading", { name: "Send for signature" })
     ).toBeInTheDocument();
   });
 
@@ -320,7 +320,7 @@ describe("SendDocumentDialog", () => {
 
   test("shows the document name in the description", () => {
     renderDialog({ open: true });
-    expect(screen.getByText(/"Test Document"/)).toBeInTheDocument();
+    expect(screen.getByText(/Test Document/)).toBeInTheDocument();
   });
 
   test("shows correct pending recipient count in description", () => {
