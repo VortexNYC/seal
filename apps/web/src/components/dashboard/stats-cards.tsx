@@ -35,28 +35,26 @@ function StatCard({
   children,
 }: StatCardProps): React.ReactElement {
   return (
-    <LayerCard aria-label={`${title}: ${value}`}>
-      <LayerCard.Primary className="gap-1 p-4">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-            {title}
-          </p>
-          <Icon
-            className={cn(
-              "size-3.5 shrink-0",
-              tone === "warning" && "text-warning",
-              tone === "success" && "text-success",
-              tone === "neutral" && "text-muted-foreground"
-            )}
-            strokeWidth={2}
-          />
-        </div>
-        <p className="text-2xl font-semibold tracking-tight tabular-nums">
-          {value}
+    <LayerCard aria-label={`${title}: ${value}`} className="flex flex-col gap-1 p-4">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+          {title}
         </p>
-        <p className="text-muted-foreground text-xs">{subtitle}</p>
-        {children}
-      </LayerCard.Primary>
+        <Icon
+          className={cn(
+            "size-3.5 shrink-0",
+            tone === "warning" && "text-warning",
+            tone === "success" && "text-success",
+            tone === "neutral" && "text-muted-foreground"
+          )}
+          strokeWidth={2}
+        />
+      </div>
+      <p className="text-2xl font-semibold tracking-tight tabular-nums">
+        {value}
+      </p>
+      <p className="text-muted-foreground text-xs">{subtitle}</p>
+      {children}
     </LayerCard>
   );
 }

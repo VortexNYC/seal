@@ -417,29 +417,25 @@ export function AppSidebar({
       <Sidebar.Content className="px-1 pt-2">
         <NavMain primary={primary} groups={groups} />
       </Sidebar.Content>
-      <Sidebar.Footer className="border-sidebar-border gap-1 border-t px-1 py-2">
-        <Sidebar.Menu>
-          <Sidebar.MenuItem>
-            <div className="flex items-center gap-1 px-1">
-              <NotificationsPopover slug={slug} organizationSlug={slug} />
-              <Sidebar.MenuButton
-                className="size-8 shrink-0 justify-center px-0"
-                onClick={handleThemeToggle}
-                aria-pressed={isDark}
-                aria-label={
-                  isDark ? "Switch to light mode" : "Switch to dark mode"
-                }
-                tooltip={isDark ? "Light mode" : "Dark mode"}
-              >
-                {isDark ? (
-                  <Moon className="size-4" />
-                ) : (
-                  <Sun className="size-4" />
-                )}
-              </Sidebar.MenuButton>
-            </div>
-          </Sidebar.MenuItem>
-        </Sidebar.Menu>
+      <Sidebar.Footer className="border-sidebar-border relative z-20 isolate gap-1 border-t px-1 py-2">
+        <div className="relative z-20 flex items-center gap-1 px-1">
+          <NotificationsPopover slug={slug} organizationSlug={slug} />
+          <button
+            type="button"
+            className="text-sidebar-foreground hover:bg-sidebar-accent inline-flex size-8 shrink-0 items-center justify-center rounded-lg"
+            onClick={handleThemeToggle}
+            aria-pressed={isDark}
+            aria-label={
+              isDark ? "Switch to light mode" : "Switch to dark mode"
+            }
+          >
+            {isDark ? (
+              <Moon className="size-4" />
+            ) : (
+              <Sun className="size-4" />
+            )}
+          </button>
+        </div>
         {teamOptions.length > 0 ? (
           <TeamSwitcher
             teams={teamOptions}

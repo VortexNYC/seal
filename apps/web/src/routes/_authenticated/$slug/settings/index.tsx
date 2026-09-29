@@ -1,7 +1,5 @@
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
-import { LayerCard } from "@cloudflare/kumo/components/layer-card";
-import { Text } from "@cloudflare/kumo/components/text";
 import { FloppyDisk } from "@phosphor-icons/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -176,71 +174,63 @@ function GeneralSettingsContent() {
           />
         )}
 
-        <LayerCard>
-          <LayerCard.Secondary>
-            <Text as="h2" variant="heading">
+        <section className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-base font-semibold tracking-tight">
               Regional defaults
-            </Text>
-            <Text variant="secondary">
+            </h2>
+            <p className="text-muted-foreground text-sm">
               Product defaults for documents and payments in this workspace.
-            </Text>
-          </LayerCard.Secondary>
-          <LayerCard.Primary>
-            <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <Input
-                  id="timezone"
-                  label="Timezone"
-                  value={product.timezone}
-                  onChange={(event) =>
-                    setProduct((prev) => ({
-                      ...prev,
-                      timezone: event.target.value,
-                    }))
-                  }
-                  placeholder="UTC"
-                  disabled={!isAdmin}
-                />
-              </div>
-              <div className="space-y-2">
-                <Input
-                  id="currency"
-                  label="Currency"
-                  value={product.currency}
-                  onChange={(event) =>
-                    setProduct((prev) => ({
-                      ...prev,
-                      currency: event.target.value,
-                    }))
-                  }
-                  placeholder="USD"
-                  disabled={!isAdmin}
-                />
-              </div>
-              <div className="space-y-2">
-                <Input
-                  id="currencyKind"
-                  label="Currency kind"
-                  value={product.currencyKind}
-                  onChange={(event) =>
-                    setProduct((prev) => ({
-                      ...prev,
-                      currencyKind: event.target.value,
-                    }))
-                  }
-                  placeholder="normal"
-                  disabled={!isAdmin}
-                />
-              </div>
-              <div className="flex justify-end md:col-span-3">
-                <Button type="submit" disabled={!isAdmin || isSubmitting}>
-                  <FloppyDisk className="mr-2 h-4 w-4" />
-                  {isSubmitting ? "Saving…" : "Save workspace settings"}
-                </Button>
-              </div>
-            </form>
-          </LayerCard.Primary>
-        </LayerCard>
+            </p>
+          </div>
+          <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-3">
+            <Input
+              id="timezone"
+              label="Timezone"
+              value={product.timezone}
+              onChange={(event) =>
+                setProduct((prev) => ({
+                  ...prev,
+                  timezone: event.target.value,
+                }))
+              }
+              placeholder="UTC"
+              disabled={!isAdmin}
+            />
+            <Input
+              id="currency"
+              label="Currency"
+              value={product.currency}
+              onChange={(event) =>
+                setProduct((prev) => ({
+                  ...prev,
+                  currency: event.target.value,
+                }))
+              }
+              placeholder="USD"
+              disabled={!isAdmin}
+            />
+            <Input
+              id="currencyKind"
+              label="Currency kind"
+              value={product.currencyKind}
+              onChange={(event) =>
+                setProduct((prev) => ({
+                  ...prev,
+                  currencyKind: event.target.value,
+                }))
+              }
+              placeholder="normal"
+              disabled={!isAdmin}
+            />
+            <div className="flex justify-end md:col-span-3">
+              <Button type="submit" disabled={!isAdmin || isSubmitting}>
+                <FloppyDisk className="mr-2 h-4 w-4" />
+                {isSubmitting ? "Saving…" : "Save workspace settings"}
+              </Button>
+            </div>
+          </form>
+        </section>
       </div>
       </SettingsBody>
     </PageWrapper>

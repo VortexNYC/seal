@@ -75,19 +75,17 @@ function WorkspaceLayout() {
   };
 
   return (
-    <Sidebar.Provider collapsible="icon">
+    <Sidebar.Provider collapsible="icon" className="bg-background min-h-dvh">
       <PostHogIdentify organization={orgData} />
       <PostHogPageview />
-      <div className="bg-background/80 relative z-10 flex h-dvh w-full overflow-hidden">
-        <AppSidebar
-          slug={slug}
-          organization={orgData}
-          permissions={undefined}
-        />
-        <main className="h-full min-h-0 flex-1 overflow-hidden">
-          <Outlet />
-        </main>
-      </div>
+      <AppSidebar
+        slug={slug}
+        organization={orgData}
+        permissions={undefined}
+      />
+      <main className="bg-background relative z-0 h-dvh min-h-0 min-w-0 flex-1 overflow-hidden">
+        <Outlet />
+      </main>
       <CommandPalette open={cmdKOpen} onOpenChange={setCmdKOpen} />
     </Sidebar.Provider>
   );
