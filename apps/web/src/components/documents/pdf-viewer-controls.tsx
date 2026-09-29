@@ -172,18 +172,22 @@ export function PdfViewerControls({
       >
         {/* Page Navigation */}
         <div className="flex items-center">
-          <Tooltip content="Previous page (←)" side="bottom">
-            <Button
-              variant="ghost"
-              size="sm"
-              shape="square"
-              onClick={goToPreviousPage}
-              disabled={currentPage <= 1}
-              aria-label="Previous page"
-              className="size-7 sm:size-8"
-              icon={CaretLeft}
-            />
-          </Tooltip>
+          <Tooltip
+            content="Previous page (←)"
+            side="bottom"
+            render={
+              <Button
+                variant="ghost"
+                size="sm"
+                shape="square"
+                onClick={goToPreviousPage}
+                disabled={currentPage <= 1}
+                aria-label="Previous page"
+                className="size-7 sm:size-8"
+                icon={CaretLeft}
+              />
+            }
+          />
 
           <form
             onSubmit={handlePageInputSubmit}
@@ -204,18 +208,22 @@ export function PdfViewerControls({
             </span>
           </form>
 
-          <Tooltip content="Next page (→)" side="bottom">
-            <Button
-              variant="ghost"
-              size="sm"
-              shape="square"
-              onClick={goToNextPage}
-              disabled={currentPage >= totalPages}
-              aria-label="Next page"
-              className="size-7 sm:size-8"
-              icon={CaretRight}
-            />
-          </Tooltip>
+          <Tooltip
+            content="Next page (→)"
+            side="bottom"
+            render={
+              <Button
+                variant="ghost"
+                size="sm"
+                shape="square"
+                onClick={goToNextPage}
+                disabled={currentPage >= totalPages}
+                aria-label="Next page"
+                className="size-7 sm:size-8"
+                icon={CaretRight}
+              />
+            }
+          />
         </div>
 
         {/* Divider - hidden on very small screens */}
@@ -223,18 +231,22 @@ export function PdfViewerControls({
 
         {/* Zoom Controls */}
         <div className="flex items-center">
-          <Tooltip content="Zoom out" side="bottom">
-            <Button
-              variant="ghost"
-              size="sm"
-              shape="square"
-              onClick={() => zoomOut()}
-              disabled={currentZoom <= 0.5}
-              aria-label="Zoom out"
-              className="size-7 sm:size-8"
-              icon={Minus}
-            />
-          </Tooltip>
+          <Tooltip
+            content="Zoom out"
+            side="bottom"
+            render={
+              <Button
+                variant="ghost"
+                size="sm"
+                shape="square"
+                onClick={() => zoomOut()}
+                disabled={currentZoom <= 0.5}
+                aria-label="Zoom out"
+                className="size-7 sm:size-8"
+                icon={Minus}
+              />
+            }
+          />
 
           {/* Zoom percentage - hidden on mobile, shown as select on desktop */}
           <Select
@@ -258,18 +270,22 @@ export function PdfViewerControls({
             {zoomPercentage}%
           </span>
 
-          <Tooltip content="Zoom in" side="bottom">
-            <Button
-              variant="ghost"
-              size="sm"
-              shape="square"
-              onClick={() => zoomIn()}
-              disabled={currentZoom >= 2.0}
-              aria-label="Zoom in"
-              className="size-7 sm:size-8"
-              icon={Plus}
-            />
-          </Tooltip>
+          <Tooltip
+            content="Zoom in"
+            side="bottom"
+            render={
+              <Button
+                variant="ghost"
+                size="sm"
+                shape="square"
+                onClick={() => zoomIn()}
+                disabled={currentZoom >= 2.0}
+                aria-label="Zoom in"
+                className="size-7 sm:size-8"
+                icon={Plus}
+              />
+            }
+          />
         </div>
 
         {/* Divider - hidden on mobile */}
@@ -277,29 +293,37 @@ export function PdfViewerControls({
 
         {/* Reset & Fit - hidden on mobile */}
         <div className="hidden items-center gap-0.5 sm:flex">
-          <Tooltip content="Reset zoom and position" side="bottom">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => resetTransform()}
-              className="h-8 px-2 text-xs"
-              icon={ArrowCounterClockwise}
-            >
-              Reset
-            </Button>
-          </Tooltip>
+          <Tooltip
+            content="Reset zoom and position"
+            side="bottom"
+            render={
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => resetTransform()}
+                className="h-8 px-2 text-xs"
+                icon={ArrowCounterClockwise}
+              >
+                Reset
+              </Button>
+            }
+          />
 
-          <Tooltip content="Fit to width (100%)" side="bottom">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleFitToWidth}
-              className="h-8 px-2 text-xs"
-              icon={CornersOut}
-            >
-              Fit
-            </Button>
-          </Tooltip>
+          <Tooltip
+            content="Fit to width (100%)"
+            side="bottom"
+            render={
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleFitToWidth}
+                className="h-8 px-2 text-xs"
+                icon={CornersOut}
+              >
+                Fit
+              </Button>
+            }
+          />
         </div>
       </div>
     </TooltipProvider>

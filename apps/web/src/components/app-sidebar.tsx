@@ -2,21 +2,29 @@
 
 import { Sidebar } from "@cloudflare/kumo/components/sidebar";
 import {
+  ChartBar,
   Code,
+  Files,
   Gear,
+  House,
   Moon,
   SquaresFour,
   Sun,
+  Users,
   type Icon,
 } from "@phosphor-icons/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import * as React from "react";
 
-import { NavMain } from "@/components/nav-main";
+import {
+  NavMain,
+  type NavGroupItem,
+  type NavPrimaryItem,
+} from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
 import { NotificationsPopover } from "@/components/notifications/notifications-popover";
-import { SealLogoBadgeFixed } from "@/components/seal-logo-fixed";
+import { SealLogo } from "@/components/seal-logo";
 import { TeamSwitcher } from "@/components/team-switcher";
 import { useTheme } from "@/components/theme-provider";
 import { useAnalytics } from "@/hooks/use-analytics";
@@ -24,7 +32,6 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import { betterAuthClient } from "@/lib/better-auth";
 import { buildOrganizationPath } from "@/lib/organization-path";
-import { cn } from "@/lib/utils";
 
 type SidebarOrganization = {
   id: string;
@@ -49,19 +56,6 @@ type PermissionSet = {
   };
 } | null;
 
-type NavMainItem = {
-  title: string;
-  url: string;
-  icon: Icon;
-  isActive: boolean;
-  items: {
-    title: string;
-    url: string;
-    isActive: boolean;
-    locked?: boolean;
-  }[];
-};
-
 type AppSidebarProps = Omit<
   React.ComponentProps<typeof Sidebar>,
   "children"
@@ -69,6 +63,11 @@ type AppSidebarProps = Omit<
   slug: string;
   organization: SidebarOrganization;
   permissions: PermissionSet | undefined;
+};
+
+type BuiltNav = {
+  primary: NavPrimaryItem[];
+  groups: NavGroupItem[];
 };
 
 function getInitials(value: string) {
@@ -101,7 +100,7 @@ function canView(flag?: boolean): boolean {
   return flag ?? true;
 }
 
-function buildNavSections({
+function buildNav({
   slug,
   currentPath,
   permissions,
@@ -111,37 +110,48 @@ function buildNavSections({
   currentPath: string;
   permissions: PermissionSet | undefined;
   isPro: boolean;
-}): NavMainItem[] {
+}): BuiltNav {
   const permissionFlags = permissions?.permissions;
 
-  const workspaceItems = [
+  const primary: NavPrimaryItem[] = [
     {
       title: "Dashboard",
       url: buildOrganizationPath(slug, "/home"),
+      icon: House,
       visible: true,
     },
     {
       title: "Documents",
       url: buildOrganizationPath(slug, "/documents"),
+      icon: Files,
       visible: canView(permissionFlags?.canCreateDocuments),
     },
     {
       title: "Templates",
       url: buildOrganizationPath(slug, "/templates"),
+      icon: SquaresFour,
       visible: canView(permissionFlags?.canCreateTemplates),
     },
     {
       title: "Contacts",
       url: buildOrganizationPath(slug, "/contacts"),
+      icon: Users,
       visible: canView(permissionFlags?.canViewContacts),
     },
     {
       title: "Analytics",
       url: buildOrganizationPath(slug, "/analytics"),
+      icon: ChartBar,
       visible: true,
     },
-  ].filter((item) => item.visible);
-
+  ]
+    .filter((item) => item.visible)
+    .map(({ title, url, icon }) => ({
+      title,
+      url,
+      icon,
+      isActive: isPathActive(currentPath, url, title === "Dashboard"),
+    }));
 
   const settingsItems = [
     {
@@ -213,50 +223,42 @@ function buildNavSections({
     },
   ].filter((item) => item.visible);
 
-  const sections = [
-    {
-      title: "Workspace",
-      icon: SquaresFour,
-      items: workspaceItems,
-    },
-    {
+  const groups: NavGroupItem[] = [];
+
+  if (settingsItems.length > 0) {
+    const items = settingsItems.map((item) => ({
+      title: item.title,
+      url: item.url,
+      isActive: isPathActive(
+        currentPath,
+        item.url,
+        "exactMatch" in item ? Boolean(item.exactMatch) : false
+      ),
+      locked: "proGated" in item && Boolean(item.proGated) && !isPro,
+    }));
+    groups.push({
       title: "Settings",
-      icon: Gear,
-      items: settingsItems,
-    },
-    {
+      icon: Gear as Icon,
+      isActive: items.some((item) => item.isActive),
+      items,
+    });
+  }
+
+  if (developerItems.length > 0) {
+    const items = developerItems.map((item) => ({
+      title: item.title,
+      url: item.url,
+      isActive: isPathActive(currentPath, item.url),
+    }));
+    groups.push({
       title: "Developer",
-      icon: Code,
-      items: developerItems,
-    },
-  ];
+      icon: Code as Icon,
+      isActive: items.some((item) => item.isActive),
+      items,
+    });
+  }
 
-  return sections
-    .map((section) => {
-      if (section.items.length === 0) {
-        return null;
-      }
-
-      const items: NavMainItem["items"] = section.items.map((item) => ({
-        title: item.title,
-        url: item.url,
-        isActive: isPathActive(
-          currentPath,
-          item.url,
-          "exactMatch" in item ? Boolean(item.exactMatch) : false
-        ),
-        locked: "proGated" in item && Boolean(item.proGated) && !isPro,
-      }));
-
-      return {
-        title: section.title,
-        url: items[0]?.url ?? "#",
-        icon: section.icon,
-        isActive: items.some((item) => item.isActive),
-        items,
-      };
-    })
-    .filter((section): section is NavMainItem => section !== null);
+  return { primary, groups };
 }
 
 type OrganizationListItem = {
@@ -283,28 +285,12 @@ function buildTeamOptions({
     return a.name.localeCompare(b.name);
   });
 
-  return sorted.map((organization) => {
-    const initials = getInitials(organization.name);
-
-    const Logo = ({ className }: { className?: string }) => (
-      <span
-        className={cn(
-          "grid h-full w-full place-items-center rounded-md bg-transparent text-[0.65rem] font-semibold uppercase",
-          className
-        )}
-      >
-        {initials}
-      </span>
-    );
-
-    return {
-      id: organization.id,
-      name: organization.name,
-      plan: "Member",
-      slug: organization.slug,
-      logo: Logo,
-    };
-  });
+  return sorted.map((organization) => ({
+    id: organization.id,
+    name: organization.name,
+    slug: organization.slug,
+    logoUrl: organization.logo ?? null,
+  }));
 }
 
 export function AppSidebar({
@@ -364,9 +350,9 @@ export function AppSidebar({
     [organizations, slug]
   );
 
-  const navItems = React.useMemo(
+  const { primary, groups } = React.useMemo(
     () =>
-      buildNavSections({
+      buildNav({
         slug,
         currentPath: location.pathname,
         permissions,
@@ -442,66 +428,58 @@ export function AppSidebar({
 
   return (
     <Sidebar {...props}>
-      <Sidebar.Header>
+      <Sidebar.Header className="gap-3 border-b border-kumo-hairline/60 px-3 py-3">
         <Link
           to="/$slug/home"
           params={{ slug: activeTeamSlug }}
-          className="flex items-center justify-center py-2"
+          className="flex items-center gap-2 px-1 py-0.5"
         >
-          <SealLogoBadgeFixed size={64} withText />
+          <SealLogo size={22} variant="color" />
+          <span className="font-serif text-[1.05rem] leading-none tracking-tight">
+            Seal
+          </span>
         </Link>
-        {teamOptions.length > 0 && (
+        {teamOptions.length > 0 ? (
           <TeamSwitcher
             teams={teamOptions}
             activeSlug={activeTeamSlug}
             onTeamSelect={handleTeamSelect}
+            onCreateOrganization={() => {
+              void navigate({
+                to: "/onboarding/choose-organization",
+                search: { create: true },
+              });
+            }}
           />
-        )}
+        ) : null}
       </Sidebar.Header>
-      <Sidebar.Content>
-        <NavMain items={navItems} />
+      <Sidebar.Content className="px-1 pt-2">
+        <NavMain primary={primary} groups={groups} />
       </Sidebar.Content>
-      <Sidebar.Footer>
+      <Sidebar.Footer className="gap-1 border-t border-kumo-hairline/60">
         <Sidebar.Menu>
           <Sidebar.MenuItem>
-            <div className="flex items-center justify-between px-2">
+            <div className="flex items-center gap-1 px-1">
               <NotificationsPopover slug={slug} organizationSlug={slug} />
               <Sidebar.MenuButton
-                className="ml-2 flex-1 justify-between"
+                className="size-8 shrink-0 justify-center px-0"
                 onClick={handleThemeToggle}
                 aria-pressed={isDark}
+                aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+                tooltip={isDark ? "Light mode" : "Dark mode"}
               >
-                <div className="flex items-center gap-2">
-                  {isDark ? (
-                    <Moon className="size-4" />
-                  ) : (
-                    <Sun className="size-4" />
-                  )}
-                  <span>Dark mode</span>
-                </div>
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "inline-flex h-5 w-9 shrink-0 items-center rounded-full border transition-colors",
-                    isDark
-                      ? "bg-kumo-primary border-kumo-primary justify-end"
-                      : "bg-kumo-surface border-kumo-hairline"
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "bg-kumo-background block h-4 w-4 rounded-full shadow-sm transition-transform",
-                      isDark ? "-translate-x-0.5" : "translate-x-0.5"
-                    )}
-                  />
-                </span>
+                {isDark ? (
+                  <Moon className="size-4" />
+                ) : (
+                  <Sun className="size-4" />
+                )}
               </Sidebar.MenuButton>
             </div>
           </Sidebar.MenuItem>
         </Sidebar.Menu>
-        {currentUser && (
+        {currentUser ? (
           <NavUser user={currentUser} slug={slug} onSignOut={handleSignOut} />
-        )}
+        ) : null}
       </Sidebar.Footer>
       <Sidebar.Rail />
     </Sidebar>

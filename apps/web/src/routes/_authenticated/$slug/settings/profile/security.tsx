@@ -12,6 +12,7 @@ import {
   EnableTwoFactorForm,
   GenerateBackupCodesForm,
   SessionList,
+  SetPasswordForm,
 } from "@vortex-api/better-auth-ui";
 
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
@@ -58,6 +59,11 @@ function SecuritySettings() {
         <ChangePasswordForm
           onSuccess={() => {
             toast.success("Password changed");
+          }}
+        />
+        <SetPasswordForm
+          onSuccess={() => {
+            toast.success("Password set");
           }}
         />
       </div>

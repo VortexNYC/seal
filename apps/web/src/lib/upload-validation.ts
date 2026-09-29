@@ -1,4 +1,9 @@
 /**
+ * Minimum PDF byte length. Trailer-only stubs (~27B) are not usable documents.
+ */
+export const MIN_PDF_SIZE = 100;
+
+/**
  * Frontend file upload validation
  * Mirrors backend validation in apps/api/src/api/documents.ts
  */
@@ -96,6 +101,16 @@ export function validateFileForUpload(file: File): {
     errors.push("File must have an extension");
   } else if (!ALLOWED_EXTENSIONS.has(fileExt)) {
     errors.push("Only PDF, DOCX, XLSX, PPTX, and CSV files are supported");
+  }
+
+  // Trailer-only PDF stubs (~27B) pass size>0 but are not usable documents
+  if (
+    fileExt === ".pdf" &&
+    file.size > 0 &&
+    file.size < MIN_PDF_SIZE &&
+    !errors.includes("File is empty")
+  ) {
+    errors.push("PDF appears empty or corrupt");
   }
 
   return {

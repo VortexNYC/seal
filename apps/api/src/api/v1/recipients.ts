@@ -4,7 +4,7 @@ import type { Context } from "hono";
 import { z } from "zod";
 
 import { createD1 } from "../../global/db.js";
-import { documents, recipients } from "../../global/schema.js";
+import { documents, organization, recipients } from "../../global/schema.js";
 import {
   getAuditActor,
   getAuditRequestMeta,
@@ -12,10 +12,11 @@ import {
 } from "../../platform/audit-log.js";
 import { buildSigningUrl, type EmailEnv } from "../../platform/email.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
+import { hashAccessCode } from "../../platform/signer-auth.js";
 import {
-  hashAccessCode,
-  normalizeAuthMethod,
-} from "../../platform/signer-auth.js";
+  readOrgSigningCompliance,
+  resolveRecipientAuthMethod,
+} from "../../platform/signing-settings.js";
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
@@ -277,12 +278,27 @@ app.post("/", async (c) => {
   }
 
   const { email, name, role, order, auth_method, access_code } = parsed.data;
-  const authMethod = normalizeAuthMethod(auth_method);
+
+  const db = createD1(c.env.D1);
+  const orgRows = await db
+    .select({ metadata: organization.metadata })
+    .from(organization)
+    .where(eq(organization.id, organizationId))
+    .limit(1);
+  const orgMetadata = orgRows[0]?.metadata ?? null;
+  const compliance = readOrgSigningCompliance(orgMetadata);
+  const authMethod = resolveRecipientAuthMethod(auth_method, orgMetadata);
+  if (
+    compliance.requireRecipientAuth &&
+    authMethod === "none" &&
+    (role === "signer" || role === "approver")
+  ) {
+    return c.json({ error: "recipient_auth_required" }, 400);
+  }
   if (authMethod === "access_code" && !access_code) {
     return c.json({ error: "access_code_required" }, 400);
   }
 
-  const db = createD1(c.env.D1);
   const documentRows = await db
     .select({ id: documents.id, status: documents.status })
     .from(documents)

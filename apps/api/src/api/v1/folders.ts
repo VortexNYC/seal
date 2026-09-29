@@ -129,7 +129,7 @@ app.get("/", async (c) => {
 });
 
 const createBodySchema = z.object({
-  name: z.string().min(1),
+  name: z.string().min(1).max(100),
   type: z.enum(["document", "template"]).default("document"),
   parent_id: z.string().optional(),
   visibility: z

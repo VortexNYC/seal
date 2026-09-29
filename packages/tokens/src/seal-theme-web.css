@@ -244,7 +244,7 @@
   --kumo-warning-tint: var(--warning-surface);
   --kumo-info: var(--info);
   --kumo-info-tint: var(--info-surface);
-  --kumo-link: var(--info);
+  --kumo-link: var(--brand-800);
   --kumo-tint: var(--accent);
   --kumo-subtle: var(--muted-foreground);
 

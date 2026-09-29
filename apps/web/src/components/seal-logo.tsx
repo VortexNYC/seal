@@ -34,11 +34,11 @@ export function SealLogo({
       strokeLinecap="round"
       strokeLinejoin="round"
       className={cn(colorClass, !withBackground && className)}
-      role="img"
-      aria-label="Seal"
+      role="presentation"
+      aria-hidden={true}
+      focusable="false"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <title>Seal</title>
       <path
         d="M50 154 C58 108 88 62 152 40 C146 90 116 136 62 146 Z"
         strokeWidth={9}

@@ -2,8 +2,9 @@
  * Public Signing Page
  * Route: /sign/$token
  *
- * Allows recipients to view and sign documents using their unique signing token.
- * This is an unauthenticated route - no login required.
+ * Recipients open their signing link from email. Org settings may require
+ * email OTP / access code and a Seal account matching the invited email
+ * before fields and consent (audit identity).
  */
 
 import { Textarea } from "@cloudflare/kumo";
@@ -53,6 +54,7 @@ import { DictateNextSignerDialog } from "@/components/signing/dictate-next-signe
 import { DocumentExpiredPage } from "@/components/signing/document-expired-page";
 import { RedirectCountdown } from "@/components/signing/redirect-countdown";
 import { SignerAuthGate } from "@/components/signing/signer-auth-gate";
+import { SignerAccountGate } from "@/components/signing/signer-account-gate";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { muteGuestAnalytics, useGuestAnalyticsMute } from "@/lib/guest-analytics";
 import {
@@ -294,6 +296,10 @@ function SigningPage() {
     recipient.authVerified ??
       (!recipient.authMethod || recipient.authMethod === "none")
   );
+  const [accountReady, setAccountReady] = useState(false);
+  const markAccountReady = useCallback(() => {
+    setAccountReady(true);
+  }, []);
 
   // Fetch fields assigned to this recipient
   const { data: fields, refetch: refetchFields } = useSuspenseQuery({
@@ -327,8 +333,9 @@ function SigningPage() {
     return paymentConfigs.some((config) => config.paymentStatus !== "paid");
   }, [paymentConfigs]);
 
-  // PDF viewer state
+  // PDF viewer state — width follows the container (ResizeObserver), no fixed cap
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfWidth, setPdfWidth] = useState<number | null>(null);
   // Field input state
   const [activeFieldId, setActiveFieldId] = useState<string | null>(null);
   const [showFieldInput, setShowFieldInput] = useState(false);
@@ -341,9 +348,6 @@ function SigningPage() {
   // Field navigation state
   const pdfContainerRef = useRef<HTMLDivElement>(null);
   const fieldRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
-
-  // Responsive PDF width
-  const [pdfWidth, setPdfWidth] = useState(700);
 
   // Network status for session recovery
   const [isOnline, setIsOnline] = useState(
@@ -451,32 +455,32 @@ function SigningPage() {
     };
   }, []);
 
-  // Update PDF width based on container size
+  // PDF width tracks the live container — ResizeObserver, not a hardcoded max
   useEffect(() => {
+    const el = pdfContainerRef.current;
+    if (!el) {
+      return;
+    }
+
     const updatePdfWidth = () => {
-      if (pdfContainerRef.current) {
-        const containerWidth = pdfContainerRef.current.clientWidth;
-        const availableWidth = containerWidth - 32;
-        setPdfWidth(Math.max(280, Math.min(700, availableWidth)));
+      const availableWidth = el.clientWidth;
+      if (availableWidth > 0) {
+        setPdfWidth(availableWidth);
       }
     };
 
-    // Initial calculation after mount
-    const timer = setTimeout(updatePdfWidth, 100);
+    updatePdfWidth();
 
-    // Throttled resize handler
-    let rafId: number;
-    const handleResize = () => {
+    let rafId = 0;
+    const observer = new ResizeObserver(() => {
       cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(updatePdfWidth);
-    };
-
-    window.addEventListener("resize", handleResize);
+    });
+    observer.observe(el);
 
     return () => {
-      clearTimeout(timer);
       cancelAnimationFrame(rafId);
-      window.removeEventListener("resize", handleResize);
+      observer.disconnect();
     };
   }, []);
 
@@ -589,19 +593,16 @@ function SigningPage() {
       return;
     }
 
-    // If the main signature field is already filled, submit directly
-    if (
-      mainSignatureField?.fieldType === "signature" &&
-      isMainSignatureFilled
-    ) {
-      const signatureData = mainSignatureField.currentSignatureImageUrl;
-      if (!signatureData) {
-        toast.error("Main signature is missing data. Please sign again.");
-        return;
-      }
-
+    // Prefer the main signature field; fall back to any filled signature so
+    // co-signers whose only field wasn't flagged isMainSignature can still
+    // submit without opening capture again.
+    const filledSignature =
+      (mainSignatureField?.isFilled ? mainSignatureField : null) ??
+      fields.find((f) => f.fieldType === "signature" && f.isFilled) ??
+      null;
+    if (filledSignature?.currentSignatureImageUrl) {
       submitSignatureMutation.mutate({
-        signatureData,
+        signatureData: filledSignature.currentSignatureImageUrl,
         signatureType: "drawn",
       });
       return;
@@ -740,7 +741,10 @@ function SigningPage() {
     if (!allRequiredFieldsFilled) {
       return `Please complete ${unfilledRequiredCount} more required field${unfilledRequiredCount === 1 ? "" : "s"}`;
     }
-    if (mainSignatureField && isMainSignatureFilled) {
+    const hasFilledSignature =
+      isMainSignatureFilled ||
+      fields.some((f) => f.fieldType === "signature" && f.isFilled);
+    if (hasFilledSignature) {
       return recipient.role === "signer"
         ? "Submit Signature"
         : recipient.role === "approver"
@@ -755,8 +759,8 @@ function SigningPage() {
   }, [
     allRequiredFieldsFilled,
     hasUnpaidPayments,
-    mainSignatureField,
     isMainSignatureFilled,
+    fields,
     recipient.role,
     unfilledRequiredCount,
   ]);
@@ -854,6 +858,21 @@ function SigningPage() {
         method={authMethod}
         maskedEmail={recipient.authEmailMasked ?? null}
         onVerified={() => setAuthVerified(true)}
+      />
+    );
+  }
+
+  const needsAccount =
+    signingSettings?.requireSignerAccount === true &&
+    (recipient.role === "signer" || recipient.role === "approver") &&
+    !isCompleted;
+
+  if (needsAccount && !accountReady) {
+    return (
+      <SignerAccountGate
+        token={token}
+        recipientEmail={recipient.email}
+        onReady={markAccountReady}
       />
     );
   }
@@ -959,8 +978,8 @@ function SigningPage() {
         : `${remainingCount} field${remainingCount === 1 ? "" : "s"} remaining`;
 
   const documentSurface = (
-    <div ref={pdfContainerRef} className="w-full">
-      {pdfUrl ? (
+    <div ref={pdfContainerRef} className="w-full min-w-0">
+      {pdfUrl && pdfWidth !== null ? (
         <div className="space-y-4">
           <PdfSigningDocumentSurface
             src={pdfUrl}

@@ -1,5 +1,5 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
-import { and, count, eq } from "drizzle-orm";
+import { and, count, eq, inArray } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import {
@@ -25,6 +25,8 @@ import {
   readOrgPrivacyNoticeText,
   resolvePrivacyNoticeText,
 } from "../platform/privacy-notice.js";
+import { readOrgSigningCompliance } from "../platform/signing-settings.js";
+import { getSessionUser } from "../platform/session.js";
 import {
   describeEsignOptOutMethod,
   resolveEsignOptOutMethod,
@@ -161,6 +163,7 @@ const signingTokenResponseSchema = z
         esignConsentVersion: z.string().optional(),
         privacyNoticeText: z.string().nullable().optional(),
         privacyNoticeVersion: z.string().optional(),
+        requireSignerAccount: z.boolean().optional(),
       })
       .optional(),
   })
@@ -332,11 +335,13 @@ app.openapi(signingTokenRouteDef, async (c) => {
       signingSettings: (() => {
         const customConsent = readOrgEsignConsentText(org?.metadata ?? null);
         const customPrivacy = readOrgPrivacyNoticeText(org?.metadata ?? null);
+        const compliance = readOrgSigningCompliance(org?.metadata ?? null);
         return {
           esignConsentText: resolveEsignConsentText(customConsent),
           esignConsentVersion: ESIGN_CONSENT_VERSION,
           privacyNoticeText: resolvePrivacyNoticeText(customPrivacy),
           privacyNoticeVersion: PRIVACY_NOTICE_VERSION,
+          requireSignerAccount: compliance.requireSignerAccount,
         };
       })(),
     },
@@ -921,6 +926,34 @@ app.openapi(submitRouteDef, async (c) => {
   }
 
   if (
+    (input.status === "signed" || input.status === "approved") &&
+    (recipient.role === "signer" || recipient.role === "approver")
+  ) {
+    const orgMetaRows = await db
+      .select({ metadata: organization.metadata })
+      .from(organization)
+      .where(eq(organization.id, doc.organizationId))
+      .limit(1);
+    const compliance = readOrgSigningCompliance(orgMetaRows[0]?.metadata);
+    if (compliance.requireSignerAccount) {
+      const session = await getSessionUser(c.env, c.req.raw);
+      const sessionEmail = session?.user?.email?.toLowerCase() ?? null;
+      if (
+        !sessionEmail ||
+        sessionEmail !== recipient.email.toLowerCase()
+      ) {
+        return c.json(
+          {
+            error:
+              "Signer account required. Sign in with the invited email before completing.",
+          },
+          403
+        );
+      }
+    }
+  }
+
+  if (
     (input.status === "signed" ||
       input.status === "approved" ||
       input.status === "viewed") &&
@@ -1155,6 +1188,8 @@ app.openapi(submitRouteDef, async (c) => {
       }
     }
 
+    // "viewed" still owes a signature — counting only "pending" marks the
+    // document complete as soon as the first opener signs.
     const pendingSigners = await db
       .select({ value: count() })
       .from(recipients)
@@ -1162,7 +1197,7 @@ app.openapi(submitRouteDef, async (c) => {
         and(
           eq(recipients.documentId, doc.id),
           eq(recipients.role, "signer"),
-          eq(recipients.status, "pending")
+          inArray(recipients.status, ["pending", "viewed"])
         )
       );
 

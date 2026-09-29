@@ -38,17 +38,38 @@ proprietary copy). Founder checklist 2026-09-28.
 | SEA-85 OCR/detect Accept all | landing |
 | SEA-83 solo E2E | open |
 | SEA-86 mobile Form View | open |
+| Recipient roles (signer / viewer / approver) | done |
+| Default recipient auth = email OTP | done (org can require) |
+| Signer Seal account gate (audit identity) | done (org `requireSignerAccount`) |
+| Compliance onboarding seeds signing defaults | done (`/{slug}/onboarding/compliance`) |
+| Mobile/portrait clarity on auth + account gates | landing |
 
 ---
 
+## 1a. Identity flow (recipient)
+
+1. Sender adds recipient with role + auth (default **email OTP**).
+2. Send blocked if org `requireRecipientAuth` and any signer/approver is link-only.
+3. Email → `/sign/$token` → OTP/access code (if set) → **Create account / Sign in** when `requireSignerAccount` → START → privacy → ESIGN → fields.
+4. Submit requires session email matching the invitation when account is required.
+
 ## 2. Local Mark → Lenore prove
 
-1. `pnpm run dev` (api :8787, web :5180)
-2. Upload GREENMAR PDF
-3. Add Signer: Mark + Lenore (your test emails)
-4. Accept all field suggestions (or place sig + date_signed)
-5. Send → open both `/sign/…` → draw/adopt → complete
-6. Confirm sealed download in completion mail
+**Status: NOT DONE — required before sending to in-laws.**
+
+Checklist (must pass on the build that will be live):
+
+1. `pnpm run dev` (api :8787, web :5180) — or dogfood on `app.seal.nyc` after deploy
+2. Upload GREENMAR (or sample) PDF
+3. Place signature + date fields for Mark and Lenore (or Accept all)
+4. Add both as **Signer** with **email OTP** (org default)
+5. Send → both get invite mail
+6. **Mark:** open link → OTP from email → create/sign-in Seal account with *exact* invite email → START → privacy → ESIGN → guided field → sign
+7. **Lenore:** same path (after Mark if sequential; parallel if same order)
+8. Completion mail with sealed PDF for both + sender
+9. Repeat once in **portrait / narrow viewport**
+
+Until 6–9 are green on the deployed build, do not send the real family packet.
 
 ---
 

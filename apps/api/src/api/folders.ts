@@ -131,7 +131,7 @@ app.openapi(listRouteDef, async (c) => {
 });
 
 const createFolderBodySchema = z.object({
-  name: z.string().min(1),
+  name: z.string().min(1).max(100),
   type: z.enum(["document", "template"]),
   parentId: z.string().optional(),
   visibility: z.enum(["everyone", "members", "restricted"]).default("everyone"),

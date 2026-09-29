@@ -5,13 +5,49 @@ import { Sidebar } from "@cloudflare/kumo/components/sidebar";
 import { Buildings, CaretDown, Plus } from "@phosphor-icons/react";
 import * as React from "react";
 
+import { cn } from "@/lib/utils";
+
 type Team = {
   id?: string;
   name: string;
   slug: string;
-  logo: React.ElementType;
-  plan: string;
+  logoUrl?: string | null;
+  plan?: string;
 };
+
+function WorkspaceMark({
+  name,
+  logoUrl,
+  className,
+}: {
+  name: string;
+  logoUrl?: string | null;
+  className?: string;
+}): React.JSX.Element {
+  const initial = name.trim().charAt(0).toUpperCase() || "W";
+
+  if (logoUrl) {
+    return (
+      <img
+        src={logoUrl}
+        alt=""
+        className={cn("size-full rounded-md object-cover", className)}
+      />
+    );
+  }
+
+  return (
+    <span
+      className={cn(
+        "grid size-full place-items-center rounded-md text-[0.7rem] font-semibold uppercase",
+        className
+      )}
+      aria-hidden
+    >
+      {initial}
+    </span>
+  );
+}
 
 export function TeamSwitcher({
   teams,
@@ -23,13 +59,11 @@ export function TeamSwitcher({
   activeSlug?: string;
   onTeamSelect?: (slug: string) => void;
   onCreateOrganization?: () => void;
-}) {
+}): React.JSX.Element | null {
   const active = React.useMemo(
     () => teams.find((team) => team.slug === activeSlug) ?? teams[0] ?? null,
     [teams, activeSlug]
   );
-
-  const ActiveLogo = active?.logo ?? Buildings;
 
   if (teams.length === 0) {
     return null;
@@ -40,57 +74,74 @@ export function TeamSwitcher({
       <Sidebar.MenuItem>
         <DropdownMenu>
           <DropdownMenu.Trigger>
-            <Sidebar.MenuButton size="base" className="group">
-              <div className="bg-kumo-elevated text-kumo-primary flex aspect-square size-8 items-center justify-center rounded-lg">
-                <ActiveLogo className="size-4" />
+            <Sidebar.MenuButton
+              size="base"
+              className="group"
+              aria-label={`Workspace: ${active?.name ?? "Select workspace"}`}
+            >
+              <div className="bg-kumo-elevated text-kumo-primary flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg">
+                {active ? (
+                  <WorkspaceMark name={active.name} logoUrl={active.logoUrl} />
+                ) : (
+                  <Buildings className="size-4" />
+                )}
               </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
+              <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">
                   {active?.name ?? "Workspace"}
                 </span>
-                <span className="text-kumo-secondary truncate text-xs">
-                  {active?.plan ?? ""}
-                </span>
               </div>
-              <CaretDown className="ml-auto size-4" />
+              <CaretDown className="ml-auto size-4 shrink-0" />
             </Sidebar.MenuButton>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content
             align="start"
-            className="w-[--radix-dropdown-menu-trigger-width] min-w-56"
+            className="min-w-64"
             side="bottom"
             sideOffset={4}
           >
-            <DropdownMenu.Label>Workspaces</DropdownMenu.Label>
-            {teams.map((team) => {
-              const Logo = team.logo;
-              const isActive = team.slug === active?.slug;
-              return (
-                <DropdownMenu.Item
-                  key={team.slug}
-                  icon={<Logo className="size-3.5" />}
-                  selected={isActive}
-                  onClick={() => onTeamSelect?.(team.slug)}
-                >
-                  <div className="grid flex-1 leading-tight">
-                    <span className="truncate text-sm font-medium">
-                      {team.name}
-                    </span>
-                    <span className="text-kumo-secondary text-xs">
-                      {team.plan}
-                    </span>
-                  </div>
-                </DropdownMenu.Item>
-              );
-            })}
-            {onCreateOrganization && (
+            <DropdownMenu.Group>
+              <DropdownMenu.Label>Workspaces</DropdownMenu.Label>
+              {teams.map((team) => {
+                const isActive = team.slug === active?.slug;
+                return (
+                  <DropdownMenu.Item
+                    key={team.slug}
+                    selected={isActive}
+                    onClick={() => onTeamSelect?.(team.slug)}
+                    aria-label={team.name}
+                  >
+                    <div
+                      className="bg-kumo-elevated text-kumo-primary flex size-7 shrink-0 items-center justify-center rounded-md"
+                      aria-hidden
+                    >
+                      <WorkspaceMark name={team.name} logoUrl={team.logoUrl} />
+                    </div>
+                    <div className="grid min-w-0 flex-1 leading-tight">
+                      <span className="truncate text-sm font-medium">
+                        {team.name}
+                      </span>
+                      <span className="text-kumo-secondary truncate text-xs">
+                        {team.slug}
+                      </span>
+                    </div>
+                  </DropdownMenu.Item>
+                );
+              })}
+            </DropdownMenu.Group>
+            {onCreateOrganization ? (
               <>
                 <DropdownMenu.Separator />
-                <DropdownMenu.Item icon={Plus} onClick={onCreateOrganization}>
-                  Create workspace
-                </DropdownMenu.Item>
+                <DropdownMenu.Group>
+                  <DropdownMenu.Item
+                    icon={Plus}
+                    onClick={onCreateOrganization}
+                  >
+                    Create workspace
+                  </DropdownMenu.Item>
+                </DropdownMenu.Group>
               </>
-            )}
+            ) : null}
           </DropdownMenu.Content>
         </DropdownMenu>
       </Sidebar.MenuItem>

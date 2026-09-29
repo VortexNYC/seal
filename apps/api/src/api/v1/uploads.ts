@@ -60,6 +60,16 @@ app.post("/", async (c) => {
 
   const contentType =
     c.req.header("content-type") ?? "application/octet-stream";
+
+  // Trailer-only PDF stubs (~27B) are not usable documents
+  const MIN_PDF_SIZE = 100;
+  if (
+    contentType === "application/pdf" &&
+    bytes.byteLength < MIN_PDF_SIZE
+  ) {
+    return c.json({ error: "empty_or_corrupt_pdf" }, 400);
+  }
+
   const id = crypto.randomUUID();
   const storageId = `uploads/${id}`;
 

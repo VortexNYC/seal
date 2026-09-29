@@ -543,6 +543,9 @@ const signingSettingsSchema = z.object({
   esignConsentText: z.string().nullable().optional(),
   privacyNoticeText: z.string().nullable().optional(),
   defaultDeadlineDays: z.number().int(),
+  requireRecipientAuth: z.boolean(),
+  requireSignerAccount: z.boolean(),
+  defaultRecipientAuthMethod: z.enum(["email_otp", "access_code"]),
 });
 export type ApiSigningSettings = z.infer<typeof signingSettingsSchema>;
 export async function getSigningSettings(
@@ -560,6 +563,9 @@ export async function updateSigningSettings(
     esignConsentText?: string;
     privacyNoticeText?: string;
     defaultDeadlineDays?: number;
+    requireRecipientAuth?: boolean;
+    requireSignerAccount?: boolean;
+    defaultRecipientAuthMethod?: "email_otp" | "access_code";
   }
 ): Promise<ApiSigningSettings> {
   return apiFetch(
@@ -2239,6 +2245,7 @@ const publicSigningTokenResponseSchema = z.object({
       esignConsentVersion: z.string().optional(),
       privacyNoticeText: z.string().nullable().optional(),
       privacyNoticeVersion: z.string().optional(),
+      requireSignerAccount: z.boolean().optional(),
     })
     .optional(),
 });

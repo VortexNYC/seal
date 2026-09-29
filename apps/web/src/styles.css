@@ -3,9 +3,42 @@
 @import "@cloudflare/kumo/styles";
 @import "tailwindcss";
 
+/*
+ * Kumo's theme CSS ships Cloudflare blue into --color-kumo-*.
+ * Seal tokens define --kumo-* first; re-bind the Tailwind color
+ * tokens AFTER Kumo so auth + product chrome stay taupe.
+ */
+@theme {
+  --color-kumo-base: var(--kumo-base);
+  --color-kumo-background: var(--kumo-background);
+  --color-kumo-elevated: var(--kumo-elevated);
+  --color-kumo-surface: var(--kumo-surface);
+  --color-kumo-hairline: var(--kumo-hairline);
+  --color-kumo-line: var(--kumo-line);
+  --color-kumo-primary: var(--kumo-primary);
+  --color-kumo-secondary: var(--kumo-secondary);
+  --color-kumo-default: var(--kumo-default);
+  --color-kumo-brand: var(--kumo-brand);
+  --color-kumo-danger: var(--kumo-danger);
+  --color-kumo-danger-tint: var(--kumo-danger-tint);
+  --color-kumo-success: var(--kumo-success);
+  --color-kumo-success-tint: var(--kumo-success-tint);
+  --color-kumo-warning: var(--kumo-warning);
+  --color-kumo-warning-tint: var(--kumo-warning-tint);
+  --color-kumo-info: var(--kumo-info);
+  --color-kumo-info-tint: var(--kumo-info-tint);
+  --color-kumo-link: var(--kumo-link);
+  --color-kumo-tint: var(--kumo-tint);
+  --color-kumo-subtle: var(--kumo-subtle);
+}
+
 /* Fumadocs: scan component files so Tailwind generates their utilities (md:hidden, etc.) */
 @source "../../../node_modules/fumadocs-ui/dist/**/*.js";
 @source "../../../node_modules/@fumadocs/ui/dist/**/*.js";
+
+/* Kumo ships Tailwind class strings inside its JS chunks (e.g. Sidebar.CollapsibleContent
+ * uses grid-rows-[0fr]/[1fr]). Without scanning those files, collapsibles never close. */
+@source "../node_modules/@cloudflare/kumo/dist/**/*.js";
 
 /* Kumo styles imported above so @vortex-api/better-auth-ui kumo-* utilities resolve. */
 
@@ -96,14 +129,74 @@
 }
 
 /*
- * Auth shell — Kumo AuthSubmitButton is already variant=primary, but if
- * --color-kumo-brand is missing the CTA reads as a hollow outline. Pin
- * submit to Seal primary so sign-in always shows a filled taupe button.
+ * Auth shell — product-grade surface over stock better-auth-ui forms.
+ * Pin CTA + links to Seal primary so Kumo never falls back to CF blue.
+ * Kumo Button paints label via inner spans / CSS vars — punch through.
  */
 [data-auth-shell] button[type="submit"] {
-  background-color: var(--primary);
-  color: var(--primary-foreground);
-  border-color: transparent;
+  background-color: var(--primary) !important;
+  border-color: transparent !important;
+  color: var(--primary-foreground) !important;
+  --kumo-button-foreground: var(--primary-foreground);
+  --color-kumo-primary-foreground: var(--primary-foreground);
+}
+
+[data-auth-shell] button[type="submit"] *,
+[data-auth-shell] button[type="submit"] span {
+  color: var(--primary-foreground) !important;
+}
+
+[data-auth-shell] button[type="submit"]:hover:not(:disabled) {
+  background-color: color-mix(
+    in oklch,
+    var(--primary) 88%,
+    var(--foreground)
+  ) !important;
+}
+
+[data-auth-shell] a {
+  color: var(--brand-800);
+  text-underline-offset: 3px;
+}
+
+[data-auth-shell] a:hover {
+  color: var(--brand-900);
+}
+
+/* Brand mark above the form — stay on foreground, not link taupe */
+[data-auth-shell] > .relative a.text-foreground,
+[data-auth-shell] a.text-foreground {
+  color: var(--foreground);
+}
+
+[data-auth-shell] a.text-foreground:hover {
+  color: var(--foreground);
+}
+
+[data-auth-shell] section {
+  border-color: color-mix(in oklch, var(--border) 80%, transparent);
+  background: color-mix(in oklch, var(--card) 88%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+[data-auth-shell] input {
+  border-radius: 0.5rem;
+}
+
+/* Password fields: reveal only — Kumo's hover "Copy" chip reads as a glitch */
+[data-auth-shell] [data-kumo-part="copy"] {
+  display: none !important;
+}
+
+/* Error banner: force readable contrast in both themes */
+[data-auth-shell] [data-kumo-component="Banner"] {
+  color: var(--foreground);
+  background-color: color-mix(in oklch, var(--destructive) 18%, var(--card));
+  border-color: color-mix(in oklch, var(--destructive) 45%, transparent);
+}
+
+[data-auth-shell] [data-kumo-component="Banner"] * {
+  color: inherit;
 }
 
 /* Scrollbar */
