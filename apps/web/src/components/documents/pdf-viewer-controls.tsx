@@ -48,8 +48,7 @@ export function PdfViewerControls({
   onFitToWidth,
   className,
 }: PdfViewerControlsProps) {
-  const { zoomIn, zoomOut, resetTransform, zoomToElement, instance } =
-    useControls();
+  const { resetTransform, zoomToElement, instance } = useControls();
 
   // Page input state for "jump to page" feature
   const [pageInput, setPageInput] = useState(String(currentPage));
@@ -81,6 +80,20 @@ export function PdfViewerControls({
       handleZoomChange(1.0);
     }
   }, [onFitToWidth, handleZoomChange]);
+
+  const zoomToNearestLevel = useCallback(
+    (direction: "in" | "out") => {
+      const ordered =
+        direction === "in" ? ZOOM_LEVELS : [...ZOOM_LEVELS].reverse();
+      const next = ordered.find((level) =>
+        direction === "in" ? level > currentZoom + 0.001 : level < currentZoom - 0.001
+      );
+      if (next !== undefined) {
+        handleZoomChange(next);
+      }
+    },
+    [currentZoom, handleZoomChange]
+  );
 
   // Page navigation handlers
   const goToPreviousPage = useCallback(() => {
@@ -239,7 +252,7 @@ export function PdfViewerControls({
                 variant="ghost"
                 size="sm"
                 shape="square"
-                onClick={() => zoomOut()}
+                onClick={() => zoomToNearestLevel("out")}
                 disabled={currentZoom <= 0.5}
                 aria-label="Zoom out"
                 className="size-7 sm:size-8"
@@ -278,7 +291,7 @@ export function PdfViewerControls({
                 variant="ghost"
                 size="sm"
                 shape="square"
-                onClick={() => zoomIn()}
+                onClick={() => zoomToNearestLevel("in")}
                 disabled={currentZoom >= 2.0}
                 aria-label="Zoom in"
                 className="size-7 sm:size-8"
