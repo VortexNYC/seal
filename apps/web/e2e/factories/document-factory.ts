@@ -32,6 +32,7 @@ export type SignableDocument = {
   recipientId: string;
   signingToken: string;
   fieldId: string;
+  fieldIds: string[];
   name: string;
 };
 
@@ -44,6 +45,17 @@ export async function createSignableDocument(args: {
   /** Defaults to "sent". Use "draft" when the test needs editor-side
    *  affordances (like "Save as Template") that gate on `canEdit`. */
   workflowStatus?: "sent" | "draft";
+  /** Extra fields after the primary signature (page/position order). */
+  extraFields?: Array<{
+    fieldType: string;
+    label: string;
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+    page?: number;
+    isRequired?: boolean;
+  }>;
 }): Promise<SignableDocument> {
   const name = args.name ?? `e2e-signable-doc-${Date.now()}`;
 
@@ -87,6 +99,26 @@ export async function createSignableDocument(args: {
     }
   );
 
+  const fieldIds = [field.publicId];
+  for (const extra of args.extraFields ?? []) {
+    const created = await createSignatureField(
+      args.request,
+      doc.publicId,
+      recipient.publicId,
+      {
+        fieldType: extra.fieldType,
+        label: extra.label,
+        isRequired: extra.isRequired ?? true,
+        x: extra.x ?? 10,
+        y: extra.y ?? 40,
+        width: extra.width ?? 30,
+        height: extra.height ?? 10,
+        page: extra.page ?? 1,
+      }
+    );
+    fieldIds.push(created.publicId);
+  }
+
   if (args.workflowStatus !== "draft") {
     await sendApiDocument(args.request, doc.publicId);
   }
@@ -96,6 +128,7 @@ export async function createSignableDocument(args: {
     recipientId: recipient.publicId,
     signingToken: recipient.signingToken,
     fieldId: field.publicId,
+    fieldIds,
     name,
   };
 }
