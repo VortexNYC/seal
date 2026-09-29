@@ -18,6 +18,7 @@ import { useState } from "react";
 import { isOrganizationAdminRole } from "@vortex-api/better-auth-ui";
 
 import { PageWrapper } from "@/components/page-wrapper";
+import { SettingsBody } from "@/components/settings-body";
 import { FormSkeleton } from "@/components/skeletons";
 import { useOrganization } from "@/hooks/use-organization";
 import {
@@ -124,6 +125,7 @@ function WebhooksPage() {
       description="Receive HTTPS events when documents move."
       title="Webhooks"
     >
+      <SettingsBody wide>
       <LayerCard>
         <LayerCard.Secondary>
           <div className="flex items-center justify-between gap-3">
@@ -215,6 +217,7 @@ function WebhooksPage() {
           )}
         </LayerCard.Primary>
       </LayerCard>
+      </SettingsBody>
 
       <Dialog.Root open={createOpen} onOpenChange={setCreateOpen}>
         <Dialog size="sm" className="p-6">

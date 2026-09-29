@@ -17,6 +17,7 @@ import { useState } from "react";
 import { isOrganizationAdminRole } from "@vortex-api/better-auth-ui";
 
 import { PageWrapper } from "@/components/page-wrapper";
+import { SettingsBody } from "@/components/settings-body";
 import { FormSkeleton } from "@/components/skeletons";
 import { useOrganization } from "@/hooks/use-organization";
 import { getAuditLogs, type AuditLogList } from "@/lib/api-client";
@@ -138,6 +139,7 @@ function AuditLogPage() {
       description="Review workspace activity and audit events."
       title="Audit Log"
     >
+      <SettingsBody wide>
       <LayerCard>
         <LayerCard.Secondary>
           <Text as="h2" variant="heading">
@@ -268,6 +270,7 @@ function AuditLogPage() {
           </div>
         </LayerCard.Primary>
       </LayerCard>
+      </SettingsBody>
     </PageWrapper>
   );
 }

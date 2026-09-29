@@ -24,6 +24,7 @@ import {
 import { useEffect, useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
+import { SettingsBody } from "@/components/settings-body";
 import { FormSkeleton } from "@/components/skeletons";
 import { useOrganization } from "@/hooks/use-organization";
 import { getSecuritySettings, updateSecuritySettings } from "@/lib/api-client";
@@ -173,12 +174,17 @@ function SecuritySettingsContent() {
   };
 
   if (!organization || !securitySettings) {
-    return null;
+    return (
+      <PageWrapper title="Security Settings">
+        <FormSkeleton />
+      </PageWrapper>
+    );
   }
 
   return (
     <PageWrapper title="Security Settings">
-      <form onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-2">
+      <SettingsBody wide>
+      <form onSubmit={handleSubmit} className="grid gap-5 md:grid-cols-2">
         {!isOwner && (
           <div className="border-warning/30 bg-warning-surface rounded-lg border p-4 md:col-span-2">
             <p className="text-warning text-sm">
@@ -324,7 +330,7 @@ function SecuritySettingsContent() {
       </form>
 
       {isAdmin ? (
-        <LayerCard className="mt-6">
+        <LayerCard>
           <LayerCard.Secondary>
             <Text as="h2" variant="heading">
               Access &amp; security events
@@ -349,6 +355,7 @@ function SecuritySettingsContent() {
           </LayerCard.Primary>
         </LayerCard>
       ) : null}
+      </SettingsBody>
     </PageWrapper>
   );
 }

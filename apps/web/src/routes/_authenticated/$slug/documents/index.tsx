@@ -7,6 +7,7 @@ import { Empty } from "@cloudflare/kumo/components/empty";
 import { Input } from "@cloudflare/kumo/components/input";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Popover } from "@cloudflare/kumo/components/popover";
+import { SkeletonLine } from "@cloudflare/kumo/components/loader";
 import { Table } from "@cloudflare/kumo/components/table";
 import { Tooltip } from "@cloudflare/kumo/components/tooltip";
 import {
@@ -85,6 +86,7 @@ import { toast } from "@/lib/toast";
 
 export const Route = createFileRoute("/_authenticated/$slug/documents/")({
   component: DocumentsPage,
+  pendingComponent: DocumentsSkeleton,
   validateSearch: (search: Record<string, unknown>) => ({
     folderId:
       typeof search.folderId === "string" && search.folderId
@@ -99,6 +101,24 @@ export const Route = createFileRoute("/_authenticated/$slug/documents/")({
     ],
   }),
 });
+
+function DocumentsSkeleton(): JSX.Element {
+  return (
+    <PageWrapper title="Documents">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+        <SkeletonLine className="h-10 w-full max-w-md" />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <CardSkeleton showDescription showFooter={false} />
+          <CardSkeleton showDescription showFooter={false} />
+          <CardSkeleton showDescription showFooter={false} />
+          <CardSkeleton showDescription showFooter={false} />
+          <CardSkeleton showDescription showFooter={false} />
+          <CardSkeleton showDescription showFooter={false} />
+        </div>
+      </div>
+    </PageWrapper>
+  );
+}
 
 type FilterType = "all" | "owned" | "shared";
 type WorkflowStatusFilter =
@@ -1620,7 +1640,7 @@ function DocumentsPage() {
   const { data: organization } = useSuspenseOrganization(slug);
 
   if (!organization) {
-    return null;
+    return <DocumentsSkeleton />;
   }
 
   const delegateOwnership = organization.delegateOwnership;

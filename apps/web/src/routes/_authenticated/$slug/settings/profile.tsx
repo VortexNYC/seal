@@ -66,10 +66,10 @@ function ProfileLayout() {
 
   return (
     <PageWrapper title="Profile Settings">
-      <div className="flex flex-col gap-6 lg:flex-row">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 lg:flex-row">
         {/* Sidebar Navigation */}
-        <aside className="w-full lg:w-64">
-          <nav className="space-y-1">
+        <aside className="w-full shrink-0 lg:w-56">
+          <nav className="flex flex-col gap-0.5">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.href;
@@ -99,7 +99,7 @@ function ProfileLayout() {
         </aside>
 
         {/* Content Area */}
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <Outlet />
         </div>
       </div>

@@ -19,6 +19,7 @@ import { useEffect, useState } from "react";
 
 import { FeatureGate } from "@/components/feature-gate";
 import { PageWrapper } from "@/components/page-wrapper";
+import { SettingsBody } from "@/components/settings-body";
 import { FormSkeleton } from "@/components/skeletons";
 import { getBrandingSettings, updateBrandingSettings } from "@/lib/api-client";
 import { toast } from "@/lib/toast";
@@ -90,7 +91,8 @@ function BrandingSettings() {
         feature="Signing chrome (Pro)"
         description="White-label signing page footer text. Workspace brand colors and email from live under General. Seal product identity stays on."
       >
-        <form onSubmit={handleSubmit} className="mx-auto grid max-w-2xl gap-6">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <SettingsBody>
           <LayerCard className="border-dashed">
             <LayerCard.Secondary>
               <Text as="h2" variant="heading">
@@ -171,6 +173,7 @@ function BrandingSettings() {
               {isSubmitting ? "Saving…" : "Save signing chrome"}
             </Button>
           </div>
+          </SettingsBody>
         </form>
       </FeatureGate>
     </PageWrapper>

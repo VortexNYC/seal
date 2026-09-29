@@ -45,6 +45,7 @@ import { FolderBreadcrumbs } from "@/components/folders/folder-breadcrumbs";
 import { MoveToFolderDialog } from "@/components/folders/move-to-folder-dialog";
 import { PageWrapper } from "@/components/page-wrapper";
 import { TemplatesSkeleton } from "@/components/skeletons";
+import { CardSkeleton } from "@/components/skeletons/card-skeleton";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { useSuspenseOrganization } from "@/hooks/use-organization";
 import {
@@ -748,7 +749,7 @@ function TemplatesPage() {
   const { data: organization } = useSuspenseOrganization(slug);
 
   if (!organization) {
-    return null;
+    return <TemplatesSkeleton />;
   }
 
   return (
@@ -817,19 +818,7 @@ function TemplatesPage() {
           fallback={
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => (
-                <LayerCard key={i} className="animate-pulse">
-                  <LayerCard.Primary className="p-0">
-                    <div className="bg-kumo-elevated h-32" />
-                    <div className="space-y-2 p-4">
-                      <div className="bg-kumo-elevated h-4 w-3/4 rounded" />
-                      <div className="bg-kumo-elevated mt-2 h-3 w-1/2 rounded" />
-                    </div>
-                    <div className="space-y-2 p-4 pt-0">
-                      <div className="bg-kumo-elevated h-3 rounded" />
-                      <div className="bg-kumo-elevated h-3 rounded" />
-                    </div>
-                  </LayerCard.Primary>
-                </LayerCard>
+                <CardSkeleton key={i} showDescription showFooter={false} />
               ))}
             </div>
           }

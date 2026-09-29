@@ -18,6 +18,7 @@ import { Bell, Save, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
+import { SettingsBody } from "@/components/settings-body";
 import { FormSkeleton } from "@/components/skeletons";
 import {
   getNotificationSettings,
@@ -146,12 +147,17 @@ function NotificationSettings() {
   };
 
   if (!notificationSettings) {
-    return null;
+    return (
+      <PageWrapper title="Notification Settings">
+        <FormSkeleton />
+      </PageWrapper>
+    );
   }
 
   return (
     <PageWrapper title="Notification Settings">
-      <form onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-2">
+      <SettingsBody wide>
+      <form onSubmit={handleSubmit} className="grid gap-5 md:grid-cols-2">
         <LayerCard className="md:col-span-2">
           <LayerCard.Secondary>
             <div className="flex items-center gap-2">
@@ -309,6 +315,7 @@ function NotificationSettings() {
           </Button>
         </div>
       </form>
+      </SettingsBody>
     </PageWrapper>
   );
 }

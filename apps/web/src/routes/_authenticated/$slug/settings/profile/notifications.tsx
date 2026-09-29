@@ -14,6 +14,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 import { FormSkeleton } from "@/components/skeletons";
+import { SettingsBody } from "@/components/settings-body";
 import {
   getUserNotificationPreferences,
   updateUserNotificationPreferences,
@@ -170,7 +171,8 @@ function NotificationSettings() {
   };
 
   return (
-    <div className="space-y-6">
+    <SettingsBody>
+    <div className="flex flex-col gap-5">
       <LayerCard>
         <LayerCard.Secondary>
           <div className="flex items-center gap-2">
@@ -339,5 +341,6 @@ function NotificationSettings() {
         </LayerCard.Primary>
       </LayerCard>
     </div>
+    </SettingsBody>
   );
 }

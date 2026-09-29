@@ -30,7 +30,7 @@ export function DocumentViewerShell({
           {left}
         </div>
       ) : null}
-      <div className="bg-muted/40 dark:bg-background min-w-0 flex-1">{main}</div>
+      <div className="bg-muted/40 min-w-0 flex-1">{main}</div>
       {right ? (
         <div className="border-border bg-card hidden w-[22rem] shrink-0 border-l xl:block">
           {right}

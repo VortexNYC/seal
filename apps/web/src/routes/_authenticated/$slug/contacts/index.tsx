@@ -25,7 +25,7 @@ import {
 } from "@phosphor-icons/react";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState, type ReactElement } from "react";
 
 import { ContactStatusBadge } from "@/components/contacts/contact-status-badge";
 import { CreateContactDialog } from "@/components/contacts/create-contact-dialog";
@@ -44,6 +44,7 @@ import { toast } from "@/lib/toast";
 
 export const Route = createFileRoute("/_authenticated/$slug/contacts/")({
   component: ContactsPage,
+  pendingComponent: ContactsPageSkeleton,
   head: () => ({
     meta: [
       { title: pageSEO.contacts.title },
@@ -54,6 +55,17 @@ export const Route = createFileRoute("/_authenticated/$slug/contacts/")({
 });
 
 type StatusFilter = ContactStatus | "all";
+
+function ContactsPageSkeleton(): ReactElement {
+  return (
+    <PageWrapper title="Contacts">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+        <SkeletonLine className="h-10 w-full max-w-md" />
+        <ContactsTableSkeleton />
+      </div>
+    </PageWrapper>
+  );
+}
 
 function ContactsTableSkeleton() {
   return (

@@ -7,6 +7,7 @@
  */
 
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { SkeletonLine } from "@cloudflare/kumo/components/loader";
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 
@@ -44,10 +45,10 @@ function StatsCardsFallback(): React.ReactElement {
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {Array.from({ length: 4 }).map((_, i) => (
-        <LayerCard key={i} className="animate-pulse">
-          <LayerCard.Primary className="space-y-2 p-4">
-            <div className="bg-muted h-3 w-1/2 rounded" />
-            <div className="bg-muted h-6 w-1/3 rounded" />
+        <LayerCard key={i}>
+          <LayerCard.Primary className="flex flex-col gap-2 p-4">
+            <SkeletonLine className="h-3 w-1/2" />
+            <SkeletonLine className="h-6 w-1/3" />
           </LayerCard.Primary>
         </LayerCard>
       ))}
@@ -58,22 +59,22 @@ function StatsCardsFallback(): React.ReactElement {
 function RecentDocsFallback(): React.ReactElement {
   return (
     <LayerCard>
-      <LayerCard.Primary className="space-y-3 p-4">
+      <LayerCard.Primary className="flex flex-col gap-3 p-4">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="bg-muted h-10 animate-pulse rounded" />
+          <SkeletonLine key={i} className="h-10 w-full" />
         ))}
       </LayerCard.Primary>
     </LayerCard>
   );
 }
 
-function WorkspaceHome(): React.ReactElement | null {
+function WorkspaceHome(): React.ReactElement {
   const { slug } = Route.useParams();
   const { user } = useUser();
   const { data: organization } = useSuspenseOrganization(slug);
 
   if (!organization) {
-    return null;
+    return <DashboardSkeleton />;
   }
 
   const firstName = user?.firstName ?? "there";
@@ -94,7 +95,7 @@ function WorkspaceHome(): React.ReactElement | null {
           </p>
         </div>
 
-        <Suspense fallback={null}>
+        <Suspense fallback={<StatsCardsFallback />}>
           <NeedsAttention organizationSlug={slug} />
         </Suspense>
 

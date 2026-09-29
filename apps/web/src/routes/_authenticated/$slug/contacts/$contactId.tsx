@@ -25,7 +25,7 @@ import {
 } from "@phosphor-icons/react";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { Suspense, useState } from "react";
+import { Suspense, useState, type ReactElement } from "react";
 
 import { ContactStatusBadge } from "@/components/contacts/contact-status-badge";
 import { EditContactDialog } from "@/components/contacts/edit-contact-dialog";
@@ -45,7 +45,22 @@ export const Route = createFileRoute(
   "/_authenticated/$slug/contacts/$contactId"
 )({
   component: ContactDetailPage,
+  pendingComponent: ContactDetailSkeleton,
 });
+
+function ContactDetailSkeleton(): ReactElement {
+  return (
+    <PageWrapper title="Contact">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
+        <SkeletonLine className="h-8 w-40" />
+        <div className="grid gap-4 lg:grid-cols-3">
+          <SkeletonLine className="h-64 w-full rounded-xl lg:col-span-2" />
+          <SkeletonLine className="h-64 w-full rounded-xl" />
+        </div>
+      </div>
+    </PageWrapper>
+  );
+}
 
 function InfoRow({
   icon: Icon,
@@ -170,12 +185,12 @@ function ContactDetailContent() {
 
   return (
     <PageWrapper title={contact.fullName}>
-      {/* Back link */}
-      <div className="mb-6">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
+      <div>
         <Button
           variant="ghost"
           size="sm"
-          className="text-kumo-secondary hover:text-kumo-default gap-1"
+          className="text-muted-foreground hover:text-foreground gap-1"
           onClick={() =>
             router.navigate({ to: "/$slug/contacts", params: { slug } })
           }
@@ -185,7 +200,7 @@ function ContactDetailContent() {
         </Button>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3">
         {/* Left column: Contact info */}
         <div className="lg:col-span-2">
           <LayerCard>
@@ -322,6 +337,7 @@ function ContactDetailContent() {
             </LayerCard.Primary>
           </LayerCard>
         </div>
+      </div>
       </div>
 
       {/* Edit dialog */}
