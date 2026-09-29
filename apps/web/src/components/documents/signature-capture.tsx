@@ -22,7 +22,7 @@ import {
   Trash,
 } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type JSX } from "react";
+import { useEffect, useState, type JSX } from "react";
 
 import {
   ESignature,
@@ -104,6 +104,31 @@ export function SignatureCapture({
     queryFn: listSavedSignatures,
     enabled: showLibrary,
   });
+
+  const isFirstAdopt = showLibrary && savedSignatures.length === 0;
+
+  // DocuSeal-class: remember a default signature and land on it next time.
+  useEffect(() => {
+    if (!showLibrary || savedSignatures.length === 0) return;
+    const preferred =
+      savedSignatures.find((s) => s.isDefault) ?? savedSignatures[0];
+    if (preferred && !selectedSavedSignature) {
+      setSelectedSavedSignature(preferred.id);
+      setActiveTab("saved");
+    }
+  }, [showLibrary, savedSignatures, selectedSavedSignature]);
+
+  // First-run adopt: prefill save-as-default like DocuSeal profile signature.
+  useEffect(() => {
+    if (isFirstAdopt && showSaveDialog) {
+      setSaveAsDefault(true);
+      if (!saveSignatureName.trim()) {
+        setSaveSignatureName(
+          recipientName?.trim() ? `${recipientName.trim()}'s signature` : "My signature"
+        );
+      }
+    }
+  }, [isFirstAdopt, showSaveDialog, recipientName, saveSignatureName]);
 
   const saveSignatureMutation = useMutation({
     mutationFn: createSavedSignature,
@@ -475,10 +500,13 @@ export function SignatureCapture({
 
       <Dialog.Root open={showSaveDialog} onOpenChange={setShowSaveDialog}>
         <Dialog>
-          <Dialog.Title>Save to Signature Library?</Dialog.Title>
+          <Dialog.Title>
+            {isFirstAdopt ? "Adopt your signature" : "Save to Signature Library?"}
+          </Dialog.Title>
           <Dialog.Description>
-            Would you like to save this signature for quick reuse in future
-            documents?
+            {isFirstAdopt
+              ? "Save this as your default signature so the next document is one click."
+              : "Would you like to save this signature for quick reuse in future documents?"}
           </Dialog.Description>
           <div className="space-y-4 py-4">
             {pendingSignatureData ? (
@@ -515,7 +543,7 @@ export function SignatureCapture({
               onClick={handleSubmitWithoutSaving}
               className="flex-1"
             >
-              Skip & Sign
+              {isFirstAdopt ? "Skip for now" : "Skip & Sign"}
             </Button>
             <Button
               onClick={() => {
@@ -525,7 +553,7 @@ export function SignatureCapture({
               className="flex-1"
             >
               <Plus className="mr-2 h-4 w-4" />
-              Save & Sign
+              {isFirstAdopt ? "Adopt & Sign" : "Save & Sign"}
             </Button>
           </div>
         </Dialog>

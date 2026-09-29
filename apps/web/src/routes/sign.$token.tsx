@@ -48,6 +48,7 @@ import { SignatureCapture } from "@/components/documents/signature-capture";
 import { SigningInviteGate } from "@/components/signing/signing-invite-gate";
 import { SigningShell } from "@/components/signing/signing-shell";
 import { SealLogo } from "@/components/seal-logo";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { DictateNextSignerDialog } from "@/components/signing/dictate-next-signer-dialog";
 import { DocumentExpiredPage } from "@/components/signing/document-expired-page";
 import { RedirectCountdown } from "@/components/signing/redirect-countdown";
@@ -257,6 +258,7 @@ function SigningPage() {
   const { track } = useAnalytics();
   useGuestAnalyticsMute();
   const { isEmbedded, embedParams } = useEmbeddedSigning(token);
+  const { isSignedIn } = useCurrentUser();
 
   // Fetch recipient and document data using the signing token
   const { data } = useSuspenseQuery({
@@ -1271,6 +1273,7 @@ function SigningPage() {
             onSignatureCapture={handleSignatureCapture}
             onCancel={handleCancelSignature}
             allowedSignatureTypes={undefined}
+            showLibrary={isSignedIn}
           />
         </Dialog>
       </Dialog.Root>
