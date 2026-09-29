@@ -35,7 +35,12 @@ export const Route = createFileRoute(
 function NotificationSettings() {
   const { slug } = Route.useParams();
 
-  const { data: notificationSettings } = useQuery({
+  const {
+    data: notificationSettings,
+    isPending,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ["notifications", slug],
     queryFn: () => getNotificationSettings(slug),
   });
@@ -59,6 +64,33 @@ function NotificationSettings() {
       });
     }
   }, [notificationSettings]);
+
+  if (isPending) {
+    return (
+      <PageWrapper title="Notifications">
+        <FormSkeleton />
+      </PageWrapper>
+    );
+  }
+
+  if (isError) {
+    return (
+      <PageWrapper title="Notifications">
+        <LayerCard>
+          <LayerCard.Primary className="py-10 text-center">
+            <Text as="p" variant="secondary">
+              Could not load notification settings
+            </Text>
+            <Text as="p" variant="secondary" size="sm">
+              {error instanceof Error
+                ? error.message
+                : "Try again in a moment."}
+            </Text>
+          </LayerCard.Primary>
+        </LayerCard>
+      </PageWrapper>
+    );
+  }
 
   const addReminderDay = () => {
     const day = Number.parseInt(newReminderDay, 10);

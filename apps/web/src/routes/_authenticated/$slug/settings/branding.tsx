@@ -1,18 +1,18 @@
+/**
+ * Signing chrome settings (SEA-603 / SEA-95)
+ *
+ * Sign-only chrome. Workspace brand colors and email from live under General.
+ * Seal product mark stays — no hide-Seal-branding control.
+ *
+ * Route: /{slug}/settings/branding
+ * Gating: Pro Sign SKU (`PLAN_LIMITS.*.branding`)
+ */
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
 import { Input } from "@cloudflare/kumo/components/input";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
 import { FloppyDisk, Palette } from "@phosphor-icons/react";
-/**
- * Signing chrome settings (SEA-603)
- *
- * Sign-only white-label controls. Workspace brand colors and email from live
- * under General. This page keeps hideSealBranding + custom signing footer.
- *
- * Route: /{slug}/settings/branding
- * Gating: Pro Sign SKU (`PLAN_LIMITS.*.branding`)
- */
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/branding")(
 function BrandingSettings() {
   const { slug } = Route.useParams();
 
-  const { data: brandingSettings } = useQuery({
+  const { data: brandingSettings, isPending } = useQuery({
     queryKey: ["branding", slug],
     queryFn: () => getBrandingSettings(slug),
   });
@@ -41,7 +41,6 @@ function BrandingSettings() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     enabled: false,
-    hideSealBranding: false,
     customFooterText: "",
   });
 
@@ -49,7 +48,6 @@ function BrandingSettings() {
     if (brandingSettings) {
       setFormData({
         enabled: brandingSettings.enabled === true,
-        hideSealBranding: brandingSettings.hideSealBranding === true,
         customFooterText:
           typeof brandingSettings.customFooterText === "string"
             ? brandingSettings.customFooterText
@@ -65,7 +63,8 @@ function BrandingSettings() {
     try {
       await updateBrandingSettings(slug, {
         enabled: formData.enabled,
-        hideSealBranding: formData.hideSealBranding,
+        // SEA-95: Seal mark/footer is product-owned — never hide.
+        hideSealBranding: false,
         customFooterText: formData.customFooterText || undefined,
       });
       toast.success("Signing chrome updated");
@@ -80,8 +79,8 @@ function BrandingSettings() {
     }
   };
 
-  if (!brandingSettings) {
-    return null;
+  if (isPending || !brandingSettings) {
+    return <FormSkeleton />;
   }
 
   return (
@@ -89,10 +88,10 @@ function BrandingSettings() {
       <FeatureGate
         tier="pro"
         feature="Signing chrome (Pro)"
-        description="White-label the Seal signing page footer. Workspace brand colors and email from live under General."
+        description="White-label signing page footer text. Workspace brand colors and email from live under General. Seal product identity stays on."
       >
-        <form onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-2">
-          <LayerCard className="border-dashed md:col-span-2">
+        <form onSubmit={handleSubmit} className="mx-auto grid max-w-2xl gap-6">
+          <LayerCard className="border-dashed">
             <LayerCard.Secondary>
               <Text as="h2" variant="heading">
                 Suite vs Sign
@@ -111,7 +110,7 @@ function BrandingSettings() {
             </LayerCard.Secondary>
           </LayerCard>
 
-          <LayerCard className="md:col-span-2">
+          <LayerCard>
             <LayerCard.Secondary>
               <div className="flex items-center gap-2">
                 <Palette className="h-5 w-5" />
@@ -120,9 +119,9 @@ function BrandingSettings() {
                 </Text>
               </div>
               <Text variant="secondary">
-                When on, recipients see suite brand (from General) plus the
-                footer controls below on the signing page and in document
-                emails.
+                When on, recipients see suite brand (from General) plus optional
+                custom footer text on the signing page and in document emails.
+                Seal product chrome stays visible.
               </Text>
             </LayerCard.Secondary>
             <LayerCard.Primary>
@@ -140,47 +139,33 @@ function BrandingSettings() {
             </LayerCard.Primary>
           </LayerCard>
 
-          <LayerCard className="md:col-span-2">
+          <LayerCard>
             <LayerCard.Secondary>
               <Text as="h2" variant="heading">
-                Signing footer (Seal)
+                Custom footer text
               </Text>
               <Text variant="secondary">
-                Product-owned chrome — stays on Seal after Core tenant brand.
+                Optional line under the signing surface (e.g. confidentiality
+                notice). Does not replace Seal identity.
               </Text>
             </LayerCard.Secondary>
-            <LayerCard.Primary className="space-y-4">
-              <Checkbox
-                label='Hide "Powered by Seal"'
-                checked={formData.hideSealBranding}
-                onCheckedChange={(checked) =>
+            <LayerCard.Primary>
+              <Input
+                id="custom-footer"
+                label="Footer text"
+                placeholder="e.g. Acme Corp — Confidential"
+                value={formData.customFooterText}
+                onChange={(e) =>
                   setFormData({
                     ...formData,
-                    hideSealBranding: checked,
+                    customFooterText: e.target.value,
                   })
                 }
               />
-              <Text variant="secondary" size="sm">
-                Remove the Seal branding footer from signing pages.
-              </Text>
-              <div className="space-y-2 border-t pt-4">
-                <Input
-                  id="custom-footer"
-                  label="Custom footer text"
-                  placeholder="e.g. Acme Corp — Confidential"
-                  value={formData.customFooterText}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      customFooterText: e.target.value,
-                    })
-                  }
-                />
-              </div>
             </LayerCard.Primary>
           </LayerCard>
 
-          <div className="flex justify-end md:col-span-2">
+          <div className="flex justify-end">
             <Button type="submit" disabled={isSubmitting}>
               <FloppyDisk className="mr-2 h-4 w-4" />
               {isSubmitting ? "Saving…" : "Save signing chrome"}

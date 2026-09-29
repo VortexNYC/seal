@@ -185,7 +185,8 @@ export default defineConfig(() => {
     plugins: [
       cloudflare(),
       tailwindcss(),
-      tanstackRouter({}),
+      // SEA-88: split route modules so auth does not pull PDF/canvas/charts.
+      tanstackRouter({ autoCodeSplitting: true }),
       react(),
       sealSourceMaps(outDir),
     ],
@@ -222,7 +223,32 @@ export default defineConfig(() => {
       sourcemap: "hidden" as const,
       outDir,
       chunkSizeWarningLimit: 1600,
-      // SEA-136: Mobile performance optimization - chunk splitting for lazy loading
+      // SEA-88: named vendor chunks for lazy routes — never modulepreload heavies on auth.
+      modulePreload: {
+        resolveDependencies: (
+          _filename: string,
+          deps: string[],
+          context: {
+            hostId: string;
+            hostType: "html" | "js";
+          }
+        ): string[] => {
+          if (context.hostType !== "html") {
+            return deps;
+          }
+          // Entry HTML must not preload document-surface vendors.
+          const blocked = [
+            "/pdf-viewer-",
+            "/canvas-",
+            "/charts-",
+            "/pdf-export-",
+            "/date-utils-",
+          ];
+          return deps.filter(
+            (dep) => !blocked.some((needle) => dep.includes(needle))
+          );
+        },
+      },
       rollupOptions: {
         output: {
           manualChunks,

@@ -49,17 +49,16 @@ test.describe("Dashboard", () => {
     expect(completionRate).toMatch(/\d+%/);
   });
 
-  test("should display document activity section", async ({
+  test("should display recent documents section", async ({
     authenticatedPage,
     organizationSlug,
   }) => {
     test.setTimeout(45000);
-    // data-testid="document-activity-section" added to TrendChart Card in trend-chart.tsx
     const dashboardPage = new DashboardPage(authenticatedPage);
 
     await dashboardPage.goto(organizationSlug);
 
-    await expect(dashboardPage.documentActivitySection).toBeVisible({
+    await expect(dashboardPage.recentDocumentsSection).toBeVisible({
       timeout: 10000,
     });
   });

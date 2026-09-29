@@ -46,13 +46,33 @@ function formatBytes(bytes: number): string {
 function UsageSettings() {
   const { slug } = Route.useParams();
   const navigate = useNavigate();
-  const { data: stats } = useQuery({
-    queryKey: ["api", "users", "me", "usage"],
-    queryFn: getUserUsageStatistics,
+  const {
+    data: stats,
+    isPending,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["api", "users", "me", "usage", slug],
+    queryFn: () => getUserUsageStatistics(slug),
   });
 
-  if (!stats) {
+  if (isPending) {
     return <FormSkeleton />;
+  }
+
+  if (isError || !stats) {
+    return (
+      <LayerCard>
+        <LayerCard.Primary className="py-10 text-center">
+          <Text as="p" variant="secondary">
+            Could not load usage
+          </Text>
+          <Text as="p" variant="secondary" size="sm">
+            {error instanceof Error ? error.message : "Try again in a moment."}
+          </Text>
+        </LayerCard.Primary>
+      </LayerCard>
+    );
   }
 
   const isApproachingDocumentLimit = stats.documentsPercentUsed >= 80;

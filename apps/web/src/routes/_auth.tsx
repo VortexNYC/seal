@@ -7,7 +7,7 @@ export const Route = createFileRoute("/_auth")({
 });
 
 /**
- * Unauthenticated shell — Seal mark as the hero signal above every auth form.
+ * Unauthenticated shell — Seal mark left of the wordmark above every auth form.
  * Atmosphere + single composition; forms stay from @vortex-api/better-auth-ui.
  */
 function RouteComponent() {
@@ -27,9 +27,9 @@ function RouteComponent() {
       <div className="relative z-10 mx-auto flex w-full max-w-md flex-col items-center gap-10">
         <a
           href="https://seal.nyc"
-          className="text-foreground flex flex-col items-center gap-3 no-underline"
+          className="text-foreground flex flex-row items-center gap-3 no-underline"
         >
-          <SealLogo size={48} variant="color" />
+          <SealLogo size={40} variant="color" />
           <span className="font-serif text-4xl leading-none tracking-tight">
             Seal
           </span>

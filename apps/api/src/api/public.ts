@@ -239,10 +239,7 @@ app.openapi(signingTokenRouteDef, async (c) => {
   const orgMetadata = safeParseJson(org?.metadata);
   const brandColor =
     typeof orgMetadata?.brandColor === "string" ? orgMetadata.brandColor : null;
-  const hideSealBranding =
-    typeof orgMetadata?.hideSealBranding === "boolean"
-      ? orgMetadata.hideSealBranding
-      : false;
+  const hideSealBranding = false;
   const customFooterText =
     typeof orgMetadata?.customFooterText === "string"
       ? orgMetadata.customFooterText

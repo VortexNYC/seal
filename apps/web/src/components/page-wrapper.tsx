@@ -43,11 +43,11 @@ export function PageWrapper({
   return (
     <div
       className={cn(
-        "bg-muted dark:bg-background flex h-full min-h-0 scroll-pb-24 flex-col overflow-auto overscroll-contain sm:scroll-pb-28",
+        "bg-background flex h-full min-h-0 scroll-pb-24 flex-col overflow-auto overscroll-contain sm:scroll-pb-28",
         className
       )}
     >
-      <div className="sticky top-0 z-10 border-b bg-inherit">
+      <div className="bg-background/95 sticky top-0 z-10 border-b border-border backdrop-blur-sm">
         <div
           className={cn(
             "flex min-h-16 flex-col gap-3 px-4 py-3 sm:px-6",

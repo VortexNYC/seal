@@ -1,8 +1,6 @@
 /**
- * Dashboard Quick Actions
- *
- * Redesigned as a visual 2x2 grid of action tiles with icons, hover effects,
- * and subtle background accents. More engaging than plain button stacks.
+ * Dashboard Quick Actions — compact link list (SEA-96).
+ * Neutral chrome; no rainbow tile grid.
  */
 
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
@@ -15,14 +13,9 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-import { cn } from "@/lib/utils";
-
 interface QuickActionItem {
   label: string;
-  description: string;
   icon: LucideIcon;
-  iconBg: string;
-  iconColor: string;
   to: string;
   search?: Record<string, string | undefined>;
 }
@@ -36,93 +29,56 @@ export function QuickActions({ slug }: QuickActionsProps): React.ReactElement {
 
   const actions: QuickActionItem[] = [
     {
-      label: "Upload",
-      description: "New document",
+      label: "Upload document",
       icon: UploadIcon,
-      iconBg: "bg-brand-50 dark:bg-brand-50",
-      iconColor: "text-primary",
       to: "/$slug/documents",
       search: { folderId: undefined },
     },
     {
       label: "Templates",
-      description: "Use a template",
       icon: LayoutTemplateIcon,
-      iconBg: "bg-info-surface",
-      iconColor: "text-info",
       to: "/$slug/templates",
       search: { folderId: undefined },
     },
     {
-      label: "Documents",
-      description: "View all",
+      label: "All documents",
       icon: FileTextIcon,
-      iconBg: "bg-success-surface",
-      iconColor: "text-success",
       to: "/$slug/documents",
       search: { folderId: undefined },
     },
     {
       label: "Analytics",
-      description: "View insights",
       icon: BarChart3Icon,
-      iconBg: "bg-warning-surface",
-      iconColor: "text-warning",
       to: "/$slug/analytics",
     },
   ];
 
   return (
-    <LayerCard
-      style={{
-        animation: "fadeInUp var(--duration-slow) var(--ease-enter) both",
-        animationDelay: "350ms",
-      }}
-    >
-      <LayerCard.Secondary>
-        <h3 className="text-base font-semibold">Quick Actions</h3>
-        <p className="text-muted-foreground text-sm">Get started quickly</p>
+    <LayerCard>
+      <LayerCard.Secondary className="px-4 pt-4 pb-2">
+        <h3 className="text-sm font-semibold">Quick actions</h3>
       </LayerCard.Secondary>
-      <LayerCard.Primary>
-        <div className="grid grid-cols-2 gap-2">
-          {actions.map((action) => {
-            const Icon = action.icon;
-            return (
-              <button
-                key={action.label}
-                type="button"
-                className={cn(
-                  "group flex flex-col items-center gap-2 rounded-xl p-4",
-                  "bg-secondary/50 hover:bg-secondary",
-                  "transition-colors duration-[var(--duration-default)] ease-[var(--ease-enter)]",
-                  "focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-                )}
-                onClick={() =>
-                  router.navigate({
-                    to: action.to,
-                    params: { slug },
-                    search: action.search,
-                  })
-                }
-              >
-                <div
-                  className={cn(
-                    "flex h-10 w-10 items-center justify-center rounded-lg",
-                    action.iconBg
-                  )}
-                >
-                  <Icon className={cn("h-5 w-5", action.iconColor)} />
-                </div>
-                <div className="text-center">
-                  <span className="text-sm font-medium">{action.label}</span>
-                  <span className="text-muted-foreground block text-[11px]">
-                    {action.description}
-                  </span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+      <LayerCard.Primary className="flex flex-col gap-0.5 px-2 pb-2">
+        {actions.map((action) => {
+          const Icon = action.icon;
+          return (
+            <button
+              key={action.label}
+              type="button"
+              className="text-foreground hover:bg-secondary focus-visible:ring-ring flex items-center gap-2.5 rounded-md px-2 py-2 text-left text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
+              onClick={() =>
+                router.navigate({
+                  to: action.to,
+                  params: { slug },
+                  search: action.search,
+                })
+              }
+            >
+              <Icon className="text-muted-foreground size-4 shrink-0" />
+              <span className="truncate font-medium">{action.label}</span>
+            </button>
+          );
+        })}
       </LayerCard.Primary>
     </LayerCard>
   );

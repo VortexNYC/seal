@@ -1,8 +1,5 @@
 /**
- * Dashboard Recent Documents
- *
- * Shows the 5 most recent documents with thumbnails, status badges,
- * and relative timestamps. Uses proper Link elements for accessibility.
+ * Dashboard Recent Documents — documents-first work surface (SEA-96).
  */
 
 import { Button } from "@cloudflare/kumo/components/button";
@@ -32,24 +29,14 @@ export function RecentDocuments({
   });
 
   return (
-    <LayerCard
-      style={{
-        animation: "fadeInUp var(--duration-slow) var(--ease-enter) both",
-        animationDelay: "300ms",
-      }}
-    >
-      <LayerCard.Secondary>
-        <div className="flex flex-row items-center justify-between">
-          <div>
-            <h3 className="text-base font-semibold">Recent Documents</h3>
-            <p className="text-muted-foreground text-sm">
-              Your latest documents
-            </p>
-          </div>
+    <LayerCard data-testid="recent-documents">
+      <LayerCard.Secondary className="px-4 pt-4 pb-2">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-sm font-semibold">Recent documents</h3>
           <Button
             variant="ghost"
             size="sm"
-            className="text-muted-foreground hover:text-foreground gap-1.5 transition-colors"
+            className="text-muted-foreground hover:text-foreground h-8 gap-1 px-2"
             onClick={() =>
               router.navigate({
                 to: "/$slug/documents",
@@ -59,16 +46,14 @@ export function RecentDocuments({
             }
           >
             View all
-            <ArrowRightIcon className="h-3.5 w-3.5" />
+            <ArrowRightIcon className="size-3.5" />
           </Button>
         </div>
       </LayerCard.Secondary>
-      <LayerCard.Primary>
+      <LayerCard.Primary className="px-2 pb-2">
         {recentDocs.length === 0 ? (
-          <div className="text-muted-foreground flex h-40 flex-col items-center justify-center gap-3 text-sm">
-            <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-full">
-              <FileTextIcon className="text-muted-foreground/60 h-5 w-5" />
-            </div>
+          <div className="text-muted-foreground flex flex-col items-center justify-center gap-3 px-4 py-10 text-sm">
+            <FileTextIcon className="text-muted-foreground/50 size-8" />
             <div className="space-y-1 text-center">
               <p className="text-foreground text-sm font-medium">
                 Send your first document
@@ -93,28 +78,28 @@ export function RecentDocuments({
             </Button>
           </div>
         ) : (
-          <div className="space-y-1">
+          <div className="flex flex-col">
             {recentDocs.map((doc) => (
               <Link
                 key={doc._id}
                 to="/$slug/documents/$documentId"
                 params={{ slug, documentId: doc._id }}
-                className="group hover:bg-secondary -mx-2 flex min-h-[56px] items-center justify-between rounded-lg px-2 py-3 transition-all duration-[var(--duration-fast)] ease-[var(--ease-enter)] sm:py-2"
+                className="group hover:bg-secondary flex min-h-12 items-center justify-between gap-3 rounded-md px-2 py-2 transition-colors"
               >
                 <div className="flex min-w-0 flex-1 items-center gap-3">
-                  <div className="bg-muted flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-md transition-shadow duration-[var(--duration-fast)] group-hover:shadow-sm">
+                  <div className="bg-muted flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md">
                     {doc.thumbnailDataUrl ? (
                       <img
                         src={doc.thumbnailDataUrl}
                         alt=""
-                        className="h-full w-full object-cover"
+                        className="size-full object-cover"
                       />
                     ) : (
-                      <FileTextIcon className="text-muted-foreground h-5 w-5" />
+                      <FileTextIcon className="text-muted-foreground size-4" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="group-hover:text-primary line-clamp-1 truncate text-sm font-medium transition-colors duration-[var(--duration-fast)]">
+                    <p className="line-clamp-1 text-sm font-medium">
                       {doc.name}
                     </p>
                     <p className="text-muted-foreground text-xs">

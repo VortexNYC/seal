@@ -54,7 +54,11 @@ const applyThemeClass = (theme: ResolvedTheme) => {
 
   const root = document.documentElement;
   root.classList.toggle("dark", theme === "dark");
+  // Seal semantic tokens flip on `.dark`. Kumo Input/Label/control chrome
+  // flip on `data-mode` (and light-dark via color-scheme) — without this,
+  // dark shell + light-mode black labels/white inputs (auth + product).
   root.dataset.theme = theme;
+  root.dataset.mode = theme;
   root.style.colorScheme = theme;
 };
 

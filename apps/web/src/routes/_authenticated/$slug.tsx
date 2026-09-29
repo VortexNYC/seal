@@ -19,7 +19,6 @@ import {
   CommandPalette,
   useCommandPalette,
 } from "@/components/command-palette";
-import { FeedbackButton } from "@/components/feedback-button";
 import { NotFoundPage } from "@/components/not-found-page";
 import { PostHogIdentify } from "@/components/posthog-identify";
 import { PostHogPageview } from "@/components/posthog-pageview";
@@ -90,7 +89,6 @@ function WorkspaceLayout() {
         </main>
       </div>
       <CommandPalette open={cmdKOpen} onOpenChange={setCmdKOpen} />
-      <FeedbackButton organizationSlug={slug} />
     </Sidebar.Provider>
   );
 }

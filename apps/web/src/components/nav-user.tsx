@@ -19,7 +19,7 @@ function UserAvatar({
   const fallback = initials ?? "CN";
   return (
     <div
-      className={cn("bg-kumo-elevated overflow-hidden rounded-lg", className)}
+      className={cn("bg-sidebar-accent overflow-hidden rounded-lg", className)}
     >
       {avatar ? (
         <img
@@ -31,7 +31,7 @@ function UserAvatar({
           }}
         />
       ) : (
-        <div className="text-kumo-secondary flex h-full w-full items-center justify-center text-xs font-medium">
+        <div className="text-muted-foreground flex h-full w-full items-center justify-center text-xs font-medium">
           {fallback}
         </div>
       )}
@@ -73,12 +73,14 @@ export function NavUser({
                 className="h-8 w-8"
               />
               <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
-                <span className="text-kumo-secondary truncate text-xs">
+                <span className="text-sidebar-foreground truncate font-medium">
+                  {user.name}
+                </span>
+                <span className="text-muted-foreground truncate text-xs">
                   {user.email}
                 </span>
               </div>
-              <CaretUpDown className="ml-auto size-4 shrink-0" />
+              <CaretUpDown className="text-muted-foreground ml-auto size-4 shrink-0" />
             </Sidebar.MenuButton>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content

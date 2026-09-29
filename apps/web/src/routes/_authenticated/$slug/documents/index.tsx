@@ -1675,165 +1675,127 @@ function DocumentsPage() {
         />
       }
     >
-      <div className="space-y-6">
-        {/* SEA-73: Search Input */}
-        <div className="bg-card/60 relative rounded-lg border px-2 py-2">
-          <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-          <Input
-            type="text"
-            aria-label="Search documents by name or description"
-            placeholder="Search documents by name or description..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pr-9 pl-9"
-          />
-          {searchQuery && (
-            <Button
-              variant="ghost"
-              shape="square"
-              size="sm"
-              title="Clear search"
-              className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2"
-              onClick={() => setSearchQuery("")}
-            >
-              <XIcon className="h-4 w-4" />
-              <span className="sr-only">Clear search</span>
-            </Button>
-          )}
-        </div>
-
-        {/* Filter Tabs */}
-        <div className="bg-card/50 space-y-4 rounded-lg border p-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap gap-2">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+        {/* SEA-99: flat toolbar — no nested filter cards */}
+        <div className="flex flex-col gap-3">
+          <div className="relative">
+            <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+            <Input
+              type="text"
+              aria-label="Search documents by name or description"
+              placeholder="Search documents…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pr-9 pl-9"
+            />
+            {searchQuery && (
               <Button
+                variant="ghost"
+                shape="square"
+                size="sm"
+                title="Clear search"
+                className="absolute top-1/2 right-1 size-7 -translate-y-1/2"
+                onClick={() => setSearchQuery("")}
+              >
+                <XIcon className="size-4" />
+                <span className="sr-only">Clear search</span>
+              </Button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap gap-1.5">
+              <Button
+                size="sm"
                 variant={filter === "all" ? "primary" : "outline"}
                 onClick={() => setFilter("all")}
               >
-                All Documents
+                All
               </Button>
               <Button
+                size="sm"
                 variant={filter === "owned" ? "primary" : "outline"}
                 onClick={() => setFilter("owned")}
               >
-                My Documents
+                Mine
               </Button>
               <Button
+                size="sm"
                 variant={filter === "shared" ? "primary" : "outline"}
                 onClick={() => setFilter("shared")}
               >
-                Shared with Me
+                Shared
               </Button>
             </div>
-            {/* SEA-68: View mode toggle */}
-            <div className="bg-background flex items-center gap-1 rounded-md border">
+            <div className="bg-muted/40 flex items-center gap-0.5 rounded-md p-0.5">
               <Button
                 variant={viewMode === "table" ? "primary" : "ghost"}
                 shape="square"
                 size="sm"
-                className="h-9 w-9"
+                className="size-8"
                 aria-label="Table view"
                 onClick={() => setViewMode("table")}
               >
-                <LayoutListIcon className="h-4 w-4" />
+                <LayoutListIcon className="size-4" />
               </Button>
               <Button
                 variant={viewMode === "grid" ? "primary" : "ghost"}
                 shape="square"
                 size="sm"
-                className="h-9 w-9"
+                className="size-8"
                 aria-label="Grid view"
                 onClick={() => setViewMode("grid")}
               >
-                <LayoutGridIcon className="h-4 w-4" />
+                <LayoutGridIcon className="size-4" />
               </Button>
               <Button
                 variant={viewMode === "finder" ? "primary" : "ghost"}
                 shape="square"
                 size="sm"
-                className="h-9 w-9"
+                className="size-8"
                 aria-label="Finder view"
                 onClick={() => setViewMode("finder")}
               >
-                <FolderIcon className="h-4 w-4" />
+                <FolderIcon className="size-4" />
               </Button>
             </div>
           </div>
 
-          {/* Workflow Status Filters */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-muted-foreground self-center text-sm">
-              Status:
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+              Status
             </span>
-            <Button
-              size="sm"
-              variant={workflowStatusFilter === "all" ? "primary" : "outline"}
-              onClick={() => setWorkflowStatusFilter("all")}
-            >
-              All
-            </Button>
-            <Button
-              size="sm"
-              variant={workflowStatusFilter === "draft" ? "primary" : "outline"}
-              onClick={() => setWorkflowStatusFilter("draft")}
-            >
-              Drafts
-            </Button>
-            <Button
-              size="sm"
-              variant={workflowStatusFilter === "sent" ? "primary" : "outline"}
-              onClick={() => setWorkflowStatusFilter("sent")}
-            >
-              Sent
-            </Button>
-            <Button
-              size="sm"
-              variant={
-                workflowStatusFilter === "in_progress" ? "primary" : "outline"
-              }
-              onClick={() => setWorkflowStatusFilter("in_progress")}
-            >
-              In Progress
-            </Button>
-            <Button
-              size="sm"
-              variant={
-                workflowStatusFilter === "completed" ? "primary" : "outline"
-              }
-              onClick={() => setWorkflowStatusFilter("completed")}
-            >
-              Completed
-            </Button>
-            <Button
-              size="sm"
-              variant={
-                workflowStatusFilter === "cancelled" ? "primary" : "outline"
-              }
-              onClick={() => setWorkflowStatusFilter("cancelled")}
-            >
-              Cancelled
-            </Button>
-            <Button
-              size="sm"
-              variant={
-                workflowStatusFilter === "expired" ? "primary" : "outline"
-              }
-              onClick={() => setWorkflowStatusFilter("expired")}
-            >
-              Expired
-            </Button>
+            {(
+              [
+                ["all", "All"],
+                ["draft", "Drafts"],
+                ["sent", "Sent"],
+                ["in_progress", "In Progress"],
+                ["completed", "Completed"],
+                ["cancelled", "Cancelled"],
+                ["expired", "Expired"],
+              ] as const
+            ).map(([value, label]) => (
+              <Button
+                key={value}
+                size="sm"
+                variant={workflowStatusFilter === value ? "primary" : "outline"}
+                onClick={() => setWorkflowStatusFilter(value)}
+              >
+                {label}
+              </Button>
+            ))}
 
-            {/* SEA-74: Date Range Filter */}
-            <div className="w-full sm:ml-2 sm:w-auto sm:border-l sm:pl-2">
+            <div className="w-full sm:ml-1 sm:w-auto sm:border-l sm:pl-2">
               <Popover>
                 <Popover.Trigger
                   render={
                     <Button
                       variant={dateRange?.from ? "primary" : "outline"}
                       size="sm"
-                      className="min-h-[44px] w-full gap-2 sm:min-h-0 sm:w-auto"
+                      className="min-h-9 w-full gap-2 sm:w-auto"
                     >
-                      <CalendarIcon className="h-4 w-4" />
+                      <CalendarIcon className="size-4" />
                       {dateRange?.from ? (
                         dateRange.to ? (
                           <>
@@ -1855,7 +1817,7 @@ function DocumentsPage() {
                           })
                         )
                       ) : (
-                        "Date Range"
+                        "Date"
                       )}
                     </Button>
                   }
@@ -1883,7 +1845,7 @@ function DocumentsPage() {
                         className="w-full"
                         onClick={() => setDateRange(undefined)}
                       >
-                        Clear Date Range
+                        Clear date
                       </Button>
                     </div>
                   )}
@@ -1892,15 +1854,12 @@ function DocumentsPage() {
             </div>
           </div>
 
-          {/* SEA-75: Active Filter Chips */}
           {(searchQuery.trim() ||
             filter !== "all" ||
             workflowStatusFilter !== "all" ||
             dateRange?.from) && (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-muted-foreground text-sm">
-                Active filters:
-              </span>
+              <span className="text-muted-foreground text-xs">Active</span>
               {searchQuery.trim() && (
                 <Badge variant="secondary" className="gap-1 pl-2">
                   Search: "{searchQuery}"
@@ -1915,7 +1874,7 @@ function DocumentsPage() {
               )}
               {filter !== "all" && (
                 <Badge variant="secondary" className="gap-1 pl-2 capitalize">
-                  {filter === "owned" ? "My Documents" : "Shared with Me"}
+                  {filter === "owned" ? "Mine" : "Shared"}
                   <button
                     type="button"
                     onClick={() => setFilter("all")}

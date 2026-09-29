@@ -51,7 +51,12 @@ const DEFAULT_EMAIL_PREFERENCES: EmailPreferences = {
 };
 
 function NotificationSettings() {
-  const { data: userProfile } = useQuery({
+  const {
+    data: userProfile,
+    isPending,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ["api", "users", "me", "notification-preferences"],
     queryFn: getUserNotificationPreferences,
   });
@@ -75,6 +80,25 @@ function NotificationSettings() {
       setFrequency(userProfile.frequency);
     }
   }, [userProfile]);
+
+  if (isPending) {
+    return <FormSkeleton />;
+  }
+
+  if (isError) {
+    return (
+      <LayerCard>
+        <LayerCard.Primary className="py-10 text-center">
+          <Text as="p" variant="secondary">
+            Could not load notification preferences
+          </Text>
+          <Text as="p" variant="secondary" size="sm">
+            {error instanceof Error ? error.message : "Try again in a moment."}
+          </Text>
+        </LayerCard.Primary>
+      </LayerCard>
+    );
+  }
 
   const handleEmailToggle = async (
     key: keyof EmailPreferences,
