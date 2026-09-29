@@ -132,6 +132,13 @@ export function RecipientSelectorDialog({
                 label="Recipient"
                 placeholder="Select a signer..."
                 description="This recipient will see and fill this field on the signing page."
+                renderValue={(value) => {
+                  const selected = signers.find(
+                    (signer) => signer._id === value
+                  );
+                  if (!selected) return "Select a signer...";
+                  return selected.name || selected.email;
+                }}
               >
                 {options.map((option) => (
                   <Select.Option key={option.value} value={option.value}>

@@ -17,7 +17,7 @@ export interface SigningInviteGateProps {
 
 /**
  * DocuSeal-style invite gate: title · invited-by · email · START.
- * Kumo chrome only — no sidebar, no activity.
+ * Fluid width — follows the viewport, no fixed pixel shell.
  */
 export function SigningInviteGate({
   documentTitle,
@@ -30,24 +30,26 @@ export function SigningInviteGate({
   emailReadOnly = false,
 }: SigningInviteGateProps): JSX.Element {
   return (
-    <main className="mx-auto mt-12 mb-4 max-w-md space-y-6 px-2">
-      <div className="space-y-6 text-center">
+    <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center space-y-6 px-[max(1rem,env(safe-area-inset-left))] py-8 pr-[max(1rem,env(safe-area-inset-right))]">
+      <div className="space-y-3 text-center">
         <p className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
           {brandName}
         </p>
-        <p className="text-xl font-semibold">You have been invited to sign</p>
+        <p className="text-2xl font-semibold tracking-tight text-balance">
+          You have been invited to sign
+        </p>
       </div>
-      <div className="bg-muted/40 flex items-center rounded-xl p-4">
-        <div>
-          <p className="mb-1 text-lg font-bold">{documentTitle}</p>
+      <div className="bg-muted/40 flex w-full items-center rounded-xl p-[clamp(0.75rem,3vw,1.25rem)]">
+        <div className="min-w-0">
+          <p className="mb-1 text-lg font-bold text-balance">{documentTitle}</p>
           {invitedBy ? (
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-sm text-pretty">
               Invited by {invitedBy}
             </p>
           ) : null}
         </div>
       </div>
-      <div className="space-y-4">
+      <div className="w-full space-y-4">
         <Input
           label="Email"
           type="email"
@@ -60,7 +62,7 @@ export function SigningInviteGate({
         />
         <Button
           type="button"
-          className="w-full"
+          className="min-h-12 w-full text-base"
           onClick={onStart}
           disabled={isStarting || !email.trim()}
         >

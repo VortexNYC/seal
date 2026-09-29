@@ -13,6 +13,7 @@ import { buildOrganizationPath } from "@/lib/organization-path";
 
 interface ChooseOrganizationSearch {
   next?: string;
+  create?: boolean;
 }
 
 export const Route = createFileRoute(
@@ -26,17 +27,27 @@ export const Route = createFileRoute(
     if (search.next === "developer") {
       result.next = "developer";
     }
+    if (search.create === true || search.create === "true" || search.create === "1") {
+      result.create = true;
+    }
     return result;
   },
 });
 
 function RouteComponent() {
   const navigate = useNavigate();
-  const { next } = Route.useSearch();
+  const { next, create } = Route.useSearch();
   const orgDestination = (slug: string) =>
     buildOrganizationPath(
       slug,
       next === "developer" ? "/settings/developer" : "/home"
+    );
+  const newOrgDestination = (slug: string) =>
+    buildOrganizationPath(
+      slug,
+      next === "developer"
+        ? "/settings/developer"
+        : "/onboarding/compliance"
     );
   const { data: organizations, isPending } = useQuery({
     queryKey: ["auth", "organization", "list"],
@@ -51,7 +62,7 @@ function RouteComponent() {
       return result.data;
     },
   });
-  const [showCreate, setShowCreate] = useState(false);
+  const [showCreate, setShowCreate] = useState(Boolean(create));
 
   const sorted = useMemo(() => {
     if (!organizations) return [];
@@ -75,6 +86,15 @@ function RouteComponent() {
             sorted.length > 0
               ? () => {
                   setShowCreate(false);
+                  if (create) {
+                    void navigate({ to: "/app", replace: true });
+                    return;
+                  }
+                  void navigate({
+                    to: "/onboarding/choose-organization",
+                    search: next ? { next } : {},
+                    replace: true,
+                  });
                 }
               : undefined
           }
@@ -87,7 +107,7 @@ function RouteComponent() {
               .setActive({ organizationSlug: slug })
               .then(() => {
                 void navigate({
-                  to: orgDestination(slug),
+                  to: newOrgDestination(slug),
                   replace: true,
                 });
               })

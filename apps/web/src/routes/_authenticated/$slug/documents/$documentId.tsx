@@ -268,9 +268,15 @@ function DocumentDetailPage() {
   const [showAiSuggestions, setShowAiSuggestions] = useState(true);
 
   // ── Derived state ───────────────────────────────────────────────────────
+  // API maps documents.status → workflowStatus. Prep states: draft, and legacy
+  // "uploaded" left by older upload handlers before they stopped overwriting draft.
+  const prepStatuses = new Set(["draft", "uploaded"]);
+  const isPrepStatus =
+    !documentData.workflowStatus ||
+    prepStatuses.has(documentData.workflowStatus);
+
   const canEdit =
-    documentData.status === "active" &&
-    (documentData.workflowStatus === "draft" || !documentData.workflowStatus);
+    documentData.status === "active" && isPrepStatus;
 
   const isExpired = documentData.workflowStatus === "expired";
 
@@ -283,7 +289,7 @@ function DocumentDetailPage() {
   }
 
   const getSendDocumentValidation = () => {
-    const canSendStatus = documentData.workflowStatus === "draft" || isExpired;
+    const canSendStatus = isPrepStatus || isExpired;
     if (!canSendStatus || recipients.length === 0 || (!canEdit && !isExpired)) {
       return {
         canSend: false,

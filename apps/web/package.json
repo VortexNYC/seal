@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "env -u CLOUDFLARE_ENV VITE_API_URL=http://localhost:8787 VITE_BETTER_AUTH_URL=http://localhost:8787 VITE_APP_URL=http://localhost:5180 vite --host 0.0.0.0 --port 5180",
     "build": "CLOUDFLARE_ENV=production vite build",
     "build:selfhost": "CLOUDFLARE_ENV=selfhost vite build",
     "serve": "vite preview",
@@ -64,7 +64,7 @@
     "@tanstack/react-router-devtools": "1.167.1",
     "@tanstack/react-virtual": "^3.14.13",
     "@tanstack/router-plugin": "1.168.24",
-    "@vortex-api/better-auth-ui": "0.2.3",
+    "@vortex-api/better-auth-ui": "0.2.5",
     "better-auth": "1.7.6",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",

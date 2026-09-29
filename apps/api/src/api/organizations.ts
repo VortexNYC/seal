@@ -128,6 +128,9 @@ const SigningSettingsSchema = z
     esignConsentText: z.string().nullable().optional(),
     privacyNoticeText: z.string().nullable().optional(),
     defaultDeadlineDays: z.number().int(),
+    requireRecipientAuth: z.boolean(),
+    requireSignerAccount: z.boolean(),
+    defaultRecipientAuthMethod: z.enum(["email_otp", "access_code"]),
   })
   .openapi("SigningSettings");
 
@@ -199,6 +202,9 @@ const updateSigningBodySchema = z.object({
   esignConsentText: z.string().optional(),
   privacyNoticeText: z.string().optional(),
   defaultDeadlineDays: z.number().int().optional(),
+  requireRecipientAuth: z.boolean().optional(),
+  requireSignerAccount: z.boolean().optional(),
+  defaultRecipientAuthMethod: z.enum(["email_otp", "access_code"]).optional(),
 });
 
 const updateBrandingBodySchema = z.object({
@@ -348,6 +354,18 @@ app.openapi(signingRouteDef, async (c) => {
       typeof raw.defaultDeadlineDays === "number"
         ? Math.round(raw.defaultDeadlineDays)
         : 30,
+    requireRecipientAuth:
+      typeof raw.requireRecipientAuth === "boolean"
+        ? raw.requireRecipientAuth
+        : true,
+    requireSignerAccount:
+      typeof raw.requireSignerAccount === "boolean"
+        ? raw.requireSignerAccount
+        : true,
+    defaultRecipientAuthMethod:
+      raw.defaultRecipientAuthMethod === "access_code"
+        ? "access_code"
+        : "email_otp",
   });
 
   return c.json(result.success ? result.data : raw);
@@ -424,6 +442,24 @@ app.openapi(updateSigningRouteDef, async (c) => {
         : typeof signing.defaultDeadlineDays === "number"
           ? Math.round(signing.defaultDeadlineDays)
           : 30,
+    requireRecipientAuth:
+      body.requireRecipientAuth !== undefined
+        ? body.requireRecipientAuth
+        : typeof signing.requireRecipientAuth === "boolean"
+          ? signing.requireRecipientAuth
+          : true,
+    requireSignerAccount:
+      body.requireSignerAccount !== undefined
+        ? body.requireSignerAccount
+        : typeof signing.requireSignerAccount === "boolean"
+          ? signing.requireSignerAccount
+          : true,
+    defaultRecipientAuthMethod:
+      body.defaultRecipientAuthMethod !== undefined
+        ? body.defaultRecipientAuthMethod
+        : signing.defaultRecipientAuthMethod === "access_code"
+          ? "access_code"
+          : "email_otp",
   };
 
   const nextMetadata = { ...meta, signingSettings: nextSigning };

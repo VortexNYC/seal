@@ -21,6 +21,8 @@ export interface EmailEnv {
   EMAIL?: SendEmail;
   EMAIL_FROM: string;
   APP_URL: string;
+  /** API origin — used for sealed PDF download links in completion emails. */
+  BETTER_AUTH_URL?: string;
 }
 
 function normalizeUrl(base: string, path: string): string {
@@ -47,6 +49,24 @@ export function buildDocumentUrl(
   );
 }
 
+/** Direct sealed/signed PDF download (token-gated public API). */
+export function buildSignedPdfDownloadUrl(
+  env: Pick<EmailEnv, "BETTER_AUTH_URL" | "APP_URL">,
+  token: string
+): string {
+  const apiBase = (env.BETTER_AUTH_URL ?? env.APP_URL).replace(/\/$/, "");
+  return normalizeUrl(
+    apiBase,
+    `/api/public/signing/${encodeURIComponent(token)}/signed-pdf`
+  );
+}
+
+export type EmailPdfAttachment = {
+  filename: string;
+  content: ArrayBuffer | Uint8Array;
+  type?: string;
+};
+
 export async function sendEmail(
   env: EmailEnv,
   {
@@ -55,12 +75,14 @@ export async function sendEmail(
     html,
     text,
     from,
+    attachments,
   }: {
     to: string | string[];
     subject: string;
     html: string;
     text?: string;
     from?: string;
+    attachments?: EmailPdfAttachment[];
   }
 ): Promise<EmailSendResult> {
   if (!env.EMAIL) {
@@ -73,6 +95,16 @@ export async function sendEmail(
       subject,
       html,
       ...(text ? { text } : {}),
+      ...(attachments && attachments.length > 0
+        ? {
+            attachments: attachments.map((a) => ({
+              disposition: "attachment" as const,
+              filename: a.filename,
+              type: a.type ?? "application/pdf",
+              content: a.content,
+            })),
+          }
+        : {}),
     });
     return { success: true };
   } catch (error) {
@@ -146,6 +178,9 @@ export async function sendSigningCompleteEmail(
     documentName: string;
     signedAt: number;
     role: "signer" | "approver" | "viewer";
+    /** Present only when the sealed PDF is ready (all parties done). */
+    downloadUrl?: string;
+    sealedPdf?: EmailPdfAttachment;
   }
 ): Promise<EmailSendResult> {
   const html = await renderSigningComplete({
@@ -153,11 +188,15 @@ export async function sendSigningCompleteEmail(
     documentName: params.documentName,
     signedAt: params.signedAt,
     role: params.role,
+    downloadUrl: params.downloadUrl,
   });
   return sendEmail(env, {
     to: params.to,
-    subject: `You have signed "${params.documentName}"`,
+    subject: params.downloadUrl
+      ? `Signed copy of "${params.documentName}"`
+      : `You have signed "${params.documentName}"`,
     html,
+    ...(params.sealedPdf ? { attachments: [params.sealedPdf] } : {}),
   });
 }
 
@@ -176,6 +215,9 @@ export async function sendDocumentCompletedEmail(
       role: "signer" | "approver" | "viewer";
       completedAt: number;
     }>;
+    /** Direct sealed PDF download (Documenso-class completion). */
+    downloadUrl?: string;
+    sealedPdf?: EmailPdfAttachment;
   }
 ): Promise<EmailSendResult> {
   const html = await renderDocumentCompleted({
@@ -188,11 +230,13 @@ export async function sendDocumentCompletedEmail(
     ),
     completedAt: params.completedAt,
     recipientsSummary: params.recipientsSummary,
+    downloadUrl: params.downloadUrl,
   });
   return sendEmail(env, {
     to: params.to,
     subject: `All signatures collected for "${params.documentName}"`,
     html,
+    ...(params.sealedPdf ? { attachments: [params.sealedPdf] } : {}),
   });
 }
 

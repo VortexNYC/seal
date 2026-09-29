@@ -15,7 +15,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   applyFieldSuggestions as applyFieldSuggestionsApi,
@@ -240,6 +240,13 @@ export function useAIFieldSuggestions(
   );
   const [isApplying, setIsApplying] = useState(false);
 
+  // One-tap path: pre-select every detected field so Accept all is a single click.
+  useEffect(() => {
+    if (!suggestions || suggestions.fields.length === 0) return;
+    setSelectedIndices(new Set(suggestions.fields.map((_, i) => i)));
+  }, [suggestions?.publicId, suggestions?.fields.length]);
+
+
   const toggleField = useCallback((index: number) => {
     setSelectedIndices((prev) => {
       const next = new Set(prev);
@@ -276,7 +283,7 @@ export function useAIFieldSuggestions(
         selectedFieldIndices: indices,
       });
       toast.success(
-        `Applied ${result.count} field${result.count === 1 ? "" : "s"} from AI suggestions`
+        `Accepted ${result.count} field${result.count === 1 ? "" : "s"}`
       );
     } catch {
       toast.error("Failed to apply suggestions");
@@ -466,14 +473,15 @@ export function AIFieldReviewBar({
           size="sm"
           variant="primary"
           onClick={handleApply}
-          disabled={isApplying}
+          disabled={isApplying || suggestions.fields.length === 0}
         >
           <Check className="mr-1 h-3 w-3" />
           {isApplying
-            ? "Applying..."
-            : selectedIndices.size > 0
-              ? `Apply ${selectedIndices.size}`
-              : "Apply all"}
+            ? "Placing..."
+            : selectedIndices.size > 0 &&
+                selectedIndices.size < suggestions.fields.length
+              ? `Accept ${selectedIndices.size}`
+              : `Accept all (${suggestions.fields.length})`}
         </Button>
       </div>
     </div>

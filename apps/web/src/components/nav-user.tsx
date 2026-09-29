@@ -61,40 +61,48 @@ export function NavUser({
       <Sidebar.MenuItem>
         <DropdownMenu>
           <DropdownMenu.Trigger>
-            <Sidebar.MenuButton size="base" className="group">
+            <Sidebar.MenuButton
+              size="base"
+              className="group"
+              aria-label={`Account menu for ${user.name}`}
+            >
               <UserAvatar
                 avatar={user.avatar}
                 name={user.name}
                 initials={user.initials}
                 className="h-8 w-8"
               />
-              <div className="grid flex-1 text-left text-sm leading-tight">
+              <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
-                <span className="truncate text-xs">{user.email}</span>
+                <span className="text-kumo-secondary truncate text-xs">
+                  {user.email}
+                </span>
               </div>
-              <CaretUpDown className="ml-auto size-4" />
+              <CaretUpDown className="ml-auto size-4 shrink-0" />
             </Sidebar.MenuButton>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content
-            className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+            className="min-w-64 rounded-lg"
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={4}
           >
-            <DropdownMenu.Label className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <UserAvatar
-                  avatar={user.avatar}
-                  name={user.name}
-                  initials={user.initials}
-                  className="h-8 w-8"
-                />
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
-                  <span className="truncate text-xs">{user.email}</span>
+            <DropdownMenu.Group>
+              <DropdownMenu.Label className="p-0 font-normal">
+                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                  <UserAvatar
+                    avatar={user.avatar}
+                    name={user.name}
+                    initials={user.initials}
+                    className="h-8 w-8"
+                  />
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-medium">{user.name}</span>
+                    <span className="truncate text-xs">{user.email}</span>
+                  </div>
                 </div>
-              </div>
-            </DropdownMenu.Label>
+              </DropdownMenu.Label>
+            </DropdownMenu.Group>
             <DropdownMenu.Separator />
             <DropdownMenu.Group>
               <DropdownMenu.Item

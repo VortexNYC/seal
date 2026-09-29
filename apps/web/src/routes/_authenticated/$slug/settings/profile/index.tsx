@@ -8,7 +8,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   AuthProvider,
   ChangeEmailForm,
-  ChangePasswordForm,
+  ConnectedAccounts,
   DeleteAccountForm,
   UserProfileForm,
 } from "@vortex-api/better-auth-ui";
@@ -58,9 +58,9 @@ function ProfileSettings() {
             );
           }}
         />
-        <ChangePasswordForm
-          onSuccess={() => {
-            toast.success("Password updated");
+        <ConnectedAccounts
+          onUnlinked={() => {
+            toast.success("Account disconnected");
           }}
         />
         <DeleteAccountForm

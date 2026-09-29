@@ -9,6 +9,7 @@ import {
   listActivity,
   listRecipients,
   sendDocument as sendApiDocument,
+  updateSigningSettings,
   type PdfFile,
 } from "../fixtures/api-test-client";
 
@@ -51,10 +52,19 @@ export async function createSignableDocument(args: {
     pdfFile: args.pdfFile,
   });
 
+  // Recipient signing e2e drives an anonymous browser context (no OTP / no
+  // Seal account). Relax workspace compliance for this seed only — production
+  // defaults stay requireRecipientAuth + requireSignerAccount.
+  await updateSigningSettings(args.request, {
+    requireRecipientAuth: false,
+    requireSignerAccount: false,
+  });
+
   const recipient = await addRecipient(args.request, doc.publicId, {
     email: args.recipientEmail ?? "recipient@seal.nyc",
     name: args.recipientName ?? "E2E Recipient",
     role: "signer",
+    authMethod: "none",
   });
 
   if (!recipient.signingToken) {

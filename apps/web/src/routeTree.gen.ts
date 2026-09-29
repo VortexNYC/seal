@@ -34,6 +34,7 @@ import { Route as AuthenticatedSlugContactsIndexRouteImport } from './routes/_au
 import { Route as AuthenticatedSlugContactsContactIdRouteImport } from './routes/_authenticated/$slug/contacts/$contactId'
 import { Route as AuthenticatedSlugDocumentsIndexRouteImport } from './routes/_authenticated/$slug/documents/index'
 import { Route as AuthenticatedSlugDocumentsDocumentIdRouteImport } from './routes/_authenticated/$slug/documents/$documentId'
+import { Route as AuthenticatedSlugOnboardingComplianceRouteImport } from './routes/_authenticated/$slug/onboarding/compliance'
 import { Route as AuthenticatedSlugSettingsIndexRouteImport } from './routes/_authenticated/$slug/settings/index'
 import { Route as AuthenticatedSlugSettingsAiRouteImport } from './routes/_authenticated/$slug/settings/ai'
 import { Route as AuthenticatedSlugSettingsAuditLogRouteImport } from './routes/_authenticated/$slug/settings/audit-log'
@@ -185,6 +186,12 @@ const AuthenticatedSlugDocumentsDocumentIdRoute =
     path: '/$documentId',
     getParentRoute: () => AuthenticatedSlugDocumentsRoute,
   } as any)
+const AuthenticatedSlugOnboardingComplianceRoute =
+  AuthenticatedSlugOnboardingComplianceRouteImport.update({
+    id: '/onboarding/compliance',
+    path: '/onboarding/compliance',
+    getParentRoute: () => AuthenticatedSlugRoute,
+  } as any)
 const AuthenticatedSlugSettingsIndexRoute =
   AuthenticatedSlugSettingsIndexRouteImport.update({
     id: '/settings/',
@@ -322,6 +329,7 @@ export interface FileRoutesByFullPath {
   '/$slug/': typeof AuthenticatedSlugIndexRoute
   '/$slug/contacts/$contactId': typeof AuthenticatedSlugContactsContactIdRoute
   '/$slug/documents/$documentId': typeof AuthenticatedSlugDocumentsDocumentIdRoute
+  '/$slug/onboarding/compliance': typeof AuthenticatedSlugOnboardingComplianceRoute
   '/$slug/settings/ai': typeof AuthenticatedSlugSettingsAiRoute
   '/$slug/settings/audit-log': typeof AuthenticatedSlugSettingsAuditLogRoute
   '/$slug/settings/branding': typeof AuthenticatedSlugSettingsBrandingRoute
@@ -363,6 +371,7 @@ export interface FileRoutesByTo {
   '/$slug': typeof AuthenticatedSlugIndexRoute
   '/$slug/contacts/$contactId': typeof AuthenticatedSlugContactsContactIdRoute
   '/$slug/documents/$documentId': typeof AuthenticatedSlugDocumentsDocumentIdRoute
+  '/$slug/onboarding/compliance': typeof AuthenticatedSlugOnboardingComplianceRoute
   '/$slug/settings/ai': typeof AuthenticatedSlugSettingsAiRoute
   '/$slug/settings/audit-log': typeof AuthenticatedSlugSettingsAuditLogRoute
   '/$slug/settings/branding': typeof AuthenticatedSlugSettingsBrandingRoute
@@ -408,6 +417,7 @@ export interface FileRoutesById {
   '/_authenticated/$slug/': typeof AuthenticatedSlugIndexRoute
   '/_authenticated/$slug/contacts/$contactId': typeof AuthenticatedSlugContactsContactIdRoute
   '/_authenticated/$slug/documents/$documentId': typeof AuthenticatedSlugDocumentsDocumentIdRoute
+  '/_authenticated/$slug/onboarding/compliance': typeof AuthenticatedSlugOnboardingComplianceRoute
   '/_authenticated/$slug/settings/ai': typeof AuthenticatedSlugSettingsAiRoute
   '/_authenticated/$slug/settings/audit-log': typeof AuthenticatedSlugSettingsAuditLogRoute
   '/_authenticated/$slug/settings/branding': typeof AuthenticatedSlugSettingsBrandingRoute
@@ -454,6 +464,7 @@ export interface FileRouteTypes {
     | '/$slug/'
     | '/$slug/contacts/$contactId'
     | '/$slug/documents/$documentId'
+    | '/$slug/onboarding/compliance'
     | '/$slug/settings/ai'
     | '/$slug/settings/audit-log'
     | '/$slug/settings/branding'
@@ -495,6 +506,7 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/$slug/contacts/$contactId'
     | '/$slug/documents/$documentId'
+    | '/$slug/onboarding/compliance'
     | '/$slug/settings/ai'
     | '/$slug/settings/audit-log'
     | '/$slug/settings/branding'
@@ -539,6 +551,7 @@ export interface FileRouteTypes {
     | '/_authenticated/$slug/'
     | '/_authenticated/$slug/contacts/$contactId'
     | '/_authenticated/$slug/documents/$documentId'
+    | '/_authenticated/$slug/onboarding/compliance'
     | '/_authenticated/$slug/settings/ai'
     | '/_authenticated/$slug/settings/audit-log'
     | '/_authenticated/$slug/settings/branding'
@@ -747,6 +760,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/$slug/documents/$documentId'
       preLoaderRoute: typeof AuthenticatedSlugDocumentsDocumentIdRouteImport
       parentRoute: typeof AuthenticatedSlugDocumentsRoute
+    }
+    '/_authenticated/$slug/onboarding/compliance': {
+      id: '/_authenticated/$slug/onboarding/compliance'
+      path: '/onboarding/compliance'
+      fullPath: '/$slug/onboarding/compliance'
+      preLoaderRoute: typeof AuthenticatedSlugOnboardingComplianceRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
     }
     '/_authenticated/$slug/settings/': {
       id: '/_authenticated/$slug/settings/'
@@ -988,6 +1008,7 @@ interface AuthenticatedSlugRouteChildren {
   AuthenticatedSlugHomeRoute: typeof AuthenticatedSlugHomeRoute
   AuthenticatedSlugTemplatesRoute: typeof AuthenticatedSlugTemplatesRoute
   AuthenticatedSlugIndexRoute: typeof AuthenticatedSlugIndexRoute
+  AuthenticatedSlugOnboardingComplianceRoute: typeof AuthenticatedSlugOnboardingComplianceRoute
   AuthenticatedSlugSettingsAiRoute: typeof AuthenticatedSlugSettingsAiRoute
   AuthenticatedSlugSettingsAuditLogRoute: typeof AuthenticatedSlugSettingsAuditLogRoute
   AuthenticatedSlugSettingsBrandingRoute: typeof AuthenticatedSlugSettingsBrandingRoute
@@ -1010,6 +1031,8 @@ const AuthenticatedSlugRouteChildren: AuthenticatedSlugRouteChildren = {
   AuthenticatedSlugHomeRoute: AuthenticatedSlugHomeRoute,
   AuthenticatedSlugTemplatesRoute: AuthenticatedSlugTemplatesRoute,
   AuthenticatedSlugIndexRoute: AuthenticatedSlugIndexRoute,
+  AuthenticatedSlugOnboardingComplianceRoute:
+    AuthenticatedSlugOnboardingComplianceRoute,
   AuthenticatedSlugSettingsAiRoute: AuthenticatedSlugSettingsAiRoute,
   AuthenticatedSlugSettingsAuditLogRoute:
     AuthenticatedSlugSettingsAuditLogRoute,

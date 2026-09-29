@@ -74,12 +74,14 @@ describe("UploadDialog", () => {
 
   test("does not render dialog content when open is false", () => {
     renderDialog({ open: false });
-    expect(screen.queryByText("Upload Documents")).not.toBeInTheDocument();
+    expect(screen.queryByText("Upload Document")).not.toBeInTheDocument();
   });
 
   test("renders dialog title when open is true", () => {
     renderDialog({ open: true });
-    expect(screen.getByText("Upload Documents")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Upload Document" })
+    ).toBeInTheDocument();
   });
 
   test("does not show usage stats", () => {

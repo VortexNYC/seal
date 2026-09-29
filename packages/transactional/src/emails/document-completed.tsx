@@ -16,6 +16,8 @@ export interface DocumentCompletedProps {
   documentUrl: string;
   completedAt: number;
   recipientsSummary: RecipientSummary[];
+  /** Sealed PDF download — Documenso-class completion CTA. */
+  downloadUrl?: string;
 }
 
 function formatCompletedDate(timestamp: number): string {
@@ -146,9 +148,11 @@ export function DocumentCompleted({
   documentUrl,
   completedAt,
   recipientsSummary,
+  downloadUrl,
 }: DocumentCompletedProps) {
   const previewText = `All signatures collected for "${documentName}"`;
   const formattedDate = formatCompletedDate(completedAt);
+  const primaryUrl = downloadUrl ?? documentUrl;
 
   return (
     <EmailLayout
@@ -163,7 +167,7 @@ export function DocumentCompleted({
 
         <Text style={emailStyles.bodyTextSpaced}>
           Great news! All recipients have completed their actions on your
-          document. Here&apos;s the summary:
+          document. Continue by downloading the signed copy.
         </Text>
 
         {/* Document card */}
@@ -176,17 +180,27 @@ export function DocumentCompleted({
 
         <RecipientActivitySection recipientsSummary={recipientsSummary} />
 
-        {/* CTA Button */}
+        {/* CTA Button — download first (Documenso-class), dashboard second */}
         <Section className="my-[32px] text-center">
-          <Button style={emailStyles.ctaButton} href={documentUrl}>
-            View Completed Document
+          <Button style={emailStyles.ctaButton} href={primaryUrl}>
+            {downloadUrl ? "Download signed document" : "View Completed Document"}
           </Button>
         </Section>
 
-        <Text style={emailStyles.infoText}>
-          The signed document is now available in your Seal dashboard. You can
-          download it at any time.
-        </Text>
+        {downloadUrl && downloadUrl !== documentUrl ? (
+          <Text style={emailStyles.infoText}>
+            Or{" "}
+            <a href={documentUrl} style={{ color: email.foreground }}>
+              open it in Seal
+            </a>
+            .
+          </Text>
+        ) : (
+          <Text style={emailStyles.infoText}>
+            The signed document is now available in your Seal dashboard. You can
+            download it at any time.
+          </Text>
+        )}
       </Section>
     </EmailLayout>
   );
