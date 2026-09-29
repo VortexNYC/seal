@@ -1,5 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
 
+import { rewritePosthogIngestPath } from "./lib/posthog-proxy";
+
 export interface Env {
   ASSETS: Fetcher;
 }
@@ -16,14 +18,7 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname.startsWith("/ingest/")) {
-      const isStatic = url.pathname.startsWith("/ingest/static/");
-      const targetHost = isStatic
-        ? "https://us-assets.i.posthog.com"
-        : "https://us.i.posthog.com";
-      const targetPath = isStatic
-        ? url.pathname.slice("/ingest/static".length)
-        : url.pathname.slice("/ingest".length);
-
+      const { targetHost, targetPath } = rewritePosthogIngestPath(url.pathname);
       const targetUrl = new URL(targetPath + url.search, targetHost);
       const headers = new Headers();
 

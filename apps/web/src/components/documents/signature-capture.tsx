@@ -8,7 +8,6 @@ import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Input } from "@cloudflare/kumo/components/input";
-import { Label } from "@cloudflare/kumo/components/label";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Tabs } from "@cloudflare/kumo/components/tabs";
 import {
@@ -534,13 +533,12 @@ export function SignatureCapture({
               </div>
             ) : null}
             <div className="space-y-2">
-              <Label htmlFor="signature-name">Signature name</Label>
               <Input
                 id="signature-name"
+                label="Signature name"
                 value={saveSignatureName}
                 onChange={(e) => setSaveSignatureName(e.target.value)}
                 placeholder="e.g., My Personal Signature"
-                aria-label="Signature name"
               />
             </div>
             <Checkbox

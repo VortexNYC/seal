@@ -381,10 +381,10 @@ function DescriptionField({
 
   return (
     <div className="grid gap-2">
-      <Label htmlFor="description">Description (optional)</Label>
       <Input
         id="description"
         type="text"
+        label="Description (optional)"
         placeholder="Add a description..."
         value={controller.description}
         onChange={(event) => controller.setDescription(event.target.value)}
