@@ -338,7 +338,7 @@ function StatCard({
   progress?: number;
 }) {
   return (
-    <LayerCard className="p-4">
+    <div className="border-border bg-card flex flex-col rounded-lg border p-4">
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
           {title}
@@ -354,19 +354,25 @@ function StatCard({
           <ArrowDownIcon className="text-destructive h-4 w-4" />
         )}
       </div>
-      {progress !== undefined && (
-        <Meter
-          label="Completion rate"
+      {progress !== undefined ? (
+        <div
+          className="bg-muted mt-2 h-1.5 w-full overflow-hidden rounded-full"
+          role="meter"
           aria-label={title}
-          value={progress}
-          showValue={false}
-          className="mt-2"
-        />
-      )}
+          aria-valuenow={progress}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div
+            className="bg-foreground h-full rounded-full"
+            style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+          />
+        </div>
+      ) : null}
       {description ? (
         <p className="text-muted-foreground mt-1 text-xs">{description}</p>
       ) : null}
-    </LayerCard>
+    </div>
   );
 }
 

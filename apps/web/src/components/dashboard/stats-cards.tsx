@@ -3,8 +3,6 @@
  * Color only on status semantics (pending / completed), not decorative accents.
  */
 
-import { LayerCard } from "@cloudflare/kumo/components/layer-card";
-import { Meter } from "@cloudflare/kumo/components/meter";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   CheckCircle2Icon,
@@ -35,7 +33,10 @@ function StatCard({
   children,
 }: StatCardProps): React.ReactElement {
   return (
-    <LayerCard aria-label={`${title}: ${value}`} className="flex flex-col gap-1 p-4">
+    <div
+      aria-label={`${title}: ${value}`}
+      className="border-border bg-card flex flex-col gap-1 rounded-lg border p-4"
+    >
       <div className="flex items-center justify-between gap-2">
         <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
           {title}
@@ -55,7 +56,7 @@ function StatCard({
       </p>
       <p className="text-muted-foreground text-xs">{subtitle}</p>
       {children}
-    </LayerCard>
+    </div>
   );
 }
 
@@ -99,12 +100,19 @@ export function StatsCards({
         subtitle="Of all documents"
         icon={TrendingUpIcon}
       >
-        <Meter
-          label="Completion rate"
-          value={stats.completionRate}
-          showValue={false}
-          className="mt-2"
-        />
+        <div
+          className="bg-muted mt-2 h-1.5 w-full overflow-hidden rounded-full"
+          role="meter"
+          aria-label="Completion rate"
+          aria-valuenow={stats.completionRate}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div
+            className="bg-foreground h-full rounded-full"
+            style={{ width: `${Math.min(100, Math.max(0, stats.completionRate))}%` }}
+          />
+        </div>
       </StatCard>
     </div>
   );

@@ -24,6 +24,7 @@ import { PostHogIdentify } from "@/components/posthog-identify";
 import { PostHogPageview } from "@/components/posthog-pageview";
 import { RouteErrorComponent } from "@/components/route-error-component";
 import { WorkspaceLayoutSkeleton } from "@/components/skeletons/workspace-layout-skeleton";
+import { WorkspaceShellProvider } from "@/components/workspace-shell-context";
 import { useJamMetadata } from "@/hooks/use-jam-metadata";
 import { useSuspenseOrganization } from "@/hooks/use-organization";
 import { betterAuthClient } from "@/lib/better-auth";
@@ -75,18 +76,20 @@ function WorkspaceLayout() {
   };
 
   return (
-    <Sidebar.Provider collapsible="icon" className="bg-background min-h-dvh">
-      <PostHogIdentify organization={orgData} />
-      <PostHogPageview />
-      <AppSidebar
-        slug={slug}
-        organization={orgData}
-        permissions={undefined}
-      />
-      <main className="bg-background relative z-0 h-dvh min-h-0 min-w-0 flex-1 overflow-hidden">
-        <Outlet />
-      </main>
-      <CommandPalette open={cmdKOpen} onOpenChange={setCmdKOpen} />
-    </Sidebar.Provider>
+    <WorkspaceShellProvider slug={slug}>
+      <Sidebar.Provider collapsible="icon" className="bg-background min-h-dvh">
+        <PostHogIdentify organization={orgData} />
+        <PostHogPageview />
+        <AppSidebar
+          slug={slug}
+          organization={orgData}
+          permissions={undefined}
+        />
+        <main className="bg-background relative z-0 h-dvh min-h-0 min-w-0 flex-1 overflow-hidden">
+          <Outlet />
+        </main>
+        <CommandPalette open={cmdKOpen} onOpenChange={setCmdKOpen} />
+      </Sidebar.Provider>
+    </WorkspaceShellProvider>
   );
 }

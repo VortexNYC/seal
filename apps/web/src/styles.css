@@ -305,11 +305,19 @@
 [data-sidebar="sidebar"],
 [data-sidebar="sidebar"] [data-sidebar="viewport"],
 [data-sidebar="sidebar"] [data-sidebar="content-container"] {
-  --sidebar-bg: var(--sidebar);
+  --sidebar-bg: var(--background);
   --sidebar-active-bg: var(--sidebar-accent);
-  background-color: var(--sidebar) !important;
+  background-color: var(--background) !important;
   color: var(--sidebar-foreground);
   border-color: var(--sidebar-border);
+}
+
+/* Settings: better-auth-ui OrganizationProfile must fill the pane, not float centered */
+[data-kumo-component="AuthCard"],
+[data-auth-settings],
+[data-settings-card] {
+  max-width: none !important;
+  width: 100% !important;
 }
 
 [data-sidebar="header"],
