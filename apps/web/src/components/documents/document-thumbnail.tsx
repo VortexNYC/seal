@@ -97,9 +97,9 @@ export function DocumentThumbnail({
     <FileThumbnail
       file={{ name, type: "application/pdf" }}
       previewImageUrl={thumbnail}
+      showLabel={false}
       isLoading={isGenerating}
       hasError={generationFailed && !thumbnail}
-      showLabel={false}
       className={cn("border-0 bg-transparent shadow-none", className)}
     />
   );

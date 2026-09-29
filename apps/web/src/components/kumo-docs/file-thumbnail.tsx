@@ -48,11 +48,11 @@ export function FileThumbnail({
     <div
       data-kumo-docs="file-thumbnail"
       className={cn(
-        "border-border bg-card relative overflow-hidden rounded-lg border",
+        "border-border bg-background relative h-full w-full overflow-hidden",
         className
       )}
     >
-      <div className="bg-muted relative aspect-[3/4] h-full w-full">
+      <div className="bg-muted relative h-full min-h-0 w-full">
         {isLoading ? <FileThumbnailLoadingOverlay /> : null}
         {previewImageUrl && !hasError ? (
           <img

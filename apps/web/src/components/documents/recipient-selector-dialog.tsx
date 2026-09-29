@@ -1,9 +1,8 @@
 import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
-import { Input } from "@cloudflare/kumo/components/input";
 import { Select } from "@cloudflare/kumo/components/select";
 import { Text } from "@cloudflare/kumo/components/text";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { type Id, parseId } from "@/lib/ids";
 import { cn } from "@/lib/utils";
@@ -33,13 +32,18 @@ interface RecipientSelectorDialogProps {
 function formatFieldTypeLabel(fieldType: string): string {
   const typeLabels: Record<string, string> = {
     signature: "Signature",
+    free_signature: "Free signature",
+    initials: "Initials",
+    name: "Name",
+    email: "Email",
     text: "Text",
     number: "Number",
     date: "Date",
+    date_signed: "Date signed",
     checkbox: "Checkbox",
     dropdown: "Dropdown",
     radio: "Radio",
-    attachment: "Attachment",
+    attachment: "File",
     payment: "Payment",
   };
   return typeLabels[fieldType] || fieldType;
@@ -53,21 +57,11 @@ export function RecipientSelectorDialog({
   onRecipientSelect,
   onConfirm,
   fieldType,
-  pageNumber,
+  pageNumber: _pageNumber,
 }: RecipientSelectorDialogProps) {
-  // Only signers can have fields assigned to them
+  void _pageNumber;
   const signers = recipients.filter((r) => r.role === "signer");
-
-  // Generate default field name based on type and page
-  const defaultFieldName = `${formatFieldTypeLabel(fieldType)} Page ${pageNumber}`;
-  const [fieldName, setFieldName] = useState(defaultFieldName);
-
-  // Reset field name when dialog opens or field type/page changes
-  useEffect(() => {
-    if (open) {
-      setFieldName(`${formatFieldTypeLabel(fieldType)} Page ${pageNumber}`);
-    }
-  }, [open, fieldType, pageNumber]);
+  const label = formatFieldTypeLabel(fieldType);
 
   const options = useMemo(
     () =>
@@ -103,57 +97,39 @@ export function RecipientSelectorDialog({
   return (
     <Dialog.Root open={open} onOpenChange={(next) => onOpenChange(next)}>
       <Dialog>
-        <Dialog.Title>Assign Field to Recipient</Dialog.Title>
+        <Dialog.Title>Who fills this {label.toLowerCase()}?</Dialog.Title>
         <Dialog.Description>
-          Choose which recipient should complete this{" "}
-          {formatFieldTypeLabel(fieldType).toLowerCase()} field.
+          Pick the signer for this field.
         </Dialog.Description>
 
         <div className="space-y-4 py-4">
-          {/* Field Name Input */}
-          <Input
-            id="fieldName"
-            label="Field Name"
-            value={fieldName}
-            onChange={(e) => setFieldName(e.target.value)}
-            placeholder="Enter field name..."
-            description="A descriptive name to identify this field."
-          />
-
-          {/* Recipient Selector */}
-          <div className="space-y-2">
-            {signers.length > 0 ? (
-              <Select
-                value={selectedRecipientId ?? ""}
-                onValueChange={(value) => {
-                  if (value) {
-                    onRecipientSelect(parseId("document_recipients", value));
-                  }
-                }}
-                label="Recipient"
-                placeholder="Select a signer..."
-                description="This recipient will see and fill this field on the signing page."
-                renderValue={(value) => {
-                  const selected = signers.find(
-                    (signer) => signer._id === value
-                  );
-                  if (!selected) return "Select a signer...";
-                  return selected.name || selected.email;
-                }}
-              >
-                {options.map((option) => (
-                  <Select.Option key={option.value} value={option.value}>
-                    {option.node}
-                  </Select.Option>
-                ))}
-              </Select>
-            ) : (
-              <Text as="p" size="sm" variant="secondary">
-                No signers available. Only recipients with the "Signer" role can
-                have fields assigned to them.
-              </Text>
-            )}
-          </div>
+          {signers.length > 0 ? (
+            <Select
+              value={selectedRecipientId ?? ""}
+              onValueChange={(value) => {
+                if (value) {
+                  onRecipientSelect(parseId("document_recipients", value));
+                }
+              }}
+              label="Signer"
+              placeholder="Select a signer…"
+              renderValue={(value) => {
+                const selected = signers.find((signer) => signer._id === value);
+                if (!selected) return "Select a signer…";
+                return selected.name || selected.email;
+              }}
+            >
+              {options.map((option) => (
+                <Select.Option key={option.value} value={option.value}>
+                  {option.node}
+                </Select.Option>
+              ))}
+            </Select>
+          ) : (
+            <Text as="p" size="sm" variant="secondary">
+              No signers available. Add a recipient with the Signer role first.
+            </Text>
+          )}
         </div>
 
         <div className="flex justify-end gap-2">
@@ -161,10 +137,10 @@ export function RecipientSelectorDialog({
             Cancel
           </Button>
           <Button
-            onClick={() => onConfirm(fieldName.trim() || defaultFieldName)}
+            onClick={() => onConfirm(label)}
             disabled={!selectedRecipientId || signers.length === 0}
           >
-            Place Field
+            Place field
           </Button>
         </div>
       </Dialog>

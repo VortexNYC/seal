@@ -210,13 +210,13 @@ export function AddRecipientDialog({
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog size="sm" className="p-6">
-        <Dialog.Title>Add Recipient</Dialog.Title>
+      <Dialog size="lg" className="p-5 sm:p-6">
+        <Dialog.Title>Add recipient</Dialog.Title>
         <Dialog.Description>
-          Add a person who needs to take action on this document.
+          Who needs to sign, approve, or view this document?
         </Dialog.Description>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="mt-2 space-y-4">
           <Tabs
             tabs={[
               {
@@ -225,7 +225,7 @@ export function AddRecipientDialog({
                   eligibleMembers ? ` (${eligibleMembers.length})` : ""
                 }`,
               },
-              { value: "outsider", label: "External" },
+              { value: "outsider", label: "Email" },
             ]}
             value={activeTab}
             onValueChange={(v) =>
@@ -364,55 +364,35 @@ export function AddRecipientDialog({
           )}
 
           <div className="space-y-2">
-            <Select
-              value={role}
-              label="Role"
-              onValueChange={(v) => {
-                if (!v) return;
-                setRole(parseSelectValue(v, RECIPIENT_ROLES) ?? role);
-              }}
-            >
-              <Select.Option value="signer">Signer (Must sign)</Select.Option>
-              <Select.Option value="viewer">Viewer (View only)</Select.Option>
-              <Select.Option value="approver">
-                Approver (Must approve)
-              </Select.Option>
-            </Select>
-            <p className="text-muted-foreground text-xs">
-              {role === "signer" && "This person must sign the document."}
-              {role === "viewer" && "This person can only view the document."}
-              {role === "approver" &&
-                "This person must approve before signing can proceed."}
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Select
-              value={resolvedAuthMethod}
-              label="Authentication"
-              onValueChange={(v) => {
-                if (v === "none" || v === "access_code" || v === "email_otp") {
-                  setAuthMethod(v);
-                }
-              }}
-            >
-              <Select.Option value="email_otp">Email OTP</Select.Option>
-              <Select.Option value="access_code">Access code</Select.Option>
-              {!requireRecipientAuth ? (
-                <Select.Option value="none">None (link only)</Select.Option>
-              ) : null}
-            </Select>
-            <p className="text-muted-foreground text-xs">
-              {resolvedAuthMethod === "none" &&
-                "Anyone with the signing link can act."}
-              {resolvedAuthMethod === "email_otp" &&
-                "Signer must enter a one-time code sent to their email before signing."}
-              {resolvedAuthMethod === "access_code" &&
-                "Signer must enter a shared access code before signing."}
-              {requireRecipientAuth
-                ? " Workspace policy requires authenticated recipients."
-                : null}
-            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Select
+                value={role}
+                label="Role"
+                onValueChange={(v) => {
+                  if (!v) return;
+                  setRole(parseSelectValue(v, RECIPIENT_ROLES) ?? role);
+                }}
+              >
+                <Select.Option value="signer">Signer</Select.Option>
+                <Select.Option value="approver">Approver</Select.Option>
+                <Select.Option value="viewer">Viewer</Select.Option>
+              </Select>
+              <Select
+                value={resolvedAuthMethod}
+                label="Auth"
+                onValueChange={(v) => {
+                  if (v === "none" || v === "access_code" || v === "email_otp") {
+                    setAuthMethod(v);
+                  }
+                }}
+              >
+                <Select.Option value="email_otp">Email OTP</Select.Option>
+                <Select.Option value="access_code">Access code</Select.Option>
+                {!requireRecipientAuth ? (
+                  <Select.Option value="none">Link only</Select.Option>
+                ) : null}
+              </Select>
+            </div>
           </div>
 
           {resolvedAuthMethod === "access_code" ? (
@@ -439,7 +419,7 @@ export function AddRecipientDialog({
               Cancel
             </Button>
             <Button type="submit" variant="primary" disabled={isSubmitDisabled}>
-              {loading ? "Adding..." : "Add Recipient"}
+              {loading ? "Adding…" : "Add recipient"}
             </Button>
           </div>
         </form>

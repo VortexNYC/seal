@@ -302,21 +302,63 @@ export function useFieldPlacement({
     const widthPercent = (widthPixels / pdfWidth) * 100;
     const heightPercent = (heightPixels / pdfHeight) * 100;
 
-    setPendingFieldData({
+    const pending = {
       fieldType,
       x: xPercent,
       y: yPercent,
       width: widthPercent,
       height: heightPercent,
       page: targetPageNumber,
-    });
+    };
+    setPendingFieldData(pending);
+    setDraggingFieldType(null);
 
-    if (signers.length > 0) {
-      setSelectedRecipientId(signers[0]._id);
+    // One signer → skip assign dialog. Options/payment still need their panels.
+    if (signers.length === 1) {
+      const sole = signers[0];
+      setSelectedRecipientId(sole._id);
+      if (fieldTypeRequiresOptions(fieldType)) {
+        setShowFieldOptions(true);
+        return;
+      }
+      try {
+        const label = formatFieldTypeLabel(fieldType);
+        const created = await createField.mutateAsync({
+          publicId: documentPublicId,
+          input: {
+            recipientPublicId: sole.publicId,
+            fieldType,
+            label,
+            isRequired: true,
+            x: pending.x,
+            y: pending.y,
+            width: pending.width,
+            height: pending.height,
+            page: pending.page,
+            properties: null,
+          },
+        });
+        setSelectedFieldId(parseId("signature_fields", created.id));
+        setPendingFieldData(null);
+        setSelectedRecipientId(null);
+        await refetchFields();
+        toast.success(`${label} placed`);
+        if (fieldType === "payment") {
+          setPaymentConfigFieldId(created.publicId);
+          setShowPaymentConfigModal(true);
+        }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Failed to create field";
+        toast.error(errorMessage);
+        setPendingFieldData(null);
+        setSelectedRecipientId(null);
+      }
+      return;
     }
 
+    setSelectedRecipientId(signers[0]._id);
     setShowRecipientSelector(true);
-    setDraggingFieldType(null);
   };
 
   const createFieldWithOptions = async (

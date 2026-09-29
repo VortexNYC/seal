@@ -185,8 +185,9 @@ function buildNav({
     },
     {
       title: "Documentation",
-      url: "/docs",
+      url: "https://docs.seal.nyc",
       visible: true,
+      external: true,
     },
   ].filter((item) => item.visible);
 
@@ -215,7 +216,11 @@ function buildNav({
     const items = developerItems.map((item) => ({
       title: item.title,
       url: item.url,
-      isActive: isPathActive(currentPath, item.url),
+      isActive:
+        "external" in item && item.external
+          ? false
+          : isPathActive(currentPath, item.url),
+      external: "external" in item ? Boolean(item.external) : false,
     }));
     groups.push({
       title: "Developer",

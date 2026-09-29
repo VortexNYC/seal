@@ -156,6 +156,7 @@ function GeneralSettingsContent() {
       <div className="flex flex-col gap-5">
         {organization && (
           <OrganizationProfile
+            className="w-full max-w-none"
             organizationId={organization.id}
             onUpdated={(updated) => {
               void queryClient.invalidateQueries({

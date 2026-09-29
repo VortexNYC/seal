@@ -50,11 +50,13 @@ function ProfileSettings() {
       <SettingsBody className="items-stretch">
         <div className="flex w-full flex-col gap-5">
           <UserProfileForm
+            className="w-full max-w-none"
             onSuccess={() => {
               toast.success("Profile updated");
             }}
           />
           <ChangeEmailForm
+            className="w-full max-w-none"
             callbackURL={verifyCallbackUrl}
             onSuccess={() => {
               toast.success(
@@ -63,11 +65,13 @@ function ProfileSettings() {
             }}
           />
           <ConnectedAccounts
+            className="w-full max-w-none"
             onUnlinked={() => {
               toast.success("Account disconnected");
             }}
           />
           <DeleteAccountForm
+            className="w-full max-w-none"
             onSuccess={() => {
               window.location.assign("/");
             }}

@@ -18,6 +18,8 @@ export type NavGroupItem = {
     url: string;
     isActive: boolean;
     locked?: boolean;
+    /** Open outside the SPA (e.g. docs.seal.nyc). */
+    external?: boolean;
   }[];
 };
 
@@ -49,6 +51,12 @@ function NavGroup({ group }: { group: NavGroupItem }) {
                 key={subItem.title}
                 active={subItem.isActive}
                 href={subItem.url}
+                {...(subItem.external
+                  ? {
+                      target: "_blank",
+                      rel: "noopener noreferrer",
+                    }
+                  : {})}
               >
                 <span className="flex-1 truncate">{subItem.title}</span>
                 {subItem.locked ? (
