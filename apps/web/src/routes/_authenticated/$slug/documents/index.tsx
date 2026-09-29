@@ -85,6 +85,7 @@ import { toast } from "@/lib/toast";
 
 export const Route = createFileRoute("/_authenticated/$slug/documents/")({
   component: DocumentsPage,
+  pendingComponent: DocumentsSkeleton,
   validateSearch: (search: Record<string, unknown>) => ({
     folderId:
       typeof search.folderId === "string" && search.folderId
@@ -99,6 +100,24 @@ export const Route = createFileRoute("/_authenticated/$slug/documents/")({
     ],
   }),
 });
+
+function DocumentsSkeleton(): JSX.Element {
+  return (
+    <PageWrapper title="Documents">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+        <div className="bg-muted h-10 w-full max-w-md animate-pulse rounded-md" />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <CardSkeleton showDescription showFooter={false} />
+          <CardSkeleton showDescription showFooter={false} />
+          <CardSkeleton showDescription showFooter={false} />
+          <CardSkeleton showDescription showFooter={false} />
+          <CardSkeleton showDescription showFooter={false} />
+          <CardSkeleton showDescription showFooter={false} />
+        </div>
+      </div>
+    </PageWrapper>
+  );
+}
 
 type FilterType = "all" | "owned" | "shared";
 type WorkflowStatusFilter =
@@ -1620,7 +1639,7 @@ function DocumentsPage() {
   const { data: organization } = useSuspenseOrganization(slug);
 
   if (!organization) {
-    return null;
+    return <DocumentsSkeleton />;
   }
 
   const delegateOwnership = organization.delegateOwnership;

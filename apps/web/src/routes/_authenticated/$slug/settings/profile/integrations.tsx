@@ -8,6 +8,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Activity, Clock, Link2, Unplug } from "lucide-react";
 
 import { FormSkeleton } from "@/components/skeletons";
+import { SettingsBody } from "@/components/settings-body";
 import {
   disconnectConnectedApp,
   getConnectedApps,
@@ -88,10 +89,12 @@ function IntegrationsSettings() {
   }
 
   return (
-    <div className="space-y-6">
+    <SettingsBody>
+    <div className="flex flex-col gap-5">
       <ConnectedAppsSection apps={connectedApps ?? []} />
       <ActivityLogsSection logs={activityLogs ?? []} />
     </div>
+    </SettingsBody>
   );
 }
 

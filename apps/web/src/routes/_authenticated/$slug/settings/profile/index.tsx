@@ -13,6 +13,8 @@ import {
   UserProfileForm,
 } from "@vortex-api/better-auth-ui";
 
+import { FormSkeleton } from "@/components/skeletons";
+import { SettingsBody } from "@/components/settings-body";
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { toast } from "@/lib/toast";
 
@@ -30,6 +32,7 @@ function resolveAppOrigin(): string {
 export const Route = createFileRoute("/_authenticated/$slug/settings/profile/")(
   {
     component: ProfileSettings,
+    pendingComponent: FormSkeleton,
   }
 );
 
@@ -37,14 +40,15 @@ function ProfileSettings() {
   const client = getBetterAuthUiClient();
 
   if (client === null) {
-    return <p className="text-center text-sm">Auth client not configured.</p>;
+    return <FormSkeleton />;
   }
 
   const verifyCallbackUrl = `${resolveAppOrigin()}/verify-email`;
 
   return (
     <AuthProvider client={client}>
-      <div className="space-y-6">
+      <SettingsBody>
+      <div className="flex flex-col gap-5">
         <UserProfileForm
           onSuccess={() => {
             toast.success("Profile updated");
@@ -69,6 +73,7 @@ function ProfileSettings() {
           }}
         />
       </div>
+      </SettingsBody>
     </AuthProvider>
   );
 }

@@ -67,13 +67,13 @@ function RecentDocsFallback(): React.ReactElement {
   );
 }
 
-function WorkspaceHome(): React.ReactElement | null {
+function WorkspaceHome(): React.ReactElement {
   const { slug } = Route.useParams();
   const { user } = useUser();
   const { data: organization } = useSuspenseOrganization(slug);
 
   if (!organization) {
-    return null;
+    return <DashboardSkeleton />;
   }
 
   const firstName = user?.firstName ?? "there";
@@ -94,7 +94,7 @@ function WorkspaceHome(): React.ReactElement | null {
           </p>
         </div>
 
-        <Suspense fallback={null}>
+        <Suspense fallback={<StatsCardsFallback />}>
           <NeedsAttention organizationSlug={slug} />
         </Suspense>
 

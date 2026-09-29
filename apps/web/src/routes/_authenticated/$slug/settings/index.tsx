@@ -14,6 +14,7 @@ import {
 import { useEffect, useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
+import { SettingsBody } from "@/components/settings-body";
 import { FormSkeleton } from "@/components/skeletons";
 import { useOrganization } from "@/hooks/use-organization";
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
@@ -153,7 +154,8 @@ function GeneralSettingsContent() {
 
   return (
     <PageWrapper title="General Settings">
-      <div className="grid gap-6">
+      <SettingsBody wide>
+      <div className="flex flex-col gap-5">
         {organization && (
           <OrganizationProfile
             organizationId={organization.id}
@@ -240,6 +242,7 @@ function GeneralSettingsContent() {
           </LayerCard.Primary>
         </LayerCard>
       </div>
+      </SettingsBody>
     </PageWrapper>
   );
 }

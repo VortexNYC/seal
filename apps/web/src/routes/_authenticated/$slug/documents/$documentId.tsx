@@ -13,13 +13,14 @@ import {
   SaveIcon,
   SendIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 
 import { FIELD_TYPES } from "@/components/documents/field-toolbar";
 import { NotFoundPage } from "@/components/not-found-page";
 import { PageWrapper } from "@/components/page-wrapper";
 import { RouteErrorComponent } from "@/components/route-error-component";
+import { FormSkeleton } from "@/components/skeletons";
 import { useDocumentDetail } from "@/data/document-detail";
 import { useCurrentUser as useUser } from "@/hooks/use-current-user";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
@@ -82,6 +83,7 @@ export const Route = createFileRoute(
   "/_authenticated/$slug/documents/$documentId"
 )({
   component: DocumentDetailPage,
+  pendingComponent: DocumentDetailSkeleton,
   errorComponent: DocumentErrorComponent,
   head: () => ({
     meta: [
@@ -90,6 +92,16 @@ export const Route = createFileRoute(
     ],
   }),
 });
+
+function DocumentDetailSkeleton(): ReactElement {
+  return (
+    <PageWrapper title="Document">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+        <FormSkeleton />
+      </div>
+    </PageWrapper>
+  );
+}
 
 function DocumentErrorComponent(props: ErrorComponentProps) {
   const message =
@@ -603,12 +615,12 @@ function DocumentDetailPage() {
         </div>
       }
     >
-      <div className="space-y-6">
-        <div className="grid gap-6 lg:grid-cols-3">
+      <div className="flex flex-col gap-4">
+        <div className="grid gap-4 lg:grid-cols-3">
           {/* Left column: PDF Preview — Kumo viewer shell + thumbnail rail */}
           <div className="lg:col-span-2">
             <DocumentViewerShell
-              className="min-h-[600px] rounded-2xl sm:min-h-[400px] sm:rounded-xl"
+              className="min-h-[520px] rounded-xl sm:min-h-[400px]"
               left={
                 <ThumbnailSidebar
                   pages={pageThumbnails.pages}
@@ -620,7 +632,7 @@ function DocumentDetailPage() {
               main={
             <div
               ref={pdfViewer.pdfWrapperRef}
-              className="bg-muted/80 dark:bg-background relative min-h-[600px] p-4 sm:min-h-[400px] sm:p-3 md:p-4"
+              className="bg-muted/80 dark:bg-background relative min-h-[520px] p-3 sm:min-h-[400px] sm:p-3 md:p-4"
             >
               {canEdit ? (
                 <div className="border-border bg-muted/40 mb-3 flex flex-wrap gap-1 rounded-lg border p-1">

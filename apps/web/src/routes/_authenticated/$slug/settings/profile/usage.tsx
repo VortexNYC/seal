@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 
 import { FormSkeleton } from "@/components/skeletons";
+import { SettingsBody } from "@/components/settings-body";
 import { getUserUsageStatistics } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
@@ -82,7 +83,8 @@ function UsageSettings() {
     (isApproachingDocumentLimit || isApproachingStorageLimit);
 
   return (
-    <div className="space-y-6">
+    <SettingsBody>
+    <div className="flex flex-col gap-5">
       {/* Upgrade prompt */}
       {showUpgradePrompt && (
         <LayerCard className="border-warning/30 bg-warning-surface">
@@ -360,6 +362,7 @@ function UsageSettings() {
         </LayerCard.Primary>
       </LayerCard>
     </div>
+    </SettingsBody>
   );
 }
 

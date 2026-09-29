@@ -7,6 +7,7 @@ import {
 } from "@vortex-api/better-auth-ui";
 
 import { PageWrapper } from "@/components/page-wrapper";
+import { SettingsBody } from "@/components/settings-body";
 import { TeamSettingsSkeleton } from "@/components/skeletons/team-settings-skeleton";
 import { useOrganization } from "@/hooks/use-organization";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
@@ -37,7 +38,8 @@ function TeamSettings() {
   return (
     <AuthProvider client={client}>
       <PageWrapper title="Team">
-        <div className="space-y-8">
+        <SettingsBody wide>
+        <div className="flex flex-col gap-5">
           {!isPro && (
             <p className="text-muted-foreground text-sm">
               Inviting teammates requires Pro. You can still view members on
@@ -62,6 +64,7 @@ function TeamSettings() {
             }}
           />
         </div>
+        </SettingsBody>
       </PageWrapper>
     </AuthProvider>
   );

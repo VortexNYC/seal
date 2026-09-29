@@ -15,6 +15,8 @@ import {
   SetPasswordForm,
 } from "@vortex-api/better-auth-ui";
 
+import { FormSkeleton } from "@/components/skeletons";
+import { SettingsBody } from "@/components/settings-body";
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { toast } from "@/lib/toast";
 
@@ -22,18 +24,20 @@ export const Route = createFileRoute(
   "/_authenticated/$slug/settings/profile/security"
 )({
   component: SecuritySettings,
+  pendingComponent: FormSkeleton,
 });
 
 function SecuritySettings() {
   const client = getBetterAuthUiClient();
 
   if (client === null) {
-    return <p className="text-center text-sm">Auth client not configured.</p>;
+    return <FormSkeleton />;
   }
 
   return (
     <AuthProvider client={client}>
-      <div className="space-y-6">
+      <SettingsBody>
+      <div className="flex flex-col gap-5">
         <SessionList
           showRevokeOthersAction
           onRevoke={() => {
@@ -67,6 +71,7 @@ function SecuritySettings() {
           }}
         />
       </div>
+      </SettingsBody>
     </AuthProvider>
   );
 }

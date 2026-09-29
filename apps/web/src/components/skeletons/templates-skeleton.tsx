@@ -2,19 +2,8 @@
  * TemplatesSkeleton Component
  *
  * Loading skeleton for the templates page.
- * Shows the page structure with a single card skeleton.
- *
- * @example
- * ```tsx
- * // In route definition
- * export const Route = createFileRoute("/_authenticated/$slug/templates")({
- *   component: TemplatesPage,
- *   pendingComponent: TemplatesSkeleton,
- * });
- * ```
+ * Matches SEA-99 list chrome (max-w-6xl + flat toolbar rhythm).
  */
-
-import { SkeletonLine } from "@cloudflare/kumo/components/loader";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { CardSkeleton } from "@/components/skeletons/card-skeleton";
@@ -22,9 +11,13 @@ import { CardSkeleton } from "@/components/skeletons/card-skeleton";
 export function TemplatesSkeleton() {
   return (
     <PageWrapper title="Templates">
-      <div className="space-y-6">
-        <SkeletonLine className="h-5 w-[280px]" />
-        <CardSkeleton showDescription showFooter={false} />
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+        <div className="bg-muted h-10 w-full max-w-md animate-pulse rounded-md" />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <CardSkeleton showDescription showFooter={false} />
+          <CardSkeleton showDescription showFooter={false} />
+          <CardSkeleton showDescription showFooter={false} />
+        </div>
       </div>
     </PageWrapper>
   );
