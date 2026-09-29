@@ -451,6 +451,81 @@ components:
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
 
+    ReviewFlag:
+      type: string
+      enum: [green, amber, red, grey]
+
+    ReviewCellStatus:
+      type: string
+      enum: [pending, generating, done, error]
+
+    ReviewCitation:
+      type: object
+      required: [documentId, quote]
+      properties:
+        documentId: { type: string }
+        page: { type: integer, minimum: 1 }
+        quote:
+          type: string
+          description: Contiguous excerpt from the document, or the literal `not_found`
+
+    ReviewColumn:
+      type: object
+      required: [index, name, prompt]
+      properties:
+        index: { type: integer, minimum: 0 }
+        name: { type: string, maxLength: 120 }
+        prompt: { type: string, maxLength: 4000 }
+
+    ReviewCell:
+      type: object
+      required: [id, row_id, column_index, status, summary, flag, reasoning, citations]
+      properties:
+        id: { type: string }
+        row_id: { type: string }
+        column_index: { type: integer, minimum: 0 }
+        status: { $ref: "#/components/schemas/ReviewCellStatus" }
+        summary: { type: string, nullable: true }
+        flag:
+          allOf:
+            - { $ref: "#/components/schemas/ReviewFlag" }
+          nullable: true
+        reasoning: { type: string, nullable: true }
+        citations:
+          type: array
+          items: { $ref: "#/components/schemas/ReviewCitation" }
+
+    ReviewRow:
+      type: object
+      required: [id, document_id, cells]
+      properties:
+        id: { type: string }
+        document_id:
+          type: string
+          description: Document public ID
+        cells:
+          type: array
+          items: { $ref: "#/components/schemas/ReviewCell" }
+
+    ReviewMatrix:
+      type: object
+      required: [id, title, model, status, columns, rows, created_at, updated_at]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        model:
+          type: string
+          description: Provider/model key, e.g. `echo/test` or `anthropic/claude-sonnet-4-5`
+        status: { type: string }
+        columns:
+          type: array
+          items: { $ref: "#/components/schemas/ReviewColumn" }
+        rows:
+          type: array
+          items: { $ref: "#/components/schemas/ReviewRow" }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
     ImportJob:
       type: object
       required:
@@ -775,6 +850,10 @@ tags:
     description: Workspace contact directory for recipients
   - name: Folders
     description: Organize documents and templates into folders
+  - name: Reviews
+    description: >
+      Legal review matrices (ADR-006) — tabular extraction over documents with
+      citation-grounded cells. Agent/MCP first; no fat review UI.
   - name: Imports
     description: Import jobs from PDF batches or external e-sign providers
   - name: Webhooks
@@ -2543,6 +2622,105 @@ paths:
                       properties:
                         id: { type: string }
                         name: { type: string }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Reviews (ADR-006 / SEA-80)
+  # ──────────────────────────────────────────────────────────────────────────
+
+  /reviews:
+    post:
+      tags: [Reviews]
+      operationId: createReviewMatrix
+      summary: Create a review matrix
+      description: >
+        Creates a matrix with one row per document and one pending cell per
+        column. Generation is a separate call (`POST /reviews/{id}/generate`).
+        Every `done` cell must carry ≥1 citation or the literal `not_found`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, model, columns, documentIds]
+              properties:
+                title: { type: string, maxLength: 200 }
+                model:
+                  type: string
+                  description: Provider/model key (`echo/test` for local stub)
+                  maxLength: 120
+                columns:
+                  type: array
+                  minItems: 1
+                  maxItems: 32
+                  items: { $ref: "#/components/schemas/ReviewColumn" }
+                documentIds:
+                  type: array
+                  minItems: 1
+                  maxItems: 100
+                  items: { type: string }
+                  description: Document public IDs in this organization
+      responses:
+        "201":
+          description: Created matrix (cells pending)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReviewMatrix" }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /reviews/{id}:
+    get:
+      tags: [Reviews]
+      operationId: getReviewMatrix
+      summary: Get a review matrix
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+          description: Review matrix public ID
+      responses:
+        "200":
+          description: Matrix with rows and cells
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReviewMatrix" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /reviews/{id}/generate:
+    post:
+      tags: [Reviews]
+      operationId: generateReviewMatrix
+      summary: Generate pending review cells
+      description: >
+        Runs the matrix model against each pending/error cell. Echo/provider
+        stubs complete synchronously; production Anthropic/Workers AI runs will
+        move to a Durable Object / Workflow. Poll `GET /reviews/{id}` for status.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Matrix after generation pass
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReviewMatrix" }
+        "400":
+          $ref: "#/components/responses/ValidationError"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":

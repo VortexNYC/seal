@@ -965,6 +965,72 @@ export interface ApiFolder {
 }
 
 // =============================================================================
+// Review matrix schemas (ADR-006 / SEA-80)
+// =============================================================================
+
+export const createReviewMatrixSchema = z.object({
+  title: z.string().min(1).max(200).describe("Matrix title"),
+  model: z
+    .string()
+    .min(1)
+    .max(120)
+    .describe("Provider/model key, e.g. echo/test"),
+  columns: z
+    .array(
+      z.object({
+        index: z.number().int().nonnegative(),
+        name: z.string().min(1).max(120),
+        prompt: z.string().min(1).max(4000),
+      })
+    )
+    .min(1)
+    .max(32)
+    .describe("Extraction columns"),
+  documentIds: z
+    .array(z.string().min(1))
+    .min(1)
+    .max(100)
+    .describe("Document public IDs"),
+});
+export type CreateReviewMatrixInput = z.infer<typeof createReviewMatrixSchema>;
+
+export const getReviewMatrixSchema = z.object({
+  id: z.string().describe("Review matrix public ID"),
+});
+export type GetReviewMatrixInput = z.infer<typeof getReviewMatrixSchema>;
+
+export const generateReviewMatrixSchema = z.object({
+  id: z.string().describe("Review matrix public ID"),
+});
+export type GenerateReviewMatrixInput = z.infer<
+  typeof generateReviewMatrixSchema
+>;
+
+export interface ApiReviewMatrix {
+  id: string;
+  title: string;
+  model: string;
+  status: string;
+  columns: { index: number; name: string; prompt: string }[];
+  rows: {
+    id: string;
+    document_id: string;
+    cells: {
+      id: string;
+      row_id: string;
+      column_index: number;
+      status: string;
+      summary: string | null;
+      flag: string | null;
+      reasoning: string | null;
+      citations: { documentId: string; page?: number; quote: string }[];
+    }[];
+  }[];
+  created_at: string;
+  updated_at: string;
+}
+
+// =============================================================================
 // Import Schemas
 // =============================================================================
 

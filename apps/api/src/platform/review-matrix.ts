@@ -1,9 +1,7 @@
 /**
- * ADR-006 Phase 2 — review matrix primitives (tabular legal extraction).
+ * ADR-006 Phase 2 — review matrix contract (tabular legal extraction).
  *
- * Persistence lands in a follow-up migration once the provider layer is wired
- * to a Durable Object / Workflow. This module defines the contract agents and
- * MCP will call.
+ * Persistence + generate: `review-matrix-store.ts` + `POST/GET /api/v1/reviews`.
  */
 
 import { z } from "zod";
