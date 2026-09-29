@@ -9,7 +9,6 @@ import { Textarea } from "@cloudflare/kumo";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
 import { Input } from "@cloudflare/kumo/components/input";
-import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -19,6 +18,7 @@ import { useEffect, useState } from "react";
 import { PageWrapper } from "@/components/page-wrapper";
 import { SigningChromeSection } from "@/components/settings/signing-chrome-section";
 import { SettingsBody } from "@/components/settings-body";
+import { SettingsSection } from "@/components/settings-section";
 import { FormSkeleton } from "@/components/skeletons";
 import { getSigningSettings, updateSigningSettings } from "@/lib/api-client";
 import { toast } from "@/lib/toast";
@@ -42,6 +42,7 @@ function SigningSettings() {
   const { data: signingSettings, isPending } = useQuery({
     queryKey: ["signing", slug],
     queryFn: () => getSigningSettings(slug),
+    staleTime: 60_000,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -137,178 +138,126 @@ function SigningSettings() {
   return (
     <PageWrapper title="Signing Settings">
       <SettingsBody wide>
-      <form onSubmit={handleSubmit} className="grid gap-5 md:grid-cols-2">
-        <LayerCard className="md:col-span-2">
-          <LayerCard.Secondary>
-            <div className="flex items-center gap-2">
-              <PenTool className="size-5" />
-              <Text as="h2" variant="heading">
-                Signature Types
-              </Text>
-            </div>
-            <Text variant="secondary">
-              Choose which signature methods recipients can use when signing
-              documents.
-            </Text>
-          </LayerCard.Secondary>
-          <LayerCard.Primary>
-            <div className="flex flex-col gap-4">
-              {SIGNATURE_TYPE_OPTIONS.map((type) => (
-                <Checkbox
-                  key={type}
-                  checked={formData.allowedSignatureTypes.includes(type)}
-                  disabled={isSubmitting}
-                  onCheckedChange={(checked) =>
-                    handleSignatureTypeToggle(type, checked === true)
-                  }
-                  label={
-                    type === "draw"
-                      ? "Draw signature"
-                      : type === "type"
-                        ? "Type signature"
-                        : "Upload signature image"
-                  }
-                />
-              ))}
-            </div>
-          </LayerCard.Primary>
-        </LayerCard>
-
-        <LayerCard className="md:col-span-2">
-          <LayerCard.Secondary>
-            <Text as="h2" variant="heading">
-              Identity &amp; audit
-            </Text>
-            <Text variant="secondary">
-              Defaults for every envelope. Recipients prove inbox control and
-              (optionally) create a Seal account before they can complete.
-            </Text>
-          </LayerCard.Secondary>
-          <LayerCard.Primary>
-            <div className="flex flex-col gap-4">
-              <Checkbox
-                checked={formData.requireRecipientAuth}
-                disabled={isSubmitting}
-                onCheckedChange={(checked) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    requireRecipientAuth: checked === true,
-                  }))
-                }
-                label="Require email OTP or access code for signers"
-              />
-              <Checkbox
-                checked={formData.requireSignerAccount}
-                disabled={isSubmitting}
-                onCheckedChange={(checked) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    requireSignerAccount: checked === true,
-                  }))
-                }
-                label="Require Seal account before signing"
-              />
-            </div>
-          </LayerCard.Primary>
-        </LayerCard>
-
-        <LayerCard>
-          <LayerCard.Secondary>
-            <Text as="h2" variant="heading">
-              Default Deadline
-            </Text>
-            <Text variant="secondary">
-              Default number of days recipients have to sign after a document is
-              sent.
-            </Text>
-          </LayerCard.Secondary>
-          <LayerCard.Primary>
-            <div className="flex items-center gap-2">
-              <div className="w-24">
-                <Input
-                  id="default-deadline-days"
-                  aria-label="Default deadline in days"
-                  type="number"
-                  min={1}
-                  max={365}
-                  value={formData.defaultDeadlineDays}
-                  disabled={isSubmitting}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      defaultDeadlineDays: Number(e.target.value),
-                    })
-                  }
-                />
-              </div>
-              <Text variant="secondary" as="span">
-                days
-              </Text>
-            </div>
-          </LayerCard.Primary>
-        </LayerCard>
-
-        <LayerCard>
-          <LayerCard.Secondary>
-            <Text as="h2" variant="heading">
-              E-Sign Consent Text
-            </Text>
-            <Text variant="secondary">
-              Custom text shown in the e-sign consent dialog. Leave blank to use
-              the Seal default.
-            </Text>
-          </LayerCard.Secondary>
-          <LayerCard.Primary>
-            <Textarea
-              id="esign-consent-text"
-              value={formData.esignConsentText}
+      <form onSubmit={handleSubmit} className="grid gap-5 lg:grid-cols-2">
+        <SettingsSection
+          className="lg:col-span-2"
+          icon={<PenTool className="size-4" />}
+          title="Signature types"
+          description="Methods recipients can use when signing."
+        >
+          {SIGNATURE_TYPE_OPTIONS.map((type) => (
+            <Checkbox
+              key={type}
+              checked={formData.allowedSignatureTypes.includes(type)}
               disabled={isSubmitting}
-              onChange={(e) =>
-                setFormData({ ...formData, esignConsentText: e.target.value })
+              onCheckedChange={(checked) =>
+                handleSignatureTypeToggle(type, checked === true)
               }
-              placeholder="By signing this document electronically..."
-              rows={4}
-              aria-describedby="esign-consent-help"
-            />
-            <Text variant="secondary" as="p" id="esign-consent-help">
-              This text is shown to recipients before they can sign.
-            </Text>
-          </LayerCard.Primary>
-        </LayerCard>
-
-        <LayerCard>
-          <LayerCard.Secondary>
-            <Text as="h2" variant="heading">
-              Privacy / CCPA Notice
-            </Text>
-            <Text variant="secondary">
-              Custom privacy / CCPA notice shown before e-sign consent. Leave
-              blank to use the Seal default.
-            </Text>
-          </LayerCard.Secondary>
-          <LayerCard.Primary>
-            <Textarea
-              id="privacy-notice-text"
-              value={formData.privacyNoticeText}
-              disabled={isSubmitting}
-              onChange={(e) =>
-                setFormData({ ...formData, privacyNoticeText: e.target.value })
+              label={
+                type === "draw"
+                  ? "Draw signature"
+                  : type === "type"
+                    ? "Type signature"
+                    : "Upload signature image"
               }
-              placeholder="Privacy notice for electronic signing..."
-              rows={6}
-              aria-describedby="privacy-notice-help"
             />
-            <Text variant="secondary" as="p" id="privacy-notice-help">
-              Recipients must acknowledge this notice before they can consent to
-              sign.
-            </Text>
-          </LayerCard.Primary>
-        </LayerCard>
+          ))}
+        </SettingsSection>
 
-        <div className="flex justify-end md:col-span-2">
+        <SettingsSection
+          className="lg:col-span-2"
+          title="Identity & audit"
+          description="Defaults for every envelope — inbox proof and optional Seal account."
+        >
+          <Checkbox
+            checked={formData.requireRecipientAuth}
+            disabled={isSubmitting}
+            onCheckedChange={(checked) =>
+              setFormData((prev) => ({
+                ...prev,
+                requireRecipientAuth: checked === true,
+              }))
+            }
+            label="Require email OTP or access code for signers"
+          />
+          <Checkbox
+            checked={formData.requireSignerAccount}
+            disabled={isSubmitting}
+            onCheckedChange={(checked) =>
+              setFormData((prev) => ({
+                ...prev,
+                requireSignerAccount: checked === true,
+              }))
+            }
+            label="Require Seal account before signing"
+          />
+        </SettingsSection>
+
+        <SettingsSection
+          title="Default deadline"
+          description="Days recipients have to sign after send."
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-24">
+              <Input
+                id="default-deadline-days"
+                aria-label="Default deadline in days"
+                type="number"
+                min={1}
+                max={365}
+                value={formData.defaultDeadlineDays}
+                disabled={isSubmitting}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    defaultDeadlineDays: Number(e.target.value),
+                  })
+                }
+              />
+            </div>
+            <Text variant="secondary" as="span">
+              days
+            </Text>
+          </div>
+        </SettingsSection>
+
+        <SettingsSection
+          title="E-sign consent"
+          description="Leave blank for the Seal default."
+        >
+          <Textarea
+            id="esign-consent-text"
+            value={formData.esignConsentText}
+            disabled={isSubmitting}
+            onChange={(e) =>
+              setFormData({ ...formData, esignConsentText: e.target.value })
+            }
+            placeholder="By signing this document electronically..."
+            rows={4}
+          />
+        </SettingsSection>
+
+        <SettingsSection
+          className="lg:col-span-2"
+          title="Privacy / CCPA notice"
+          description="Leave blank for the Seal default."
+        >
+          <Textarea
+            id="privacy-notice-text"
+            value={formData.privacyNoticeText}
+            disabled={isSubmitting}
+            onChange={(e) =>
+              setFormData({ ...formData, privacyNoticeText: e.target.value })
+            }
+            placeholder="Privacy notice for electronic signing..."
+            rows={5}
+          />
+        </SettingsSection>
+
+        <div className="flex justify-end lg:col-span-2">
           <Button type="submit" disabled={isSubmitting}>
             <Save className="mr-2 size-4" />
-            {isSubmitting ? "Saving..." : "Save Changes"}
+            {isSubmitting ? "Saving…" : "Save changes"}
           </Button>
         </div>
       </form>

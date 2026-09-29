@@ -5,7 +5,6 @@ import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { DropdownMenu } from "@cloudflare/kumo/components/dropdown";
 import { Empty } from "@cloudflare/kumo/components/empty";
 import { Input } from "@cloudflare/kumo/components/input";
-import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Popover } from "@cloudflare/kumo/components/popover";
 import { SkeletonLine } from "@cloudflare/kumo/components/loader";
 import { Table } from "@cloudflare/kumo/components/table";
@@ -105,7 +104,7 @@ export const Route = createFileRoute("/_authenticated/$slug/documents/")({
 function DocumentsSkeleton(): JSX.Element {
   return (
     <PageWrapper title="Documents">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+      <div className="flex w-full flex-col gap-4">
         <SkeletonLine className="h-10 w-full max-w-md" />
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <CardSkeleton showDescription showFooter={false} />
@@ -597,24 +596,22 @@ function FolderGridCard({
   readonly onFolderNavigate: (folderId?: string) => void;
 }) {
   return (
-    <LayerCard
+    <button
+      type="button"
       key={folder._id}
-      className="hover:bg-secondary cursor-pointer transition-colors duration-200"
+      className="border-border bg-card hover:bg-muted/40 flex cursor-pointer flex-col overflow-hidden rounded-xl border text-left transition-colors"
       onClick={() => onFolderNavigate(folder._id)}
     >
-      <div className="bg-muted/50 flex h-32 w-full items-center justify-center border-b">
-        <FolderIcon className="text-muted-foreground h-12 w-12" />
+      <div className="bg-muted flex h-32 w-full items-center justify-center border-b">
+        <FolderIcon className="text-muted-foreground h-10 w-10" />
       </div>
-      <LayerCard.Primary>
-        <h3 className="flex items-center gap-2 text-sm">
-          <FolderIcon className="h-4 w-4 shrink-0" />
-          <span className="line-clamp-2 break-all" title={folder.name}>
-            {folder.name}
-          </span>
+      <div className="flex flex-col gap-0.5 p-3">
+        <h3 className="line-clamp-2 text-sm font-medium break-all" title={folder.name}>
+          {folder.name}
         </h3>
-        <p>Folder</p>
-      </LayerCard.Primary>
-    </LayerCard>
+        <p className="text-muted-foreground text-xs">Folder</p>
+      </div>
+    </button>
   );
 }
 
@@ -629,9 +626,9 @@ function DocumentGridCard({
 }) {
   const { slug } = Route.useParams();
   return (
-    <LayerCard
+    <div
       key={doc._id}
-      className="relative cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+      className="border-border bg-card relative flex flex-col overflow-hidden rounded-xl border transition-shadow hover:shadow-md"
     >
       <Link
         to="/$slug/documents/$documentId"
@@ -639,33 +636,29 @@ function DocumentGridCard({
         className="absolute inset-0 z-0"
         aria-label={`Open ${doc.name}`}
       />
-      <div className="bg-muted pointer-events-none relative z-[1] flex h-32 w-full items-center justify-center overflow-hidden border-b">
+      <div className="bg-muted pointer-events-none relative z-[1] h-36 w-full overflow-hidden border-b">
         <DocumentThumbnail
           organizationSlug={slug}
           publicId={doc._id}
           thumbnailDataUrl={doc.thumbnailDataUrl}
           name={doc.name}
-          className="h-full w-full"
+          className="h-full w-full rounded-none border-0"
         />
       </div>
-      <LayerCard.Primary>
-        <div className="relative z-[1]">
-          <GridCardHeader actions={actions} doc={doc} matches={matches} />
-          {doc.description ? (
-            <p className="pointer-events-none line-clamp-2">
-              <HighlightedText
-                text={doc.description}
-                matches={matches}
-                fieldKey="description"
-              />
-            </p>
-          ) : null}
-        </div>
-      </LayerCard.Primary>
-      <div className="pointer-events-none relative z-[1] p-4 pt-0">
+      <div className="relative z-[1] flex flex-col gap-2 p-3">
+        <GridCardHeader actions={actions} doc={doc} matches={matches} />
+        {doc.description ? (
+          <p className="text-muted-foreground pointer-events-none line-clamp-2 text-xs">
+            <HighlightedText
+              text={doc.description}
+              matches={matches}
+              fieldKey="description"
+            />
+          </p>
+        ) : null}
         <DocumentGridMetadata doc={doc} />
       </div>
-    </LayerCard>
+    </div>
   );
 }
 
@@ -695,37 +688,14 @@ function GridCardHeader({
 
 function DocumentGridMetadata({ doc }: { readonly doc: DocumentListItem }) {
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">Status</span>
-        <div className="flex items-center gap-1.5">
-          <WorkflowStatusBadge status={doc.workflowStatus} />
-          <DocumentAiStatus status={doc.aiProcessingStatus} />
-        </div>
-      </div>
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">Size</span>
-        <span>{formatBytes(doc.fileSize)}</span>
-      </div>
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">Uploaded</span>
-        <span>{formatDate(doc.createdAt)}</span>
-      </div>
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">Sharing</span>
-        <SharingModeBadge sharingMode={doc.sharingMode} />
-      </div>
+    <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+      <WorkflowStatusBadge status={doc.workflowStatus} />
+      <DocumentAiStatus status={doc.aiProcessingStatus} />
+      <span aria-hidden>·</span>
+      <span>{formatDate(doc.createdAt)}</span>
+      <span aria-hidden>·</span>
+      <span>{formatBytes(doc.fileSize)}</span>
     </div>
-  );
-}
-
-function SharingModeBadge({ sharingMode }: { readonly sharingMode: string }) {
-  return (
-    <Badge variant={sharingMode === "private" ? "secondary" : "primary"}>
-      {sharingMode === "private" && "Private"}
-      {sharingMode === "workspace" && "Team"}
-      {sharingMode === "specific" && "Specific"}
-    </Badge>
   );
 }
 
@@ -1702,7 +1672,7 @@ function DocumentsPage() {
         />
       }
     >
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+      <div className="flex w-full flex-col gap-4">
         {/* SEA-99: flat toolbar — no nested filter cards */}
         <div className="flex flex-col gap-3">
           <div className="relative">

@@ -184,7 +184,7 @@ test.describe("Signature Fields - Management", () => {
 
   test("should display fields section", async ({ authenticatedPage }) => {
     await expect(
-      authenticatedPage.getByRole("button", { name: /Signature Fields/ })
+      authenticatedPage.getByRole("button", { name: /^Fields/ })
     ).toBeVisible({
       timeout: 5000,
     });
@@ -194,7 +194,7 @@ test.describe("Signature Fields - Management", () => {
     authenticatedPage,
   }) => {
     await expect(
-      authenticatedPage.getByRole("button", { name: /Signature Fields/ })
+      authenticatedPage.getByRole("button", { name: /^Fields/ })
     ).toBeVisible({
       timeout: 5000,
     });
@@ -285,14 +285,14 @@ test.describe("Signature Fields - Toolbar Interactions", () => {
     authenticatedPage,
   }) => {
     await expect(
-      authenticatedPage.getByRole("button", { name: /Signature Fields/ })
+      authenticatedPage.getByRole("button", { name: /^Fields/ })
     ).toBeVisible();
     await expect(authenticatedPage.getByText("Fields").first()).toBeVisible();
   });
 
   test("should show field icons with labels", async ({ authenticatedPage }) => {
     const sectionButton = authenticatedPage.getByRole("button", {
-      name: /Signature Fields/,
+      name: /^Fields/,
     });
     await expect(sectionButton).toBeVisible({ timeout: 5000 });
 

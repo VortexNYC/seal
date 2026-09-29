@@ -5,11 +5,13 @@ import {
   createFileRoute,
   useRouter,
 } from "@tanstack/react-router";
+import { DropdownMenu } from "@cloudflare/kumo/components/dropdown";
 import {
   ArrowLeftIcon,
   EyeIcon,
   EyeOffIcon,
   Loader2Icon,
+  MoreHorizontalIcon,
   SaveIcon,
   SendIcon,
 } from "lucide-react";
@@ -252,7 +254,7 @@ function DocumentDetailPage() {
   // ── Custom hooks ────────────────────────────────────────────────────────
   const [viewerMode, setViewerMode] = useState<
     "fields" | "annotate" | "edit" | "structure"
-  >("annotate");
+  >("fields");
   const [pdfReloadKey, setPdfReloadKey] = useState(0);
   const pdfViewer = usePdfViewer(slug, documentPublicId, pdfReloadKey);
   const pageThumbnails = usePdfPageThumbnails(
@@ -298,7 +300,7 @@ function DocumentDetailPage() {
   const aiSuggestions = useAIFieldSuggestions(documentPublicId, {
     enabled: showAiFeatures,
   });
-  const [showAiSuggestions, setShowAiSuggestions] = useState(true);
+  const [showAiSuggestions, setShowAiSuggestions] = useState(false);
 
   // ── Derived state ───────────────────────────────────────────────────────
   // API maps documents.status → workflowStatus. Prep states: draft, and legacy
@@ -652,44 +654,25 @@ function DocumentDetailPage() {
               main={
             <div
               ref={pdfViewer.pdfWrapperRef}
-              className="bg-muted/80 relative min-h-full p-3 md:p-4"
+              className="bg-background relative min-h-full p-3 md:p-4"
             >
-              {canEdit ? (
-                <div className="border-border bg-muted/40 mb-3 flex flex-wrap gap-1 rounded-lg border p-1">
+              {canEdit && viewerMode !== "fields" ? (
+                <div className="mb-3 flex items-center gap-2">
                   <Button
                     type="button"
                     size="sm"
-                    variant={viewerMode === "annotate" ? "primary" : "ghost"}
-                    onClick={() => setViewerMode("annotate")}
-                  >
-                    PDF tools
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={viewerMode === "fields" ? "primary" : "ghost"}
+                    variant="outline"
                     onClick={() => setViewerMode("fields")}
                   >
-                    Fields
+                    Back to fields
                   </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={viewerMode === "edit" ? "primary" : "ghost"}
-                    onClick={() => setViewerMode("edit")}
-                  >
-                    Edit original
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={
-                      viewerMode === "structure" ? "primary" : "ghost"
-                    }
-                    onClick={() => setViewerMode("structure")}
-                  >
-                    Structure
-                  </Button>
+                  <span className="text-muted-foreground text-sm">
+                    {viewerMode === "annotate"
+                      ? "PDF tools"
+                      : viewerMode === "edit"
+                        ? "Edit original"
+                        : "Structure"}
+                  </span>
                 </div>
               ) : null}
 
@@ -743,9 +726,6 @@ function DocumentDetailPage() {
                     </div>
                   )}
                   <div className="mb-3 flex flex-col gap-2 sm:mb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                    <div className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
-                      <span>Field placement</span>
-                    </div>
                     <PdfViewerControls
                       currentZoom={pdfViewer.currentZoom}
                       currentPage={pdfViewer.currentPage}
@@ -754,6 +734,40 @@ function DocumentDetailPage() {
                       enableKeyboardShortcuts={true}
                       className="w-full justify-center sm:w-auto sm:justify-start"
                     />
+                    {canEdit ? (
+                      <DropdownMenu>
+                        <DropdownMenu.Trigger>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            aria-label="Document tools"
+                          >
+                            <MoreHorizontalIcon className="mr-1.5 h-4 w-4" />
+                            Tools
+                          </Button>
+                        </DropdownMenu.Trigger>
+                        <DropdownMenu.Content align="end" className="min-w-44">
+                          <DropdownMenu.Group>
+                            <DropdownMenu.Item
+                              onClick={() => setViewerMode("annotate")}
+                            >
+                              PDF annotate
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item
+                              onClick={() => setViewerMode("edit")}
+                            >
+                              Edit original
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item
+                              onClick={() => setViewerMode("structure")}
+                            >
+                              Structure
+                            </DropdownMenu.Item>
+                          </DropdownMenu.Group>
+                        </DropdownMenu.Content>
+                      </DropdownMenu>
+                    ) : null}
                   </div>
                   <TransformComponent
                     wrapperClass="w-full"

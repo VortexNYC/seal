@@ -2,14 +2,14 @@ import { Textarea } from "@cloudflare/kumo";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
 import { Label } from "@cloudflare/kumo/components/label";
-import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
 import { ArrowsLeftRight, FloppyDisk, Shield } from "@phosphor-icons/react";
 /**
  * Security Settings Page
  *
  * Seal-owned: API access, IP allowlist (enforced in api/context.ts), document
- * ownership transfer. Org MFA + session timeout are Core (VOR-183 / SEA-604).
+ * ownership transfer. Org MFA + session timeout live on workspace General /
+ * Account Security.
  *
  * Product document audit → audit-log.
  * Route: /{slug}/settings/security
@@ -25,6 +25,7 @@ import { useEffect, useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { SettingsBody } from "@/components/settings-body";
+import { SettingsSection } from "@/components/settings-section";
 import { FormSkeleton } from "@/components/skeletons";
 import { useOrganization } from "@/hooks/use-organization";
 import { getSecuritySettings, updateSecuritySettings } from "@/lib/api-client";
@@ -67,9 +68,10 @@ function SecuritySettingsContent() {
   const client = useAuth();
   const { data: organization } = useOrganization(slug);
 
-  const { data: securitySettings } = useQuery({
+  const { data: securitySettings, isPending: securityPending } = useQuery({
     queryKey: ["security", slug],
     queryFn: () => getSecuritySettings(slug),
+    staleTime: 60_000,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -173,7 +175,7 @@ function SecuritySettingsContent() {
     }
   };
 
-  if (!organization || !securitySettings) {
+  if (organization === undefined || securityPending || !securitySettings) {
     return (
       <PageWrapper title="Security Settings">
         <FormSkeleton />
@@ -184,177 +186,102 @@ function SecuritySettingsContent() {
   return (
     <PageWrapper title="Security Settings">
       <SettingsBody wide>
-      <form onSubmit={handleSubmit} className="grid gap-5 md:grid-cols-2">
+      <form onSubmit={handleSubmit} className="grid gap-5 lg:grid-cols-2">
         {!isOwner && (
-          <div className="border-warning/30 bg-warning-surface rounded-lg border p-4 md:col-span-2">
+          <div className="border-warning/30 bg-warning-surface rounded-lg border p-4 lg:col-span-2">
             <p className="text-warning text-sm">
-              Security settings can only be modified by organization owners.
-              Contact your organization owner to make changes.
+              Only workspace owners can change these settings.
             </p>
           </div>
         )}
 
-        <LayerCard className="border-dashed md:col-span-2">
-          <LayerCard.Secondary>
-            <Text as="h2" variant="heading">
-              Suite vs Sign
-            </Text>
-            <Text variant="secondary" size="sm">
-              Org-wide MFA and session timeout are set on{" "}
-              <Link
-                className="text-primary underline-offset-4 hover:underline"
-                params={{ slug }}
-                to="/$slug/settings"
-              >
-                General → Workspace profile
-              </Link>{" "}
-              (Core Auth) and enforced on org switch / authenticated requests.
-              Personal 2FA stays under{" "}
-              <Link
-                className="text-primary underline-offset-4 hover:underline"
-                params={{ slug }}
-                to="/$slug/settings/profile/security"
-              >
-                Profile → Security
-              </Link>
-              . This page keeps Seal API access, IP allowlist, and document
-              ownership transfer.
-            </Text>
-          </LayerCard.Secondary>
-        </LayerCard>
+        <p className="text-muted-foreground text-sm lg:col-span-2">
+          Personal 2FA is under{" "}
+          <Link
+            className="text-foreground underline-offset-4 hover:underline"
+            params={{ slug }}
+            to="/$slug/settings/profile/security"
+          >
+            Account → Security
+          </Link>
+          . Document activity is in the{" "}
+          <Link
+            className="text-foreground underline-offset-4 hover:underline"
+            params={{ slug }}
+            to="/$slug/settings/audit-log"
+          >
+            audit log
+          </Link>
+          .
+        </p>
 
-        <LayerCard className="md:col-span-2">
-          <LayerCard.Secondary>
-            <div className="flex items-center gap-2">
-              <Shield className="size-5" />
-              <Text as="h2" variant="heading">
-                API Access
-              </Text>
-            </div>
-            <Text variant="secondary" size="sm">
-              Control programmatic access to your workspace via the REST API
-              (enforced in API auth).
-            </Text>
-          </LayerCard.Secondary>
-          <LayerCard.Primary>
-            <Checkbox
-              label="Allow API access"
-              checked={formData.allowApiAccess}
-              disabled={!isOwner}
-              onCheckedChange={(checked) =>
-                setFormData({ ...formData, allowApiAccess: checked })
-              }
-            />
-            <Text variant="secondary" size="sm">
-              Enable programmatic access via API keys. Disabling revokes all
-              existing API key access.
-            </Text>
-            <Checkbox
-              label="Require company SSO"
-              checked={formData.ssoEnforced}
-              disabled={!isOwner}
-              onCheckedChange={(checked) =>
-                setFormData({ ...formData, ssoEnforced: checked })
-              }
-            />
-            <Text variant="secondary" size="sm">
-              Members must sign in through your SAML/OIDC provider. Register the
-              IdP via the SSO API first; owners can always turn this off.
-            </Text>
-          </LayerCard.Primary>
-        </LayerCard>
+        <SettingsSection
+          className="lg:col-span-2"
+          icon={<Shield className="size-4" />}
+          title="API access"
+          description="Programmatic access via API keys and SSO."
+        >
+          <Checkbox
+            label="Allow API access"
+            checked={formData.allowApiAccess}
+            disabled={!isOwner}
+            onCheckedChange={(checked) =>
+              setFormData({ ...formData, allowApiAccess: checked })
+            }
+          />
+          <Checkbox
+            label="Require company SSO"
+            checked={formData.ssoEnforced}
+            disabled={!isOwner}
+            onCheckedChange={(checked) =>
+              setFormData({ ...formData, ssoEnforced: checked })
+            }
+          />
+          <Text variant="secondary" size="sm">
+            SSO needs an IdP registered via the SSO API first. Owners can always
+            turn this off.
+          </Text>
+        </SettingsSection>
 
-        <LayerCard className="md:col-span-2">
-          <LayerCard.Secondary>
-            <Text as="h2" variant="heading">
-              IP Allowlist
-            </Text>
-            <Text variant="secondary" size="sm">
-              Restrict API access to specific IP addresses or CIDR ranges. Leave
-              empty for no restriction.
-            </Text>
-          </LayerCard.Secondary>
-          <LayerCard.Primary>
-            <Label htmlFor="ip-allowlist">Allowed CIDR ranges</Label>
-            <Textarea
-              id="ip-allowlist"
-              value={formData.ipAllowlistText}
-              disabled={!isOwner}
-              onChange={(e) =>
-                setFormData({ ...formData, ipAllowlistText: e.target.value })
-              }
-              placeholder={"192.168.1.0/24\n10.0.0.0/8"}
-              rows={4}
-            />
-            <Text variant="secondary" size="sm">
-              One CIDR range per line
-            </Text>
-          </LayerCard.Primary>
-        </LayerCard>
+        <SettingsSection
+          title="IP allowlist"
+          description="Restrict API access. One CIDR per line; empty = no limit."
+        >
+          <Label htmlFor="ip-allowlist">Allowed CIDR ranges</Label>
+          <Textarea
+            id="ip-allowlist"
+            value={formData.ipAllowlistText}
+            disabled={!isOwner}
+            onChange={(e) =>
+              setFormData({ ...formData, ipAllowlistText: e.target.value })
+            }
+            placeholder={"192.168.1.0/24\n10.0.0.0/8"}
+            rows={4}
+          />
+        </SettingsSection>
 
-        <LayerCard className="md:col-span-2">
-          <LayerCard.Secondary>
-            <div className="flex items-center gap-2">
-              <ArrowsLeftRight className="size-5" />
-              <Text as="h2" variant="heading">
-                Document Ownership Transfer
-              </Text>
-            </div>
-            <Text variant="secondary" size="sm">
-              Seal product setting: allow document owners to transfer ownership
-              to other organization members.
-            </Text>
-          </LayerCard.Secondary>
-          <LayerCard.Primary>
-            <Checkbox
-              label="Enable ownership transfer"
-              checked={delegateOwnership}
-              disabled={!isAdmin || isDelegateOwnershipUpdating}
-              onCheckedChange={(checked) =>
-                void handleDelegateOwnershipChange(checked)
-              }
-            />
-            <Text variant="secondary" size="sm">
-              When enabled, document owners and admins can reassign document
-              ownership to any organization member.
-            </Text>
-          </LayerCard.Primary>
-        </LayerCard>
+        <SettingsSection
+          icon={<ArrowsLeftRight className="size-4" />}
+          title="Ownership transfer"
+          description="Let owners reassign documents to other members."
+        >
+          <Checkbox
+            label="Enable ownership transfer"
+            checked={delegateOwnership}
+            disabled={!isAdmin || isDelegateOwnershipUpdating}
+            onCheckedChange={(checked) =>
+              void handleDelegateOwnershipChange(checked)
+            }
+          />
+        </SettingsSection>
 
-        <div className="flex justify-end md:col-span-2">
+        <div className="flex justify-end lg:col-span-2">
           <Button type="submit" disabled={isSubmitting || !isOwner}>
             <FloppyDisk className="mr-2 h-4 w-4" />
-            {isSubmitting ? "Saving…" : "Save Changes"}
+            {isSubmitting ? "Saving…" : "Save changes"}
           </Button>
         </div>
       </form>
-
-      {isAdmin ? (
-        <LayerCard>
-          <LayerCard.Secondary>
-            <Text as="h2" variant="heading">
-              Access &amp; security events
-            </Text>
-            <Text variant="secondary" size="sm">
-              Member, organization, and login events live with Better Auth
-              account security. For document and signing activity, use the{" "}
-              <Link
-                className="underline underline-offset-4"
-                params={{ slug }}
-                to="/$slug/settings/audit-log"
-              >
-                Audit log
-              </Link>
-              .
-            </Text>
-          </LayerCard.Secondary>
-          <LayerCard.Primary>
-            <Text variant="secondary" size="sm">
-              Security audit history is not available in this workspace view.
-            </Text>
-          </LayerCard.Primary>
-        </LayerCard>
-      ) : null}
       </SettingsBody>
     </PageWrapper>
   );

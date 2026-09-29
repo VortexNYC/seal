@@ -59,7 +59,7 @@ type StatusFilter = ContactStatus | "all";
 function ContactsPageSkeleton(): ReactElement {
   return (
     <PageWrapper title="Contacts">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+      <div className="flex w-full flex-col gap-4">
         <SkeletonLine className="h-10 w-full max-w-md" />
         <ContactsTableSkeleton />
       </div>
@@ -594,7 +594,7 @@ function ContactsPage() {
       }}
       headerActions={<ExportContacts contacts={loadedContacts} />}
     >
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+      <div className="flex w-full flex-col gap-4">
         <div className="flex flex-col gap-3">
           <div className="relative">
             <MagnifyingGlass className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />

@@ -112,13 +112,13 @@ describe("AddRecipientDialog", () => {
   describe("open / closed visibility", () => {
     test("does not render dialog content when open is false", () => {
       renderDialog({ open: false });
-      expect(screen.queryByText("Add Recipient")).not.toBeInTheDocument();
+      expect(screen.queryByText("Add recipient")).not.toBeInTheDocument();
     });
 
     test("renders 'Add Recipient' title when open is true", () => {
       renderDialog({ open: true });
       expect(
-        screen.getByRole("heading", { name: "Add Recipient" })
+        screen.getByRole("heading", { name: "Add recipient" })
       ).toBeInTheDocument();
     });
 
@@ -126,7 +126,7 @@ describe("AddRecipientDialog", () => {
       renderDialog();
       expect(
         screen.getByText(
-          "Add a person who needs to take action on this document."
+          "Who needs to sign, approve, or view this document?"
         )
       ).toBeInTheDocument();
     });
@@ -297,7 +297,7 @@ describe("AddRecipientDialog", () => {
       });
       renderDialog();
 
-      const addButton = screen.getByRole("button", { name: "Add Recipient" });
+      const addButton = screen.getByRole("button", { name: "Add recipient" });
       expect(addButton).toBeDisabled();
 
       const memberRow = screen.getByRole("button", { name: /Alice Smith/i });
@@ -322,16 +322,16 @@ describe("AddRecipientDialog", () => {
     });
   });
 
-  describe("External tab", () => {
+  describe("Email tab", () => {
     async function switchToExternal() {
       const user = userEvent.setup();
       mockUseOrganizationMembers.mockReturnValue({ data: [] });
       renderDialog();
-      await user.click(screen.getByRole("tab", { name: "External" }));
+      await user.click(screen.getByRole("tab", { name: "Email" }));
       return user;
     }
 
-    test("shows email and name inputs on the External tab", async () => {
+    test("shows email and name inputs on the Email tab", async () => {
       await switchToExternal();
       expect(screen.getByLabelText("Email Address *")).toBeInTheDocument();
       expect(screen.getByLabelText("Name (Optional)")).toBeInTheDocument();
@@ -340,7 +340,7 @@ describe("AddRecipientDialog", () => {
     test("submit is disabled when external email is empty", async () => {
       await switchToExternal();
       expect(
-        screen.getByRole("button", { name: "Add Recipient" })
+        screen.getByRole("button", { name: "Add recipient" })
       ).toBeDisabled();
     });
 
@@ -348,7 +348,7 @@ describe("AddRecipientDialog", () => {
       const user = await switchToExternal();
       await user.type(screen.getByLabelText("Email Address *"), "invalidemail");
       expect(
-        screen.getByRole("button", { name: "Add Recipient" })
+        screen.getByRole("button", { name: "Add recipient" })
       ).toBeDisabled();
     });
 
@@ -359,23 +359,16 @@ describe("AddRecipientDialog", () => {
         "valid@example.com"
       );
       expect(
-        screen.getByRole("button", { name: "Add Recipient" })
+        screen.getByRole("button", { name: "Add recipient" })
       ).not.toBeDisabled();
     });
   });
 
   describe("Role selector", () => {
-    test("renders a role label and combobox trigger", () => {
+    test("renders role and auth selectors", () => {
       renderDialog();
       expect(screen.getByLabelText("Role")).toBeInTheDocument();
-      expect(screen.getByLabelText("Authentication")).toBeInTheDocument();
-    });
-
-    test("shows role description for signer by default", () => {
-      renderDialog();
-      expect(
-        screen.getByText("This person must sign the document.")
-      ).toBeInTheDocument();
+      expect(screen.getByLabelText("Auth")).toBeInTheDocument();
     });
   });
 
@@ -402,7 +395,7 @@ describe("AddRecipientDialog", () => {
       renderDialog({ onSuccess });
 
       await user.click(screen.getByRole("button", { name: /Alice Smith/i }));
-      await user.click(screen.getByRole("button", { name: "Add Recipient" }));
+      await user.click(screen.getByRole("button", { name: "Add recipient" }));
 
       expect(mockAddRecipients).toHaveBeenCalledWith(FAKE_SLUG, FAKE_DOC_ID, [
         {
@@ -426,7 +419,7 @@ describe("AddRecipientDialog", () => {
       renderDialog({ onSuccess });
 
       await user.click(screen.getByRole("button", { name: /Alice Smith/i }));
-      await user.click(screen.getByRole("button", { name: "Add Recipient" }));
+      await user.click(screen.getByRole("button", { name: "Add recipient" }));
 
       expect(onSuccess).toHaveBeenCalledOnce();
     });
@@ -442,7 +435,7 @@ describe("AddRecipientDialog", () => {
       renderDialog({ onOpenChange });
 
       await user.click(screen.getByRole("button", { name: /Alice Smith/i }));
-      await user.click(screen.getByRole("button", { name: "Add Recipient" }));
+      await user.click(screen.getByRole("button", { name: "Add recipient" }));
 
       expect(onOpenChange).toHaveBeenCalledWith(false);
     });
@@ -453,13 +446,13 @@ describe("AddRecipientDialog", () => {
       const user = userEvent.setup();
       renderDialog();
 
-      await user.click(screen.getByRole("tab", { name: "External" }));
+      await user.click(screen.getByRole("tab", { name: "Email" }));
       await user.type(
         screen.getByLabelText("Email Address *"),
         "external@example.com"
       );
       await user.type(screen.getByLabelText("Name (Optional)"), "Jane Doe");
-      await user.click(screen.getByRole("button", { name: "Add Recipient" }));
+      await user.click(screen.getByRole("button", { name: "Add recipient" }));
 
       expect(mockAddRecipients).toHaveBeenCalledWith(FAKE_SLUG, FAKE_DOC_ID, [
         {

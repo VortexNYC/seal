@@ -18,7 +18,8 @@ import "./styles.css";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 0,
+      // Cap: revisiting Documents/Templates/Settings felt like a cold load every time.
+      staleTime: 30_000,
       refetchOnWindowFocus: false,
     },
   },
@@ -49,7 +50,7 @@ const router = createRouter({
   defaultNotFoundComponent: () => <NotFound />,
   scrollRestoration: true,
   defaultStructuralSharing: true,
-  defaultPreloadStaleTime: 0,
+  defaultPreloadStaleTime: 30_000,
   context: { queryClient },
   Wrap: function WrapComponent({ children }: { children: React.ReactNode }) {
     return (

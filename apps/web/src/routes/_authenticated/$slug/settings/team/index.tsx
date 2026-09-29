@@ -49,12 +49,14 @@ function TeamSettings() {
 
           {isPro && canManage && (
             <InviteMemberForm
+              className="w-full max-w-none"
               title="Invite member"
               description="Add a teammate to this workspace."
             />
           )}
 
           <OrganizationMembers
+            className="w-full max-w-none"
             canManageMembers={canManage}
             onMemberRemoved={() => {
               // better-auth-ui reloads internally; no external refetch needed

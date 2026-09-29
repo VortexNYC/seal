@@ -39,33 +39,39 @@ function SecuritySettings() {
       <SettingsBody className="items-stretch">
         <div className="flex w-full flex-col gap-5">
           <SessionList
+            className="w-full max-w-none"
             showRevokeOthersAction
             onRevoke={() => {
               toast.success("Session revoked");
             }}
           />
           <EnableTwoFactorForm
+            className="w-full max-w-none"
             issuer="Seal"
             onSuccess={() => {
               toast.success("Two-factor authentication enabled");
             }}
           />
           <GenerateBackupCodesForm
+            className="w-full max-w-none"
             onSuccess={() => {
               toast.success("Backup codes regenerated");
             }}
           />
           <DisableTwoFactorForm
+            className="w-full max-w-none"
             onSuccess={() => {
               toast.success("Two-factor authentication disabled");
             }}
           />
           <ChangePasswordForm
+            className="w-full max-w-none"
             onSuccess={() => {
               toast.success("Password changed");
             }}
           />
           <SetPasswordForm
+            className="w-full max-w-none"
             onSuccess={() => {
               toast.success("Password set");
             }}

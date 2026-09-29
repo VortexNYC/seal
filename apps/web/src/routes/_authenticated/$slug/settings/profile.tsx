@@ -46,7 +46,7 @@ function ProfileLayout() {
 
   return (
     <PageWrapper title="Account">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 lg:flex-row">
+      <div className="flex w-full flex-col gap-5 lg:flex-row lg:gap-8">
         <aside className="w-full shrink-0 lg:w-56">
           <nav className="flex flex-col gap-0.5">
             {navItems.map((item) => {

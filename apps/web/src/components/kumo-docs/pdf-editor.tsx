@@ -301,10 +301,6 @@ export function PdfEditor({
           }}
         />
       </div>
-      <p className="text-muted-foreground text-[11px]">
-        Full EmbedPDF surface — annotate, redact, forms, signatures, page
-        organize, export. Save writes the edited PDF back into Seal storage.
-      </p>
     </div>
   );
 }
