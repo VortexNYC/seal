@@ -62,9 +62,10 @@ export const FIELD_DIMENSIONS: Record<
   FieldType,
   { width: number; height: number }
 > = {
-  signature: { width: 200, height: 50 },
-  free_signature: { width: 200, height: 50 },
-  initials: { width: 80, height: 40 },
+  // ~33%×5% / ~13%×4% of letter page — short so ink sits on the rule.
+  signature: { width: 200, height: 40 },
+  free_signature: { width: 200, height: 40 },
+  initials: { width: 80, height: 32 },
   name: { width: 180, height: 36 },
   email: { width: 200, height: 36 },
   text: { width: 180, height: 36 },

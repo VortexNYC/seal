@@ -105,7 +105,8 @@ export function RecipientSelectorDialog({
       <Dialog>
         <Dialog.Title>Assign Field to Recipient</Dialog.Title>
         <Dialog.Description>
-          Choose which recipient should fill this {fieldType} field.
+          Choose which recipient should complete this{" "}
+          {formatFieldTypeLabel(fieldType).toLowerCase()} field.
         </Dialog.Description>
 
         <div className="space-y-4 py-4">

@@ -24,13 +24,15 @@ const LINES_PER_PAGE = 50;
 const LEFT_MARGIN = 10;
 
 const DEFAULT_SIZE: Record<FieldType, { width: number; height: number }> = {
-  signature: { width: 33, height: 6 },
-  initials: { width: 10, height: 5 },
+  signature: { width: 33, height: 5 },
+  initials: { width: 13, height: 4 },
   date: { width: 23, height: 5 },
   name: { width: 30, height: 5 },
   checkbox: { width: 5, height: 4 },
   text: { width: 30, height: 5 },
 };
+
+const LINE_BOTTOM_ANCHORED = new Set<FieldType>(["signature", "initials"]);
 
 function geometryFor(type: FieldType, line: number): {
   x: number;
@@ -39,10 +41,11 @@ function geometryFor(type: FieldType, line: number): {
   height: number;
 } {
   const size = DEFAULT_SIZE[type];
-  const y = Math.min(
-    100 - size.height,
-    Math.round((Math.max(0, line) / LINES_PER_PAGE) * 90 * 10) / 10
-  );
+  const lineY =
+    Math.round((Math.max(0, line) / LINES_PER_PAGE) * 90 * 10) / 10;
+  const y = LINE_BOTTOM_ANCHORED.has(type)
+    ? Math.max(0, Math.min(100 - size.height, lineY - size.height))
+    : Math.min(100 - size.height, lineY);
   return { x: LEFT_MARGIN, y, width: size.width, height: size.height };
 }
 

@@ -5,13 +5,17 @@ import {
   Head,
   Heading,
   Html,
+  Img,
   Preview,
   Section,
   Text,
 } from "@react-email/components";
 import type { ReactNode } from "react";
 
-import { containers, email, fonts, surfaces, text } from "../styles.js";
+import { containers, email, fonts, status, surfaces, text } from "../styles.js";
+
+/** Hosted from apps/web/public/logo after deploy. */
+const SEAL_LOCKUP_URL = "https://app.seal.nyc/logo/seal-lockup-light.png";
 
 const sealEmailBrand = {
   name: "Seal",
@@ -49,7 +53,20 @@ export function EmailLayout({
         }}
       >
         <Container style={containers.card}>
-          <Section style={{ marginBottom: "24px" }}>
+          <Section style={{ marginBottom: "28px" }}>
+            <Img
+              src={SEAL_LOCKUP_URL}
+              alt="Seal"
+              width={140}
+              height={36}
+              style={{
+                display: "block",
+                margin: "0 0 20px 0",
+                border: "0",
+                outline: "none",
+                textDecoration: "none",
+              }}
+            />
             <Heading as="h1" style={text.heading}>
               {subtitle}
             </Heading>
@@ -58,6 +75,9 @@ export function EmailLayout({
           {footerText ? (
             <Text style={surfaces.footer}>{footerText}</Text>
           ) : null}
+          <Text style={surfaces.footer}>
+            {sealEmailBrand.name} · {sealEmailBrand.supportEmail}
+          </Text>
         </Container>
       </Body>
     </Html>
@@ -75,14 +95,14 @@ export const emailStyles = {
   },
   /** Secondary/lighter body text */
   bodyTextMuted: {
-    color: "#6b6560",
+    color: email.mutedForeground,
     fontSize: "16px",
     lineHeight: "26px",
     margin: "0 0 16px 0",
   },
   /** Large body text with bottom margin */
   bodyTextSpaced: {
-    color: "#6b6560",
+    color: email.mutedForeground,
     fontSize: "16px",
     lineHeight: "26px",
     margin: "0 0 24px 0",
@@ -96,7 +116,7 @@ export const emailStyles = {
   },
   /** Informational small text (no margin) */
   infoText: {
-    color: "#6b6560",
+    color: email.mutedForeground,
     fontSize: "14px",
     lineHeight: "22px",
     margin: "0",
@@ -105,6 +125,19 @@ export const emailStyles = {
   strong: {
     color: email.foreground,
     fontWeight: "600" as const,
+  },
+  /** Centered CTA row — email clients ignore Tailwind className */
+  ctaSection: {
+    textAlign: "center" as const,
+    margin: "32px 0",
+  },
+  ctaSectionCompact: {
+    textAlign: "center" as const,
+    margin: "24px 0 0 0",
+  },
+  ctaSectionTight: {
+    textAlign: "center" as const,
+    marginTop: "12px",
   },
   /** Primary CTA button */
   ctaButton: {
@@ -117,10 +150,10 @@ export const emailStyles = {
     textAlign: "center" as const,
     textDecoration: "none",
   },
-  /** Secondary/info CTA button */
+  /** Secondary/info CTA — functional status.info, not a brand accent */
   ctaButtonSecondary: {
-    backgroundColor: "#2563eb",
-    color: "#ffffff",
+    backgroundColor: status.info,
+    color: status.infoForeground,
     borderRadius: "6px",
     fontSize: "14px",
     fontWeight: "500" as const,
@@ -156,6 +189,6 @@ export const emailStyles = {
     padding: "12px 12px 12px 16px",
     marginBottom: "24px",
   },
-  /** Link color */
+  /** Link color — brand primary */
   linkColor: email.primary,
 } as const;

@@ -15,7 +15,7 @@ export interface DocumentCompletedProps {
   documentName: string;
   documentUrl: string;
   completedAt: number;
-  recipientsSummary: RecipientSummary[];
+  recipientsSummary?: RecipientSummary[];
   /** Sealed PDF download — Documenso-class completion CTA. */
   downloadUrl?: string;
 }
@@ -79,8 +79,10 @@ function SuccessBanner() {
 
 function RecipientActivitySection({
   recipientsSummary,
-}: Pick<DocumentCompletedProps, "recipientsSummary">) {
-  if (recipientsSummary.length === 0) {
+}: {
+  recipientsSummary: RecipientSummary[] | undefined;
+}) {
+  if (!recipientsSummary || recipientsSummary.length === 0) {
     return null;
   }
 
@@ -147,7 +149,7 @@ export function DocumentCompleted({
   documentName,
   documentUrl,
   completedAt,
-  recipientsSummary,
+  recipientsSummary = [],
   downloadUrl,
 }: DocumentCompletedProps) {
   const previewText = `All signatures collected for "${documentName}"`;
@@ -181,7 +183,7 @@ export function DocumentCompleted({
         <RecipientActivitySection recipientsSummary={recipientsSummary} />
 
         {/* CTA Button — download first (Documenso-class), dashboard second */}
-        <Section className="my-[32px] text-center">
+        <Section style={emailStyles.ctaSection}>
           <Button style={emailStyles.ctaButton} href={primaryUrl}>
             {downloadUrl ? "Download signed document" : "View Completed Document"}
           </Button>

@@ -6,6 +6,7 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 import { percentToPdfRect } from "./pdf-ops.js";
+import { trimTransparentPng } from "./png-trim.js";
 
 export type FinalPdfField = {
   fieldType: string;
@@ -115,18 +116,24 @@ export async function flattenFieldsIntoPdf(
     ) {
       const parsed = parseDataUrl(field.signatureImageUrl);
       if (parsed) {
+        // DocuSeal-class: crop transparent margins so bottom-align puts ink on the rule.
+        const imageBytes =
+          parsed.kind === "png"
+            ? trimTransparentPng(parsed.bytes)
+            : parsed.bytes;
         const image =
           parsed.kind === "png"
-            ? await doc.embedPng(parsed.bytes)
-            : await doc.embedJpg(parsed.bytes);
+            ? await doc.embedPng(imageBytes)
+            : await doc.embedJpg(imageBytes);
         const scale = Math.min(
           rect.width / image.width,
           rect.height / image.height
         );
         const drawW = image.width * scale;
         const drawH = image.height * scale;
+        // Center horizontally; bottom-align so ink sits on the signature line.
         page.drawImage(image, {
-          x: rect.x,
+          x: rect.x + Math.max(0, (rect.width - drawW) / 2),
           y: rect.y,
           width: drawW,
           height: drawH,

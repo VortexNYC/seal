@@ -1,7 +1,9 @@
-import type { JSX } from "react";
-import { useCallback, useRef, useState } from "react";
+import type { FormEvent, JSX } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { PDFViewer, type PDFViewerRef } from "@embedpdf/react-pdf-viewer";
 import { Button } from "@cloudflare/kumo/components/button";
+import { Input } from "@cloudflare/kumo/components/input";
+import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 
 import { cn } from "@/lib/utils";
 
@@ -63,9 +65,37 @@ type DocumentManagerCapability = {
   getActiveDocumentId?: () => string | null;
 };
 
+type ScrollCapability = {
+  getCurrentPage?: () => number;
+  getTotalPages?: () => number;
+  scrollToPage?: (options: { pageNumber: number }) => void;
+  onPageChange?: {
+    on: (listener: (event: { pageNumber: number; totalPages: number }) => void) => () => void;
+  };
+};
+
+type PluginRegistryLike = {
+  getPlugin?: (id: string) => { provides?: () => unknown } | undefined;
+};
+
+function getScrollCapability(registry: unknown): ScrollCapability | null {
+  if (!registry || typeof registry !== "object") {
+    return null;
+  }
+  const plugin = (registry as PluginRegistryLike).getPlugin?.("scroll");
+  const provided = plugin?.provides?.();
+  if (!provided || typeof provided !== "object") {
+    return null;
+  }
+  return provided as ScrollCapability;
+}
+
 /**
  * PDF editor — Extend pdf-editor depth via EmbedPDF (same engine Extend uses).
  * Kumo/Taupe chrome; never @extend/*.
+ *
+ * EmbedPDF's built-in Previous/Next page controls desync after jump-to-page
+ * (Prev from mid-doc jumps to page 1). Seal owns page nav via ScrollCapability.scrollToPage.
  */
 export function PdfEditor({
   src,
@@ -77,12 +107,78 @@ export function PdfEditor({
   const viewerRef = useRef<PDFViewerRef>(null);
   const [ready, setReady] = useState(false);
   const registryRef = useRef<unknown>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [pageInput, setPageInput] = useState("1");
+
+  useEffect(() => {
+    setPageInput(String(currentPage));
+  }, [currentPage]);
+
+  const handleReady = useCallback((registry: unknown) => {
+    registryRef.current = registry;
+    setReady(true);
+    const scroll = getScrollCapability(registry);
+    if (!scroll) {
+      return;
+    }
+    const initialPage = scroll.getCurrentPage?.() ?? 1;
+    const initialTotal = scroll.getTotalPages?.() ?? 1;
+    setCurrentPage(initialPage);
+    setTotalPages(Math.max(1, initialTotal));
+  }, []);
+
+  // Keep page-change subscription for the life of the registry
+  useEffect(() => {
+    if (!ready) {
+      return undefined;
+    }
+    const scroll = getScrollCapability(registryRef.current);
+    if (!scroll?.onPageChange) {
+      return undefined;
+    }
+    return scroll.onPageChange.on((event) => {
+      setCurrentPage(event.pageNumber);
+      setTotalPages(Math.max(1, event.totalPages));
+    });
+  }, [ready]);
+
+  const goToPage = useCallback((page: number) => {
+    const scroll = getScrollCapability(registryRef.current);
+    if (!scroll?.scrollToPage) {
+      return;
+    }
+    // Prefer live capability totals — closure totalPages can be stale (1) before
+    // onPageChange fires, which previously clamped mid-doc jumps to page 1.
+    const liveTotal = Math.max(
+      1,
+      scroll.getTotalPages?.() ?? totalPages,
+      totalPages
+    );
+    if (liveTotal !== totalPages) {
+      setTotalPages(liveTotal);
+    }
+    const clamped = Math.min(Math.max(1, page), liveTotal);
+    scroll.scrollToPage({ pageNumber: clamped });
+    setCurrentPage(clamped);
+  }, [totalPages]);
+
+  const handlePageInputSubmit = useCallback(
+    (event: FormEvent) => {
+      event.preventDefault();
+      const pageNum = Number.parseInt(pageInput, 10);
+      if (!Number.isNaN(pageNum)) {
+        goToPage(pageNum);
+      } else {
+        setPageInput(String(currentPage));
+      }
+    },
+    [pageInput, goToPage, currentPage]
+  );
 
   const handleSave = useCallback(async () => {
     if (!onSave || !registryRef.current) return;
-    const registry = registryRef.current as {
-      getPlugin?: (id: string) => { provides?: () => unknown } | undefined;
-    };
+    const registry = registryRef.current as PluginRegistryLike;
     const exportPlugin = registry.getPlugin?.("export");
     const documentManager = registry.getPlugin?.("document-manager");
     const exportCap = exportPlugin?.provides?.() as ExportCapability | undefined;
@@ -118,8 +214,55 @@ export function PdfEditor({
       data-kumo-docs="pdf-editor"
       className={cn("flex flex-col gap-2", className)}
     >
-      {onSave ? (
-        <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="bg-kumo-surface/95 flex items-center gap-1 rounded-lg border p-1.5 shadow-sm">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            shape="square"
+            aria-label="Previous page"
+            disabled={!ready || currentPage <= 1}
+            onClick={() => goToPage(currentPage - 1)}
+            className="size-8"
+            icon={CaretLeft}
+          />
+          <form
+            onSubmit={handlePageInputSubmit}
+            className="flex items-center gap-1"
+          >
+            <Input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={pageInput}
+              onChange={(event) => setPageInput(event.target.value)}
+              onBlur={() => {
+                const pageNum = Number.parseInt(pageInput, 10);
+                if (Number.isNaN(pageNum) || pageNum < 1 || pageNum > totalPages) {
+                  setPageInput(String(currentPage));
+                }
+              }}
+              className="h-8 w-10 px-1 text-center text-sm"
+              aria-label="Current page"
+            />
+            <span className="text-kumo-secondary text-sm whitespace-nowrap">
+              / {totalPages}
+            </span>
+          </form>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            shape="square"
+            aria-label="Next page"
+            disabled={!ready || currentPage >= totalPages}
+            onClick={() => goToPage(currentPage + 1)}
+            className="size-8"
+            icon={CaretRight}
+          />
+        </div>
+        {onSave ? (
           <Button
             type="button"
             size="sm"
@@ -132,9 +275,17 @@ export function PdfEditor({
           >
             {saving ? "Saving to Seal…" : "Save to Seal"}
           </Button>
-        </div>
-      ) : null}
-      <div className="border-border bg-card min-h-[36rem] overflow-hidden rounded-xl border">
+        ) : null}
+      </div>
+      <div
+        className={cn(
+          "border-border bg-card min-h-[36rem] overflow-hidden rounded-xl border",
+          // Hide EmbedPDF's built-in page pager — it desyncs after jump-to-page.
+          "[&_button[aria-label='Previous Page']]:hidden",
+          "[&_button[aria-label='Next Page']]:hidden",
+          "[&_input[aria-label='Current page']]:hidden"
+        )}
+      >
         <PDFViewer
           ref={viewerRef}
           style={{ width: "100%", height: "36rem" }}
@@ -145,8 +296,7 @@ export function PdfEditor({
             fonts: { ui: null, signature: null },
           }}
           onReady={(registry) => {
-            registryRef.current = registry;
-            setReady(true);
+            handleReady(registry);
           }}
         />
       </div>

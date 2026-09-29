@@ -49,7 +49,7 @@ function ReminderBadge({
   badgeLabel,
 }: Pick<ReminderMeta, "isUrgent" | "badgeLabel">) {
   return (
-    <Section className="mb-[24px] text-center">
+    <Section style={emailStyles.ctaSectionCompact}>
       <div
         style={{
           display: "inline-block",
@@ -184,7 +184,7 @@ export function DocumentReminder({
         />
 
         {/* CTA Button */}
-        <Section className="my-[32px] text-center">
+        <Section style={emailStyles.ctaSection}>
           <Button style={emailStyles.ctaButton} href={signingUrl}>
             Review & Sign Now
           </Button>

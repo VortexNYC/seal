@@ -1,6 +1,5 @@
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
-import { Label } from "@cloudflare/kumo/components/label";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { ShieldCheck, Spinner } from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
@@ -107,12 +106,12 @@ export function SignerAuthGate({
           }}
         >
           <div className="space-y-2">
-            <Label htmlFor="signer-auth-code">
-              {method === "email_otp" ? "Verification code" : "Access code"}
-            </Label>
             <Input
               id="signer-auth-code"
               data-testid="signer-auth-code"
+              label={
+                method === "email_otp" ? "Verification code" : "Access code"
+              }
               autoComplete="one-time-code"
               inputMode={method === "email_otp" ? "numeric" : "text"}
               value={code}

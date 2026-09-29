@@ -22,6 +22,14 @@ export type FieldGeometry = {
 const LINES_PER_PAGE = 50;
 const LEFT_MARGIN = 10;
 
+/** Field types whose ink sits on a printed rule — line index ≈ field BOTTOM. */
+const LINE_BOTTOM_ANCHORED = new Set<PlaceableFieldType>([
+  "signature",
+  "free_signature",
+  "initials",
+  "stamp",
+]);
+
 export {
   mapCandidateTypeToFieldType,
 } from "./field-types";
@@ -29,6 +37,8 @@ export {
 /**
  * Estimate page-percent geometry from a markdown line index.
  * `line` is 0-based within the page content.
+ * For signature-like fields, the line is treated as the rule the ink sits on
+ * (field bottom), matching burn-in bottom-align behavior.
  */
 export function geometryFromLine(
   fieldType: PlaceableFieldType,
@@ -36,10 +46,11 @@ export function geometryFromLine(
 ): FieldGeometry {
   const size = DEFAULT_FIELD_SIZE_PERCENT[fieldType];
   const clampedLine = Math.max(0, line);
-  const y = Math.min(
-    100 - size.height,
-    Math.round((clampedLine / LINES_PER_PAGE) * 90 * 10) / 10
-  );
+  const lineY =
+    Math.round((clampedLine / LINES_PER_PAGE) * 90 * 10) / 10;
+  const y = LINE_BOTTOM_ANCHORED.has(fieldType)
+    ? Math.max(0, Math.min(100 - size.height, lineY - size.height))
+    : Math.min(100 - size.height, lineY);
   return {
     x: LEFT_MARGIN,
     y,

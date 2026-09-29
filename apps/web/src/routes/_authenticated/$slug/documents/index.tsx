@@ -15,6 +15,7 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import {
+  Link,
   createFileRoute,
   useNavigate,
   useRouter,
@@ -469,33 +470,63 @@ function DocumentTableRow({
     <Table.Row
       key={doc._id}
       data-testid="document-row"
-      className="hover:bg-muted/50 cursor-pointer"
-      onClick={() => actions.openDocument(doc._id)}
+      className="hover:bg-muted/50 relative cursor-pointer"
     >
-      <Table.Cell>
-        <DocumentThumbnail
-          organizationSlug={slug}
-          publicId={doc._id}
-          thumbnailDataUrl={doc.thumbnailDataUrl}
-          name={doc.name}
+      <Table.Cell className="relative">
+        <Link
+          to="/$slug/documents/$documentId"
+          params={{ slug, documentId: doc._id }}
+          className="absolute inset-0 z-0"
+          aria-label={`Open ${doc.name}`}
         />
+        <div className="pointer-events-none relative z-[1]">
+          <DocumentThumbnail
+            organizationSlug={slug}
+            publicId={doc._id}
+            thumbnailDataUrl={doc.thumbnailDataUrl}
+            name={doc.name}
+          />
+        </div>
       </Table.Cell>
-      <Table.Cell>
-        <DocumentSummary doc={doc} matches={matches} />
+      <Table.Cell className="relative">
+        <Link
+          to="/$slug/documents/$documentId"
+          params={{ slug, documentId: doc._id }}
+          className="absolute inset-0 z-0"
+          tabIndex={-1}
+          aria-hidden
+        />
+        <div className="pointer-events-none relative z-[1]">
+          <DocumentSummary doc={doc} matches={matches} />
+        </div>
       </Table.Cell>
-      <Table.Cell className="hidden sm:table-cell">
-        <div className="text-sm">
+      <Table.Cell className="relative hidden sm:table-cell">
+        <Link
+          to="/$slug/documents/$documentId"
+          params={{ slug, documentId: doc._id }}
+          className="absolute inset-0 z-0"
+          tabIndex={-1}
+          aria-hidden
+        />
+        <div className="pointer-events-none relative z-[1] text-sm">
           <p>{formatDate(doc.createdAt)}</p>
           <p className="text-muted-foreground">{formatBytes(doc.fileSize)}</p>
         </div>
       </Table.Cell>
-      <Table.Cell>
-        <div className="flex items-center gap-2">
+      <Table.Cell className="relative">
+        <Link
+          to="/$slug/documents/$documentId"
+          params={{ slug, documentId: doc._id }}
+          className="absolute inset-0 z-0"
+          tabIndex={-1}
+          aria-hidden
+        />
+        <div className="pointer-events-none relative z-[1] flex items-center gap-2">
           <WorkflowStatusBadge status={doc.workflowStatus} />
           <DocumentAiStatus status={doc.aiProcessingStatus} tooltip />
         </div>
       </Table.Cell>
-      <Table.Cell className="text-right">
+      <Table.Cell className="relative z-[1] text-right">
         <DocumentActionsMenu
           actions={actions}
           delegateOwnership={delegateOwnership}
@@ -580,10 +611,15 @@ function DocumentGridCard({
   return (
     <LayerCard
       key={doc._id}
-      className="cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
-      onClick={() => actions.openDocument(doc._id)}
+      className="relative cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
     >
-      <div className="bg-muted flex h-32 w-full items-center justify-center overflow-hidden border-b">
+      <Link
+        to="/$slug/documents/$documentId"
+        params={{ slug, documentId: doc._id }}
+        className="absolute inset-0 z-0"
+        aria-label={`Open ${doc.name}`}
+      />
+      <div className="bg-muted pointer-events-none relative z-[1] flex h-32 w-full items-center justify-center overflow-hidden border-b">
         <DocumentThumbnail
           organizationSlug={slug}
           publicId={doc._id}
@@ -593,18 +629,20 @@ function DocumentGridCard({
         />
       </div>
       <LayerCard.Primary>
-        <GridCardHeader actions={actions} doc={doc} matches={matches} />
-        {doc.description && (
-          <p className="line-clamp-2">
-            <HighlightedText
-              text={doc.description}
-              matches={matches}
-              fieldKey="description"
-            />
-          </p>
-        )}
+        <div className="relative z-[1]">
+          <GridCardHeader actions={actions} doc={doc} matches={matches} />
+          {doc.description ? (
+            <p className="pointer-events-none line-clamp-2">
+              <HighlightedText
+                text={doc.description}
+                matches={matches}
+                fieldKey="description"
+              />
+            </p>
+          ) : null}
+        </div>
       </LayerCard.Primary>
-      <div className="p-4 pt-0">
+      <div className="pointer-events-none relative z-[1] p-4 pt-0">
         <DocumentGridMetadata doc={doc} />
       </div>
     </LayerCard>
@@ -622,13 +660,15 @@ function GridCardHeader({
 }) {
   return (
     <div className="flex items-start justify-between">
-      <div className="flex min-w-0 flex-1 items-start gap-2">
+      <div className="pointer-events-none flex min-w-0 flex-1 items-start gap-2">
         <FileIcon className="text-muted-foreground h-5 w-5" />
         <h3 className="line-clamp-2 text-base leading-5 break-all">
           <HighlightedText text={doc.name} matches={matches} fieldKey="name" />
         </h3>
       </div>
-      <DocumentActionsMenu actions={actions} doc={doc} />
+      <div className="relative z-[2]">
+        <DocumentActionsMenu actions={actions} doc={doc} />
+      </div>
     </div>
   );
 }

@@ -23,7 +23,6 @@ import {
   Spinner,
   WarningCircle,
   WifiSlash,
-  XCircle,
 } from "@phosphor-icons/react";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import {
@@ -37,7 +36,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type ReactElement,
 } from "react";
 
 import { EsignConsentDialog } from "@/components/documents/esign-consent-dialog";
@@ -48,7 +46,6 @@ import { PdfSigningDocumentSurface } from "@/components/documents/pdf-signing-do
 import { SignatureCapture } from "@/components/documents/signature-capture";
 import { SigningInviteGate } from "@/components/signing/signing-invite-gate";
 import { SigningShell } from "@/components/signing/signing-shell";
-import { SealLogo } from "@/components/seal-logo";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { DictateNextSignerDialog } from "@/components/signing/dictate-next-signer-dialog";
 import { DocumentExpiredPage } from "@/components/signing/document-expired-page";
@@ -74,15 +71,6 @@ import { formatMoney, money } from "@/lib/money";
 import { pageSEO } from "@/lib/seo";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-function sealAssertPresent<T>(
-  value: T | null | undefined,
-  message = "Expected value to be present."
-): NonNullable<T> {
-  if (value === null || value === undefined) {
-    throw new Error(message);
-  }
-  return value;
-}
 
 function asFieldProperties(value: unknown):
   | {

@@ -22,6 +22,7 @@ import {
 import { FeedbackButton } from "@/components/feedback-button";
 import { NotFoundPage } from "@/components/not-found-page";
 import { PostHogIdentify } from "@/components/posthog-identify";
+import { PostHogPageview } from "@/components/posthog-pageview";
 import { RouteErrorComponent } from "@/components/route-error-component";
 import { WorkspaceLayoutSkeleton } from "@/components/skeletons/workspace-layout-skeleton";
 import { useJamMetadata } from "@/hooks/use-jam-metadata";
@@ -77,6 +78,7 @@ function WorkspaceLayout() {
   return (
     <Sidebar.Provider collapsible="icon">
       <PostHogIdentify organization={orgData} />
+      <PostHogPageview />
       <div className="bg-background/80 relative z-10 flex h-dvh w-full overflow-hidden">
         <AppSidebar
           slug={slug}
