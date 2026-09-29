@@ -580,39 +580,36 @@ function ContactsPage() {
       }}
       headerActions={<ExportContacts contacts={loadedContacts} />}
     >
-      <div className="space-y-6">
-        {/* Search Input */}
-        <div className="bg-card/60 relative rounded-lg border px-2 py-2">
-          <MagnifyingGlass className="text-kumo-secondary absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-          <Input
-            type="text"
-            aria-label="Search contacts by name"
-            placeholder="Search contacts by name..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="pr-9 pl-9"
-          />
-          {searchInput && (
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-label="Clear search"
-              className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2"
-              onClick={() => setSearchInput("")}
-            >
-              <X className="h-4 w-4" />
-              <span className="sr-only">Clear search</span>
-            </Button>
-          )}
-        </div>
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+        <div className="flex flex-col gap-3">
+          <div className="relative">
+            <MagnifyingGlass className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+            <Input
+              type="text"
+              aria-label="Search contacts by name"
+              placeholder="Search contacts…"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="pr-9 pl-9"
+            />
+            {searchInput && (
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label="Clear search"
+                className="absolute top-1/2 right-1 size-7 -translate-y-1/2"
+                onClick={() => setSearchInput("")}
+              >
+                <X className="size-4" />
+                <span className="sr-only">Clear search</span>
+              </Button>
+            )}
+          </div>
 
-        {/* Status Filter Tabs */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="self-center">
-            <Text as="span" variant="secondary" size="sm">
-              Status:
-            </Text>
-          </span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+              Status
+            </span>
           <Button
             size="sm"
             variant={statusFilter === "all" ? "primary" : "outline"}
@@ -641,6 +638,7 @@ function ContactsPage() {
           >
             Lead
           </Button>
+          </div>
         </div>
 
         {/* Contacts List with Suspense */}
