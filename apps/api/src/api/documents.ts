@@ -47,6 +47,11 @@ import {
   normalizeAuthMethod,
 } from "../platform/signer-auth.js";
 import {
+  getAuditActor,
+  getAuditRequestMeta,
+  writeAuditLog,
+} from "../platform/audit-log.js";
+import {
   readOrgSigningCompliance,
   resolveRecipientAuthMethod,
 } from "../platform/signing-settings.js";
@@ -341,6 +346,19 @@ app.openapi(createRouteDef, async (c) => {
     metadata: JSON.stringify({ documentId, publicId }),
     createdAt: now,
   });
+
+  const createAuditActor = getAuditActor({ user: c.get("user") });
+  if (createAuditActor) {
+    await writeAuditLog(db, {
+      organizationId,
+      actor: createAuditActor,
+      action: "document.created",
+      resourceType: "document",
+      resourceId: documentId,
+      metadata: { publicId, name: input.name },
+      ...getAuditRequestMeta(c),
+    });
+  }
 
   const rows = await db
     .select()
@@ -4269,6 +4287,25 @@ app.openapi(sendRouteDef, async (c) => {
     createdAt: sentAt,
   });
 
+  // Sealed workspace audit (Settings → Audit Log / SIEM). The activity row
+  // above feeds the in-app feed only — without this, SPA sends never appear
+  // in audit_logs (v1/MCP send already writes here).
+  const auditActor = getAuditActor({ user: c.get("user") });
+  if (auditActor) {
+    await writeAuditLog(db, {
+      organizationId,
+      actor: auditActor,
+      action: "document.sent",
+      resourceType: "document",
+      resourceId: doc.id,
+      metadata: {
+        publicId,
+        recipientCount: sentRecipients.length,
+      },
+      ...getAuditRequestMeta(c),
+    });
+  }
+
   return c.json({ success: true });
 });
 
@@ -4333,6 +4370,19 @@ app.openapi(cancelRouteDef, async (c) => {
     .update(documents)
     .set({ status: "cancelled", updatedAt: new Date() })
     .where(eq(documents.id, doc.id));
+
+  const cancelAuditActor = getAuditActor({ user: c.get("user") });
+  if (cancelAuditActor) {
+    await writeAuditLog(db, {
+      organizationId,
+      actor: cancelAuditActor,
+      action: "document.cancelled",
+      resourceType: "document",
+      resourceId: doc.id,
+      metadata: { publicId },
+      ...getAuditRequestMeta(c),
+    });
+  }
 
   return c.json({ success: true });
 });
