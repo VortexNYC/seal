@@ -16,8 +16,7 @@ export interface SigningInviteGateProps {
 }
 
 /**
- * DocuSeal-style invite gate: title · invited-by · email · START.
- * Fluid width — follows the viewport, no fixed pixel shell.
+ * Invite gate — same visual family as SigningShell (brand → title → one CTA).
  */
 export function SigningInviteGate({
   documentTitle,
@@ -30,28 +29,35 @@ export function SigningInviteGate({
   emailReadOnly = false,
 }: SigningInviteGateProps): JSX.Element {
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center space-y-6 px-[max(1rem,env(safe-area-inset-left))] py-8 pr-[max(1rem,env(safe-area-inset-right))]">
-      <div className="space-y-3 text-center">
-        <p className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
+    <main
+      data-seal-enter
+      className="bg-background mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center gap-6 px-[max(1rem,env(safe-area-inset-left))] py-8 pr-[max(1rem,env(safe-area-inset-right))]"
+    >
+      <div className="flex flex-col gap-2 text-center">
+        <p className="text-muted-foreground m-0 text-sm font-medium tracking-wide uppercase">
           {brandName}
         </p>
-        <p className="text-2xl font-semibold tracking-tight text-balance">
-          You have been invited to sign
+        <h1 className="m-0 text-2xl font-semibold tracking-tight text-balance">
+          You&apos;re invited to sign
+        </h1>
+        <p className="text-muted-foreground m-0 text-sm text-pretty">
+          Review the document, fill any required fields, then sign. Takes a
+          minute.
         </p>
       </div>
-      <div className="bg-muted/40 flex w-full items-center rounded-xl p-[clamp(0.75rem,3vw,1.25rem)]">
-        <div className="min-w-0">
-          <p className="mb-1 text-lg font-bold text-balance">{documentTitle}</p>
-          {invitedBy ? (
-            <p className="text-muted-foreground text-sm text-pretty">
-              Invited by {invitedBy}
-            </p>
-          ) : null}
-        </div>
+
+      <div className="border-border bg-card flex w-full flex-col gap-1 rounded-xl border p-[clamp(0.75rem,3vw,1.25rem)] shadow-sm">
+        <p className="m-0 text-lg font-semibold text-balance">{documentTitle}</p>
+        {invitedBy ? (
+          <p className="text-muted-foreground m-0 text-sm text-pretty">
+            From {invitedBy}
+          </p>
+        ) : null}
       </div>
-      <div className="w-full space-y-4">
+
+      <div className="flex w-full flex-col gap-4">
         <Input
-          label="Email"
+          label="Signing as"
           type="email"
           value={email}
           onChange={(e) => onEmailChange?.(e.target.value)}
@@ -62,11 +68,12 @@ export function SigningInviteGate({
         />
         <Button
           type="button"
-          className="min-h-12 w-full text-base"
+          variant="primary"
+          className="min-h-12 w-full text-base font-semibold"
           onClick={onStart}
           disabled={isStarting || !email.trim()}
         >
-          {isStarting ? "Starting…" : "Start"}
+          {isStarting ? "Opening…" : "Continue to document"}
         </Button>
       </div>
     </main>

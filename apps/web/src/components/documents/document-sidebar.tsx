@@ -53,8 +53,11 @@ import { cn } from "@/lib/utils";
 
 import { AIInsightsPanel } from "./ai-annotation-overlays";
 import type { useDocumentAnnotations } from "./ai-annotation-overlays";
+import {
+  DocumentNextAction,
+  type DocumentNextActionModel,
+} from "./document-next-action";
 import { DocumentProgressRing } from "./document-progress-ring";
-import { DocumentStatusHero } from "./document-status-hero";
 import { FieldList } from "./field-list";
 import { FieldToolbar } from "./field-toolbar";
 import { InAppSigningSection } from "./in-app-signing-section";
@@ -138,6 +141,13 @@ interface DocumentSidebarProps {
   onRecipientOptions: (
     recipient: FieldListRecipient & { status: string; signingToken?: string }
   ) => void;
+
+  // Send / next-action
+  sendLabel: string;
+  canSend: boolean;
+  sendBlockedReason?: string;
+  onSendDocument: () => void;
+  onEnsureSection: (section: string) => void;
 
   // Activity
   activityEvents: ActivityEvent[];
@@ -1133,6 +1143,69 @@ function ActivitySection({
   );
 }
 
+function buildNextActionModel(input: {
+  isDraftBuilder: boolean;
+  isCompleted: boolean;
+  signingRecipient: InAppRecipient | null;
+  recipients: FieldListRecipient[];
+  signatureFields: FieldListField[];
+  canSend: boolean;
+  sendBlockedReason?: string;
+  sendLabel: string;
+  onSendDocument: () => void;
+  onAddRecipient: () => void;
+  onEnsureSection: (section: string) => void;
+  waitingDetail: string;
+}): DocumentNextActionModel {
+  if (input.isCompleted) {
+    return { kind: "done" };
+  }
+
+  if (input.signingRecipient) {
+    return {
+      kind: "sign_yourself",
+      onAction: () => input.onEnsureSection("your-signature"),
+    };
+  }
+
+  if (input.isDraftBuilder) {
+    if (input.recipients.length === 0) {
+      return {
+        kind: "add_people",
+        onAction: () => {
+          input.onEnsureSection("recipients");
+          input.onAddRecipient();
+        },
+      };
+    }
+    if (input.signatureFields.length === 0) {
+      return {
+        kind: "place_fields",
+        onAction: () => input.onEnsureSection("fields"),
+      };
+    }
+    if (input.canSend) {
+      return {
+        kind: "send",
+        label: input.sendLabel,
+        onAction: input.onSendDocument,
+      };
+    }
+    return {
+      kind: "fix_fields",
+      detail:
+        input.sendBlockedReason ??
+        "Assign every field to a recipient before sending.",
+      onAction: () => input.onEnsureSection("fields"),
+    };
+  }
+
+  return {
+    kind: "waiting",
+    detail: input.waitingDetail,
+  };
+}
+
 export function DocumentSidebar(props: DocumentSidebarProps) {
   // Normalize null → undefined for components that don't accept null
   const normalizedWorkflowStatus = props.workflowStatus ?? undefined;
@@ -1152,12 +1225,35 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
   const advancedOpen =
     props.openSections.has("pdf-ops") || props.openSections.has("splits");
 
+  const pendingRecipients =
+    (props.progress?.byStatus.pending ?? 0) +
+    (props.progress?.byStatus.viewed ?? 0);
+  const waitingDetail =
+    pendingRecipients > 0
+      ? `${pendingRecipients} recipient${pendingRecipients === 1 ? "" : "s"} still need to act.`
+      : "Waiting on the next step in this envelope.";
+
+  const nextAction = buildNextActionModel({
+    isDraftBuilder,
+    isCompleted: normalizedWorkflowStatus === "completed",
+    signingRecipient,
+    recipients: props.recipients,
+    signatureFields: props.signatureFields,
+    canSend: props.canSend,
+    sendBlockedReason: props.sendBlockedReason,
+    sendLabel: props.sendLabel,
+    onSendDocument: props.onSendDocument,
+    onAddRecipient: props.onAddRecipient,
+    onEnsureSection: props.onEnsureSection,
+    waitingDetail,
+  });
+
   return (
     <div className="flex flex-col gap-5 sm:gap-4">
-      <DocumentStatusHero
+      <DocumentNextAction
         workflowStatus={normalizedWorkflowStatus}
         createdAt={props.createdAt}
-        compact={isDraftBuilder}
+        model={nextAction}
       />
       {visibleProgress && <DocumentProgressRing progress={visibleProgress} />}
       {signingRecipient && (

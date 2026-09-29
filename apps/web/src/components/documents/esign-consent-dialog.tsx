@@ -72,13 +72,13 @@ export function EsignConsentDialog({
   // Declined state
   if (consentState === "declined") {
     return (
-      <div className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8">
-        <div className="w-full max-w-lg space-y-6">
+      <div data-seal-enter className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8">
+        <div className="w-full max-w-lg flex flex-col gap-6">
           <div className="flex justify-center">
             <SealLogo size={48} variant="color" />
           </div>
 
-          <div className="space-y-2 text-center">
+          <div className="flex flex-col gap-2 text-center">
             <div className="flex items-center justify-center gap-2">
               <XCircleIcon className="text-destructive size-6" />
               <h1 className="text-2xl font-bold text-balance">
@@ -93,9 +93,9 @@ export function EsignConsentDialog({
           </div>
 
           <LayerCard>
-            <LayerCard.Primary className="space-y-3 p-5">
+            <LayerCard.Primary className="flex flex-col gap-3 p-5">
               <p className="text-sm font-medium">Manual signature options:</p>
-              <div className="space-y-2">
+              <div className="flex flex-col gap-2">
                 {onDownloadPdf && (
                   <Button
                     variant="outline"
@@ -179,13 +179,13 @@ export function EsignConsentDialog({
   // Accepted state (brief flash before proceeding)
   if (consentState === "accepted") {
     return (
-      <div className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8">
-        <div className="w-full max-w-lg space-y-6">
+      <div data-seal-enter className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8">
+        <div className="w-full max-w-lg flex flex-col gap-6">
           <div className="flex justify-center">
             <SealLogo size={48} variant="color" />
           </div>
 
-          <div className="space-y-2 text-center">
+          <div className="flex flex-col gap-2 text-center">
             <div className="flex items-center justify-center gap-2">
               <CheckCircle2Icon className="text-success size-6" />
               <h1 className="text-2xl font-bold text-balance">
@@ -219,13 +219,13 @@ export function EsignConsentDialog({
 
   // Initial consent form
   return (
-    <div className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8">
-      <div className="w-full max-w-lg space-y-6">
+    <div data-seal-enter className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8">
+      <div className="w-full max-w-lg flex flex-col gap-6">
         <div className="flex justify-center">
           <SealLogo size={48} variant="color" />
         </div>
 
-        <div className="space-y-2 text-center">
+        <div className="flex flex-col gap-2 text-center">
           <h1 className="text-2xl font-bold text-balance sm:text-3xl">
             Electronic Signature Consent
           </h1>
@@ -240,7 +240,7 @@ export function EsignConsentDialog({
             Electronic Signature Agreement
           </h2>
           <LayerCard className="border-info-surface bg-info-surface/50">
-            <LayerCard.Primary className="space-y-4 p-5">
+            <LayerCard.Primary className="flex flex-col gap-4 p-5">
               <p className="text-muted-foreground text-sm leading-relaxed">
                 {customConsentText ??
                   "By checking the box below, you consent to use electronic signatures for this document and future documents."}
@@ -311,7 +311,7 @@ export function EsignConsentDialog({
           </span>
         </div>
 
-        <div className="space-y-3">
+        <div className="flex flex-col gap-3">
           <Button
             className="h-12 w-full text-base font-medium shadow-sm transition-shadow hover:shadow"
             size="lg"

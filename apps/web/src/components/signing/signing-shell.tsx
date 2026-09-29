@@ -26,6 +26,7 @@ export function SigningShell({
 }: SigningShellProps): JSX.Element {
   return (
     <div
+      data-seal-enter
       className={cn(
         "bg-background mx-auto flex min-h-dvh w-full max-w-screen-xl flex-col sm:px-6",
         className

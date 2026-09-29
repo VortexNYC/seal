@@ -117,6 +117,27 @@
   }
 }
 
+/* Shared enter beat — signing gates + shell, next-action cards */
+[data-seal-enter] {
+  animation: fadeInUp 280ms var(--ease-enter, ease-out) both;
+}
+
+@keyframes seal-field-focus {
+  0%,
+  100% {
+    outline-color: color-mix(in oklch, var(--primary) 35%, transparent);
+  }
+  50% {
+    outline-color: var(--primary);
+  }
+}
+
+[data-seal-field-active="true"] {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  animation: seal-field-focus 1.2s ease-in-out 2;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

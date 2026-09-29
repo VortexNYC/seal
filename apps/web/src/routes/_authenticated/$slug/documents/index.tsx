@@ -1087,15 +1087,15 @@ function DocumentsEmptyState({
   ) : (
     <Empty
       icon={<FileTextIcon size={48} />}
-      title="No documents yet"
-      description="Upload your first document to get started. You can send documents for signature, share with your team, and track their status."
+      title="Send your first document"
+      description="Upload a PDF, add people, place fields, send. About a minute."
       contents={
         <Button
           onClick={onUploadClick}
           variant="primary"
           icon={<UploadIcon className="h-4 w-4" />}
         >
-          Upload Document
+          Upload PDF
         </Button>
       }
     />

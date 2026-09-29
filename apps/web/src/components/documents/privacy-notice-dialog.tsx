@@ -34,12 +34,12 @@ export function PrivacyNoticeDialog({
 
   if (accepted) {
     return (
-      <div className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8">
-        <div className="w-full max-w-lg space-y-6">
+      <div data-seal-enter className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8">
+        <div className="w-full max-w-lg flex flex-col gap-6">
           <div className="flex justify-center">
             <SealLogo size={48} variant="color" />
           </div>
-          <div className="space-y-2 text-center">
+          <div className="flex flex-col gap-2 text-center">
             <div className="flex items-center justify-center gap-2">
               <CheckCircle2Icon className="text-status-completed-text size-6" />
               <h1 className="text-2xl font-bold text-balance">
@@ -63,13 +63,13 @@ export function PrivacyNoticeDialog({
   }
 
   return (
-    <div className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8">
-      <div className="w-full max-w-lg space-y-6">
+    <div data-seal-enter className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8">
+      <div className="w-full max-w-lg flex flex-col gap-6">
         <div className="flex justify-center">
           <SealLogo size={48} variant="color" />
         </div>
 
-        <div className="space-y-2 text-center">
+        <div className="flex flex-col gap-2 text-center">
           <h1 className="text-2xl font-bold text-balance sm:text-3xl">
             Privacy notice
           </h1>
@@ -80,7 +80,7 @@ export function PrivacyNoticeDialog({
         </div>
 
         <LayerCard>
-          <LayerCard.Primary className="max-h-[50vh] space-y-3 overflow-y-auto p-5">
+          <LayerCard.Primary className="max-h-[50vh] flex flex-col gap-3 overflow-y-auto p-5">
             {noticeText.split("\n").map((line, index) =>
               line.trim().length === 0 ? (
                 <div key={`blank-${index}`} className="h-2" />

@@ -951,6 +951,19 @@ function DocumentDetailPage() {
               onPdfChanged={() => {
                 setPdfReloadKey((key) => key + 1);
               }}
+              sendLabel={sendButtonLabel}
+              canSend={sendDocumentValidation.canSend}
+              sendBlockedReason={
+                sendDocumentValidation.canSend
+                  ? undefined
+                  : sendDocumentValidation.tooltip
+              }
+              onSendDocument={() => docState.setSendDocumentOpen(true)}
+              onEnsureSection={(section) => {
+                if (!openSections.has(section)) {
+                  toggleSection(section);
+                }
+              }}
             />
           </div>
         </div>

@@ -287,6 +287,7 @@ export const FillableFieldOverlay = forwardRef<
       aria-label={`${label} ${isRequired ? "required " : ""}field, ${getFieldTypeLabel(fieldType)}${
         isMainSignature ? ", main signature" : ""
       }`}
+      data-seal-field-active={isActive ? "true" : undefined}
       className={cn(
         "group absolute cursor-pointer rounded-sm border-2 transition-colors",
         "hover:border-primary hover:bg-primary/5",
@@ -296,8 +297,7 @@ export const FillableFieldOverlay = forwardRef<
           : isRequired
             ? "border-destructive bg-destructive/5"
             : "border-info bg-info-surface/30",
-        isActive &&
-          "ring-primary border-primary ring-2 ring-offset-2 motion-safe:animate-pulse",
+        isActive && "ring-primary border-primary ring-2 ring-offset-2",
         isMainSignature && !isActive && "ring-warning ring-2"
       )}
       style={{

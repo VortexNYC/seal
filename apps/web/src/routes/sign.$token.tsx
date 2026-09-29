@@ -1148,8 +1148,10 @@ function SigningPage() {
     requiredFields.length === 0
       ? "Ready to sign"
       : remainingCount === 0
-        ? "All fields completed"
-        : `${remainingCount} field${remainingCount === 1 ? "" : "s"} remaining`;
+        ? "You're ready — sign below"
+        : remainingCount === 1
+          ? "1 field left"
+          : `${remainingCount} fields left`;
 
   const documentSurface = (
     <div ref={pdfContainerRef} className="w-full min-w-0">

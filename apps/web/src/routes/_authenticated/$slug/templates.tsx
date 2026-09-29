@@ -221,8 +221,8 @@ function TemplatesList({
         ) : (
           <Empty
             icon={<FileTextIcon size={48} />}
-            title="No templates yet"
-            description="Create templates from your documents to save time. Templates preserve signature fields and can be reused for recurring documents."
+            title="Templates come from documents"
+            description="Open a document, place fields, then Save as template. Reuse it next time."
             contents={
               <Button
                 onClick={() => {
