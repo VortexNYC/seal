@@ -69,9 +69,10 @@ type ScrollCapability = {
   getCurrentPage?: () => number;
   getTotalPages?: () => number;
   scrollToPage?: (options: { pageNumber: number }) => void;
-  onPageChange?: {
-    on: (listener: (event: { pageNumber: number; totalPages: number }) => void) => () => void;
-  };
+  /** EmbedPDF EventHook — call directly; it is not `{ on }`. */
+  onPageChange?: (
+    listener: (event: { pageNumber: number; totalPages: number }) => void
+  ) => () => void;
 };
 
 type PluginRegistryLike = {
@@ -137,7 +138,7 @@ export function PdfEditor({
     if (!scroll?.onPageChange) {
       return undefined;
     }
-    return scroll.onPageChange.on((event) => {
+    return scroll.onPageChange((event) => {
       setCurrentPage(event.pageNumber);
       setTotalPages(Math.max(1, event.totalPages));
     });
