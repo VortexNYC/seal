@@ -85,7 +85,8 @@ export function WorkspaceAccountMenu({
   return (
     <Sidebar.Menu>
       <Sidebar.MenuItem>
-        <DropdownMenu>
+        {/* Cap: Profile navigates without dimming the app — keep this menu non-modal. */}
+        <DropdownMenu modal={false}>
           <DropdownMenu.Trigger>
             <Sidebar.MenuButton
               size="base"
@@ -99,7 +100,10 @@ export function WorkspaceAccountMenu({
                   <Buildings className="size-4" />
                 )}
               </div>
-              <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
+              <div
+                data-workspace-copy
+                className="grid min-w-0 flex-1 text-left text-sm leading-tight"
+              >
                 <span className="text-muted-foreground truncate text-[10px] font-medium tracking-wide uppercase">
                   Workspace
                 </span>
@@ -110,7 +114,10 @@ export function WorkspaceAccountMenu({
                   Signed in as {user.name}
                 </span>
               </div>
-              <CaretUpDown className="text-muted-foreground ml-auto size-4 shrink-0" />
+              <CaretUpDown
+                data-workspace-caret
+                className="text-muted-foreground ml-auto size-4 shrink-0"
+              />
             </Sidebar.MenuButton>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content
