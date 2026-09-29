@@ -96,8 +96,13 @@ if (POSTHOG_KEY) {
     person_profiles: "identified_only",
     secure_cookie: true,
     enable_heatmaps: !guestSurface,
+    // Replay console logs stay off — signer PII can appear in app logs.
     enable_recording_console_log: false,
-    capture_performance: false,
+    // Web vitals + resource timing for sender SPA performance (project Opt-in).
+    capture_performance: true,
+    // Unhandled errors + promise rejections → Error Tracking. Project setting
+    // autocapture_exceptions_opt_in must also be true (server-side kill switch).
+    capture_exceptions: true,
     // SEA-73: no Replay/surveys on /sign or /verify. Funnel events still capture
     // anonymously (person_profiles: identified_only; no identify on guests).
     disable_session_recording: guestSurface,

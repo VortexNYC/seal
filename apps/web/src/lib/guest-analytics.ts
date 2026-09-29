@@ -18,8 +18,10 @@ type GuestAnalyticsClient = {
 /**
  * SEA-73 — guest surfaces (`/sign/*`, `/verify/*`) show signer email, name,
  * and document titles. Disable session recording / surveys / heatmaps so that
- * PII never lands in Replay. Product funnel events (signature_completed, etc.)
- * stay allowed with `person_profiles: identified_only` and no identify() call.
+ * PII never lands in Replay. Product funnel events (signature_viewed,
+ * signing_auth_verified, signature_completed, signature_declined) stay allowed
+ * with `person_profiles: identified_only` and no identify() call — properties
+ * must be IDs only (never email/name/title/free-text reasons).
  */
 export function muteGuestAnalytics(
   client: GuestAnalyticsClient = posthog

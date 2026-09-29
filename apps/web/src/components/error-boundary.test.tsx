@@ -1,5 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import posthog from "posthog-js";
 import { useState } from "react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
@@ -41,6 +42,9 @@ describe("ErrorBoundary", () => {
 
   test("shows fallback UI when child throws", () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const captureSpy = vi
+      .spyOn(posthog, "captureException")
+      .mockImplementation(() => undefined);
 
     render(
       <ErrorBoundary>
@@ -49,6 +53,8 @@ describe("ErrorBoundary", () => {
     );
 
     expect(screen.getByText("Something went wrong")).toBeDefined();
+    expect(captureSpy).toHaveBeenCalled();
+    captureSpy.mockRestore();
     consoleSpy.mockRestore();
   });
 

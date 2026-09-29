@@ -2,6 +2,7 @@ import { Button } from "@cloudflare/kumo/components/button";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
 import { ArrowClockwise, House, Warning } from "@phosphor-icons/react";
+import posthog from "posthog-js";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
 interface ErrorBoundaryProps {
@@ -37,9 +38,19 @@ export class ErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // Log error to console in development
     console.error("ErrorBoundary caught an error:", error);
     console.error("Error info:", errorInfo);
+
+    // Handled React render errors never hit window.onerror — send explicitly.
+    // Do not attach componentStack (can include route params / emails).
+    try {
+      posthog.captureException(error, {
+        $exception_source: "react_error_boundary",
+        handled: true,
+      });
+    } catch {
+      // Analytics must never break the fallback UI.
+    }
 
     this.setState({ errorInfo });
   }
