@@ -1,6 +1,5 @@
 /**
- * Shared AuthCard className for better-auth-ui forms under `/_auth`.
- * Replaces the package default (`mx-auto mt-16 w-full max-w-lg`) so the
- * branded shell controls spacing and width.
+ * Shared className for better-auth-ui AuthCard under `/_auth`.
+ * Width lives on AuthCard; shell owns horizontal centering.
  */
-export const AUTH_FORM_CARD_CLASS = "mx-auto w-full max-w-md";
+export const AUTH_FORM_CARD_CLASS = "w-full";

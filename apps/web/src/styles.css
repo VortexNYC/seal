@@ -129,60 +129,45 @@
 }
 
 /*
- * Auth shell — product-grade surface over stock better-auth-ui forms.
- * Pin CTA + links to Seal primary so Kumo never falls back to CF blue.
- * Kumo Button paints label via inner spans / CSS vars — punch through.
- *
- * SEA-91: Submit must not share input chrome (same h-9 + left-aligned
- * text reads as a third field). Clerk-shaped CTA: taller, centered,
- * heavier type, raised — inputs stay recessed fields.
+ * Auth shell — light product chrome over better-auth-ui AuthCard.
+ * SEA-91: submit must not share input chrome (taller raised CTA vs recessed fields).
+ * Layout/spacing live in the package; this only pins Seal primary + CTA shape.
  */
 [data-auth-shell] input,
 [data-auth-shell] [data-kumo-component="Input"] input,
 [data-auth-shell] [data-kumo-component="SensitiveInput"] input {
   border-radius: 0.5rem;
   min-height: 2.5rem;
-  background-color: var(--background) !important;
-  color: var(--foreground) !important;
-  box-shadow: inset 0 0 0 1px var(--border) !important;
-}
-
-[data-auth-shell] label {
-  color: var(--muted-foreground) !important;
-  font-weight: 500;
-}
-
-[data-auth-shell] form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  background-color: var(--background);
+  color: var(--foreground);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 [data-auth-shell] button[type="submit"] {
   margin-top: 0.5rem;
-  min-height: 2.75rem !important;
-  height: 2.75rem !important;
+  min-height: 2.75rem;
+  height: 2.75rem;
   width: 100%;
-  justify-content: center !important;
-  border-radius: 0.5rem !important;
-  border: none !important;
-  background-color: var(--primary) !important;
-  color: var(--primary-foreground) !important;
-  font-size: 0.9375rem !important;
-  font-weight: 600 !important;
+  justify-content: center;
+  border-radius: 0.5rem;
+  border: none;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 0.9375rem;
+  font-weight: 600;
   letter-spacing: 0.01em;
   box-shadow:
     0 1px 2px color-mix(in oklch, var(--foreground) 12%, transparent),
-    0 0 0 1px color-mix(in oklch, var(--primary) 40%, transparent) !important;
+    0 0 0 1px color-mix(in oklch, var(--primary) 40%, transparent);
   --kumo-button-foreground: var(--primary-foreground);
   --color-kumo-primary-foreground: var(--primary-foreground);
 }
 
 [data-auth-shell] button[type="submit"] *,
 [data-auth-shell] button[type="submit"] span {
-  color: var(--primary-foreground) !important;
-  justify-content: center !important;
-  text-align: center !important;
+  color: var(--primary-foreground);
+  justify-content: center;
+  text-align: center;
   width: 100%;
 }
 
@@ -191,10 +176,10 @@
     in oklch,
     var(--primary) 88%,
     var(--foreground)
-  ) !important;
+  );
   box-shadow:
     0 2px 6px color-mix(in oklch, var(--foreground) 16%, transparent),
-    0 0 0 1px color-mix(in oklch, var(--primary) 50%, transparent) !important;
+    0 0 0 1px color-mix(in oklch, var(--primary) 50%, transparent);
 }
 
 [data-auth-shell] button[type="submit"]:disabled {
@@ -211,20 +196,12 @@
 }
 
 /* Brand mark — stay on foreground, not link taupe */
-[data-auth-shell] > .relative a.text-foreground,
 [data-auth-shell] a.text-foreground {
   color: var(--foreground);
 }
 
 [data-auth-shell] a.text-foreground:hover {
   color: var(--foreground);
-}
-
-/* Footer line under CTA ("Don't have an account?") — muted, not near-invisible */
-[data-auth-shell] section > p,
-[data-auth-shell] form + p,
-[data-auth-shell] .text-center.text-sm {
-  color: var(--muted-foreground) !important;
 }
 
 [data-auth-shell] section {
@@ -235,10 +212,9 @@
 
 /* Password fields: reveal only — Kumo's hover "Copy" chip reads as a glitch */
 [data-auth-shell] [data-kumo-part="copy"] {
-  display: none !important;
+  display: none;
 }
 
-/* Error banner: force readable contrast in both themes */
 [data-auth-shell] [data-kumo-component="Banner"] {
   color: var(--foreground);
   background-color: color-mix(in oklch, var(--destructive) 18%, var(--card));
