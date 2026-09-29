@@ -769,64 +769,47 @@ function TemplatesPage() {
         />
       }
     >
-      <div className="space-y-6">
-        {/* Search and View Controls */}
-        <div className="bg-card/60 flex flex-wrap items-center justify-between gap-4 rounded-lg border p-3">
-          {/* Search */}
-          <div className="relative max-w-sm flex-1">
-            <SearchIcon className="text-kumo-secondary absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+        <div className="flex flex-col gap-3">
+          <div className="relative">
+            <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
             <Input
               aria-label="Search templates"
-              placeholder="Search templates..."
+              placeholder="Search templates…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
             />
           </div>
 
-          {/* View mode toggle */}
-          <div className="bg-kumo-base flex items-center gap-1 rounded-md border">
-            <Button
-              variant={viewMode === "table" ? "primary" : "ghost"}
-              shape="square"
-              size="sm"
-              className="h-9 w-9"
-              aria-label="Table view"
-              onClick={() => setViewMode("table")}
-            >
-              <LayoutListIcon className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === "grid" ? "primary" : "ghost"}
-              shape="square"
-              size="sm"
-              className="h-9 w-9"
-              aria-label="Grid view"
-              onClick={() => setViewMode("grid")}
-            >
-              <LayoutGridIcon className="h-4 w-4" />
-            </Button>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-muted-foreground text-sm">
+              Save a document as a template from its actions menu.
+            </p>
+            <div className="bg-muted/40 flex items-center gap-0.5 rounded-md p-0.5">
+              <Button
+                variant={viewMode === "table" ? "primary" : "ghost"}
+                shape="square"
+                size="sm"
+                className="size-8"
+                aria-label="Table view"
+                onClick={() => setViewMode("table")}
+              >
+                <LayoutListIcon className="size-4" />
+              </Button>
+              <Button
+                variant={viewMode === "grid" ? "primary" : "ghost"}
+                shape="square"
+                size="sm"
+                className="size-8"
+                aria-label="Grid view"
+                onClick={() => setViewMode("grid")}
+              >
+                <LayoutGridIcon className="size-4" />
+              </Button>
+            </div>
           </div>
         </div>
-
-        {/* Info card */}
-        <LayerCard className="border-dashed">
-          <LayerCard.Primary className="py-4">
-            <div className="flex items-start gap-3">
-              <FileTextIcon className="text-kumo-secondary mt-0.5 h-5 w-5" />
-              <div>
-                <p className="text-sm font-medium">
-                  Templates save time on recurring documents
-                </p>
-                <p className="text-kumo-secondary text-sm">
-                  To create a template, prepare a document with signature
-                  fields, then click "Save as Template" from the document
-                  actions menu.
-                </p>
-              </div>
-            </div>
-          </LayerCard.Primary>
-        </LayerCard>
 
         {/* Templates List */}
         <Suspense
