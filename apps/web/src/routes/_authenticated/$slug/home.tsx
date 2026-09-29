@@ -3,7 +3,6 @@
  * Route: /{slug}/home
  */
 
-import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { SkeletonLine } from "@cloudflare/kumo/components/loader";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -36,10 +35,10 @@ function StatsCardsFallback(): React.ReactElement {
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {Array.from({ length: 4 }).map((_, i) => (
-        <LayerCard key={i} className="flex flex-col gap-2 p-4">
+        <div key={i} className="border-border bg-card flex flex-col gap-2 rounded-lg border p-4">
           <SkeletonLine className="h-3 w-1/2" />
           <SkeletonLine className="h-6 w-1/3" />
-        </LayerCard>
+        </div>
       ))}
     </div>
   );
@@ -47,11 +46,11 @@ function StatsCardsFallback(): React.ReactElement {
 
 function RecentDocsFallback(): React.ReactElement {
   return (
-    <LayerCard className="flex flex-col gap-3 p-4">
+    <div className="border-border bg-card flex flex-col gap-3 rounded-lg border p-4">
       {Array.from({ length: 5 }).map((_, i) => (
         <SkeletonLine key={i} className="h-10 w-full" />
       ))}
-    </LayerCard>
+    </div>
   );
 }
 

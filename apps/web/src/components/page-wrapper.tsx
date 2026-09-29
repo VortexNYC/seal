@@ -3,6 +3,7 @@ import { Sidebar } from "@cloudflare/kumo/components/sidebar";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { ShellHeaderControls } from "@/components/shell-header-controls";
 import { MOTION_PAGE } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -62,10 +63,10 @@ export function PageWrapper({
               headerCenter ? "lg:min-w-0" : "flex-1"
             )}
           >
-            {/* Desktop collapse lives on the sidebar header; this is mobile sheet only. */}
+            {/* Collapse lives outside the sidebar so it stays clickable. */}
             <Sidebar.Trigger
-              aria-label="Open navigation"
-              className="shrink-0 md:hidden"
+              aria-label="Toggle navigation"
+              className="shrink-0"
             />
             <div className="min-w-0 flex-1">
               <h1 className="truncate text-base font-semibold sm:text-lg">
@@ -81,38 +82,37 @@ export function PageWrapper({
           {headerCenter && (
             <div className="min-w-0 lg:justify-self-center">{headerCenter}</div>
           )}
-          {(allActions.length > 0 || headerActions) && (
-            <div
-              className={cn(
-                "flex flex-wrap items-center gap-2",
-                headerCenter
-                  ? "lg:justify-end lg:justify-self-end"
-                  : "sm:flex-nowrap"
-              )}
-            >
-              {headerActions}
-              {allActions.map((actionItem, index) => {
-                const Icon = actionItem.icon;
-                const variant =
-                  actionItem.variant === "default"
-                    ? "primary"
-                    : actionItem.variant;
-                return (
-                  <Button
-                    key={index}
-                    onClick={actionItem.onClick}
-                    variant={variant}
-                    size="sm"
-                    className="flex-1 sm:flex-none"
-                    disabled={actionItem.disabled}
-                  >
-                    {Icon && <Icon className="mr-2 h-4 w-4" />}
-                    <span className="truncate">{actionItem.label}</span>
-                  </Button>
-                );
-              })}
-            </div>
-          )}
+          <div
+            className={cn(
+              "flex flex-wrap items-center gap-2",
+              headerCenter
+                ? "lg:justify-end lg:justify-self-end"
+                : "sm:ml-auto sm:flex-nowrap"
+            )}
+          >
+            {headerActions}
+            {allActions.map((actionItem, index) => {
+              const Icon = actionItem.icon;
+              const variant =
+                actionItem.variant === "default"
+                  ? "primary"
+                  : actionItem.variant;
+              return (
+                <Button
+                  key={index}
+                  onClick={actionItem.onClick}
+                  variant={variant}
+                  size="sm"
+                  className="flex-1 sm:flex-none"
+                  disabled={actionItem.disabled}
+                >
+                  {Icon && <Icon className="mr-2 h-4 w-4" />}
+                  <span className="truncate">{actionItem.label}</span>
+                </Button>
+              );
+            })}
+            <ShellHeaderControls />
+          </div>
         </div>
       </div>
       <div

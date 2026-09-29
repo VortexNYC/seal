@@ -19,7 +19,7 @@
   /* Semantic tokens — Taupe */
   --background: oklch(0.98 0 75); /* #FBFAF9 — taupe-50 */
   --foreground: oklch(0.28 0.02 75); /* #2C271F — taupe-900 */
-  --card: oklch(1 0 0); /* #FFFFFF — raised */
+  --card: oklch(0.98 0 75); /* same plane as --background — no floating white */
   --card-foreground: oklch(0.28 0.02 75);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.28 0.02 75);
@@ -264,7 +264,7 @@
   /* Taupe void */
   --background: oklch(0.19 0.01 75); /* taupe-950 */
   --foreground: oklch(0.96 0.01 75); /* taupe-100 */
-  --card: oklch(0.28 0.02 75); /* taupe-900 */
+  --card: oklch(0.19 0.01 75); /* same plane as background — no raised brown slabs */
   --card-foreground: oklch(0.96 0.01 75);
   --popover: oklch(0.28 0.02 75);
   --popover-foreground: oklch(0.96 0.01 75);
