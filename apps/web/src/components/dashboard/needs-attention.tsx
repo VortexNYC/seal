@@ -14,6 +14,8 @@ import { Link } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 
 import { getDocumentAttention } from "@/lib/api-client";
+import { MOTION_PRESS } from "@/lib/motion";
+import { cn } from "@/lib/utils";
 
 interface NeedsAttentionProps {
   organizationSlug: string;
@@ -33,7 +35,6 @@ export function NeedsAttention({
     <LayerCard
       className="border-warning/30 bg-warning-surface/20"
       data-testid="needs-attention"
-      data-seal-enter
     >
       <LayerCard.Secondary className="px-4 pt-3 pb-1">
         <div className="flex items-center gap-2">
@@ -134,7 +135,10 @@ function AttentionRow({
       to="/$slug/documents/$documentId"
       params={{ slug, documentId }}
       search={{ focus }}
-      className="hover:bg-warning-surface/50 group flex items-center gap-2.5 rounded-md px-2 py-2 transition-colors"
+      className={cn(
+        MOTION_PRESS,
+        "hover:bg-warning-surface/50 focus-visible:ring-ring group flex items-center gap-2.5 rounded-md px-2 py-2 focus-visible:ring-2 focus-visible:outline-none"
+      )}
     >
       {icon}
       <div className="min-w-0 flex-1">

@@ -2,6 +2,7 @@
  * Draft send path — three steps, one current. Click jumps to the right section.
  */
 
+import { MOTION_PRESS } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import type { ReactElement } from "react";
 
@@ -37,7 +38,9 @@ export function DocumentSendSteps({
             type="button"
             onClick={() => onSelect(step.id)}
             className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-medium transition-colors sm:text-sm",
+              MOTION_PRESS,
+              "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-medium sm:text-sm",
+              "focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none",
               active && "bg-background text-foreground shadow-sm",
               done && !active && "text-foreground/80",
               !done && !active && "text-muted-foreground hover:text-foreground"

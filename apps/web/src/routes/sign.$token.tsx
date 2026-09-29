@@ -1310,7 +1310,7 @@ function SigningPage() {
     <div className="flex flex-col gap-4">
       {!isOnline && (
         <div
-          className="border-warning-surface bg-kumo-warning-tint rounded-lg border px-3 py-2"
+          className="border-warning-surface bg-kumo-warning-tint motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-2 motion-safe:duration-200 rounded-lg border px-3 py-2"
           role="status"
         >
           <div className="text-kumo-warning flex items-center gap-2 text-sm">
@@ -1422,13 +1422,13 @@ function SigningPage() {
       )}
 
       {isCompleted && recipient.status !== "declined" && (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3" data-seal-success>
           <div className="text-kumo-success flex items-center gap-2">
-            <CheckCircle className="h-5 w-5" />
+            <CheckCircle className="h-5 w-5" weight="fill" />
             <span className="text-sm font-semibold">
               {recipient.status === "approved"
                 ? "Document approved"
-                : "Document signed"}
+                : "You're done"}
             </span>
           </div>
           <p className="text-kumo-secondary text-sm">

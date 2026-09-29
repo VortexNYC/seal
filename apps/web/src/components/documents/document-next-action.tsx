@@ -194,7 +194,10 @@ export function DocumentNextAction({
       ) : null}
 
       {model.kind === "done" ? (
-        <div className="text-status-completed-text flex items-center gap-2 text-sm font-medium">
+        <div
+          className="text-status-completed-text flex items-center gap-2 text-sm font-medium"
+          data-seal-success
+        >
           <CheckCircle className="size-5" weight="fill" />
           Nothing needed from you
         </div>

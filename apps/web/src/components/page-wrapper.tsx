@@ -4,6 +4,7 @@ import { Separator } from "@cloudflare/kumo/primitives/separator";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { MOTION_PAGE } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 interface PageAction {
@@ -112,7 +113,12 @@ export function PageWrapper({
           )}
         </div>
       </div>
-      <div className="min-h-0 flex-1 p-4 pb-12 sm:p-6 sm:pb-16">
+      <div
+        className={cn(
+          "min-h-0 flex-1 p-4 pb-12 sm:p-6 sm:pb-16",
+          MOTION_PAGE
+        )}
+      >
         {children}
         <div className="h-6 sm:h-10" aria-hidden />
       </div>

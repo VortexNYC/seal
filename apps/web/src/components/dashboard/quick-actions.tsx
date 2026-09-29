@@ -8,6 +8,9 @@ import { useRouter } from "@tanstack/react-router";
 import { FileTextIcon, LayoutTemplateIcon, UploadIcon } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+import { MOTION_PRESS } from "@/lib/motion";
+import { cn } from "@/lib/utils";
+
 interface QuickActionItem {
   label: string;
   icon: LucideIcon;
@@ -55,7 +58,10 @@ export function QuickActions({ slug }: QuickActionsProps): React.ReactElement {
             <button
               key={action.label}
               type="button"
-              className="text-foreground hover:bg-secondary focus-visible:ring-ring flex items-center gap-2.5 rounded-md px-2 py-2 text-left text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
+              className={cn(
+                MOTION_PRESS,
+                "text-foreground hover:bg-secondary focus-visible:ring-ring flex items-center gap-2.5 rounded-md px-2 py-2 text-left text-sm focus-visible:ring-2 focus-visible:outline-none"
+              )}
               onClick={() =>
                 router.navigate({
                   to: action.to,

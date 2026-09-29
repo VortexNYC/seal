@@ -242,16 +242,18 @@ function ContactsTableContent({
     }
 
     return (
-      <Empty
-        icon={<Users size={48} />}
-        title="No contacts yet"
-        description="Optional address book — recipients also appear here after you send."
-        contents={
-          <Button onClick={onCreateOpen} variant="primary" icon={UserPlus}>
-            Add contact
-          </Button>
-        }
-      />
+      <div className="motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2 motion-safe:duration-300">
+        <Empty
+          icon={<Users size={48} />}
+          title="No contacts yet"
+          description="Optional address book — recipients also appear here after you send."
+          contents={
+            <Button onClick={onCreateOpen} variant="primary" icon={UserPlus}>
+              Add contact
+            </Button>
+          }
+        />
+      </div>
     );
   }
 

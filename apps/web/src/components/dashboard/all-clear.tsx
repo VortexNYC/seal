@@ -16,7 +16,7 @@ export function AllClear({ slug }: AllClearProps): ReactElement {
   const router = useRouter();
 
   return (
-    <LayerCard data-testid="dashboard-all-clear" data-seal-enter>
+    <LayerCard data-testid="dashboard-all-clear">
       <LayerCard.Primary className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-3">
           <CheckCircle

@@ -76,7 +76,10 @@ function WorkspaceHome(): React.ReactElement {
 
   return (
     <PageWrapper title="Dashboard" headerActions={<ExportDataDialog />}>
-      <div className="mx-auto flex max-w-5xl flex-col gap-5" data-seal-enter>
+      <div
+        className="mx-auto flex max-w-5xl flex-col gap-5"
+        data-seal-stagger
+      >
         <div className="flex flex-col gap-1">
           <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
             {organization.name}
