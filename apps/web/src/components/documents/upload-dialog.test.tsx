@@ -74,13 +74,13 @@ describe("UploadDialog", () => {
 
   test("does not render dialog content when open is false", () => {
     renderDialog({ open: false });
-    expect(screen.queryByText("Upload Document")).not.toBeInTheDocument();
+    expect(screen.queryByText("Upload a document")).not.toBeInTheDocument();
   });
 
   test("renders dialog title when open is true", () => {
     renderDialog({ open: true });
     expect(
-      screen.getByRole("heading", { name: "Upload Document" })
+      screen.getByRole("heading", { name: "Upload a document" })
     ).toBeInTheDocument();
   });
 
@@ -100,11 +100,9 @@ describe("UploadDialog", () => {
   test("renders dropzone area with document instructions", () => {
     renderDialog();
     expect(
-      screen.getByText("Drag & drop a document here, or click to select")
+      screen.getByText("Drop a file here, or click to browse")
     ).toBeInTheDocument();
-    expect(
-      screen.getByText("PDF, DOCX, XLSX, PPTX, or CSV — one file at a time")
-    ).toBeInTheDocument();
+    expect(screen.getByText("PDF, DOCX, XLSX, PPTX, or CSV")).toBeInTheDocument();
   });
 
   test("renders cancel button", () => {

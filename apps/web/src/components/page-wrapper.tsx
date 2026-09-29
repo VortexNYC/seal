@@ -27,6 +27,8 @@ interface PageWrapperProps {
   headerCenter?: ReactNode;
   /** Optional extra classes applied to the outermost container (affects header + content) */
   className?: string;
+  /** Cap: document editor — no dead scroll pad under the canvas */
+  dense?: boolean;
 }
 
 export function PageWrapper({
@@ -38,13 +40,15 @@ export function PageWrapper({
   headerActions,
   headerCenter,
   className,
+  dense = false,
 }: PageWrapperProps) {
   const allActions = action ? [action, ...(actions || [])] : actions || [];
 
   return (
     <div
       className={cn(
-        "bg-background flex h-full min-h-0 scroll-pb-24 flex-col overflow-auto overscroll-contain sm:scroll-pb-28",
+        "bg-background flex h-full min-h-0 flex-col overflow-auto overscroll-contain",
+        dense ? "scroll-pb-4" : "scroll-pb-24 sm:scroll-pb-28",
         className
       )}
     >
@@ -117,12 +121,13 @@ export function PageWrapper({
       </div>
       <div
         className={cn(
-          "min-h-0 flex-1 p-4 pb-12 sm:p-6 sm:pb-16",
+          "min-h-0 flex-1 p-4 sm:p-6",
+          dense ? "pb-4 sm:pb-6" : "pb-12 sm:pb-16",
           MOTION_PAGE
         )}
       >
         {children}
-        <div className="h-6 sm:h-10" aria-hidden />
+        {dense ? null : <div className="h-6 sm:h-10" aria-hidden />}
       </div>
     </div>
   );

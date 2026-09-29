@@ -21,16 +21,18 @@ export function DocumentViewerShell({
     <div
       data-kumo-docs="viewer-shell"
       className={cn(
-        "border-border bg-background relative flex min-h-[36rem] overflow-hidden rounded-xl border",
+        "border-border bg-background relative flex max-h-[min(78vh,52rem)] min-h-[28rem] overflow-hidden rounded-xl border",
         className
       )}
     >
       {left ? (
-        <div className="border-border bg-background hidden w-40 shrink-0 border-r lg:block">
+        <div className="border-border bg-background hidden w-40 shrink-0 overflow-y-auto border-r lg:block">
           {left}
         </div>
       ) : null}
-      <div className="bg-background min-w-0 flex-1">{main}</div>
+      <div className="bg-background min-h-0 min-w-0 flex-1 overflow-auto">
+        {main}
+      </div>
       {right ? (
         <div className="border-border bg-background hidden w-[22rem] shrink-0 border-l xl:block">
           {right}

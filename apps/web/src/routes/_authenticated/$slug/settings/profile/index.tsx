@@ -47,16 +47,16 @@ function ProfileSettings() {
 
   return (
     <AuthProvider client={client}>
-      <SettingsBody className="items-stretch">
-        <div className="flex w-full flex-col gap-5">
+      <SettingsBody narrow className="items-stretch">
+        <div className="flex w-full max-w-xl flex-col gap-4">
           <UserProfileForm
-            className="w-full max-w-none"
+            className="w-full"
             onSuccess={() => {
               toast.success("Profile updated");
             }}
           />
           <ChangeEmailForm
-            className="w-full max-w-none"
+            className="w-full"
             callbackURL={verifyCallbackUrl}
             onSuccess={() => {
               toast.success(
@@ -65,13 +65,13 @@ function ProfileSettings() {
             }}
           />
           <ConnectedAccounts
-            className="w-full max-w-none"
+            className="w-full"
             onUnlinked={() => {
               toast.success("Account disconnected");
             }}
           />
           <DeleteAccountForm
-            className="w-full max-w-none"
+            className="w-full"
             onSuccess={() => {
               window.location.assign("/");
             }}

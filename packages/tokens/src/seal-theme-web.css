@@ -436,6 +436,14 @@
   --brand-800: oklch(0.9067 0 0);
   --brand-900: oklch(0.947 0.0074 80.72); /* bright */
 
+  /*
+   * Kumo primary CTAs force white label text and mix --kumo-brand with white.
+   * Keep brand on the void side of the inverted scale so Cap dark buttons stay
+   * ink-on-cream readable (not white-on-white).
+   */
+  --kumo-brand: var(--brand-300);
+  --kumo-link: var(--brand-600);
+
   /* ── Semantic status colors — dark mode (per board 04) ──────────────────── */
   --success: oklch(0.7 0.165 160);
   --success-foreground: oklch(1 0 0);

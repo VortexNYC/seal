@@ -682,9 +682,14 @@ function DocumentPdfOpsSection({
           <div className="bg-muted text-foreground flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
             <RotateCwIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
           </div>
-          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
-            PDF ops
-          </span>
+          <div className="min-w-0 text-left">
+            <span className="text-foreground block font-sans text-[0.9375rem] font-semibold sm:text-sm">
+              Rotate &amp; combine
+            </span>
+            <span className="text-muted-foreground block text-[11px] font-normal">
+              Fix page orientation or append another draft
+            </span>
+          </div>
         </div>
         <ChevronDownIcon
           className={cn(
@@ -763,9 +768,14 @@ function DocumentSplitsSection({
           <div className="bg-muted text-foreground flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
             <ScissorsIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
           </div>
-          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
-            Splits
-          </span>
+          <div className="min-w-0 text-left">
+            <span className="text-foreground block font-sans text-[0.9375rem] font-semibold sm:text-sm">
+              Split into documents
+            </span>
+            <span className="text-muted-foreground block text-[11px] font-normal">
+              Break this PDF into separate drafts by page range
+            </span>
+          </div>
         </div>
         <ChevronDownIcon
           className={cn(
@@ -1368,9 +1378,16 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
           }}
         >
           <Collapsible.Trigger className="border-border bg-card hover:bg-muted/40 flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left shadow-sm">
-            <span className="flex items-center gap-2 text-sm font-medium">
-              <ScissorsIcon className="h-4 w-4" />
-              More options
+            <span className="flex min-w-0 items-start gap-2">
+              <ScissorsIcon className="mt-0.5 h-4 w-4 shrink-0" />
+              <span className="min-w-0">
+                <span className="block text-sm font-medium">
+                  Document tools
+                </span>
+                <span className="text-muted-foreground block text-[11px] font-normal">
+                  Redirect URL, rotate, combine, or split pages
+                </span>
+              </span>
             </span>
             <ChevronDownIcon
               className={cn(
