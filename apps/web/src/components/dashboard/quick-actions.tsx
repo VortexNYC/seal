@@ -5,13 +5,11 @@
 
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { useRouter } from "@tanstack/react-router";
-import {
-  BarChart3Icon,
-  FileTextIcon,
-  LayoutTemplateIcon,
-  UploadIcon,
-} from "lucide-react";
+import { FileTextIcon, LayoutTemplateIcon, UploadIcon } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+
+import { MOTION_PRESS } from "@/lib/motion";
+import { cn } from "@/lib/utils";
 
 interface QuickActionItem {
   label: string;
@@ -29,7 +27,7 @@ export function QuickActions({ slug }: QuickActionsProps): React.ReactElement {
 
   const actions: QuickActionItem[] = [
     {
-      label: "Upload document",
+      label: "Upload PDF",
       icon: UploadIcon,
       to: "/$slug/documents",
       search: { folderId: undefined },
@@ -46,17 +44,12 @@ export function QuickActions({ slug }: QuickActionsProps): React.ReactElement {
       to: "/$slug/documents",
       search: { folderId: undefined },
     },
-    {
-      label: "Analytics",
-      icon: BarChart3Icon,
-      to: "/$slug/analytics",
-    },
   ];
 
   return (
     <LayerCard>
       <LayerCard.Secondary className="px-4 pt-4 pb-2">
-        <h3 className="text-sm font-semibold">Quick actions</h3>
+        <h3 className="text-sm font-semibold">Start</h3>
       </LayerCard.Secondary>
       <LayerCard.Primary className="flex flex-col gap-0.5 px-2 pb-2">
         {actions.map((action) => {
@@ -65,7 +58,10 @@ export function QuickActions({ slug }: QuickActionsProps): React.ReactElement {
             <button
               key={action.label}
               type="button"
-              className="text-foreground hover:bg-secondary focus-visible:ring-ring flex items-center gap-2.5 rounded-md px-2 py-2 text-left text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
+              className={cn(
+                MOTION_PRESS,
+                "text-foreground hover:bg-secondary focus-visible:ring-ring flex items-center gap-2.5 rounded-md px-2 py-2 text-left text-sm focus-visible:ring-2 focus-visible:outline-none"
+              )}
               onClick={() =>
                 router.navigate({
                   to: action.to,

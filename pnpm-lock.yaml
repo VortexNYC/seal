@@ -294,8 +294,8 @@ importers:
         specifier: 3.3.0
         version: 3.3.0
       '@vortex-api/better-auth-ui':
-        specifier: 0.2.10
-        version: 0.2.10(6ba1c352c6cbad63671e03134ca64898)
+        specifier: 0.2.12
+        version: 0.2.12(2d89c97612c2f27550b6ecb927df5da0)
       better-auth:
         specifier: 1.7.6
         version: 1.7.6(@opentelemetry/api@1.9.1)(@tanstack/react-start@1.168.32(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rolldown@1.2.8)(rollup@4.63.3)(supports-color@10.2.2)(vite@8.3.0(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1)))(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260916.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.5)(pg@8.22.0))(mongodb@7.5.0(socks@2.8.9))(pg@8.22.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(svelte@5.57.1(@typescript-eslint/types@8.70.0))(vitest@4.1.11)(vue@3.5.43(typescript@7.0.2))
@@ -572,8 +572,8 @@ importers:
         specifier: 1.168.24
         version: 1.168.24(@tanstack/react-router@1.170.19(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(esbuild@0.28.2)(rolldown@1.2.8)(rollup@4.63.3)(supports-color@10.2.2)(vite@8.3.0(@types/node@25.9.7)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1))
       '@vortex-api/better-auth-ui':
-        specifier: 0.2.10
-        version: 0.2.10(7ce2ec3e93b5b8f1256d33651aaba011)
+        specifier: 0.2.12
+        version: 0.2.12(7ce2ec3e93b5b8f1256d33651aaba011)
       better-auth:
         specifier: 1.7.6
         version: 1.7.6(@opentelemetry/api@1.9.1)(@tanstack/react-start@1.168.32(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rolldown@1.2.8)(rollup@4.63.3)(supports-color@10.2.2)(vite@8.3.0(@types/node@25.9.7)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1)))(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260916.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.5)(pg@8.22.0))(mongodb@7.5.0(socks@2.8.9))(pg@8.22.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(svelte@5.57.1(@typescript-eslint/types@8.70.0))(vitest@4.1.11)(vue@3.5.43(typescript@7.0.2))
@@ -1665,21 +1665,6 @@ packages:
 
   '@cloudflare/containers@0.3.7':
     resolution: {integrity: sha512-DM9dm3FnIBSyiSJ1FLavKwl/lk3oAmTaynCzZQ9pZR0ncRPquSxkxd8Nu2MFILxmDDsPkxKsSNEh9mHHMty4Fw==}
-
-  '@cloudflare/kumo@2.13.2':
-    resolution: {integrity: sha512-pNJ3fjwIOz4d3T5pxJMS9yc/2fcTuosdak824MxB60xY4yn/vRomHzRACeNuGvpV52ooHdlrEzpMC4uDhvIQVA==}
-    hasBin: true
-    peerDependencies:
-      '@phosphor-icons/react': ^2.1.10
-      echarts: ^6.0.0
-      react: 19.3.0
-      react-dom: 19.3.0
-      zod: ^4.0.0
-    peerDependenciesMeta:
-      echarts:
-        optional: true
-      zod:
-        optional: true
 
   '@cloudflare/kumo@2.14.0':
     resolution: {integrity: sha512-XPGW1KVz9ZbElTQxuy3qVnckVzj8RSfN8FKWWQSkZYfMgvmwviCq9byaVwugnw9mbg+n6vXmJTVDIS5ceS73BA==}
@@ -7106,8 +7091,8 @@ packages:
       typescript:
         optional: true
 
-  '@vortex-api/better-auth-ui@0.2.10':
-    resolution: {integrity: sha512-kybAzuzcZTXyA6Wl2+CpL7cgWd+bSb86oXCF0SYxfbpSBR6MSNJy61RNvnpHfoO7R1coua9dG0VUs67HPGbHnw==}
+  '@vortex-api/better-auth-ui@0.2.12':
+    resolution: {integrity: sha512-PiJuFdeHztyvTJFsAlxLoePrrHByPM7B705DMZvGnap2YhUFyZH1WV4gkTZEHigcqzb9LF0GveD7uU/OapEbEQ==}
     peerDependencies:
       '@cloudflare/kumo': '>=2.13.0'
       '@phosphor-icons/react': '>=2.1.10'
@@ -14196,29 +14181,6 @@ snapshots:
 
   '@cloudflare/containers@0.3.7': {}
 
-  '@cloudflare/kumo@2.13.2(@date-fns/tz@1.5.0)(@phosphor-icons/react@2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@types/react@19.3.0)(date-fns@4.4.0)(echarts@6.1.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(zod@4.6.5)':
-    dependencies:
-      '@base-ui/react': 1.8.0(@date-fns/tz@1.5.0)(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@phosphor-icons/react': 2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@shikijs/langs': 4.4.3
-      '@shikijs/themes': 4.4.3
-      cnfast: 0.0.8
-      d3-geo: 3.1.1
-      motion: 12.43.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      react: 19.3.0
-      react-day-picker: 9.14.0(react@19.3.0)
-      react-dom: 19.3.0(react@19.3.0)
-      shiki: 4.4.3
-      use-sync-external-store: 1.7.0(react@19.3.0)
-    optionalDependencies:
-      echarts: 6.1.0
-      zod: 4.6.5
-    transitivePeerDependencies:
-      - '@date-fns/tz'
-      - '@emotion/is-prop-valid'
-      - '@types/react'
-      - date-fns
-
   '@cloudflare/kumo@2.14.0(@date-fns/tz@1.5.0)(@phosphor-icons/react@2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@types/react@19.3.0)(date-fns@4.4.0)(echarts@6.1.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(zod@4.6.5)':
     dependencies:
       '@base-ui/react': 1.8.0(@date-fns/tz@1.5.0)(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -19423,9 +19385,9 @@ snapshots:
     optionalDependencies:
       typescript: 6.0.3
 
-  '@vortex-api/better-auth-ui@0.2.10(6ba1c352c6cbad63671e03134ca64898)':
+  '@vortex-api/better-auth-ui@0.2.12(2d89c97612c2f27550b6ecb927df5da0)':
     dependencies:
-      '@cloudflare/kumo': 2.13.2(@date-fns/tz@1.5.0)(@phosphor-icons/react@2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@types/react@19.3.0)(date-fns@4.4.0)(echarts@6.1.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(zod@4.6.5)
+      '@cloudflare/kumo': 2.14.0(@date-fns/tz@1.5.0)(@phosphor-icons/react@2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@types/react@19.3.0)(date-fns@4.4.0)(echarts@6.1.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(zod@4.6.5)
       '@phosphor-icons/react': 2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       better-auth: 1.7.6(@opentelemetry/api@1.9.1)(@tanstack/react-start@1.168.32(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rolldown@1.2.8)(rollup@4.63.3)(supports-color@10.2.2)(vite@8.3.0(@types/node@26.1.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.13)(yaml@2.9.1)))(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260916.1)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(kysely@0.29.5)(pg@8.22.0))(mongodb@7.5.0(socks@2.8.9))(pg@8.22.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(svelte@5.57.1(@typescript-eslint/types@8.70.0))(vitest@4.1.11)(vue@3.5.43(typescript@7.0.2))
       react: 19.3.0
@@ -19434,7 +19396,7 @@ snapshots:
     optionalDependencies:
       react-email: 6.9.5(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@10.2.2)
 
-  '@vortex-api/better-auth-ui@0.2.10(7ce2ec3e93b5b8f1256d33651aaba011)':
+  '@vortex-api/better-auth-ui@0.2.12(7ce2ec3e93b5b8f1256d33651aaba011)':
     dependencies:
       '@cloudflare/kumo': 2.14.0(@date-fns/tz@1.5.0)(@phosphor-icons/react@2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@types/react@19.3.0)(date-fns@4.4.0)(echarts@6.1.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(zod@4.6.5)
       '@phosphor-icons/react': 2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -20361,7 +20323,7 @@ snapshots:
 
   buffer-image-size@0.6.4:
     dependencies:
-      '@types/node': 25.9.7
+      '@types/node': 22.20.3
 
   bundle-name@4.1.0:
     dependencies:
@@ -22014,7 +21976,7 @@ snapshots:
 
   happy-dom@20.14.5:
     dependencies:
-      '@types/node': 25.9.7
+      '@types/node': 22.20.3
       '@types/whatwg-mimetype': 3.0.2
       '@types/ws': 8.18.1
       buffer-image-size: 0.6.4

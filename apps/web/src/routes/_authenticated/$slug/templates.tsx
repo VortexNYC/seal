@@ -219,26 +219,28 @@ function TemplatesList({
             description="No templates match your search. Try a different query."
           />
         ) : (
-          <Empty
-            icon={<FileTextIcon size={48} />}
-            title="No templates yet"
-            description="Create templates from your documents to save time. Templates preserve signature fields and can be reused for recurring documents."
-            contents={
-              <Button
-                onClick={() => {
-                  void router.navigate({
-                    to: "/$slug/documents",
-                    params: { slug },
-                    search: { folderId: undefined },
-                  });
-                }}
-                variant="primary"
-                icon={<FolderOpenIcon className="h-4 w-4" />}
-              >
-                Go to Documents
-              </Button>
-            }
-          />
+          <div className="motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2 motion-safe:duration-300">
+            <Empty
+              icon={<FileTextIcon size={48} />}
+              title="Templates come from documents"
+              description="Open a document, place fields, then Save as template. Reuse it next time."
+              contents={
+                <Button
+                  onClick={() => {
+                    void router.navigate({
+                      to: "/$slug/documents",
+                      params: { slug },
+                      search: { folderId: undefined },
+                    });
+                  }}
+                  variant="primary"
+                  icon={<FolderOpenIcon className="h-4 w-4" />}
+                >
+                  Go to Documents
+                </Button>
+              }
+            />
+          </div>
         )
       ) : (
         <div className="space-y-4">

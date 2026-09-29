@@ -17,6 +17,7 @@ import { PenTool, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
+import { SigningChromeSection } from "@/components/settings/signing-chrome-section";
 import { SettingsBody } from "@/components/settings-body";
 import { FormSkeleton } from "@/components/skeletons";
 import { getSigningSettings, updateSigningSettings } from "@/lib/api-client";
@@ -151,7 +152,7 @@ function SigningSettings() {
             </Text>
           </LayerCard.Secondary>
           <LayerCard.Primary>
-            <div className="space-y-4">
+            <div className="flex flex-col gap-4">
               {SIGNATURE_TYPE_OPTIONS.map((type) => (
                 <Checkbox
                   key={type}
@@ -184,7 +185,7 @@ function SigningSettings() {
             </Text>
           </LayerCard.Secondary>
           <LayerCard.Primary>
-            <div className="space-y-4">
+            <div className="flex flex-col gap-4">
               <Checkbox
                 checked={formData.requireRecipientAuth}
                 disabled={isSubmitting}
@@ -311,6 +312,8 @@ function SigningSettings() {
           </Button>
         </div>
       </form>
+
+      <SigningChromeSection slug={slug} />
       </SettingsBody>
     </PageWrapper>
   );

@@ -47,32 +47,32 @@ function ProfileSettings() {
 
   return (
     <AuthProvider client={client}>
-      <SettingsBody>
-      <div className="flex flex-col gap-5">
-        <UserProfileForm
-          onSuccess={() => {
-            toast.success("Profile updated");
-          }}
-        />
-        <ChangeEmailForm
-          callbackURL={verifyCallbackUrl}
-          onSuccess={() => {
-            toast.success(
-              "Confirmation email sent. Click the link from the new address to finish the change."
-            );
-          }}
-        />
-        <ConnectedAccounts
-          onUnlinked={() => {
-            toast.success("Account disconnected");
-          }}
-        />
-        <DeleteAccountForm
-          onSuccess={() => {
-            window.location.assign("/");
-          }}
-        />
-      </div>
+      <SettingsBody className="items-stretch">
+        <div className="flex w-full flex-col gap-5">
+          <UserProfileForm
+            onSuccess={() => {
+              toast.success("Profile updated");
+            }}
+          />
+          <ChangeEmailForm
+            callbackURL={verifyCallbackUrl}
+            onSuccess={() => {
+              toast.success(
+                "Confirmation email sent. Click the link from the new address to finish the change."
+              );
+            }}
+          />
+          <ConnectedAccounts
+            onUnlinked={() => {
+              toast.success("Account disconnected");
+            }}
+          />
+          <DeleteAccountForm
+            onSuccess={() => {
+              window.location.assign("/");
+            }}
+          />
+        </div>
       </SettingsBody>
     </AuthProvider>
   );

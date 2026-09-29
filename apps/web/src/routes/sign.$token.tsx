@@ -10,9 +10,12 @@
 import { Textarea } from "@cloudflare/kumo";
 import { Button } from "@cloudflare/kumo/components/button";
 import { buttonVariants } from "@cloudflare/kumo/components/button";
+import { ButtonGroup } from "@cloudflare/kumo/components/button-group";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Label } from "@cloudflare/kumo/components/label";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { SkeletonLine } from "@cloudflare/kumo/components/loader";
+import { Meter } from "@cloudflare/kumo/components/meter";
 import {
   CheckCircle,
   Clock,
@@ -1052,15 +1055,15 @@ function SigningPage() {
   if (waitingForPreviousGroup && !isCompleted) {
     return (
       <div
-        className="dark:bg-background bg-background flex h-dvh flex-col items-center justify-center px-4"
+        className="bg-background flex h-dvh flex-col items-center justify-center px-4"
         role="status"
         aria-live="polite"
       >
-        <div className="w-full max-w-md space-y-6 text-center">
+        <div className="flex w-full max-w-md flex-col gap-6 text-center">
           <div className="bg-kumo-warning-tint mx-auto flex size-16 items-center justify-center rounded-full">
             <Clock className="text-kumo-warning size-8" />
           </div>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <h1 className="text-xl font-semibold tracking-tight text-balance">
               Waiting for Previous Signers
             </h1>
@@ -1145,13 +1148,15 @@ function SigningPage() {
     requiredFields.length === 0
       ? "Ready to sign"
       : remainingCount === 0
-        ? "All fields completed"
-        : `${remainingCount} field${remainingCount === 1 ? "" : "s"} remaining`;
+        ? "You're ready — sign below"
+        : remainingCount === 1
+          ? "1 field left"
+          : `${remainingCount} fields left`;
 
   const documentSurface = (
     <div ref={pdfContainerRef} className="w-full min-w-0">
       {pdfUrl && pdfWidth !== null ? (
-        <div className="space-y-4">
+        <div className="flex flex-col gap-4">
           <PdfSigningDocumentSurface
             src={pdfUrl}
             width={pdfWidth}
@@ -1230,10 +1235,10 @@ function SigningPage() {
           role="status"
         >
           <p className="text-kumo-secondary mb-4 text-sm">Loading document…</p>
-          <div className="animate-pulse space-y-4">
-            <div className="bg-kumo-hairline mx-auto h-4 w-1/3 rounded" />
-            <div className="bg-kumo-hairline mx-auto h-4 w-1/2 rounded" />
-            <div className="bg-kumo-hairline mx-auto h-4 w-2/5 rounded" />
+          <div className="mx-auto flex w-full max-w-sm flex-col gap-3">
+            <SkeletonLine className="mx-auto h-4 w-1/3" />
+            <SkeletonLine className="mx-auto h-4 w-1/2" />
+            <SkeletonLine className="mx-auto h-4 w-2/5" />
           </div>
         </div>
       )}
@@ -1241,47 +1246,38 @@ function SigningPage() {
   );
 
   const signerDocumentPane = (
-    <div className="w-full min-w-0 space-y-3">
+    <div className="flex w-full min-w-0 flex-col gap-3">
       {!isCompleted && fields.length > 0 ? (
-        <div
-          className="bg-kumo-elevated flex rounded-lg p-1"
-          role="tablist"
+        <ButtonGroup
           aria-label="Signing view"
           data-testid="signer-view-toggle"
+          className="bg-kumo-elevated w-full rounded-lg p-1"
         >
-          <button
+          <Button
             type="button"
-            role="tab"
+            variant={viewMode === "fields" ? "primary" : "ghost"}
             data-testid="signer-view-fields"
-            aria-selected={viewMode === "fields"}
-            className={`h-10 flex-1 rounded-md text-sm font-medium transition-colors ${
-              viewMode === "fields"
-                ? "bg-background text-kumo-primary shadow-sm"
-                : "text-kumo-secondary"
-            }`}
+            aria-pressed={viewMode === "fields"}
+            className="h-10 flex-1"
             onClick={() => {
               setViewMode("fields");
             }}
           >
             Fields
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            role="tab"
+            variant={viewMode === "document" ? "primary" : "ghost"}
             data-testid="signer-view-document"
-            aria-selected={viewMode === "document"}
-            className={`h-10 flex-1 rounded-md text-sm font-medium transition-colors ${
-              viewMode === "document"
-                ? "bg-background text-kumo-primary shadow-sm"
-                : "text-kumo-secondary"
-            }`}
+            aria-pressed={viewMode === "document"}
+            className="h-10 flex-1"
             onClick={() => {
               setViewMode("document");
             }}
           >
             Document
-          </button>
-        </div>
+          </Button>
+        </ButtonGroup>
       ) : null}
 
       {viewMode === "fields" && !isCompleted ? (
@@ -1311,10 +1307,10 @@ function SigningPage() {
   );
 
   const actionWidget = (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       {!isOnline && (
         <div
-          className="border-warning-surface bg-kumo-warning-tint rounded-lg border px-3 py-2"
+          className="border-warning-surface bg-kumo-warning-tint motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-2 motion-safe:duration-200 rounded-lg border px-3 py-2"
           role="status"
         >
           <div className="text-kumo-warning flex items-center gap-2 text-sm">
@@ -1325,26 +1321,18 @@ function SigningPage() {
       )}
 
       {!isCompleted && fields.length > 0 && (
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm font-medium">{progressLabel}</p>
             <span className="text-kumo-secondary text-xs tabular-nums">
               {filledRequiredFields.length}/{requiredFields.length}
             </span>
           </div>
-          <div
-            className="bg-kumo-elevated h-2 overflow-hidden rounded-full"
-            role="progressbar"
-            aria-valuenow={fieldCompletionPercent}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label="Field completion progress"
-          >
-            <div
-              className="bg-kumo-primary h-full rounded-full transition-[width] duration-500 ease-out"
-              style={{ width: `${fieldCompletionPercent}%` }}
-            />
-          </div>
+          <Meter
+            label="Field completion"
+            value={fieldCompletionPercent}
+            showValue={false}
+          />
           {remainingCount > 0 && (
             <Button
               type="button"
@@ -1363,7 +1351,7 @@ function SigningPage() {
       )}
 
       {!isCompleted && hasUnpaidPayments && paymentConfigs.length > 0 && (
-        <div className="border-warning-surface bg-kumo-warning-tint/50 space-y-2 rounded-xl border p-3">
+        <div className="border-warning-surface bg-kumo-warning-tint/50 flex flex-col gap-2 rounded-xl border p-3">
           <div className="flex items-start gap-2">
             <CreditCard className="text-kumo-warning mt-0.5 h-4 w-4 shrink-0" />
             <div>
@@ -1394,7 +1382,7 @@ function SigningPage() {
       )}
 
       {!isCompleted && !showSignatureCapture && (
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           <Button
             size="lg"
             className="h-12 w-full text-base font-medium"
@@ -1434,13 +1422,13 @@ function SigningPage() {
       )}
 
       {isCompleted && recipient.status !== "declined" && (
-        <div className="space-y-3">
+        <div className="flex flex-col gap-3" data-seal-success>
           <div className="text-kumo-success flex items-center gap-2">
-            <CheckCircle className="h-5 w-5" />
+            <CheckCircle className="h-5 w-5" weight="fill" />
             <span className="text-sm font-semibold">
               {recipient.status === "approved"
                 ? "Document approved"
-                : "Document signed"}
+                : "You're done"}
             </span>
           </div>
           <p className="text-kumo-secondary text-sm">
@@ -1478,7 +1466,7 @@ function SigningPage() {
       )}
 
       {isCompleted && isWaitingForPayment && paymentConfigs.length > 0 && (
-        <div className="border-warning-surface bg-kumo-warning-tint/50 space-y-2 rounded-xl border p-3">
+        <div className="border-warning-surface bg-kumo-warning-tint/50 flex flex-col gap-2 rounded-xl border p-3">
           <div className="flex items-start gap-2">
             <CreditCard className="text-kumo-warning mt-0.5 h-4 w-4 shrink-0" />
             <div>
@@ -1546,7 +1534,7 @@ function SigningPage() {
             Please provide a reason for declining. This will be shared with the
             document sender.
           </Dialog.Description>
-          <div className="space-y-2 py-4">
+          <div className="flex flex-col gap-2 py-4">
             <Label htmlFor="decline-reason">Reason</Label>
             <Textarea
               id="decline-reason"

@@ -81,7 +81,7 @@ function ComplianceOnboarding(): ReactElement {
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center gap-6 px-[max(1rem,env(safe-area-inset-left))] py-8 pr-[max(1rem,env(safe-area-inset-right))]">
-      <div className="space-y-2 text-center">
+      <div className="flex flex-col gap-2 text-center">
         <div className="bg-kumo-elevated mx-auto flex size-12 items-center justify-center rounded-full">
           <ShieldCheck className="size-6" weight="duotone" />
         </div>
@@ -96,7 +96,7 @@ function ComplianceOnboarding(): ReactElement {
       </div>
 
       <LayerCard className="w-full">
-        <LayerCard.Primary className="space-y-5 p-[clamp(1rem,4vw,1.5rem)]">
+        <LayerCard.Primary className="flex flex-col gap-5 p-[clamp(1rem,4vw,1.5rem)]">
           <Checkbox
             checked={requireRecipientAuth}
             onCheckedChange={(checked) =>

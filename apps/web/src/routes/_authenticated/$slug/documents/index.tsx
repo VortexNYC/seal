@@ -1078,27 +1078,34 @@ function DocumentsEmptyState({
   readonly hasFiltersOrSearch: boolean;
   readonly onUploadClick: () => void;
 }) {
-  return hasFiltersOrSearch ? (
-    <Empty
-      icon={<SearchIcon size={48} />}
-      title="No documents found"
-      description="Try adjusting your search or filters to find what you're looking for."
-    />
-  ) : (
-    <Empty
-      icon={<FileTextIcon size={48} />}
-      title="No documents yet"
-      description="Upload your first document to get started. You can send documents for signature, share with your team, and track their status."
-      contents={
-        <Button
-          onClick={onUploadClick}
-          variant="primary"
-          icon={<UploadIcon className="h-4 w-4" />}
-        >
-          Upload Document
-        </Button>
-      }
-    />
+  return (
+    <div
+      className="motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2 motion-safe:duration-300"
+      data-testid="documents-empty"
+    >
+      {hasFiltersOrSearch ? (
+        <Empty
+          icon={<SearchIcon size={48} />}
+          title="No documents found"
+          description="Try adjusting your search or filters to find what you're looking for."
+        />
+      ) : (
+        <Empty
+          icon={<FileTextIcon size={48} />}
+          title="Send your first document"
+          description="Upload a PDF, add people, place fields, send. About a minute."
+          contents={
+            <Button
+              onClick={onUploadClick}
+              variant="primary"
+              icon={<UploadIcon className="h-4 w-4" />}
+            >
+              Upload PDF
+            </Button>
+          }
+        />
+      )}
+    </div>
   );
 }
 

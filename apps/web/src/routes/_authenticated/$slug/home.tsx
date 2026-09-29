@@ -1,16 +1,15 @@
 /**
- * Workspace Home/Dashboard Page
- *
- * SEA-96: Documenso-density oversight surface — blockers, KPIs, recent docs,
- * quick links. Charts / team / full activity live on Analytics & Settings.
+ * Workspace Home/Dashboard — what needs you, then KPIs / recent.
  * Route: /{slug}/home
  */
 
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { SkeletonLine } from "@cloudflare/kumo/components/loader";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Suspense } from "react";
 
+import { AllClear } from "@/components/dashboard/all-clear";
 import { ExportDataDialog } from "@/components/dashboard/export-data-dialog";
 import { NeedsAttention } from "@/components/dashboard/needs-attention";
 import { QuickActions } from "@/components/dashboard/quick-actions";
@@ -18,8 +17,8 @@ import { RecentDocuments } from "@/components/dashboard/recent-documents";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { PageWrapper } from "@/components/page-wrapper";
 import { DashboardSkeleton } from "@/components/skeletons/dashboard-skeleton";
-import { useCurrentUser as useUser } from "@/hooks/use-current-user";
 import { useSuspenseOrganization } from "@/hooks/use-organization";
+import { getDocumentAttention } from "@/lib/api-client";
 import { pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_authenticated/$slug/home")({
@@ -33,13 +32,6 @@ export const Route = createFileRoute("/_authenticated/$slug/home")({
     ],
   }),
 });
-
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
-}
 
 function StatsCardsFallback(): React.ReactElement {
   return (
@@ -70,38 +62,57 @@ function RecentDocsFallback(): React.ReactElement {
 
 function WorkspaceHome(): React.ReactElement {
   const { slug } = Route.useParams();
-  const { user } = useUser();
   const { data: organization } = useSuspenseOrganization(slug);
+  const { data: attention, isPending: attentionPending } = useQuery({
+    queryKey: ["api", "documents", "attention", slug],
+    queryFn: () => getDocumentAttention(slug),
+  });
 
   if (!organization) {
     return <DashboardSkeleton />;
   }
 
-  const firstName = user?.firstName ?? "there";
+  const issueCount = attention?.totalIssues ?? 0;
 
   return (
     <PageWrapper title="Dashboard" headerActions={<ExportDataDialog />}>
-      <div className="mx-auto flex max-w-5xl flex-col gap-5">
-        <div>
+      <div
+        className="mx-auto flex max-w-5xl flex-col gap-5"
+        data-seal-stagger
+      >
+        <div className="flex flex-col gap-1">
           <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
-            {getGreeting()},{" "}
-            <span className="font-serif font-normal italic">{firstName}</span>
+            {organization.name}
           </h2>
-          <p className="text-muted-foreground mt-0.5 text-sm">
-            What needs you in{" "}
-            <span className="text-foreground font-medium">
-              {organization.name}
-            </span>
+          <p className="text-muted-foreground text-sm">
+            {issueCount > 0
+              ? `${issueCount} item${issueCount === 1 ? "" : "s"} need you`
+              : "What needs you — and what agents already moved"}
           </p>
         </div>
 
-        <Suspense fallback={<StatsCardsFallback />}>
+        {attentionPending ? (
+          <StatsCardsFallback />
+        ) : issueCount > 0 ? (
           <NeedsAttention organizationSlug={slug} />
-        </Suspense>
+        ) : (
+          <AllClear slug={slug} />
+        )}
 
         <Suspense fallback={<StatsCardsFallback />}>
           <StatsCards organizationSlug={slug} />
         </Suspense>
+
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="text-muted-foreground text-sm">Trends and team activity</p>
+          <Link
+            to="/$slug/analytics"
+            params={{ slug }}
+            className="text-primary text-sm font-medium underline-offset-4 hover:underline"
+          >
+            Open analytics
+          </Link>
+        </div>
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_14rem]">
           <Suspense fallback={<RecentDocsFallback />}>

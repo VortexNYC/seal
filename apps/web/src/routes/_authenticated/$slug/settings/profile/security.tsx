@@ -36,41 +36,41 @@ function SecuritySettings() {
 
   return (
     <AuthProvider client={client}>
-      <SettingsBody>
-      <div className="flex flex-col gap-5">
-        <SessionList
-          showRevokeOthersAction
-          onRevoke={() => {
-            toast.success("Session revoked");
-          }}
-        />
-        <EnableTwoFactorForm
-          issuer="Seal"
-          onSuccess={() => {
-            toast.success("Two-factor authentication enabled");
-          }}
-        />
-        <GenerateBackupCodesForm
-          onSuccess={() => {
-            toast.success("Backup codes regenerated");
-          }}
-        />
-        <DisableTwoFactorForm
-          onSuccess={() => {
-            toast.success("Two-factor authentication disabled");
-          }}
-        />
-        <ChangePasswordForm
-          onSuccess={() => {
-            toast.success("Password changed");
-          }}
-        />
-        <SetPasswordForm
-          onSuccess={() => {
-            toast.success("Password set");
-          }}
-        />
-      </div>
+      <SettingsBody className="items-stretch">
+        <div className="flex w-full flex-col gap-5">
+          <SessionList
+            showRevokeOthersAction
+            onRevoke={() => {
+              toast.success("Session revoked");
+            }}
+          />
+          <EnableTwoFactorForm
+            issuer="Seal"
+            onSuccess={() => {
+              toast.success("Two-factor authentication enabled");
+            }}
+          />
+          <GenerateBackupCodesForm
+            onSuccess={() => {
+              toast.success("Backup codes regenerated");
+            }}
+          />
+          <DisableTwoFactorForm
+            onSuccess={() => {
+              toast.success("Two-factor authentication disabled");
+            }}
+          />
+          <ChangePasswordForm
+            onSuccess={() => {
+              toast.success("Password changed");
+            }}
+          />
+          <SetPasswordForm
+            onSuccess={() => {
+              toast.success("Password set");
+            }}
+          />
+        </div>
       </SettingsBody>
     </AuthProvider>
   );

@@ -2,7 +2,6 @@
 
 import { Sidebar } from "@cloudflare/kumo/components/sidebar";
 import {
-  ChartBar,
   Code,
   Files,
   Gear,
@@ -138,12 +137,6 @@ function buildNav({
       icon: Users,
       visible: canView(permissionFlags?.canViewContacts),
     },
-    {
-      title: "Analytics",
-      url: buildOrganizationPath(slug, "/analytics"),
-      icon: ChartBar,
-      visible: true,
-    },
   ]
     .filter((item) => item.visible)
     .map(({ title, url, icon }) => ({
@@ -166,15 +159,9 @@ function buildNav({
       visible: canView(permissionFlags?.canViewMembers),
     },
     {
-      title: "Profile",
+      title: "Account",
       url: buildOrganizationPath(slug, "/settings/profile"),
       visible: true,
-    },
-    {
-      title: "Branding",
-      url: buildOrganizationPath(slug, "/settings/branding"),
-      visible: canView(permissionFlags?.canViewSettings),
-      proGated: true,
     },
     {
       title: "Signing",
@@ -184,32 +171,22 @@ function buildNav({
     {
       title: "Notifications",
       url: buildOrganizationPath(slug, "/settings/notifications"),
-      visible: canView(permissionFlags?.canViewSettings),
+      visible: true,
     },
     {
       title: "Security",
       url: buildOrganizationPath(slug, "/settings/security"),
       visible: canView(permissionFlags?.canViewSettings),
     },
-    {
-      title: "Audit Log",
-      url: buildOrganizationPath(slug, "/settings/audit-log"),
-      visible: canView(permissionFlags?.canViewSettings),
-    },
   ].filter((item) => item.visible);
 
   const developerItems = [
     {
-      title: "API Keys",
-      url: buildOrganizationPath(slug, "/settings/developer/api-keys"),
+      title: "Developer",
+      url: buildOrganizationPath(slug, "/settings/developer"),
       visible:
         canView(permissionFlags?.canManageAPIKeys) ||
         canView(permissionFlags?.canManageWebhooks),
-    },
-    {
-      title: "Webhooks",
-      url: buildOrganizationPath(slug, "/settings/developer/webhooks"),
-      visible: canView(permissionFlags?.canManageWebhooks),
     },
     {
       title: "Documentation",
