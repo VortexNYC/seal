@@ -10,7 +10,7 @@ import {
   Users,
   type Icon,
 } from "@phosphor-icons/react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import * as React from "react";
 
@@ -24,6 +24,14 @@ import { WorkspaceAccountMenu } from "@/components/workspace-account-menu";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
+import {
+  getContacts,
+  getDocuments,
+  getFolders,
+  getOrganizationTemplates,
+  getSecuritySettings,
+  getSigningSettings,
+} from "@/lib/api-client";
 import { betterAuthClient } from "@/lib/better-auth";
 import { buildOrganizationPath } from "@/lib/organization-path";
 
@@ -273,8 +281,46 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useCurrentUser();
   const { reset: resetAnalytics } = useAnalytics();
+
+  // Warm list/settings caches so Cap "second round" navigations feel instant.
+  React.useEffect(() => {
+    void queryClient.prefetchQuery({
+      queryKey: ["api", "documents", "all", "all", undefined, slug],
+      queryFn: () =>
+        getDocuments(slug, {
+          filter: "all",
+          rootOnly: true,
+        }),
+    });
+    void queryClient.prefetchQuery({
+      queryKey: ["api", "folders", "document", undefined, slug],
+      queryFn: () => getFolders(slug, { type: "document" }),
+    });
+    void queryClient.prefetchQuery({
+      queryKey: ["organization-templates", slug, undefined],
+      queryFn: () => getOrganizationTemplates(slug),
+    });
+    void queryClient.prefetchQuery({
+      queryKey: ["api", "folders", "template", undefined, slug],
+      queryFn: () => getFolders(slug, { type: "template" }),
+    });
+    void queryClient.prefetchQuery({
+      queryKey: ["api", "contacts", "list", "all", slug],
+      queryFn: () => getContacts(slug),
+    });
+    void queryClient.prefetchQuery({
+      queryKey: ["signing", slug],
+      queryFn: () => getSigningSettings(slug),
+    });
+    void queryClient.prefetchQuery({
+      queryKey: ["security", slug],
+      queryFn: () => getSecuritySettings(slug),
+    });
+  }, [queryClient, slug]);
+
   const { data: organizations } = useQuery({
     queryKey: ["auth", "organization", "list"],
     queryFn: async () => {

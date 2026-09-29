@@ -68,9 +68,10 @@ function SecuritySettingsContent() {
   const client = useAuth();
   const { data: organization } = useOrganization(slug);
 
-  const { data: securitySettings } = useQuery({
+  const { data: securitySettings, isPending: securityPending } = useQuery({
     queryKey: ["security", slug],
     queryFn: () => getSecuritySettings(slug),
+    staleTime: 60_000,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -174,7 +175,7 @@ function SecuritySettingsContent() {
     }
   };
 
-  if (!organization || !securitySettings) {
+  if (organization === undefined || securityPending || !securitySettings) {
     return (
       <PageWrapper title="Security Settings">
         <FormSkeleton />

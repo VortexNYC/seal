@@ -42,6 +42,7 @@ function SigningSettings() {
   const { data: signingSettings, isPending } = useQuery({
     queryKey: ["signing", slug],
     queryFn: () => getSigningSettings(slug),
+    staleTime: 60_000,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);

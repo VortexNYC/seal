@@ -101,13 +101,16 @@ export function FileUpload({
       <div
         {...getRootProps()}
         className={cn(
-          "border-border bg-background flex min-h-48 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-dashed px-6 py-10 text-center transition-colors",
-          isDragActive && "border-foreground/40 bg-accent",
+          "border-border bg-card text-foreground flex min-h-48 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors",
+          "hover:border-foreground/30 hover:bg-muted/40",
+          isDragActive && "border-primary bg-primary/5",
           disabled && "cursor-not-allowed opacity-50"
         )}
       >
         <input {...getInputProps()} />
-        <Upload className="text-muted-foreground size-8" />
+        <div className="bg-muted text-foreground flex size-12 items-center justify-center rounded-full">
+          <Upload className="size-5" aria-hidden />
+        </div>
         <div>
           <p className="text-foreground text-sm font-medium">{title}</p>
           <p className="text-muted-foreground mt-1 text-xs">
@@ -121,7 +124,7 @@ export function FileUpload({
           {items.map((item) => (
             <li
               key={item.id}
-              className="border-border bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2 text-xs"
+              className="border-border bg-card text-foreground flex items-center justify-between rounded-md border px-3 py-2 text-xs"
             >
               <span className="truncate">{item.file.name}</span>
               <span className="text-muted-foreground tabular-nums">
