@@ -1,3 +1,4 @@
+import { renderPaymentDunning } from "@seal/transactional";
 import { and, eq, isNotNull, lte } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
@@ -15,14 +16,6 @@ const DUNNING_DELAYS = [
 const MAX_DUNNING_STEP = DUNNING_DELAYS.length - 1;
 
 const FROM_EMAIL = "Seal <no-reply@seal.nyc>";
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
 
 function formatCurrency(amountCents: number, currency: string): string {
   const amount = (amountCents / 100).toFixed(2);
@@ -71,35 +64,6 @@ function getDunningEmailContent(
         urgency: "medium",
       };
   }
-}
-
-function renderDunningHtml(
-  content: DunningEmailContent,
-  customerName: string,
-  paymentUrl: string | null
-): string {
-  const urgencyColor =
-    content.urgency === "high"
-      ? "#dc2626"
-      : content.urgency === "medium"
-        ? "#d97706"
-        : "#6b7280";
-
-  const buttonHtml = paymentUrl
-    ? `<p style="margin: 24px 0;"><a href="${paymentUrl}" style="display: inline-block; padding: 12px 24px; background-color: #A63D2F; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600;">Pay Now</a></p>`
-    : "";
-
-  return `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
-      <p style="color: ${urgencyColor}; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">${escapeHtml(content.heading)}</p>
-      <p>Hi ${escapeHtml(customerName)},</p>
-      <p>${escapeHtml(content.message)}</p>
-      ${buttonHtml}
-      <p style="color: #6b7280; font-size: 14px;">If you've already made this payment, please disregard this message.</p>
-      <br/>
-      <p style="color: #9ca3af; font-size: 12px;">— Seal</p>
-    </div>
-  `;
 }
 
 export async function runDunningEmails(
@@ -151,11 +115,13 @@ export async function runDunningEmails(
         documentName ?? "your document",
         amount
       );
-      const html = renderDunningHtml(
-        content,
-        customerName,
-        invoice.hostedInvoiceUrl
-      );
+      const html = await renderPaymentDunning({
+        recipientName: customerName,
+        heading: content.heading,
+        message: content.message,
+        urgency: content.urgency,
+        paymentUrl: invoice.hostedInvoiceUrl ?? undefined,
+      });
 
       const result = await sendEmail(env, {
         from: FROM_EMAIL,

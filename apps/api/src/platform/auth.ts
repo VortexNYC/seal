@@ -1,4 +1,4 @@
-import { PasswordResetEmail, render } from "@vortex-api/better-auth-ui/emails";
+import { renderPasswordReset } from "@seal/transactional";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { betterAuth } from "better-auth/minimal";
 import { organization, twoFactor } from "better-auth/plugins";
@@ -42,14 +42,10 @@ export async function createAuth(env: CloudflareBindings) {
     emailAndPassword: {
       enabled: true,
       sendResetPassword: async ({ user, url }) => {
-        const html = await render(
-          PasswordResetEmail({
-            username: user.name,
-            resetUrl: url,
-            brandName: "Seal",
-            brandColor: "#44403c",
-          })
-        );
+        const html = await renderPasswordReset({
+          recipientName: user.name ?? "",
+          resetUrl: url,
+        });
         const result = await sendEmail(env, {
           to: user.email,
           subject: "Reset your Seal password",

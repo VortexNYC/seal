@@ -5,8 +5,8 @@
 **Sources:** Documenso + **DocuSeal** OSS (design reference only — no AGPL /
 proprietary copy). Founder checklist 2026-09-28.
 
-**Gate:** Do not send real family / in-law packets until §2 Mark→Lenore prove
-is green on the **deployed** build.
+**Gate:** §2 Mark→Lenore prove is **green** on deployed `app.seal.nyc`
+(2026-09-29). Family / in-law packets may proceed.
 
 ---
 
@@ -44,7 +44,7 @@ is green on the **deployed** build.
 | SEA-84 signature adopt               | **code done** — dogfood once on live |
 | SEA-85 OCR/detect Accept all         | **code done** — dogfood once on live |
 | SEA-83 solo / guided E2E             | **done** (Playwright)                |
-| SEA-86 mobile Form View              | **landing** (this PR)                |
+| SEA-86 mobile Form View              | **done** (proved on prod 2026-09-29) |
 | SEA-87 field-catalog E2E expand      | open (non-blocking for Mark→Lenore)  |
 | Recipient roles                      | done                                 |
 | Default recipient auth = email OTP   | done                                 |
@@ -72,19 +72,22 @@ is green on the **deployed** build.
 
 ## 2. Local Mark → Lenore prove
 
-**Status: NOT DONE until checked off on deployed build.**
+**Status: DONE on deployed `app.seal.nyc` (2026-09-29).**
 
-1. Deployed `app.seal.nyc` (or preview) includes SEA-86 + next-field
-2. Upload packet PDF
-3. Accept all / place signature + date for Mark and Lenore
-4. Both **Signer** + **email OTP**
-5. Send → both get invite mail
-6. **Mark** on phone (portrait): OTP → account (exact email) → START → privacy → ESIGN → Fields list → sign → submit
-7. **Lenore** same
-8. Completion mail with sealed PDF for both + sender
-9. Spot-check desktop Document view still works
+Doc `c3a0968c-6383-4085-a133-aef769224e44` · status `completed` · both signers
+via email OTP + Seal account + Fields Form View + sealed PDF copies in inbox.
 
-Until 6–9 are green on the deployed build, **do not send the real family packet.**
+1. [x] Deployed `app.seal.nyc` includes SEA-86 + next-field (`index-puNEg4Iy.js`)
+2. [x] Upload packet PDF
+3. [x] Signature + date fields for Mark and Lenore
+4. [x] Both **Signer** + **email OTP**
+5. [x] Send → both get invite mail
+6. [x] **Mark**: OTP → account → START → privacy → ESIGN → Fields → sign → submit
+7. [x] **Lenore** same
+8. [x] Completion / signed-copy mail with sealed PDF for both signers
+9. [x] Document view toggle still works alongside Fields
+
+Family / in-law packets are clear to send.
 
 ---
 

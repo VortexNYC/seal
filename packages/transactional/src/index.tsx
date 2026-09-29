@@ -41,6 +41,14 @@ import {
   type OwnershipTransferredProps,
 } from "./emails/ownership-transferred.js";
 import {
+  PasswordReset,
+  type PasswordResetProps,
+} from "./emails/password-reset.js";
+import {
+  PaymentDunning,
+  type PaymentDunningProps,
+} from "./emails/payment-dunning.js";
+import {
   SigningComplete,
   type SigningCompleteProps,
 } from "./emails/signing-complete.js";
@@ -60,6 +68,8 @@ export {
   DocumentReminder,
   DocumentShared,
   DocumentViewed,
+  PasswordReset,
+  PaymentDunning,
   SigningComplete,
   SigningOtp,
   OwnershipTransferred,
@@ -79,6 +89,8 @@ export type {
   DocumentSharedProps,
   DocumentViewedProps,
   OwnershipTransferredProps,
+  PasswordResetProps,
+  PaymentDunningProps,
 };
 
 /**
@@ -178,6 +190,24 @@ export async function renderSigningOtp(
   props: SigningOtpProps
 ): Promise<string> {
   return render(<SigningOtp {...props} />);
+}
+
+/**
+ * Render PasswordReset email to HTML string
+ */
+export async function renderPasswordReset(
+  props: PasswordResetProps
+): Promise<string> {
+  return render(<PasswordReset {...props} />);
+}
+
+/**
+ * Render PaymentDunning email to HTML string
+ */
+export async function renderPaymentDunning(
+  props: PaymentDunningProps
+): Promise<string> {
+  return render(<PaymentDunning {...props} />);
 }
 
 /**

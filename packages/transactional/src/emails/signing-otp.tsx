@@ -1,7 +1,7 @@
 /* vortex-allow-color-file: transactional email template — email clients require literal colors; CSS variables and Tailwind tokens are not supported in email HTML. */
 import { Section, Text } from "@react-email/components";
 
-import { email } from "../styles.js";
+import { email, fonts } from "../styles.js";
 import { EmailLayout, emailStyles } from "./email-layout.js";
 
 export interface SigningOtpProps {
@@ -39,7 +39,7 @@ export function SigningOtp({
             letterSpacing: "8px",
             fontWeight: 700,
             color: email.foreground,
-            fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+            fontFamily: fonts.mono,
           }}
         >
           {code}
