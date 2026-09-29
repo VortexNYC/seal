@@ -43,12 +43,19 @@ app.use("/*", organizationMiddleware);
 function canAdminister(c: {
   get: <K extends keyof Variables>(key: K) => Variables[K];
 }): boolean {
+  const membership = c.get("membership");
+  const roleOk =
+    membership?.role === "admin" || membership?.role === "owner";
+  if (!roleOk) {
+    return false;
+  }
   const apiToken = c.get("apiToken");
   if (apiToken) {
+    // Token admin scope is necessary but not sufficient — demoted members
+    // must not keep audit/SIEM access via a leftover admin-scoped key.
     return parseApiTokenScopes(apiToken.scopes).includes("admin");
   }
-  const membership = c.get("membership");
-  return membership?.role === "admin" || membership?.role === "owner";
+  return true;
 }
 
 function parseMetadata(

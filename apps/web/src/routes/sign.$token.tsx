@@ -288,6 +288,17 @@ function SigningPage() {
   const markAccountReady = useCallback(() => {
     setAccountReady(true);
   }, []);
+  const signatureViewedRef = useRef(false);
+
+  // Recipient funnel (SEA-73): IDs only — never email, name, or document title.
+  useEffect(() => {
+    if (signatureViewedRef.current) return;
+    signatureViewedRef.current = true;
+    track.signatureViewed({
+      documentId: doc._id,
+      recipientId: recipient._id,
+    });
+  }, [doc._id, recipient._id, track]);
 
   // Fetch fields assigned to this recipient
   const { data: fields, refetch: refetchFields } = useSuspenseQuery({
@@ -910,7 +921,14 @@ function SigningPage() {
         token={token}
         method={authMethod}
         maskedEmail={recipient.authEmailMasked ?? null}
-        onVerified={() => setAuthVerified(true)}
+        onVerified={() => {
+          track.signingAuthVerified({
+            documentId: doc._id,
+            recipientId: recipient._id,
+            authMethod,
+          });
+          setAuthVerified(true);
+        }}
       />
     );
   }

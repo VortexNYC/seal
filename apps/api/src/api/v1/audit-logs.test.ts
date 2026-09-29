@@ -340,6 +340,24 @@ describe("api v1 audit logs", () => {
     expect(res.status).toBe(403);
   });
 
+  it("rejects a member-role admin-scoped token (RBAC: audit is owner/admin only)", async () => {
+    const { slug, plaintext } = await seedTokenContext({
+      role: "member",
+      tokenScopes: ["admin"],
+    });
+
+    const res = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/v1/organizations/${encodeURIComponent(
+          slug
+        )}/audit`,
+        { headers: { authorization: `Bearer ${plaintext}` } }
+      ),
+      env
+    );
+    expect(res.status).toBe(403);
+  });
+
   it("rejects requests outside the organization", async () => {
     const { plaintext } = await seedTokenContext();
     const other = `other-org-${crypto.randomUUID().slice(0, 8)}`;
