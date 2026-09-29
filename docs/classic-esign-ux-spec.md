@@ -5,47 +5,52 @@
 **Sources:** Documenso + **DocuSeal** OSS (design reference only — no AGPL /
 proprietary copy). Founder checklist 2026-09-28.
 
+**Gate:** Do not send real family / in-law packets until §2 Mark→Lenore prove
+is green on the **deployed** build.
+
 ---
 
 ## 0. Loot table
 
 ### Documenso → Seal
-| Behavior | Seal |
-|---|---|
-| AUTO_SIGNABLE name/email/initials/date | `auto-sign-fields.ts` |
-| Completion mail + downloadLink + PDF attach | SEA-81 landed |
-| Add myself / Draw·Type·Upload | Already present |
+
+| Behavior                                    | Seal                  |
+| ------------------------------------------- | --------------------- |
+| AUTO_SIGNABLE name/email/initials/date      | `auto-sign-fields.ts` |
+| Completion mail + downloadLink + PDF attach | SEA-81 landed         |
+| Add myself / Draw·Type·Upload               | Already present       |
 
 ### DocuSeal → Seal
-| Behavior | Seal |
-|---|---|
-| Profile-saved default signature | SEA-84: first-run **Adopt your signature** + default auto-select |
-| START gate before signing | Already on `/sign/$token` |
-| ESIGN certs / verify PDF | Seal PAdES (SEA-49) — keep native |
-| MCP + API-first | Seal already MCP/OpenAPI-first |
-| Field detect → place | SEA-85: suggestions pre-selected → **Accept all** one tap |
-| Guided next-field tour | Signer sticky **Next field** CTA + auto-scroll on open (Dropbox-class) |
-| Webhook HMAC / compliance knobs | Prefer existing Seal webhooks; file SEA if gap |
+
+| Behavior                        | Seal                                                     |
+| ------------------------------- | -------------------------------------------------------- |
+| Profile-saved default signature | SEA-84: first-run **Adopt your signature**               |
+| START gate before signing       | `/sign/$token`                                           |
+| ESIGN certs / verify PDF        | Seal PAdES (SEA-49)                                      |
+| MCP + API-first                 | OpenAPI + MCP                                            |
+| Field detect → place            | SEA-85: **Accept all**                                   |
+| Guided next-field tour          | Sticky **Next field** + auto-advance                     |
+| Mobile Form View                | SEA-86: Fields / Document toggle (phone defaults Fields) |
+| Webhook HMAC / compliance knobs | Prefer existing Seal webhooks                            |
 
 ---
 
 ## 1. Status
 
-| Item | State |
-|---|---|
-| SEA-81 sealed inbox PDF | done |
-| SEA-82 auto date/name/email/initials | done |
-| SEA-84 signature adopt | landing |
-| SEA-85 OCR/detect Accept all | landing |
-| SEA-83 solo E2E | open |
-| SEA-86 mobile Form View | open |
-| SEA-87 field-catalog E2E expand | open |
-| Recipient roles (signer / viewer / approver) | done |
-| Default recipient auth = email OTP | done (org can require) |
-| Signer Seal account gate (audit identity) | done (org `requireSignerAccount`) |
-| Compliance onboarding seeds signing defaults | done (`/{slug}/onboarding/compliance`) |
-| Mobile/portrait clarity on auth + account gates | landing |
-| Signer jump-to-next-field (placement ready) | landing |
+| Item                                 | State                                |
+| ------------------------------------ | ------------------------------------ |
+| SEA-81 sealed inbox PDF              | **done**                             |
+| SEA-82 auto date/name/email/initials | **done**                             |
+| SEA-84 signature adopt               | **code done** — dogfood once on live |
+| SEA-85 OCR/detect Accept all         | **code done** — dogfood once on live |
+| SEA-83 solo / guided E2E             | **done** (Playwright)                |
+| SEA-86 mobile Form View              | **landing** (this PR)                |
+| SEA-87 field-catalog E2E expand      | open (non-blocking for Mark→Lenore)  |
+| Recipient roles                      | done                                 |
+| Default recipient auth = email OTP   | done                                 |
+| Signer Seal account gate             | done                                 |
+| Compliance onboarding                | done                                 |
+| Signer jump-to-next-field            | **done**                             |
 
 ---
 
@@ -53,55 +58,44 @@ proprietary copy). Founder checklist 2026-09-28.
 
 1. Sender adds recipient with role + auth (default **email OTP**).
 2. Send blocked if org `requireRecipientAuth` and any signer/approver is link-only.
-3. Email → `/sign/$token` → OTP/access code (if set) → **Create account / Sign in** when `requireSignerAccount` → START → privacy → ESIGN → fields.
+3. Email → `/sign/$token` → OTP → Create account / Sign in when required → START → privacy → ESIGN → **Fields** (mobile) or Document → sign.
 4. Submit requires session email matching the invitation when account is required.
 
-## 1b. Signer guided fields (Dropbox-class)
+## 1b. Signer guided fields
 
-After gates clear, sender-placed fields must already be on the PDF overlay.
-Signer must not hunt by scrolling:
-
-1. On PDF ready → auto-scroll + highlight first unfilled required field.
-2. Persistent **Next field** control jumps to the next unfilled (page + position order).
-3. After a field save → auto-advance to the next unfilled and open it.
-4. When none remain → primary action is Submit / Sign (no scavenger hunt).
+1. Sender-placed fields appear on PDF overlay **and** in Form View list.
+2. Phone defaults to **Fields** (no pinch-zoom hunt).
+3. On ready → open first unfilled field.
+4. **Next field** jumps / Form list tap opens input.
+5. After save → auto-advance.
+6. When none remain → Submit / Sign.
 
 ## 2. Local Mark → Lenore prove
 
-**Status: NOT DONE — required before sending to in-laws.**
+**Status: NOT DONE until checked off on deployed build.**
 
-Checklist (must pass on the build that will be live):
-
-1. `pnpm run dev` (api :8787, web :5180) — or dogfood on `app.seal.nyc` after deploy
-2. Upload GREENMAR (or sample) PDF
-3. Place signature + date fields for Mark and Lenore (or Accept all)
-4. Add both as **Signer** with **email OTP** (org default)
+1. Deployed `app.seal.nyc` (or preview) includes SEA-86 + next-field
+2. Upload packet PDF
+3. Accept all / place signature + date for Mark and Lenore
+4. Both **Signer** + **email OTP**
 5. Send → both get invite mail
-6. **Mark:** open link → OTP from email → create/sign-in Seal account with *exact* invite email → START → privacy → ESIGN → guided field → sign
-7. **Lenore:** same path (after Mark if sequential; parallel if same order)
+6. **Mark** on phone (portrait): OTP → account (exact email) → START → privacy → ESIGN → Fields list → sign → submit
+7. **Lenore** same
 8. Completion mail with sealed PDF for both + sender
-9. Repeat once in **portrait / narrow viewport**
+9. Spot-check desktop Document view still works
 
-Until 6–9 are green on the deployed build, do not send the real family packet.
+Until 6–9 are green on the deployed build, **do not send the real family packet.**
 
 ---
 
-## 3. Target solo first-doc flow (click budget)
+## 3. Solo click budget
 
-Returning authenticated user who already has a name:
-
-1. Upload PDF
-2. Accept suggested signature + date (or place once)
-3. Adopt / confirm signature style (once)
-4. Sign
-5. Done + sealed PDF in inbox
-
-Hard cap: **≤6 intentional clicks** after auth. Measure in SEA-83 E2E.
+≤6 intentional clicks after auth: upload → accept fields → adopt signature (once) → sign → done + sealed inbox.
 
 ---
 
 ## 4. Non-goals
 
-- Copy DocuSeal AGPL / additional-terms code
+- DocuSeal AGPL copy
 - Fat DocuSign chrome
-- Review-matrix SPA (ADR-006 stays agent/MCP)
+- Review-matrix SPA

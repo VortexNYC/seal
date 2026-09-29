@@ -100,6 +100,65 @@ recipientTest.describe("SEA-83 guided next-field", () => {
       }
     }
   );
+
+  recipientTest(
+    "mobile Form View lists sender-placed fields without PDF hunt",
+    async ({ browser, multiFieldDoc }) => {
+      recipientTest.setTimeout(90_000);
+      const context = await browser.newContext({
+        storageState: { cookies: [], origins: [] },
+        viewport: { width: 390, height: 844 },
+      });
+      try {
+        const page = await context.newPage();
+        await page.goto(`/sign/${multiFieldDoc.signingToken}`);
+
+        const start = page.getByRole("button", { name: /^start$/i });
+        if (await start.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await start.click();
+        }
+        const privacyAccept = page.getByRole("button", {
+          name: /accept|continue|acknowledge/i,
+        });
+        if (
+          await privacyAccept.isVisible({ timeout: 2000 }).catch(() => false)
+        ) {
+          await privacyAccept.click();
+        }
+
+        await page
+          .getByRole("checkbox", {
+            name: /consent to use electronic signatures/i,
+          })
+          .check();
+        await page
+          .getByRole("button", {
+            name: /accept electronic signature consent/i,
+          })
+          .click();
+
+        await expect(page.getByTestId("signer-view-toggle")).toBeVisible({
+          timeout: 20_000,
+        });
+        await expect(page.getByTestId("signer-view-fields")).toHaveAttribute(
+          "aria-selected",
+          "true"
+        );
+        await expect(page.getByTestId("signer-form-view")).toBeVisible();
+        await expect(
+          page.getByRole("button", { name: /signature/i }).first()
+        ).toBeVisible();
+
+        await page.getByTestId("signer-view-document").click();
+        await expect(page.getByTestId("signer-view-document")).toHaveAttribute(
+          "aria-selected",
+          "true"
+        );
+      } finally {
+        await context.close();
+      }
+    }
+  );
 });
 
 authTest.describe("SEA-83 solo first-doc (authenticated)", () => {

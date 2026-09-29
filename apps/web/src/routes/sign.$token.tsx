@@ -43,6 +43,7 @@ import { DocumentExpiredPage } from "@/components/signing/document-expired-page"
 import { RedirectCountdown } from "@/components/signing/redirect-countdown";
 import { SignerAccountGate } from "@/components/signing/signer-account-gate";
 import { SignerAuthGate } from "@/components/signing/signer-auth-gate";
+import { SignerFormView } from "@/components/signing/signer-form-view";
 import { SigningInviteGate } from "@/components/signing/signing-invite-gate";
 import { SigningShell } from "@/components/signing/signing-shell";
 import { useAnalytics } from "@/hooks/use-analytics";
@@ -343,6 +344,25 @@ function SigningPage() {
   const fieldRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const [pdfReady, setPdfReady] = useState(false);
   const didAutoJumpRef = useRef(false);
+  // SEA-86: phone defaults to Form View so signers never pinch-zoom the PDF.
+  const [viewMode, setViewMode] = useState<"document" | "fields">("document");
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const media = window.matchMedia("(max-width: 767px)");
+    const sync = (): void => {
+      if (media.matches) {
+        setViewMode("fields");
+      }
+    };
+    sync();
+    media.addEventListener("change", sync);
+    return () => {
+      media.removeEventListener("change", sync);
+    };
+  }, []);
 
   // Network status for session recovery
   const [isOnline, setIsOnline] = useState(
@@ -932,17 +952,32 @@ function SigningPage() {
     if (next === undefined) {
       return;
     }
-    scrollToField(next._id);
+    if (viewMode === "document") {
+      scrollToField(next._id);
+    } else {
+      setActiveFieldId(next._id);
+    }
     setShowFieldInput(true);
-  }, [navigationQueue, scrollToField]);
+  }, [navigationQueue, scrollToField, viewMode]);
 
-  // Auto-jump to first unfilled field once the PDF has painted overlays.
+  // Auto-jump to first unfilled field once ready (PDF paint or Form View).
   useEffect(() => {
-    if (!pdfReady || isCompleted || didAutoJumpRef.current) {
+    if (isCompleted || didAutoJumpRef.current) {
       return;
     }
     const first = navigationQueue[0];
     if (first === undefined) {
+      return;
+    }
+
+    if (viewMode === "fields") {
+      didAutoJumpRef.current = true;
+      setActiveFieldId(first._id);
+      setShowFieldInput(true);
+      return;
+    }
+
+    if (!pdfReady) {
       return;
     }
 
@@ -968,7 +1003,7 @@ function SigningPage() {
       window.clearTimeout(timer);
       cancelAnimationFrame(rafId);
     };
-  }, [pdfReady, isCompleted, navigationQueue, scrollToField]);
+  }, [pdfReady, isCompleted, navigationQueue, scrollToField, viewMode]);
 
   // Expiration gate — block access if recipient's deadline has passed
   if (recipient.expiresAt && recipient.expiresAt < Date.now()) {
@@ -1205,6 +1240,76 @@ function SigningPage() {
     </div>
   );
 
+  const signerDocumentPane = (
+    <div className="w-full min-w-0 space-y-3">
+      {!isCompleted && fields.length > 0 ? (
+        <div
+          className="bg-kumo-elevated flex rounded-lg p-1"
+          role="tablist"
+          aria-label="Signing view"
+          data-testid="signer-view-toggle"
+        >
+          <button
+            type="button"
+            role="tab"
+            data-testid="signer-view-fields"
+            aria-selected={viewMode === "fields"}
+            className={`h-10 flex-1 rounded-md text-sm font-medium transition-colors ${
+              viewMode === "fields"
+                ? "bg-background text-kumo-primary shadow-sm"
+                : "text-kumo-secondary"
+            }`}
+            onClick={() => {
+              setViewMode("fields");
+            }}
+          >
+            Fields
+          </button>
+          <button
+            type="button"
+            role="tab"
+            data-testid="signer-view-document"
+            aria-selected={viewMode === "document"}
+            className={`h-10 flex-1 rounded-md text-sm font-medium transition-colors ${
+              viewMode === "document"
+                ? "bg-background text-kumo-primary shadow-sm"
+                : "text-kumo-secondary"
+            }`}
+            onClick={() => {
+              setViewMode("document");
+            }}
+          >
+            Document
+          </button>
+        </div>
+      ) : null}
+
+      {viewMode === "fields" && !isCompleted ? (
+        <SignerFormView
+          fields={sortedFields.map((field) => ({
+            id: field._id,
+            label: field.label || "",
+            fieldType: field.fieldType || "text",
+            page: field.page,
+            isRequired: field.isRequired || false,
+            isFilled: field.isFilled,
+          }))}
+          activeFieldId={activeFieldId}
+          onSelectField={handleFieldClick}
+          disabled={isCompleted}
+        />
+      ) : null}
+
+      {/* Keep PDF mounted (hidden in Form View) so width/refs survive mode switches. */}
+      <div
+        className={viewMode === "fields" && !isCompleted ? "hidden" : undefined}
+        aria-hidden={viewMode === "fields" && !isCompleted ? true : undefined}
+      >
+        {documentSurface}
+      </div>
+    </div>
+  );
+
   const actionWidget = (
     <div className="space-y-4">
       {!isOnline && (
@@ -1403,7 +1508,7 @@ function SigningPage() {
               ? `From ${doc.ownerEmail}`
               : "Your signature is needed"
         }
-        document={documentSurface}
+        document={signerDocumentPane}
         widget={actionWidget}
         headerActions={
           branding?.logoUrl ? (
