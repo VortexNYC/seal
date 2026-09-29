@@ -5,9 +5,9 @@ import { useCallback, useEffect, useState } from "react";
  * Auto-opens the "insights" section when AI annotations arrive.
  */
 export function useSectionState(hasAnnotations: boolean) {
-  // Draft path: people first. Fields open when the sender needs them.
+  // Draft send path: people + fields open; power sections stay closed.
   const [openSections, setOpenSections] = useState<Set<string>>(
-    new Set(["recipients", "your-signature"])
+    new Set(["recipients", "fields", "your-signature"])
   );
 
   const toggleSection = useCallback((section: string) => {

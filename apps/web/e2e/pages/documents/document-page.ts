@@ -30,7 +30,9 @@ export class DocumentPage {
     this.documentTitle = page.locator('[data-testid="document-title"]');
     this.documentCanvas = page.locator("canvas");
     this.documentDropTarget = page.locator("[data-engine='pdfium']").first();
-    this.documentPreview = page.getByText("Field placement").first();
+    this.documentPreview = page
+      .locator('[data-kumo-docs="viewer-shell"]')
+      .first();
     this.backButton = page.getByRole("button", { name: /^Back$/ });
     this.zoomInButton = page.getByRole("button", { name: "Zoom in" });
     this.zoomOutButton = page.getByRole("button", { name: "Zoom out" });
@@ -160,13 +162,12 @@ export class DocumentPage {
   }
 
   async waitForDocumentLoad(): Promise<void> {
-    // Wait for the document page to fully render. The "Document Preview" heading
-    // appears once the PDF URL resolves OR in the loading placeholder, so race
-    // it against the Signature Fields collapsible button which is always present.
+    // Wait for the document page to fully render. Race viewer shell against
+    // the Fields collapsible which is always present on draft detail.
     await Promise.race([
       this.documentPreview.waitFor({ state: "visible", timeout: 10000 }),
       this.page
-        .getByRole("button", { name: /Signature Fields/ })
+        .getByRole("button", { name: /^Fields/ })
         .waitFor({ state: "visible", timeout: 10000 }),
     ]);
     // Canvas may take an extra beat to paint after the wrapper appears.

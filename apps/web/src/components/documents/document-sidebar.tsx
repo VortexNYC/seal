@@ -834,7 +834,7 @@ function SignatureFieldsSection({
             <FileSignatureIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
           </div>
           <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
-            Signature Fields
+            Fields
           </span>
           {signatureFields.length > 0 && (
             <span className="bg-muted text-muted-foreground ml-2 rounded-xl px-2 py-0.5 font-sans text-[0.6875rem] font-semibold">
@@ -1227,7 +1227,10 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
       ? props.currentUserRecipient
       : null;
   const advancedOpen =
-    props.openSections.has("pdf-ops") || props.openSections.has("splits");
+    props.openSections.has("pdf-ops") ||
+    props.openSections.has("splits") ||
+    props.openSections.has("doc-settings") ||
+    props.openSections.has("bindings");
 
   const pendingRecipients =
     (props.progress?.byStatus.pending ?? 0) +
@@ -1285,11 +1288,15 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
           }}
         />
       ) : null}
-      <DocumentNextAction
-        workflowStatus={normalizedWorkflowStatus}
-        createdAt={props.createdAt}
-        model={nextAction}
-      />
+      {/* SendSteps already covers add_people / place_fields — keep NextAction for send/block/sign/wait. */}
+      {nextAction.kind !== "add_people" &&
+      nextAction.kind !== "place_fields" ? (
+        <DocumentNextAction
+          workflowStatus={normalizedWorkflowStatus}
+          createdAt={props.createdAt}
+          model={nextAction}
+        />
+      ) : null}
       {visibleProgress && <DocumentProgressRing progress={visibleProgress} />}
       {signingRecipient && (
         <InAppSigningSection
@@ -1327,28 +1334,6 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
         onFieldDragStart={props.onFieldDragStart}
         onFieldDragEnd={props.onFieldDragEnd}
       />
-      {isDraftBuilder && (
-        <DocumentSettingsSection
-          open={props.openSections.has("doc-settings")}
-          onOpenChange={() => props.toggleSection("doc-settings")}
-          redirectUrlInput={props.redirectUrlInput}
-          redirectUrlError={props.redirectUrlError}
-          isSavingRedirect={props.isSavingRedirect}
-          onRedirectUrlChange={props.onRedirectUrlChange}
-          onSaveRedirectUrl={props.onSaveRedirectUrl}
-        />
-      )}
-      {isDraftBuilder && (
-        <FieldBindingsSection
-          slug={props.slug}
-          documentPublicId={props.documentPublicId}
-          fields={props.bindingFields}
-          canEdit
-          open={props.openSections.has("bindings")}
-          onOpenChange={() => props.toggleSection("bindings")}
-          onSaved={props.onBindingsSaved}
-        />
-      )}
       <AIInsightsSection
         canEdit={props.canEdit}
         aiEnabled={props.aiEnabled}
@@ -1374,12 +1359,18 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
             if (props.openSections.has("splits")) {
               props.toggleSection("splits");
             }
+            if (props.openSections.has("doc-settings")) {
+              props.toggleSection("doc-settings");
+            }
+            if (props.openSections.has("bindings")) {
+              props.toggleSection("bindings");
+            }
           }}
         >
           <Collapsible.Trigger className="border-border bg-card hover:bg-muted/40 flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left shadow-sm">
             <span className="flex items-center gap-2 text-sm font-medium">
               <ScissorsIcon className="h-4 w-4" />
-              Advanced PDF
+              More options
             </span>
             <ChevronDownIcon
               className={cn(
@@ -1389,6 +1380,24 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
             />
           </Collapsible.Trigger>
           <Collapsible.Panel className="mt-2 flex flex-col gap-2">
+            <DocumentSettingsSection
+              open={props.openSections.has("doc-settings")}
+              onOpenChange={() => props.toggleSection("doc-settings")}
+              redirectUrlInput={props.redirectUrlInput}
+              redirectUrlError={props.redirectUrlError}
+              isSavingRedirect={props.isSavingRedirect}
+              onRedirectUrlChange={props.onRedirectUrlChange}
+              onSaveRedirectUrl={props.onSaveRedirectUrl}
+            />
+            <FieldBindingsSection
+              slug={props.slug}
+              documentPublicId={props.documentPublicId}
+              fields={props.bindingFields}
+              canEdit
+              open={props.openSections.has("bindings")}
+              onOpenChange={() => props.toggleSection("bindings")}
+              onSaved={props.onBindingsSaved}
+            />
             <DocumentPdfOpsSection
               slug={props.slug}
               documentPublicId={props.documentPublicId}
