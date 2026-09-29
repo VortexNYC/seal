@@ -36,31 +36,31 @@ function ProfileLayout() {
       title: "General",
       href: `/${slug}/settings/profile`,
       icon: User,
-      description: "Manage your personal information and avatar",
+      description: "Name and avatar",
     },
     {
       title: "Security",
       href: `/${slug}/settings/profile/security`,
       icon: Shield,
-      description: "Password, MFA, and session management",
+      description: "Password and MFA",
     },
     {
       title: "Notifications",
       href: `/${slug}/settings/profile/notifications`,
       icon: Bell,
-      description: "Configure your notification preferences",
+      description: "Email and in-app",
     },
     {
       title: "Integrations",
       href: `/${slug}/settings/profile/integrations`,
       icon: Plug,
-      description: "API keys and connected applications",
+      description: "Connected apps",
     },
     {
       title: "Usage",
       href: `/${slug}/settings/profile/usage`,
       icon: BarChart3,
-      description: "View your usage statistics",
+      description: "Plan limits",
     },
   ];
 

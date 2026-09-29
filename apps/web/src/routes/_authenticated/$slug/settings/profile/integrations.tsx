@@ -47,23 +47,50 @@ function formatRelativeTime(timestamp: number): string {
 }
 
 function IntegrationsSettings() {
-  const { data: connectedApps } = useQuery({
+  const {
+    data: connectedApps,
+    isPending: appsPending,
+    isError: appsError,
+    error: appsErr,
+  } = useQuery({
     queryKey: ["api", "users", "me", "connected-apps"],
     queryFn: getConnectedApps,
   });
-  const { data: activityLogs } = useQuery({
+  const {
+    data: activityLogs,
+    isPending: logsPending,
+    isError: logsError,
+    error: logsErr,
+  } = useQuery({
     queryKey: ["api", "users", "me", "integration-activity"],
     queryFn: getIntegrationActivity,
   });
 
-  if (!connectedApps || !activityLogs) {
+  if (appsPending || logsPending) {
     return <FormSkeleton />;
+  }
+
+  if (appsError || logsError) {
+    return (
+      <LayerCard>
+        <LayerCard.Primary className="py-10 text-center">
+          <Text as="p" variant="secondary">
+            Could not load integrations
+          </Text>
+          <Text as="p" variant="secondary" size="sm">
+            {(appsErr ?? logsErr) instanceof Error
+              ? (appsErr ?? logsErr)?.message
+              : "Try again in a moment."}
+          </Text>
+        </LayerCard.Primary>
+      </LayerCard>
+    );
   }
 
   return (
     <div className="space-y-6">
-      <ConnectedAppsSection apps={connectedApps} />
-      <ActivityLogsSection logs={activityLogs} />
+      <ConnectedAppsSection apps={connectedApps ?? []} />
+      <ActivityLogsSection logs={activityLogs ?? []} />
     </div>
   );
 }

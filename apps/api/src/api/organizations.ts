@@ -287,9 +287,8 @@ app.openapi(updateBrandingRouteDef, async (c) => {
   const nextBranding = {
     ...branding,
     ...(body.enabled !== undefined ? { enabled: body.enabled } : {}),
-    ...(body.hideSealBranding !== undefined
-      ? { hideSealBranding: body.hideSealBranding }
-      : {}),
+    // SEA-95: Seal product chrome is not optional — always persist false.
+    hideSealBranding: false,
     ...(body.customFooterText !== undefined
       ? {
           customFooterText:

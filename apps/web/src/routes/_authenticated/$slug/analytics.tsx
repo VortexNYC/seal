@@ -173,7 +173,7 @@ function AnalyticsContent({
   onCustomRangeChange: Dispatch<SetStateAction<DateRange | undefined>>;
 }) {
   return (
-    <div className="space-y-6">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
       {isAdmin && (
         <div className="flex items-center justify-between">
           <Tabs
@@ -191,7 +191,7 @@ function AnalyticsContent({
 
       <OverviewStats stats={stats} scope={effectiveScope} />
 
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
         <Tabs
           tabs={[
             { value: "activity", label: "Document Activity" },

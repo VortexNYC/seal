@@ -379,8 +379,13 @@ const usageStatisticsSchema = z.object({
   completionRate: z.number().int(),
 });
 export type ApiUsageStatistics = z.infer<typeof usageStatisticsSchema>;
-export async function getUserUsageStatistics(): Promise<ApiUsageStatistics> {
-  return apiFetch("/api/users/me/usage", usageStatisticsSchema);
+export async function getUserUsageStatistics(
+  organizationSlug: string
+): Promise<ApiUsageStatistics> {
+  return apiFetch(
+    `/api/users/${encodeURIComponent(organizationSlug)}/me/usage`,
+    usageStatisticsSchema
+  );
 }
 const connectedAppSchema = z.object({
   id: z.string(),
@@ -2693,6 +2698,88 @@ export async function revokeApiToken(
   return apiFetch(
     `/api/v1/organizations/${encodeURIComponent(organizationSlug)}/tokens/${encodeURIComponent(tokenId)}`,
     z.object({ revoked: z.boolean() }),
+    {
+      method: "DELETE",
+    }
+  );
+}
+
+const webhookEndpointSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  url: z.string(),
+  status: z.string(),
+  events: z.array(z.string()),
+  description: z.string().optional(),
+  secret_prefix: z.string(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  stats: z.object({
+    total_deliveries: z.number().int(),
+    successful: z.number().int(),
+    failed: z.number().int(),
+    success_rate: z.number(),
+  }),
+});
+export type ApiWebhookEndpoint = z.infer<typeof webhookEndpointSchema>;
+
+const webhookEventTypeSchema = z.object({
+  type: z.string(),
+  category: z.string(),
+  description: z.string(),
+});
+export type ApiWebhookEventType = z.infer<typeof webhookEventTypeSchema>;
+
+const createdWebhookSchema = z.object({
+  id: z.string(),
+  secret: z.string(),
+});
+export type CreatedWebhook = z.infer<typeof createdWebhookSchema>;
+
+export async function getWebhooks(
+  organizationSlug: string
+): Promise<ApiWebhookEndpoint[]> {
+  return apiFetch(
+    `/api/v1/organizations/${encodeURIComponent(organizationSlug)}/webhooks`,
+    z.array(webhookEndpointSchema)
+  );
+}
+
+export async function getWebhookEventTypes(
+  organizationSlug: string
+): Promise<ApiWebhookEventType[]> {
+  return apiFetch(
+    `/api/v1/organizations/${encodeURIComponent(organizationSlug)}/webhooks/event-types`,
+    z.array(webhookEventTypeSchema)
+  );
+}
+
+export async function createWebhook(
+  organizationSlug: string,
+  input: {
+    name: string;
+    url: string;
+    events: string[];
+    description?: string;
+  }
+): Promise<CreatedWebhook> {
+  return apiFetch(
+    `/api/v1/organizations/${encodeURIComponent(organizationSlug)}/webhooks`,
+    createdWebhookSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+export async function deleteWebhook(
+  organizationSlug: string,
+  webhookId: string
+): Promise<{ deleted: boolean }> {
+  return apiFetch(
+    `/api/v1/organizations/${encodeURIComponent(organizationSlug)}/webhooks/${encodeURIComponent(webhookId)}`,
+    z.object({ deleted: z.boolean() }),
     {
       method: "DELETE",
     }

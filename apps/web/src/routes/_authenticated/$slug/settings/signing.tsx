@@ -37,7 +37,7 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/signing")({
 function SigningSettings() {
   const { slug } = Route.useParams();
 
-  const { data: signingSettings } = useQuery({
+  const { data: signingSettings, isPending } = useQuery({
     queryKey: ["signing", slug],
     queryFn: () => getSigningSettings(slug),
   });
@@ -124,8 +124,8 @@ function SigningSettings() {
     }
   };
 
-  if (!signingSettings) {
-    return null;
+  if (isPending || !signingSettings) {
+    return <FormSkeleton />;
   }
 
   return (

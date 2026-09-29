@@ -3,6 +3,7 @@ import { and, desc, eq, inArray, like, or } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import { contacts, documents, recipients } from "../global/schema.js";
+import { syncContactsFromOrganizationRecipients } from "../platform/ensure-contacts.js";
 import { organizationMiddleware } from "../platform/organization-middleware.js";
 import type { Variables } from "../platform/types.js";
 
@@ -133,9 +134,17 @@ const listRouteDef = createRoute({
 
 app.openapi(listRouteDef, async (c) => {
   const organizationId = c.get("organization").id;
+  const userId = c.get("user")!.user.id;
   const { search, status } = c.req.valid("query");
 
   const db = createD1(c.env.D1);
+
+  // SEA-98: seed address book from existing document recipients (idempotent).
+  await syncContactsFromOrganizationRecipients(db, {
+    organizationId,
+    createdBy: userId,
+  });
+
   const conditions: (
     | ReturnType<typeof eq>
     | ReturnType<typeof or>

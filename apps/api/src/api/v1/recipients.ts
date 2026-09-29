@@ -11,6 +11,7 @@ import {
   writeAuditLog,
 } from "../../platform/audit-log.js";
 import { buildSigningUrl, type EmailEnv } from "../../platform/email.js";
+import { ensureContactsFromRecipients } from "../../platform/ensure-contacts.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import { hashAccessCode } from "../../platform/signer-auth.js";
 import {
@@ -335,6 +336,12 @@ app.post("/", async (c) => {
     status: "pending",
     authMethod,
     accessCodeHash,
+  });
+
+  await ensureContactsFromRecipients(db, {
+    organizationId,
+    createdBy: mcp.sub,
+    people: [{ email, name }],
   });
 
   const actor = getAuditActor({ mcp: c.get("mcp") });

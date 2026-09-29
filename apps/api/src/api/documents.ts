@@ -36,6 +36,7 @@ import {
   ConversionError,
   isConvertibleFileType,
 } from "../platform/document-conversion.js";
+import { ensureContactsFromRecipients } from "../platform/ensure-contacts.js";
 import {
   FeatureDisabledError,
   assertConvertEnabled,
@@ -1538,6 +1539,15 @@ app.openapi(addRecipientsRouteDef, async (c) => {
   );
 
   await db.insert(recipients).values(recipientValues);
+
+  await ensureContactsFromRecipients(db, {
+    organizationId,
+    createdBy: userId,
+    people: recipientValues.map((r) => ({
+      email: r.email,
+      name: r.name,
+    })),
+  });
 
   const insertedIds = recipientValues.map((r) => r.id);
   const rows = await db

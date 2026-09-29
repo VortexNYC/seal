@@ -63,6 +63,26 @@ const DEFAULT_FONTS: readonly ESignatureFont[] = [
   },
 ] as const;
 
+const SIGNATURE_FONTS_HREF =
+  "https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&family=Great+Vibes&family=Pacifico&family=Sacramento&display=swap";
+
+const SIGNATURE_FONTS_LINK_ID = "seal-signature-fonts";
+
+/** SEA-88: load typed-signature fonts only when capture UI mounts — not on auth. */
+function ensureSignatureFontsLoaded(): void {
+  if (typeof document === "undefined") {
+    return;
+  }
+  if (document.getElementById(SIGNATURE_FONTS_LINK_ID)) {
+    return;
+  }
+  const link = document.createElement("link");
+  link.id = SIGNATURE_FONTS_LINK_ID;
+  link.rel = "stylesheet";
+  link.href = SIGNATURE_FONTS_HREF;
+  document.head.appendChild(link);
+}
+
 const METHOD_ORDER: readonly ESignatureMethod[] = [
   "drawn",
   "typed",
@@ -84,6 +104,10 @@ export function ESignature({
   onPendingChange,
   onCancel,
 }: ESignatureProps): JSX.Element {
+  useEffect(() => {
+    ensureSignatureFontsLoaded();
+  }, []);
+
   const enabled = METHOD_ORDER.filter((method) => methods.includes(method));
   const [method, setMethod] = useState<ESignatureMethod>(
     enabled[0] ?? "drawn"

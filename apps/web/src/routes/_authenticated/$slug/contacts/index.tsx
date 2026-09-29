@@ -233,10 +233,10 @@ function ContactsTableContent({
       <Empty
         icon={<Users size={48} />}
         title="No contacts yet"
-        description="Add your first contact to start building your address book. Contacts can be linked to document recipients."
+        description="Add a contact, or send a document — recipients show up here automatically."
         contents={
           <Button onClick={onCreateOpen} variant="primary" icon={UserPlus}>
-            Add Contact
+            Add contact
           </Button>
         }
       />

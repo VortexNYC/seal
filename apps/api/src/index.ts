@@ -38,6 +38,7 @@ import settingsV1 from "./api/v1/settings.js";
 import signaturesV1 from "./api/v1/signatures.js";
 import templatesV1 from "./api/v1/templates.js";
 import tokensV1 from "./api/v1/tokens.js";
+import orgWebhooksV1 from "./api/v1/org-webhooks.js";
 import uploadsV1 from "./api/v1/uploads.js";
 import webhooksV1 from "./api/v1/webhooks.js";
 import { createD1 } from "./global/db.js";
@@ -760,6 +761,7 @@ app.route("/api/saved-signatures", savedSignatures);
 app.route("/api/users", users);
 
 app.route("/api/v1/organizations/:organizationSlug/tokens", tokensV1);
+app.route("/api/v1/organizations/:organizationSlug/webhooks", orgWebhooksV1);
 app.route("/api/v1/organizations/:organizationSlug/audit", auditLogsV1);
 
 app.use("/api/v1/*", async (c, next) => {

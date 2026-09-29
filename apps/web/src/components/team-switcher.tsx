@@ -79,7 +79,7 @@ export function TeamSwitcher({
               className="group"
               aria-label={`Workspace: ${active?.name ?? "Select workspace"}`}
             >
-              <div className="bg-kumo-elevated text-kumo-primary flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg">
+              <div className="bg-sidebar-accent text-sidebar-foreground flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg">
                 {active ? (
                   <WorkspaceMark name={active.name} logoUrl={active.logoUrl} />
                 ) : (
@@ -87,17 +87,17 @@ export function TeamSwitcher({
                 )}
               </div>
               <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">
+                <span className="text-sidebar-foreground truncate font-medium">
                   {active?.name ?? "Workspace"}
                 </span>
               </div>
-              <CaretDown className="ml-auto size-4 shrink-0" />
+              <CaretDown className="text-muted-foreground ml-auto size-4 shrink-0" />
             </Sidebar.MenuButton>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content
             align="start"
             className="min-w-64"
-            side="bottom"
+            side="top"
             sideOffset={4}
           >
             <DropdownMenu.Group>
@@ -112,7 +112,7 @@ export function TeamSwitcher({
                     aria-label={team.name}
                   >
                     <div
-                      className="bg-kumo-elevated text-kumo-primary flex size-7 shrink-0 items-center justify-center rounded-md"
+                      className="bg-sidebar-accent text-sidebar-foreground flex size-7 shrink-0 items-center justify-center rounded-md"
                       aria-hidden
                     >
                       <WorkspaceMark name={team.name} logoUrl={team.logoUrl} />

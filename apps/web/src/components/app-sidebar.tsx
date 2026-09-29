@@ -14,7 +14,7 @@ import {
   type Icon,
 } from "@phosphor-icons/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import * as React from "react";
 
 import {
@@ -169,11 +169,6 @@ function buildNav({
       title: "Profile",
       url: buildOrganizationPath(slug, "/settings/profile"),
       visible: true,
-    },
-    {
-      title: "AI",
-      url: buildOrganizationPath(slug, "/settings/ai"),
-      visible: canView(permissionFlags?.canViewSettings),
     },
     {
       title: "Branding",
@@ -427,18 +422,47 @@ export function AppSidebar({
   }
 
   return (
-    <Sidebar {...props}>
-      <Sidebar.Header className="gap-3 border-b border-kumo-hairline/60 px-3 py-3">
-        <Link
-          to="/$slug/home"
-          params={{ slug: activeTeamSlug }}
-          className="flex items-center gap-2 px-1 py-0.5"
-        >
-          <SealLogo size={22} variant="color" />
-          <span className="font-serif text-[1.05rem] leading-none tracking-tight">
-            Seal
-          </span>
-        </Link>
+    <Sidebar {...props} className="border-sidebar-border bg-sidebar text-sidebar-foreground">
+      <Sidebar.Header className="border-sidebar-border gap-0 border-b px-2 py-2">
+        <div className="flex items-center gap-1 px-1">
+          <div
+            className="text-sidebar-foreground flex min-w-0 flex-1 items-center gap-2 px-1 py-1"
+            aria-label="Seal"
+          >
+            <SealLogo size={22} variant="color" />
+            <span className="seal-wordmark font-serif text-[1.05rem] leading-none tracking-tight">
+              Seal
+            </span>
+          </div>
+          <Sidebar.Trigger className="text-sidebar-foreground hover:bg-sidebar-accent size-8 shrink-0" />
+        </div>
+      </Sidebar.Header>
+      <Sidebar.Content className="px-1 pt-2">
+        <NavMain primary={primary} groups={groups} />
+      </Sidebar.Content>
+      <Sidebar.Footer className="border-sidebar-border gap-1 border-t px-1 py-2">
+        <Sidebar.Menu>
+          <Sidebar.MenuItem>
+            <div className="flex items-center gap-1 px-1">
+              <NotificationsPopover slug={slug} organizationSlug={slug} />
+              <Sidebar.MenuButton
+                className="size-8 shrink-0 justify-center px-0"
+                onClick={handleThemeToggle}
+                aria-pressed={isDark}
+                aria-label={
+                  isDark ? "Switch to light mode" : "Switch to dark mode"
+                }
+                tooltip={isDark ? "Light mode" : "Dark mode"}
+              >
+                {isDark ? (
+                  <Moon className="size-4" />
+                ) : (
+                  <Sun className="size-4" />
+                )}
+              </Sidebar.MenuButton>
+            </div>
+          </Sidebar.MenuItem>
+        </Sidebar.Menu>
         {teamOptions.length > 0 ? (
           <TeamSwitcher
             teams={teamOptions}
@@ -452,36 +476,10 @@ export function AppSidebar({
             }}
           />
         ) : null}
-      </Sidebar.Header>
-      <Sidebar.Content className="px-1 pt-2">
-        <NavMain primary={primary} groups={groups} />
-      </Sidebar.Content>
-      <Sidebar.Footer className="gap-1 border-t border-kumo-hairline/60">
-        <Sidebar.Menu>
-          <Sidebar.MenuItem>
-            <div className="flex items-center gap-1 px-1">
-              <NotificationsPopover slug={slug} organizationSlug={slug} />
-              <Sidebar.MenuButton
-                className="size-8 shrink-0 justify-center px-0"
-                onClick={handleThemeToggle}
-                aria-pressed={isDark}
-                aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-                tooltip={isDark ? "Light mode" : "Dark mode"}
-              >
-                {isDark ? (
-                  <Moon className="size-4" />
-                ) : (
-                  <Sun className="size-4" />
-                )}
-              </Sidebar.MenuButton>
-            </div>
-          </Sidebar.MenuItem>
-        </Sidebar.Menu>
         {currentUser ? (
           <NavUser user={currentUser} slug={slug} onSignOut={handleSignOut} />
         ) : null}
       </Sidebar.Footer>
-      <Sidebar.Rail />
     </Sidebar>
   );
 }

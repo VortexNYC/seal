@@ -132,11 +132,48 @@
  * Auth shell — product-grade surface over stock better-auth-ui forms.
  * Pin CTA + links to Seal primary so Kumo never falls back to CF blue.
  * Kumo Button paints label via inner spans / CSS vars — punch through.
+ *
+ * SEA-91: Submit must not share input chrome (same h-9 + left-aligned
+ * text reads as a third field). Clerk-shaped CTA: taller, centered,
+ * heavier type, raised — inputs stay recessed fields.
  */
+[data-auth-shell] input,
+[data-auth-shell] [data-kumo-component="Input"] input,
+[data-auth-shell] [data-kumo-component="SensitiveInput"] input {
+  border-radius: 0.5rem;
+  min-height: 2.5rem;
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+  box-shadow: inset 0 0 0 1px var(--border) !important;
+}
+
+[data-auth-shell] label {
+  color: var(--muted-foreground) !important;
+  font-weight: 500;
+}
+
+[data-auth-shell] form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
 [data-auth-shell] button[type="submit"] {
+  margin-top: 0.5rem;
+  min-height: 2.75rem !important;
+  height: 2.75rem !important;
+  width: 100%;
+  justify-content: center !important;
+  border-radius: 0.5rem !important;
+  border: none !important;
   background-color: var(--primary) !important;
-  border-color: transparent !important;
   color: var(--primary-foreground) !important;
+  font-size: 0.9375rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em;
+  box-shadow:
+    0 1px 2px color-mix(in oklch, var(--foreground) 12%, transparent),
+    0 0 0 1px color-mix(in oklch, var(--primary) 40%, transparent) !important;
   --kumo-button-foreground: var(--primary-foreground);
   --color-kumo-primary-foreground: var(--primary-foreground);
 }
@@ -144,6 +181,9 @@
 [data-auth-shell] button[type="submit"] *,
 [data-auth-shell] button[type="submit"] span {
   color: var(--primary-foreground) !important;
+  justify-content: center !important;
+  text-align: center !important;
+  width: 100%;
 }
 
 [data-auth-shell] button[type="submit"]:hover:not(:disabled) {
@@ -152,18 +192,25 @@
     var(--primary) 88%,
     var(--foreground)
   ) !important;
+  box-shadow:
+    0 2px 6px color-mix(in oklch, var(--foreground) 16%, transparent),
+    0 0 0 1px color-mix(in oklch, var(--primary) 50%, transparent) !important;
+}
+
+[data-auth-shell] button[type="submit"]:disabled {
+  opacity: 0.55;
 }
 
 [data-auth-shell] a {
-  color: var(--brand-800);
+  color: var(--kumo-link);
   text-underline-offset: 3px;
 }
 
 [data-auth-shell] a:hover {
-  color: var(--brand-900);
+  color: var(--foreground);
 }
 
-/* Brand mark above the form — stay on foreground, not link taupe */
+/* Brand mark — stay on foreground, not link taupe */
 [data-auth-shell] > .relative a.text-foreground,
 [data-auth-shell] a.text-foreground {
   color: var(--foreground);
@@ -173,14 +220,17 @@
   color: var(--foreground);
 }
 
+/* Footer line under CTA ("Don't have an account?") — muted, not near-invisible */
+[data-auth-shell] section > p,
+[data-auth-shell] form + p,
+[data-auth-shell] .text-center.text-sm {
+  color: var(--muted-foreground) !important;
+}
+
 [data-auth-shell] section {
   border-color: color-mix(in oklch, var(--border) 80%, transparent);
   background: color-mix(in oklch, var(--card) 88%, transparent);
   backdrop-filter: blur(10px);
-}
-
-[data-auth-shell] input {
-  border-radius: 0.5rem;
 }
 
 /* Password fields: reveal only — Kumo's hover "Copy" chip reads as a glitch */
@@ -197,6 +247,74 @@
 
 [data-auth-shell] [data-kumo-component="Banner"] * {
   color: inherit;
+}
+
+/*
+ * SEA-92 — product sidebar on Seal tokens (not Kumo white/subtle hover-only text).
+ * Kumo paints via --sidebar-bg + text-kumo-subtle until hover; bind to --sidebar*
+ * and force readable idle labels/icons in both themes.
+ */
+[data-sidebar="sidebar"],
+[data-sidebar="sidebar"] [data-sidebar="viewport"],
+[data-sidebar="sidebar"] [data-sidebar="content-container"] {
+  --sidebar-bg: var(--sidebar);
+  --sidebar-active-bg: var(--sidebar-accent);
+  background-color: var(--sidebar) !important;
+  color: var(--sidebar-foreground);
+  border-color: var(--sidebar-border);
+}
+
+[data-sidebar="header"],
+[data-sidebar="footer"] {
+  border-color: var(--sidebar-border) !important;
+}
+
+[data-sidebar="group-label"] {
+  color: var(--muted-foreground) !important;
+}
+
+[data-sidebar="menu-button"],
+[data-sidebar="menu-sub-button"],
+[data-sidebar="trigger"] {
+  color: var(--sidebar-foreground) !important;
+}
+
+[data-sidebar="menu-button"] svg,
+[data-sidebar="menu-sub-button"] svg,
+[data-sidebar="trigger"] svg {
+  color: inherit !important;
+  opacity: 0.92;
+}
+
+[data-sidebar="menu-button"]:hover,
+[data-sidebar="menu-sub-button"]:hover,
+[data-sidebar="trigger"]:hover {
+  background-color: var(--sidebar-accent) !important;
+  color: var(--sidebar-accent-foreground) !important;
+}
+
+[data-sidebar="menu-button"][data-active],
+[data-sidebar="menu-sub-button"][data-active],
+[data-sidebar="menu-button"][aria-current="page"] {
+  background-color: var(--sidebar-accent) !important;
+  color: var(--sidebar-accent-foreground) !important;
+  font-weight: 600;
+}
+
+/* Collapsed icon rail: keep marks readable (no ghost box / invisible icons) */
+[data-state="collapsed"][data-sidebar="sidebar"] [data-sidebar="menu-button"],
+[data-state="collapsed"] [data-sidebar="menu-button"] {
+  color: var(--sidebar-foreground) !important;
+}
+
+/* Hide wordmark when icon-collapsed; mark + trigger stay */
+[data-state="collapsed"] [data-sidebar="header"] .seal-wordmark {
+  display: none;
+}
+
+/* Kill Kumo rail hover ghost-line (collapse lives on header Trigger) */
+[data-sidebar="rail"] {
+  display: none !important;
 }
 
 /* Scrollbar */
