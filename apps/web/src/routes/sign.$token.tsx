@@ -30,30 +30,23 @@ import {
   createFileRoute,
   Link,
 } from "@tanstack/react-router";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { EsignConsentDialog } from "@/components/documents/esign-consent-dialog";
-import { PrivacyNoticeDialog } from "@/components/documents/privacy-notice-dialog";
 import { FieldInputManager } from "@/components/documents/field-input-manager";
 import { FillableFieldOverlay } from "@/components/documents/fillable-field-overlay";
 import { PdfSigningDocumentSurface } from "@/components/documents/pdf-signing-document-surface";
+import { PrivacyNoticeDialog } from "@/components/documents/privacy-notice-dialog";
 import { SignatureCapture } from "@/components/documents/signature-capture";
-import { SigningInviteGate } from "@/components/signing/signing-invite-gate";
-import { SigningShell } from "@/components/signing/signing-shell";
-import { useCurrentUser } from "@/hooks/use-current-user";
 import { DictateNextSignerDialog } from "@/components/signing/dictate-next-signer-dialog";
 import { DocumentExpiredPage } from "@/components/signing/document-expired-page";
 import { RedirectCountdown } from "@/components/signing/redirect-countdown";
-import { SignerAuthGate } from "@/components/signing/signer-auth-gate";
 import { SignerAccountGate } from "@/components/signing/signer-account-gate";
+import { SignerAuthGate } from "@/components/signing/signer-auth-gate";
+import { SigningInviteGate } from "@/components/signing/signing-invite-gate";
+import { SigningShell } from "@/components/signing/signing-shell";
 import { useAnalytics } from "@/hooks/use-analytics";
-import { muteGuestAnalytics, useGuestAnalyticsMute } from "@/lib/guest-analytics";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import {
   getClientIp,
   getPublicSigningPaymentConfigs,
@@ -67,6 +60,10 @@ import {
   savePublicSigningFieldValue,
   submitPublicSigning,
 } from "@/lib/api-client";
+import {
+  muteGuestAnalytics,
+  useGuestAnalyticsMute,
+} from "@/lib/guest-analytics";
 import { formatMoney, money } from "@/lib/money";
 import { pageSEO } from "@/lib/seo";
 import { toast } from "@/lib/toast";
@@ -240,9 +237,6 @@ const capitalizeFieldLabel = (label: string): string => {
     .join(" ");
 };
 
-
-
-
 function SigningPage() {
   const { token } = Route.useParams();
   const { track } = useAnalytics();
@@ -347,6 +341,8 @@ function SigningPage() {
   // Field navigation state
   const pdfContainerRef = useRef<HTMLDivElement>(null);
   const fieldRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const [pdfReady, setPdfReady] = useState(false);
+  const didAutoJumpRef = useRef(false);
 
   // Network status for session recovery
   const [isOnline, setIsOnline] = useState(
@@ -428,7 +424,9 @@ function SigningPage() {
         });
         toast.success("Sender notified — you can complete this offline.");
       } catch {
-        toast.error("Could not notify the sender. Try contacting them directly.");
+        toast.error(
+          "Could not notify the sender. Try contacting them directly."
+        );
       }
     },
     [token, clientIp]
@@ -526,13 +524,7 @@ function SigningPage() {
     };
     // `recipient.status` covers completed signers who skip the gates on first
     // paint; gate flags cover OTP → consent transitions that mount the shell later.
-  }, [
-    accountReady,
-    hasConsented,
-    hasPrivacyAck,
-    hasStarted,
-    recipient.status,
-  ]);
+  }, [accountReady, hasConsented, hasPrivacyAck, hasStarted, recipient.status]);
 
   // Fetch PDF using signing token (no auth required)
   useEffect(() => {
@@ -582,6 +574,8 @@ function SigningPage() {
 
   const onDocumentLoadSuccess = (_info: { numPages: number }) => {
     // Page count kept internal to the PDF surface; chrome no longer shows it.
+    // Fields overlay + jump-to-next only make sense once pages have painted.
+    setPdfReady(true);
   };
 
   // Signature submission mutation
@@ -759,6 +753,8 @@ function SigningPage() {
   ) => {
     if (!activeFieldId || !activeField) return;
 
+    const savedFieldId = activeFieldId;
+
     await savePublicSigningFieldValue(token, activeField.publicId, {
       value,
       signatureImageUrl,
@@ -770,6 +766,37 @@ function SigningPage() {
     await refetchFields();
     setShowFieldInput(false);
     setActiveFieldId(null);
+
+    // Dropbox-class guided tour: land on the next unfilled field immediately.
+    const next = [...fields]
+      .toSorted((a, b) => {
+        if (a.page !== b.page) return a.page - b.page;
+        if (a.y !== b.y) return a.y - b.y;
+        return a.x - b.x;
+      })
+      .find((field) => field._id !== savedFieldId && !field.isFilled);
+
+    if (next !== undefined) {
+      window.setTimeout(() => {
+        const fieldElement = fieldRefs.current.get(next._id);
+        const container = pdfContainerRef.current;
+        if (fieldElement && container) {
+          const fieldRect = fieldElement.getBoundingClientRect();
+          const containerRect = container.getBoundingClientRect();
+          const scrollTop =
+            container.scrollTop +
+            (fieldRect.top - containerRect.top) -
+            containerRect.height / 2 +
+            fieldRect.height / 2;
+          container.scrollTo({
+            top: Math.max(0, scrollTop),
+            behavior: "smooth",
+          });
+        }
+        setActiveFieldId(next._id);
+        setShowFieldInput(true);
+      }, 150);
+    }
   };
 
   // Calculate field completion progress
@@ -856,14 +883,24 @@ function SigningPage() {
   ]);
 
   // Sort fields by page and position for navigation
-  const sortedFields = [...fields].toSorted((a, b) => {
-    if (a.page !== b.page) return a.page - b.page;
-    if (a.y !== b.y) return a.y - b.y;
-    return a.x - b.x;
-  });
+  const sortedFields = useMemo(
+    () =>
+      [...fields].toSorted((a, b) => {
+        if (a.page !== b.page) return a.page - b.page;
+        if (a.y !== b.y) return a.y - b.y;
+        return a.x - b.x;
+      }),
+    [fields]
+  );
 
-  // Get unfilled required fields for navigation
-  const unfilledFields = sortedFields.filter((f) => !f.isFilled);
+  // Required first, then optional — signer should never hunt by scrolling.
+  const navigationQueue = useMemo(() => {
+    const required = sortedFields.filter((f) => f.isRequired && !f.isFilled);
+    const optional = sortedFields.filter((f) => !f.isRequired && !f.isFilled);
+    return [...required, ...optional];
+  }, [sortedFields]);
+
+  const unfilledFields = navigationQueue;
 
   // Scroll to field function
   const scrollToField = useCallback((fieldId: string) => {
@@ -890,20 +927,48 @@ function SigningPage() {
     }
   }, []);
 
-  // Auto-scroll to first unfilled field on load
-  useEffect(() => {
-    if (unfilledFields.length > 0 && !isCompleted) {
-      const firstUnfilledField = unfilledFields[0];
-      // Delay to allow PDF to render
-      const timer = setTimeout(() => {
-        if (firstUnfilledField) {
-          scrollToField(firstUnfilledField._id);
-        }
-      }, 1000);
-      return () => clearTimeout(timer);
+  const goToNextUnfilledField = useCallback(() => {
+    const next = navigationQueue[0];
+    if (next === undefined) {
+      return;
     }
-    return undefined;
-  }, [unfilledFields, isCompleted, scrollToField]);
+    scrollToField(next._id);
+    setShowFieldInput(true);
+  }, [navigationQueue, scrollToField]);
+
+  // Auto-jump to first unfilled field once the PDF has painted overlays.
+  useEffect(() => {
+    if (!pdfReady || isCompleted || didAutoJumpRef.current) {
+      return;
+    }
+    const first = navigationQueue[0];
+    if (first === undefined) {
+      return;
+    }
+
+    let attempts = 0;
+    let rafId = 0;
+    const tryJump = (): void => {
+      if (fieldRefs.current.has(first._id) || attempts >= 90) {
+        if (fieldRefs.current.has(first._id)) {
+          didAutoJumpRef.current = true;
+          scrollToField(first._id);
+          setShowFieldInput(true);
+        }
+        return;
+      }
+      attempts += 1;
+      rafId = requestAnimationFrame(tryJump);
+    };
+    const timer = window.setTimeout(() => {
+      tryJump();
+    }, 200);
+
+    return () => {
+      window.clearTimeout(timer);
+      cancelAnimationFrame(rafId);
+    };
+  }, [pdfReady, isCompleted, navigationQueue, scrollToField]);
 
   // Expiration gate — block access if recipient's deadline has passed
   if (recipient.expiresAt && recipient.expiresAt < Date.now()) {
@@ -1105,7 +1170,9 @@ function SigningPage() {
                 </div>
                 <div className="flex flex-col gap-2">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-kumo-secondary text-sm">Signed by:</span>
+                    <span className="text-kumo-secondary text-sm">
+                      Signed by:
+                    </span>
                     <span className="text-kumo-primary text-sm font-semibold">
                       {recipient.name || recipient.email}
                     </span>
@@ -1176,15 +1243,15 @@ function SigningPage() {
           {remainingCount > 0 && (
             <Button
               type="button"
-              variant="ghost"
+              variant="secondary"
               size="sm"
-              className="h-8 px-0"
-              onClick={() => {
-                const next = unfilledFields[0];
-                if (next) scrollToField(next._id);
-              }}
+              className="h-10 w-full"
+              data-testid="signer-next-field"
+              onClick={goToNextUnfilledField}
             >
-              Continue to next field
+              {remainingCount === 1
+                ? "Go to signature field"
+                : `Next field (${remainingCount} left)`}
             </Button>
           )}
         </div>
@@ -1305,21 +1372,19 @@ function SigningPage() {
         </p>
       )}
 
-      {isCompleted &&
-        isWaitingForPayment &&
-        paymentConfigs.length > 0 && (
-          <div className="border-warning-surface bg-kumo-warning-tint/50 space-y-2 rounded-xl border p-3">
-            <div className="flex items-start gap-2">
-              <CreditCard className="text-kumo-warning mt-0.5 h-4 w-4 shrink-0" />
-              <div>
-                <p className="text-sm font-medium">Payment still required</p>
-                <p className="text-kumo-secondary text-xs">
-                  Signatures collected — complete payment below.
-                </p>
-              </div>
+      {isCompleted && isWaitingForPayment && paymentConfigs.length > 0 && (
+        <div className="border-warning-surface bg-kumo-warning-tint/50 space-y-2 rounded-xl border p-3">
+          <div className="flex items-start gap-2">
+            <CreditCard className="text-kumo-warning mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <p className="text-sm font-medium">Payment still required</p>
+              <p className="text-kumo-secondary text-xs">
+                Signatures collected — complete payment below.
+              </p>
             </div>
           </div>
-        )}
+        </div>
+      )}
     </div>
   );
 
