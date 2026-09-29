@@ -99,7 +99,7 @@ function InvoiceSection({
       >
         Invoice attached
       </Text>
-      <Text style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#1e40af" }}>
+      <Text style={{ margin: "4px 0 0 0", fontSize: "13px", color: status.info }}>
         {invoiceAmountFormatted
           ? `Amount due: ${invoiceAmountFormatted}`
           : "Please review and pay the invoice before signing."}
@@ -119,7 +119,7 @@ function InvoiceSection({
         Or open this link:{" "}
         <Link
           href={invoiceUrl}
-          style={{ color: "#2563eb", wordBreak: "break-all" }}
+          style={{ color: email.primary, wordBreak: "break-all" }}
         >
           {invoiceUrl}
         </Link>
