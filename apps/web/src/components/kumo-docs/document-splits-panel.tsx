@@ -101,7 +101,7 @@ export function DocumentSplitsPanel({
       className={cn("flex h-full flex-col", className)}
     >
       <div className="border-border flex items-center justify-between gap-2 border-b px-3 py-2">
-        <span className="text-sm font-medium">Splits</span>
+        <span className="text-sm font-medium">Page groups</span>
         <div className="flex items-center gap-1">
           <Button type="button" variant="ghost" size="sm" onClick={addGroup}>
             <Plus className="size-3.5" />

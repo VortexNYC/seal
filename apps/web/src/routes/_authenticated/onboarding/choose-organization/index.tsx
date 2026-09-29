@@ -78,44 +78,62 @@ function RouteComponent() {
   }
 
   if (showCreate || sorted.length === 0) {
+    const hasOrgs = sorted.length > 0;
     return (
-      <div className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-6 p-4">
-        <CreateOrganizationCard
-          hasOrganizations={sorted.length > 0}
-          onCancel={
-            sorted.length > 0
-              ? () => {
-                  setShowCreate(false);
-                  if (create) {
-                    void navigate({ to: "/app", replace: true });
-                    return;
+      <div className="bg-background text-foreground flex min-h-dvh flex-col">
+        {hasOrgs ? (
+          <header className="border-border flex h-14 shrink-0 items-center border-b px-4">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setShowCreate(false);
+                void navigate({ to: "/app", replace: true });
+              }}
+            >
+              ← Back to app
+            </Button>
+          </header>
+        ) : null}
+        <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-6 p-4">
+          <CreateOrganizationCard
+            hasOrganizations={hasOrgs}
+            onCancel={
+              hasOrgs
+                ? () => {
+                    setShowCreate(false);
+                    if (create) {
+                      void navigate({ to: "/app", replace: true });
+                      return;
+                    }
+                    void navigate({
+                      to: "/onboarding/choose-organization",
+                      search: next ? { next } : {},
+                      replace: true,
+                    });
                   }
+                : undefined
+            }
+            onCreated={(slug) => {
+              if (!slug) {
+                void navigate({ to: "/app", replace: true });
+                return;
+              }
+              void betterAuthClient?.organization
+                .setActive({ organizationSlug: slug })
+                .then(() => {
                   void navigate({
-                    to: "/onboarding/choose-organization",
-                    search: next ? { next } : {},
+                    to: newOrgDestination(slug),
                     replace: true,
                   });
-                }
-              : undefined
-          }
-          onCreated={(slug) => {
-            if (!slug) {
-              void navigate({ to: "/app", replace: true });
-              return;
-            }
-            void betterAuthClient?.organization
-              .setActive({ organizationSlug: slug })
-              .then(() => {
-                void navigate({
-                  to: newOrgDestination(slug),
-                  replace: true,
+                })
+                .catch(() => {
+                  void navigate({ to: "/app", replace: true });
                 });
-              })
-              .catch(() => {
-                void navigate({ to: "/app", replace: true });
-              });
-          }}
-        />
+            }}
+          />
+        </div>
       </div>
     );
   }

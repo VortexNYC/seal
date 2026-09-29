@@ -385,7 +385,15 @@
 }
 
 [data-state="collapsed"] [data-sidebar="footer"] [data-sidebar="menu-button"] {
-  justify-content: center;
+  justify-content: center !important;
+  gap: 0 !important;
+  padding-inline: 0 !important;
+}
+
+/* Cap: collapsed footer is mark-only — hide copy + caret so the icon centers */
+[data-state="collapsed"] [data-sidebar="footer"] [data-workspace-copy],
+[data-state="collapsed"] [data-sidebar="footer"] [data-workspace-caret] {
+  display: none !important;
 }
 
 /* Hide wordmark when icon-collapsed; mark + trigger stay */
@@ -395,19 +403,34 @@
 
 /* Settings / better-auth-ui: primary actions must keep ink on light CTAs */
 .seal-settings-auth button[type="submit"],
-.seal-settings-auth [data-kumo-component="Button"][data-variant="primary"] {
+.seal-settings-auth [data-kumo-component="Button"][data-variant="primary"],
+[data-auth-settings] button[type="submit"],
+[data-auth-settings] [data-kumo-component="Button"][data-variant="primary"] {
   background-color: var(--primary) !important;
   color: var(--primary-foreground) !important;
 }
 
 .dark .seal-settings-auth button[type="submit"] *,
-.dark .seal-settings-auth [data-kumo-component="Button"][data-variant="primary"] * {
+.dark .seal-settings-auth [data-kumo-component="Button"][data-variant="primary"] *,
+.dark [data-auth-settings] button[type="submit"] *,
+.dark [data-auth-settings] [data-kumo-component="Button"][data-variant="primary"] * {
   color: var(--primary-foreground) !important;
 }
 
-/* Logo / avatar file controls — no white flash in dark */
+/* Cap: dark primary CTAs anywhere (Upload PDF, invite, etc.) stay ink-readable */
+.dark [data-kumo-component="Button"][data-variant="primary"] {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+}
+
+.dark [data-kumo-component="Button"][data-variant="primary"] * {
+  color: var(--primary-foreground) !important;
+}
+
+/* Logo / avatar / workspace file controls — no white flash in dark */
 .dark .seal-settings-auth input[type="file"],
-.dark [data-auth-settings] input[type="file"] {
+.dark [data-auth-settings] input[type="file"],
+.dark input[type="file"] {
   color: var(--foreground);
   background-color: var(--muted);
   border-color: var(--border);
