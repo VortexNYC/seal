@@ -8,7 +8,8 @@
 
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { SkeletonLine } from "@cloudflare/kumo/components/loader";
-import { createFileRoute } from "@tanstack/react-router";
+import { Text } from "@cloudflare/kumo/components/text";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Suspense } from "react";
 
 import { ExportDataDialog } from "@/components/dashboard/export-data-dialog";
@@ -102,6 +103,19 @@ function WorkspaceHome(): React.ReactElement {
         <Suspense fallback={<StatsCardsFallback />}>
           <StatsCards organizationSlug={slug} />
         </Suspense>
+
+        <div className="flex items-baseline justify-between gap-3">
+          <Text as="p" variant="secondary" size="sm">
+            Trends and team activity
+          </Text>
+          <Link
+            to="/$slug/analytics"
+            params={{ slug }}
+            className="text-primary text-sm font-medium underline-offset-4 hover:underline"
+          >
+            Open analytics
+          </Link>
+        </div>
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_14rem]">
           <Suspense fallback={<RecentDocsFallback />}>

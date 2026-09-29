@@ -34,7 +34,7 @@ export function PrivacyNoticeDialog({
 
   if (accepted) {
     return (
-      <div className="dark:bg-background bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8">
+      <div className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8">
         <div className="w-full max-w-lg space-y-6">
           <div className="flex justify-center">
             <SealLogo size={48} variant="color" />
@@ -63,7 +63,7 @@ export function PrivacyNoticeDialog({
   }
 
   return (
-    <div className="dark:bg-background bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8">
+    <div className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8">
       <div className="w-full max-w-lg space-y-6">
         <div className="flex justify-center">
           <SealLogo size={48} variant="color" />

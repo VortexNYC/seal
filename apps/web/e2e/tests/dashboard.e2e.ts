@@ -117,7 +117,9 @@ test.describe("Dashboard Navigation", () => {
 
     await dashboardPage.goto(organizationSlug);
 
-    await dashboardPage.navigateToSidebarItem("Workspace", "Analytics");
+    await authenticatedPage
+      .getByRole("link", { name: /Open analytics/i })
+      .click();
 
     await expect(authenticatedPage).toHaveURL(`/${organizationSlug}/analytics`);
   });

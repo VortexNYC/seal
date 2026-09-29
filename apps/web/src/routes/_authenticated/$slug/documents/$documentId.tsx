@@ -744,7 +744,7 @@ function DocumentDetailPage() {
                       onDragOver={fieldPlacement.handleFieldDragOver}
                       onDrop={fieldPlacement.handleFieldDrop}
                       className={cn(
-                        "border-border bg-card dark:border-border/80 dark:bg-card relative overflow-hidden rounded-lg border shadow-sm transition-[transform,box-shadow,border-color,background-color] duration-300",
+                        "border-border bg-card relative overflow-hidden rounded-lg border shadow-sm transition-[transform,box-shadow,border-color,background-color] duration-300",
                         fieldPlacement.draggingFieldType &&
                           "border-primary ring-primary/20 scale-[1.002] shadow-lg ring-4"
                       )}
@@ -833,7 +833,7 @@ function DocumentDetailPage() {
                     showAiSuggestions &&
                     !aiSuggestions.suggestions &&
                     documentData.aiProcessingStatus === "processing" && (
-                      <div className="border-ai-accent/40 bg-ai-accent/10 dark:border-ai-accent/30 dark:bg-ai-accent/15 mt-3 flex items-center gap-3 rounded-xl border border-dashed px-4 py-3">
+                      <div className="border-ai-accent/40 bg-ai-accent/10 mt-3 flex items-center gap-3 rounded-xl border border-dashed px-4 py-3">
                         <Loader2Icon className="text-ai-accent h-4 w-4 animate-spin" />
                         <span className="text-ai-accent font-sans text-xs">
                           Detecting form fields...

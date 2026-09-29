@@ -14,7 +14,7 @@ import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Table } from "@cloudflare/kumo/components/table";
 import { Text } from "@cloudflare/kumo/components/text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { isOrganizationAdminRole } from "@vortex-api/better-auth-ui";
@@ -110,9 +110,19 @@ function ApiKeysPage() {
   return (
     <PageWrapper
       description="Manage API keys for programmatic access to Seal"
-      title="API Keys"
+      title="Developer"
     >
       <SettingsBody wide>
+      <div className="flex flex-wrap items-center gap-3 text-sm">
+        <span className="font-medium">API keys</span>
+        <Link
+          to="/$slug/settings/developer/webhooks"
+          params={{ slug }}
+          className="text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
+        >
+          Webhooks
+        </Link>
+      </div>
       <LayerCard>
         <LayerCard.Secondary>
           <div className="flex items-center justify-between">

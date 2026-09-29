@@ -18,6 +18,7 @@ import { Bell, Save, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
+import { UserNotificationPreferences } from "@/components/settings/user-notification-preferences";
 import { SettingsBody } from "@/components/settings-body";
 import { FormSkeleton } from "@/components/skeletons";
 import {
@@ -77,18 +78,26 @@ function NotificationSettings() {
   if (isError) {
     return (
       <PageWrapper title="Notifications">
-        <LayerCard>
-          <LayerCard.Primary className="py-10 text-center">
-            <Text as="p" variant="secondary">
-              Could not load notification settings
+        <SettingsBody wide>
+          <LayerCard>
+            <LayerCard.Primary className="flex flex-col gap-2 py-6 text-center">
+              <Text as="p" variant="secondary">
+                Workspace notification settings need admin access.
+              </Text>
+              <Text as="p" variant="secondary" size="sm">
+                {error instanceof Error
+                  ? error.message
+                  : "Your personal preferences are below."}
+              </Text>
+            </LayerCard.Primary>
+          </LayerCard>
+          <div id="your-preferences" className="flex flex-col gap-3">
+            <Text as="h2" variant="heading">
+              Your preferences
             </Text>
-            <Text as="p" variant="secondary" size="sm">
-              {error instanceof Error
-                ? error.message
-                : "Try again in a moment."}
-            </Text>
-          </LayerCard.Primary>
-        </LayerCard>
+            <UserNotificationPreferences />
+          </div>
+        </SettingsBody>
       </PageWrapper>
     );
   }
@@ -315,6 +324,17 @@ function NotificationSettings() {
           </Button>
         </div>
       </form>
+
+      <div id="your-preferences" className="flex flex-col gap-3">
+        <Text as="h2" variant="heading">
+          Your preferences
+        </Text>
+        <Text variant="secondary" size="sm">
+          Email, in-app, and desktop choices for your account — not the
+          workspace.
+        </Text>
+        <UserNotificationPreferences />
+      </div>
       </SettingsBody>
     </PageWrapper>
   );

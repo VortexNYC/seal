@@ -128,7 +128,7 @@ function RouteComponent() {
             Choose a workspace
           </Text>
         </LayerCard.Primary>
-        <LayerCard.Primary className="space-y-3">
+        <LayerCard.Primary className="flex flex-col gap-3">
           {sorted.map((org) => (
             <OrganizationOption
               key={org.slug}
@@ -284,7 +284,7 @@ function CreateOrganizationCard({
           One name. Then upload a PDF and send it for signature.
         </Text>
       </LayerCard.Primary>
-      <LayerCard.Primary className="space-y-4">
+      <LayerCard.Primary className="flex flex-col gap-4">
         <Input
           id="org-name"
           label="Workspace name"

@@ -1,8 +1,6 @@
 /**
- * Profile Settings Layout
- *
- * Layout wrapper for all profile-related settings pages with sidebar navigation
- * Route: /{slug}/settings/profile/*
+ * Profile Settings Layout — Account + Security only.
+ * Notifications → workspace Notifications; Usage/Integrations stay deep-linkable.
  */
 
 import {
@@ -11,7 +9,7 @@ import {
   Outlet,
   useLocation,
 } from "@tanstack/react-router";
-import { BarChart3, Bell, Plug, Shield, User } from "lucide-react";
+import { Shield, User } from "lucide-react";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { cn } from "@/lib/utils";
@@ -33,10 +31,10 @@ function ProfileLayout() {
 
   const navItems: ProfileNavItem[] = [
     {
-      title: "General",
+      title: "Account",
       href: `/${slug}/settings/profile`,
       icon: User,
-      description: "Name and avatar",
+      description: "Name and email",
     },
     {
       title: "Security",
@@ -44,30 +42,11 @@ function ProfileLayout() {
       icon: Shield,
       description: "Password and MFA",
     },
-    {
-      title: "Notifications",
-      href: `/${slug}/settings/profile/notifications`,
-      icon: Bell,
-      description: "Email and in-app",
-    },
-    {
-      title: "Integrations",
-      href: `/${slug}/settings/profile/integrations`,
-      icon: Plug,
-      description: "Connected apps",
-    },
-    {
-      title: "Usage",
-      href: `/${slug}/settings/profile/usage`,
-      icon: BarChart3,
-      description: "Plan limits",
-    },
   ];
 
   return (
-    <PageWrapper title="Profile Settings">
+    <PageWrapper title="Account">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 lg:flex-row">
-        {/* Sidebar Navigation */}
         <aside className="w-full shrink-0 lg:w-56">
           <nav className="flex flex-col gap-0.5">
             {navItems.map((item) => {
@@ -96,9 +75,31 @@ function ProfileLayout() {
               );
             })}
           </nav>
+          <div className="text-muted-foreground mt-4 flex flex-col gap-1 px-3 text-xs">
+            <Link
+              to="/$slug/settings/notifications"
+              params={{ slug }}
+              className="hover:text-foreground underline-offset-4 hover:underline"
+            >
+              Notifications
+            </Link>
+            <Link
+              to="/$slug/settings/profile/usage"
+              params={{ slug }}
+              className="hover:text-foreground underline-offset-4 hover:underline"
+            >
+              Usage
+            </Link>
+            <Link
+              to="/$slug/settings/profile/integrations"
+              params={{ slug }}
+              className="hover:text-foreground underline-offset-4 hover:underline"
+            >
+              Integrations
+            </Link>
+          </div>
         </aside>
 
-        {/* Content Area */}
         <div className="min-w-0 flex-1">
           <Outlet />
         </div>
