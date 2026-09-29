@@ -455,7 +455,10 @@ function SigningPage() {
     };
   }, []);
 
-  // PDF width tracks the live container — ResizeObserver, not a hardcoded max
+  // PDF width tracks the live container — ResizeObserver, not a hardcoded max.
+  // Retry until the shell has laid out a non-zero width; a single mount-time
+  // read of 0 (common before SigningShell flex settles) used to leave the
+  // signer stuck on "Loading document…" forever.
   useEffect(() => {
     const el = pdfContainerRef.current;
     if (!el) {
@@ -466,15 +469,35 @@ function SigningPage() {
       const availableWidth = el.clientWidth;
       if (availableWidth > 0) {
         setPdfWidth(availableWidth);
+        return true;
       }
+      // Fallback when the flex child reports 0 but the viewport is ready.
+      const fallback = Math.max(0, window.innerWidth - 48);
+      if (fallback > 0) {
+        setPdfWidth(Math.min(fallback, 960));
+        return true;
+      }
+      return false;
     };
 
     updatePdfWidth();
 
     let rafId = 0;
+    let attempts = 0;
+    const retryUntilWide = () => {
+      if (updatePdfWidth() || attempts >= 30) {
+        return;
+      }
+      attempts += 1;
+      rafId = requestAnimationFrame(retryUntilWide);
+    };
+    rafId = requestAnimationFrame(retryUntilWide);
+
     const observer = new ResizeObserver(() => {
       cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(updatePdfWidth);
+      rafId = requestAnimationFrame(() => {
+        updatePdfWidth();
+      });
     });
     observer.observe(el);
 
@@ -486,15 +509,29 @@ function SigningPage() {
 
   // Fetch PDF using signing token (no auth required)
   useEffect(() => {
+    let objectUrl: string | null = null;
+    let cancelled = false;
     const fetchPdfUrl = async () => {
       try {
         const blob = await getPublicSigningPdf(token);
-        setPdfUrl(URL.createObjectURL(blob));
+        if (cancelled) {
+          return;
+        }
+        objectUrl = URL.createObjectURL(blob);
+        setPdfUrl(objectUrl);
       } catch {
-        toast.error("Failed to load PDF");
+        if (!cancelled) {
+          toast.error("Failed to load PDF");
+        }
       }
     };
     void fetchPdfUrl();
+    return () => {
+      cancelled = true;
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
   }, [token]);
 
   // Track document view automatically when page loads (only if not already viewed)

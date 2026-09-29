@@ -2402,12 +2402,24 @@ export async function getPublicSigningPaymentConfigs(
 }
 export async function getPublicSigningPdf(token: string): Promise<Blob> {
   const response = await fetch(
-    `${getBaseUrl()}/api/public/signing/${encodeURIComponent(token)}/pdf`
+    `${getBaseUrl()}/api/public/signing/${encodeURIComponent(token)}/pdf`,
+    { credentials: "include" }
   );
   if (!response.ok) {
     throw new Error("Failed to load PDF");
   }
-  return response.blob();
+  const blob = await response.blob();
+  const contentType = (blob.type || response.headers.get("content-type") || "")
+    .split(";")[0]
+    .trim()
+    .toLowerCase();
+  if (contentType && contentType !== "application/pdf") {
+    throw new Error("Failed to load PDF");
+  }
+  if (blob.size < 100) {
+    throw new Error("Failed to load PDF");
+  }
+  return blob;
 }
 export async function recordPublicSigningConsent(
   token: string,
