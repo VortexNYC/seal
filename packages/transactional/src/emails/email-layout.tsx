@@ -106,6 +106,19 @@ export const emailStyles = {
     color: email.foreground,
     fontWeight: "600" as const,
   },
+  /** Centered CTA row — email clients ignore Tailwind className */
+  ctaSection: {
+    textAlign: "center" as const,
+    margin: "32px 0",
+  },
+  ctaSectionCompact: {
+    textAlign: "center" as const,
+    margin: "24px 0 0 0",
+  },
+  ctaSectionTight: {
+    textAlign: "center" as const,
+    marginTop: "12px",
+  },
   /** Primary CTA button */
   ctaButton: {
     backgroundColor: email.primary,

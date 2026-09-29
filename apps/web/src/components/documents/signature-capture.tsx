@@ -37,6 +37,7 @@ import {
   updateSavedSignature,
   type ApiSavedSignature,
 } from "@/lib/api-client";
+import { cropTransparentDataUrl } from "@/lib/crop-transparent-canvas";
 import { parseSelectValue } from "@/lib/select-values";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -173,7 +174,8 @@ export function SignatureCapture({
       // Non-critical
     }
 
-    onSignatureCapture(signature.signatureImageUrl, signature.signatureType);
+    const cropped = await cropTransparentDataUrl(signature.signatureImageUrl);
+    onSignatureCapture(cropped, signature.signatureType);
   };
 
   const handleSaveToLibrary = async (): Promise<void> => {
@@ -185,9 +187,10 @@ export function SignatureCapture({
     }
 
     try {
+      const cropped = await cropTransparentDataUrl(pendingSignatureData.data);
       await saveSignatureMutation.mutateAsync({
         name: saveSignatureName.trim(),
-        signatureImageUrl: pendingSignatureData.data,
+        signatureImageUrl: cropped,
         signatureType: pendingSignatureData.type,
         setAsDefault: saveAsDefault,
       });
@@ -196,7 +199,7 @@ export function SignatureCapture({
       setShowSaveDialog(false);
       setSaveSignatureName("");
       setSaveAsDefault(false);
-      onSignatureCapture(pendingSignatureData.data, pendingSignatureData.type);
+      onSignatureCapture(cropped, pendingSignatureData.type);
     } catch (error) {
       toast.error("Failed to save signature", {
         description: error instanceof Error ? error.message : "Unknown error",
@@ -243,15 +246,24 @@ export function SignatureCapture({
       setShowSaveDialog(true);
       return;
     }
-    onSignatureCapture(data, type);
+    void (async () => {
+      const cropped = await cropTransparentDataUrl(data);
+      onSignatureCapture(cropped, type);
+    })();
   };
 
   const handleSubmitWithoutSaving = (): void => {
-    if (pendingSignatureData) {
-      onSignatureCapture(pendingSignatureData.data, pendingSignatureData.type);
+    if (!pendingSignatureData) {
+      setShowSaveDialog(false);
+      return;
     }
+    const { data, type } = pendingSignatureData;
     setShowSaveDialog(false);
     setPendingSignatureData(null);
+    void (async () => {
+      const cropped = await cropTransparentDataUrl(data);
+      onSignatureCapture(cropped, type);
+    })();
   };
 
   const handleAccept = (): void => {

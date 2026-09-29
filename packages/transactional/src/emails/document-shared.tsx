@@ -44,7 +44,7 @@ export function DocumentShared({
       footerText={`This email was sent to ${recipientEmail} because a document was shared with you. If you believe this was sent in error, you can safely ignore this email.`}
     >
       {/* Sharing icon */}
-      <Section className="mb-[24px] text-center">
+      <Section style={emailStyles.ctaSectionCompact}>
         <div
           style={{
             width: "64px",
@@ -107,7 +107,7 @@ export function DocumentShared({
         </Section>
 
         {/* CTA Button */}
-        <Section className="my-[32px] text-center">
+        <Section style={emailStyles.ctaSection}>
           <Button style={emailStyles.ctaButton} href={documentUrl}>
             View Document
           </Button>

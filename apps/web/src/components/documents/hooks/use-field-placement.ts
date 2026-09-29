@@ -283,8 +283,16 @@ export function useFieldPlacement({
     const scaledFieldWidth = widthPixels * currentScale;
     const scaledFieldHeight = heightPixels * currentScale;
 
+    // Signature-like fields: cursor marks the rule (field bottom). Others: center.
+    const bottomAnchored =
+      fieldType === "signature" ||
+      fieldType === "free_signature" ||
+      fieldType === "initials" ||
+      fieldType === "stamp";
     const dropXPixels = e.clientX - pageRect.left - scaledFieldWidth / 2;
-    const dropYPixels = e.clientY - pageRect.top - scaledFieldHeight / 2;
+    const dropYPixels = bottomAnchored
+      ? e.clientY - pageRect.top - scaledFieldHeight
+      : e.clientY - pageRect.top - scaledFieldHeight / 2;
 
     const unscaledDropX = dropXPixels / currentScale;
     const unscaledDropY = dropYPixels / currentScale;

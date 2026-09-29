@@ -48,7 +48,7 @@ export function SigningComplete({
       footerText="This confirmation was sent by Seal. Please keep this email for your records."
     >
       {/* Success icon */}
-      <Section className="mb-[24px] text-center">
+      <Section style={emailStyles.ctaSectionCompact}>
         <div
           style={{
             width: "64px",
@@ -113,7 +113,7 @@ export function SigningComplete({
 
         {/* Download button if available */}
         {downloadUrl && (
-          <Section className="my-[32px] text-center">
+          <Section style={emailStyles.ctaSection}>
             <Button style={emailStyles.ctaButton} href={downloadUrl}>
               Download Document
             </Button>

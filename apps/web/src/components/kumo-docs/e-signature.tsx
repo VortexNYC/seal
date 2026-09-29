@@ -7,6 +7,10 @@ import { Label } from "@cloudflare/kumo/components/label";
 import { Select } from "@cloudflare/kumo/components/select";
 import { Tabs } from "@cloudflare/kumo/components/tabs";
 
+import {
+  cropTransparentCanvas,
+  cropTransparentDataUrl,
+} from "@/lib/crop-transparent-canvas";
 import { parseSelectValue } from "@/lib/select-values";
 import { cn } from "@/lib/utils";
 
@@ -151,11 +155,12 @@ export function ESignature({
     // vortex-allow-color: Canvas signature rendering requires a concrete ink color.
     ctx.fillStyle = "#000000";
     ctx.font = `52px ${currentFontFamily}`;
-    ctx.textBaseline = "middle";
+    // alphabetic baseline near bottom — DocuSeal find_trim then burn bottom-aligns.
+    ctx.textBaseline = "alphabetic";
     const textWidth = ctx.measureText(name).width;
     const x = Math.max(10, (canvas.width - textWidth) / 2);
-    ctx.fillText(name, x, 60);
-    return canvas.toDataURL("image/png");
+    ctx.fillText(name, x, canvas.height - 8);
+    return cropTransparentCanvas(canvas).toDataURL("image/png");
   }
 
   function emitPending(next: ESignatureResult | null): void {
@@ -168,9 +173,11 @@ export function ESignature({
       emitPending(null);
       return;
     }
+    // Match submitDrawn: trim transparent pad so burn-in sits on the line.
+    const trimmed = canvas.getTrimmedCanvas();
     emitPending({
       method: "drawn",
-      dataUrl: canvas.toDataURL("image/png"),
+      dataUrl: cropTransparentCanvas(trimmed).toDataURL("image/png"),
     });
   }
 
@@ -191,9 +198,10 @@ export function ESignature({
   function submitDrawn(): void {
     const canvas = canvasRef.current;
     if (!canvas || canvas.isEmpty()) return;
+    const trimmed = canvas.getTrimmedCanvas();
     const result: ESignatureResult = {
       method: "drawn",
-      dataUrl: canvas.getTrimmedCanvas().toDataURL("image/png"),
+      dataUrl: cropTransparentCanvas(trimmed).toDataURL("image/png"),
     };
     onComplete?.(result);
   }
@@ -216,10 +224,13 @@ export function ESignature({
     if (file.size > 5 * 1024 * 1024) return;
     const reader = new FileReader();
     reader.onload = () => {
-      if (typeof reader.result !== "string") return;
-      setUploadedImage(reader.result);
-      emitPending({ method: "uploaded", dataUrl: reader.result });
-      if (showActions) submitUpload(reader.result);
+      void (async () => {
+        if (typeof reader.result !== "string") return;
+        const cropped = await cropTransparentDataUrl(reader.result);
+        setUploadedImage(cropped);
+        emitPending({ method: "uploaded", dataUrl: cropped });
+        if (showActions) submitUpload(cropped);
+      })();
     };
     reader.readAsDataURL(file);
   }
@@ -263,8 +274,9 @@ export function ESignature({
                 height: 200,
                 style: { touchAction: "none" },
               }}
-              // vortex-allow-color: signature capture pad represents white paper in both themes
-              backgroundColor="rgb(255, 255, 255)"
+              // Transparent pad — DocuSeal crops alpha=0 so burn-in can bottom-align ink.
+              // White paper look comes from the parent bg-white container.
+              backgroundColor="rgba(0,0,0,0)"
               // vortex-allow-color: signature capture ink must stay physically black on white paper
               penColor="rgb(0, 0, 0)"
               onEnd={syncDrawnPending}

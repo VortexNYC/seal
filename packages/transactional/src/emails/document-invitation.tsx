@@ -104,7 +104,7 @@ function InvoiceSection({
           ? `Amount due: ${invoiceAmountFormatted}`
           : "Please review and pay the invoice before signing."}
       </Text>
-      <Section className="mt-[12px] text-center">
+      <Section style={emailStyles.ctaSectionTight}>
         <Button style={emailStyles.ctaButtonSecondary} href={invoiceUrl}>
           Review Invoice
         </Button>
@@ -185,7 +185,7 @@ export function DocumentInvitation({
         />
 
         {/* CTA Button */}
-        <Section className="my-[32px] text-center">
+        <Section style={emailStyles.ctaSection}>
           <Button style={emailStyles.ctaButton} href={signingUrl}>
             Review & Sign Document
           </Button>
