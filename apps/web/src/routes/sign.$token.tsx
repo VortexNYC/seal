@@ -456,16 +456,18 @@ function SigningPage() {
   }, []);
 
   // PDF width tracks the live container — ResizeObserver, not a hardcoded max.
-  // Retry until the shell has laid out a non-zero width; a single mount-time
-  // read of 0 (common before SigningShell flex settles) used to leave the
-  // signer stuck on "Loading document…" forever.
+  // The PDF shell only mounts after OTP / account / START / privacy / ESIGN
+  // gates. A mount-time effect that bails when `pdfContainerRef` is still null
+  // never re-attaches, so pdfWidth stays null and the signer is stuck on
+  // "Loading document…" forever after consent. Re-run when gates clear, and
+  // rAF-poll until the node exists / has non-zero width.
   useEffect(() => {
-    const el = pdfContainerRef.current;
-    if (!el) {
-      return;
-    }
+    let rafId = 0;
+    let attempts = 0;
+    let observer: ResizeObserver | null = null;
+    let cancelled = false;
 
-    const updatePdfWidth = () => {
+    const updatePdfWidth = (el: HTMLElement): boolean => {
       const availableWidth = el.clientWidth;
       if (availableWidth > 0) {
         setPdfWidth(availableWidth);
@@ -480,32 +482,58 @@ function SigningPage() {
       return false;
     };
 
-    updatePdfWidth();
-
-    let rafId = 0;
-    let attempts = 0;
-    const retryUntilWide = () => {
-      if (updatePdfWidth() || attempts >= 30) {
+    const attach = (): void => {
+      if (cancelled) {
         return;
       }
-      attempts += 1;
-      rafId = requestAnimationFrame(retryUntilWide);
-    };
-    rafId = requestAnimationFrame(retryUntilWide);
+      const el = pdfContainerRef.current;
+      if (!el) {
+        // ~3s of frames — covers gate → shell transitions on slow mobiles.
+        if (attempts >= 180) {
+          return;
+        }
+        attempts += 1;
+        rafId = requestAnimationFrame(attach);
+        return;
+      }
 
-    const observer = new ResizeObserver(() => {
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        updatePdfWidth();
+      updatePdfWidth(el);
+
+      let wideAttempts = 0;
+      const retryUntilWide = (): void => {
+        if (cancelled || updatePdfWidth(el) || wideAttempts >= 30) {
+          return;
+        }
+        wideAttempts += 1;
+        rafId = requestAnimationFrame(retryUntilWide);
+      };
+      rafId = requestAnimationFrame(retryUntilWide);
+
+      observer = new ResizeObserver(() => {
+        cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          updatePdfWidth(el);
+        });
       });
-    });
-    observer.observe(el);
+      observer.observe(el);
+    };
+
+    attach();
 
     return () => {
+      cancelled = true;
       cancelAnimationFrame(rafId);
-      observer.disconnect();
+      observer?.disconnect();
     };
-  }, []);
+    // `recipient.status` covers completed signers who skip the gates on first
+    // paint; gate flags cover OTP → consent transitions that mount the shell later.
+  }, [
+    accountReady,
+    hasConsented,
+    hasPrivacyAck,
+    hasStarted,
+    recipient.status,
+  ]);
 
   // Fetch PDF using signing token (no auth required)
   useEffect(() => {
