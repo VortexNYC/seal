@@ -104,7 +104,9 @@ async function uploadSourceMapsToPosthog(directory: string): Promise<void> {
     args.push("--release-version", releaseVersion);
   }
 
-  await new Promise<void>((resolve, reject) => {
+  // Never fail the product build on PostHog CLI flakiness (ETXTBSY / untar
+  // races in CI sandboxes). Maps are still deleted after closeBundle.
+  await new Promise<void>((resolve) => {
     const child = spawn(process.execPath, args, {
       env: {
         ...process.env,
@@ -114,13 +116,17 @@ async function uploadSourceMapsToPosthog(directory: string): Promise<void> {
       },
       stdio: "inherit",
     });
-    child.on("error", reject);
+    child.on("error", (error: Error) => {
+      console.warn(`[seal] posthog-cli sourcemap upload failed: ${error.message}`);
+      resolve();
+    });
     child.on("close", (code) => {
-      if (code === 0) {
-        resolve();
-        return;
+      if (code !== 0) {
+        console.warn(
+          `[seal] posthog-cli sourcemap process exited ${code ?? 1}; continuing build`
+        );
       }
-      reject(new Error(`posthog-cli sourcemap process exited ${code ?? 1}`));
+      resolve();
     });
   });
 }

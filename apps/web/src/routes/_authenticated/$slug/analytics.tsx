@@ -86,6 +86,7 @@ function AnalyticsPage() {
   const { slug } = Route.useParams();
   const [activeTab, setActiveTab] = useState("activity");
   const [scope, setScope] = useState<AnalyticsScope>("personal");
+  const [adminScopeInitialized, setAdminScopeInitialized] = useState(false);
   const [trendPreset, setTrendPreset] = useState<TrendPreset>("30");
   const [customRange, setCustomRange] = useState<DateRange | undefined>(
     undefined
@@ -98,12 +99,14 @@ function AnalyticsPage() {
   });
   const isAdmin = stats?.isAdmin ?? false;
 
-  // Auto-switch admins to team scope on first data load
+  // Default admins to team once — never re-lock after they pick Personal
   useEffect(() => {
-    if (isAdmin && scope === "personal") {
-      setScope("team");
+    if (!isAdmin || adminScopeInitialized) {
+      return;
     }
-  }, [isAdmin, scope]);
+    setScope("team");
+    setAdminScopeInitialized(true);
+  }, [isAdmin, adminScopeInitialized]);
 
   // Non-admins are forced to personal scope
   const effectiveScope = isAdmin ? scope : "personal";
@@ -335,32 +338,34 @@ function StatCard({
   progress?: number;
 }) {
   return (
-    <LayerCard>
-      <LayerCard.Primary className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <h3 className="text-sm font-medium">{title}</h3>
+    <LayerCard className="p-4">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+          {title}
+        </h3>
         <span className="text-muted-foreground">{icon}</span>
-      </LayerCard.Primary>
-      <div>
-        <div className="flex items-center gap-2">
-          <span className="text-2xl font-bold">{value}</span>
-          {trend === "up" && <ArrowUpIcon className="text-success h-4 w-4" />}
-          {trend === "down" && (
-            <ArrowDownIcon className="text-destructive h-4 w-4" />
-          )}
-        </div>
-        {progress !== undefined && (
-          <Meter
-            label=""
-            aria-label={title}
-            value={progress}
-            showValue={false}
-            className="mt-2"
-          />
-        )}
-        {description && (
-          <p className="text-muted-foreground mt-1 text-xs">{description}</p>
+      </div>
+      <div className="mt-2 flex items-center gap-2">
+        <span className="text-2xl font-semibold tracking-tight tabular-nums">
+          {value}
+        </span>
+        {trend === "up" && <ArrowUpIcon className="text-success h-4 w-4" />}
+        {trend === "down" && (
+          <ArrowDownIcon className="text-destructive h-4 w-4" />
         )}
       </div>
+      {progress !== undefined && (
+        <Meter
+          label="Completion rate"
+          aria-label={title}
+          value={progress}
+          showValue={false}
+          className="mt-2"
+        />
+      )}
+      {description ? (
+        <p className="text-muted-foreground mt-1 text-xs">{description}</p>
+      ) : null}
     </LayerCard>
   );
 }

@@ -37,11 +37,9 @@ function StatsCardsFallback(): React.ReactElement {
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {Array.from({ length: 4 }).map((_, i) => (
-        <LayerCard key={i}>
-          <LayerCard.Primary className="flex flex-col gap-2 p-4">
-            <SkeletonLine className="h-3 w-1/2" />
-            <SkeletonLine className="h-6 w-1/3" />
-          </LayerCard.Primary>
+        <LayerCard key={i} className="flex flex-col gap-2 p-4">
+          <SkeletonLine className="h-3 w-1/2" />
+          <SkeletonLine className="h-6 w-1/3" />
         </LayerCard>
       ))}
     </div>
@@ -50,12 +48,10 @@ function StatsCardsFallback(): React.ReactElement {
 
 function RecentDocsFallback(): React.ReactElement {
   return (
-    <LayerCard>
-      <LayerCard.Primary className="flex flex-col gap-3 p-4">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <SkeletonLine key={i} className="h-10 w-full" />
-        ))}
-      </LayerCard.Primary>
+    <LayerCard className="flex flex-col gap-3 p-4">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <SkeletonLine key={i} className="h-10 w-full" />
+      ))}
     </LayerCard>
   );
 }

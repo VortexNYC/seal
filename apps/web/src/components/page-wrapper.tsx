@@ -1,6 +1,5 @@
 import { Button } from "@cloudflare/kumo/components/button";
 import { Sidebar } from "@cloudflare/kumo/components/sidebar";
-import { Separator } from "@cloudflare/kumo/primitives/separator";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -59,12 +58,15 @@ export function PageWrapper({
         >
           <div
             className={cn(
-              "flex min-w-0 items-center gap-4",
+              "flex min-w-0 items-center gap-3",
               headerCenter ? "lg:min-w-0" : "flex-1"
             )}
           >
-            <Sidebar.Trigger aria-label="Toggle Sidebar" />
-            <Separator orientation="vertical" className="hidden h-6 sm:block" />
+            {/* Desktop collapse lives on the sidebar header; this is mobile sheet only. */}
+            <Sidebar.Trigger
+              aria-label="Open navigation"
+              className="shrink-0 md:hidden"
+            />
             <div className="min-w-0 flex-1">
               <h1 className="truncate text-base font-semibold sm:text-lg">
                 {title}
