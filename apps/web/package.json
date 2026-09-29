@@ -31,7 +31,7 @@
     "cf:types": "pnpm run cf:types:mkdir && wrangler types .wrangler/types/cloudflare-env.d.ts --include-runtime false"
   },
   "dependencies": {
-    "@cloudflare/kumo": "2.13.2",
+    "@cloudflare/kumo": "2.14.0",
     "@embedpdf/engines": "2.15.1",
     "@embedpdf/models": "2.15.1",
     "@embedpdf/pdfium": "2.15.1",

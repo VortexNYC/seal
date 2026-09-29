@@ -4,7 +4,7 @@
  */
 
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
-import { Progress } from "@cloudflare/kumo/primitives/progress";
+import { Meter } from "@cloudflare/kumo/components/meter";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   CheckCircle2Icon,
@@ -101,11 +101,12 @@ export function StatsCards({
         subtitle="Of all documents"
         icon={TrendingUpIcon}
       >
-        <Progress.Root value={stats.completionRate}>
-          <Progress.Track className="bg-muted mt-2 h-1 rounded-full">
-            <Progress.Indicator className="bg-foreground rounded-full" />
-          </Progress.Track>
-        </Progress.Root>
+        <Meter
+          label="Completion rate"
+          value={stats.completionRate}
+          showValue={false}
+          className="mt-2"
+        />
       </StatCard>
     </div>
   );

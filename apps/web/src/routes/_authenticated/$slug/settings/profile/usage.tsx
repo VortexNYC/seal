@@ -8,8 +8,8 @@
 import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Meter } from "@cloudflare/kumo/components/meter";
 import { Text } from "@cloudflare/kumo/components/text";
-import { Progress } from "@cloudflare/kumo/primitives/progress";
 import { Separator } from "@cloudflare/kumo/primitives/separator";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -133,56 +133,35 @@ function UsageSettings() {
           </Text>
         </LayerCard.Secondary>
         <LayerCard.Primary>
-          <div className="space-y-6">
-            {/* Documents this month */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">
-                  Documents this month
-                </span>
-                <span className="font-medium">
-                  {stats.documentsThisMonth} / {stats.documentsLimit}
-                </span>
-              </div>
-              <Progress.Root value={stats.documentsPercentUsed}>
-                <Progress.Track className="bg-muted h-2 rounded-full">
-                  <Progress.Indicator
-                    className={cn(
-                      "h-2 rounded-full",
-                      isApproachingDocumentLimit ? "bg-warning" : "bg-primary"
-                    )}
-                  />
-                </Progress.Track>
-              </Progress.Root>
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-2">
+              <Meter
+                label="Documents this month"
+                value={stats.documentsPercentUsed}
+                customValue={`${stats.documentsThisMonth} / ${stats.documentsLimit}`}
+                indicatorClassName={
+                  isApproachingDocumentLimit ? "bg-kumo-warning" : undefined
+                }
+              />
               {isApproachingDocumentLimit && (
-                <p className="text-warning text-xs">
+                <p className="text-kumo-warning text-xs">
                   {Math.round(stats.documentsPercentUsed)}% of monthly limit
                   used
                 </p>
               )}
             </div>
 
-            {/* Storage */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Storage used</span>
-                <span className="font-medium">
-                  {formatBytes(stats.storageUsedBytes)} /{" "}
-                  {formatBytes(stats.storageLimitBytes)}
-                </span>
-              </div>
-              <Progress.Root value={stats.storagePercentUsed}>
-                <Progress.Track className="bg-muted h-2 rounded-full">
-                  <Progress.Indicator
-                    className={cn(
-                      "h-2 rounded-full",
-                      isApproachingStorageLimit ? "bg-warning" : "bg-primary"
-                    )}
-                  />
-                </Progress.Track>
-              </Progress.Root>
+            <div className="flex flex-col gap-2">
+              <Meter
+                label="Storage used"
+                value={stats.storagePercentUsed}
+                customValue={`${formatBytes(stats.storageUsedBytes)} / ${formatBytes(stats.storageLimitBytes)}`}
+                indicatorClassName={
+                  isApproachingStorageLimit ? "bg-kumo-warning" : undefined
+                }
+              />
               {isApproachingStorageLimit && (
-                <p className="text-warning text-xs">
+                <p className="text-kumo-warning text-xs">
                   {Math.round(stats.storagePercentUsed)}% of storage limit used
                 </p>
               )}

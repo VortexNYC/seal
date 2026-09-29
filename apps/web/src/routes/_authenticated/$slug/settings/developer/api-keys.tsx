@@ -6,10 +6,10 @@
 
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
+import { ClipboardText } from "@cloudflare/kumo/components/clipboard-text";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Empty } from "@cloudflare/kumo/components/empty";
 import { Input } from "@cloudflare/kumo/components/input";
-import { Label } from "@cloudflare/kumo/components/label";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Table } from "@cloudflare/kumo/components/table";
 import { Text } from "@cloudflare/kumo/components/text";
@@ -252,35 +252,15 @@ function ApiKeysPage() {
           <Dialog.Description>
             Copy the token now. It will not be shown again.
           </Dialog.Description>
-          <div className="mt-4 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="created-token">Token</Label>
-              <Input
-                id="created-token"
-                value={createdToken?.token ?? ""}
-                readOnly
-                aria-label="Created token"
-                onFocus={(e) => e.currentTarget.select()}
-              />
-            </div>
+          <div className="mt-4 flex flex-col gap-4">
+            <ClipboardText
+              size="base"
+              text={createdToken?.token ?? ""}
+              tooltip={{ text: "Copy token", copiedText: "Copied!", side: "top" }}
+            />
             <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
               <Button onClick={() => setCreatedToken(null)} variant="ghost">
                 Close
-              </Button>
-              <Button
-                onClick={async () => {
-                  if (createdToken?.token) {
-                    try {
-                      await navigator.clipboard.writeText(createdToken.token);
-                      toast.success("Copied to clipboard");
-                    } catch {
-                      toast.error("Could not copy");
-                    }
-                  }
-                }}
-                variant="primary"
-              >
-                Copy
               </Button>
             </div>
           </div>
