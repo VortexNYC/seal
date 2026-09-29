@@ -5,6 +5,7 @@
 
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
+import { ClipboardText } from "@cloudflare/kumo/components/clipboard-text";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Empty } from "@cloudflare/kumo/components/empty";
 import { Input } from "@cloudflare/kumo/components/input";
@@ -293,26 +294,21 @@ function WebhooksPage() {
           <Dialog.Description>
             Copy the signing secret now. It will not be shown again.
           </Dialog.Description>
-          <div className="mt-4 space-y-2">
-            <Input
-              id="webhook-secret"
-              label="Signing secret"
-              value={created?.secret ?? ""}
-              readOnly
-              aria-label="Webhook signing secret"
-            />
-            <Button
-              type="button"
-              variant="primary"
-              onClick={() => {
-                if (created?.secret) {
-                  void navigator.clipboard.writeText(created.secret);
-                  toast.success("Secret copied");
-                }
+          <div className="mt-4 flex flex-col gap-3">
+            <ClipboardText
+              size="base"
+              text={created?.secret ?? ""}
+              tooltip={{
+                text: "Copy signing secret",
+                copiedText: "Copied!",
+                side: "top",
               }}
-            >
-              Copy secret
-            </Button>
+            />
+            <div className="flex justify-end">
+              <Button type="button" variant="ghost" onClick={() => setCreated(null)}>
+                Close
+              </Button>
+            </div>
           </div>
         </Dialog>
       </Dialog.Root>
