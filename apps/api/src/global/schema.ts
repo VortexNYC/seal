@@ -1652,3 +1652,88 @@ export const usageEvents = sqliteTable(
     ),
   ]
 );
+
+// -------------------------------------------------------------------------
+// Legal review matrices (ADR-006 / SEA-80)
+// -------------------------------------------------------------------------
+
+export const reviewMatrices = sqliteTable(
+  "review_matrices",
+  {
+    id: text("id").primaryKey(),
+    publicId: text("public_id").notNull().unique(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    model: text("model").notNull(),
+    status: text("status").notNull().default("draft"),
+    columnsConfig: text("columns_config").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("reviewMatrices_organizationId_idx").on(table.organizationId),
+    index("reviewMatrices_ownerId_idx").on(table.ownerId),
+  ]
+);
+
+export const reviewRows = sqliteTable(
+  "review_rows",
+  {
+    id: text("id").primaryKey(),
+    publicId: text("public_id").notNull().unique(),
+    matrixId: text("matrix_id")
+      .notNull()
+      .references(() => reviewMatrices.id, { onDelete: "cascade" }),
+    documentId: text("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+  },
+  (table) => [
+    index("reviewRows_matrixId_idx").on(table.matrixId),
+    index("reviewRows_documentId_idx").on(table.documentId),
+  ]
+);
+
+export const reviewCells = sqliteTable(
+  "review_cells",
+  {
+    id: text("id").primaryKey(),
+    publicId: text("public_id").notNull().unique(),
+    rowId: text("row_id")
+      .notNull()
+      .references(() => reviewRows.id, { onDelete: "cascade" }),
+    columnIndex: integer("column_index").notNull(),
+    status: text("status").notNull().default("pending"),
+    summary: text("summary"),
+    flag: text("flag"),
+    reasoning: text("reasoning"),
+    citations: text("citations").notNull().default("[]"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("reviewCells_rowId_idx").on(table.rowId),
+    unique("reviewCells_rowColumn_uidx").on(
+      table.rowId,
+      table.columnIndex
+    ),
+  ]
+);
