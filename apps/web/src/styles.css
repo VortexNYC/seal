@@ -361,11 +361,56 @@
 [data-state="collapsed"][data-sidebar="sidebar"] [data-sidebar="menu-button"],
 [data-state="collapsed"] [data-sidebar="menu-button"] {
   color: var(--sidebar-foreground) !important;
+  justify-content: center !important;
+  gap: 0 !important;
+  padding-inline: 0 !important;
+}
+
+[data-state="collapsed"] [data-sidebar="menu-button"] svg {
+  margin-inline: auto !important;
+}
+
+[data-state="collapsed"] [data-sidebar="header"] {
+  justify-content: center;
+  padding-inline: 0.35rem;
+}
+
+[data-state="collapsed"] [data-sidebar="header"] > div {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+[data-state="collapsed"] [data-sidebar="footer"] {
+  padding-inline: 0.35rem;
+}
+
+[data-state="collapsed"] [data-sidebar="footer"] [data-sidebar="menu-button"] {
+  justify-content: center;
 }
 
 /* Hide wordmark when icon-collapsed; mark + trigger stay */
 [data-state="collapsed"] [data-sidebar="header"] .seal-wordmark {
   display: none;
+}
+
+/* Settings / better-auth-ui: primary actions must keep ink on light CTAs */
+.seal-settings-auth button[type="submit"],
+.seal-settings-auth [data-kumo-component="Button"][data-variant="primary"] {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+}
+
+.dark .seal-settings-auth button[type="submit"] *,
+.dark .seal-settings-auth [data-kumo-component="Button"][data-variant="primary"] * {
+  color: var(--primary-foreground) !important;
+}
+
+/* Logo / avatar file controls — no white flash in dark */
+.dark .seal-settings-auth input[type="file"],
+.dark [data-auth-settings] input[type="file"] {
+  color: var(--foreground);
+  background-color: var(--muted);
+  border-color: var(--border);
 }
 
 /* Kill Kumo rail hover ghost-line (collapse lives on header Trigger) */

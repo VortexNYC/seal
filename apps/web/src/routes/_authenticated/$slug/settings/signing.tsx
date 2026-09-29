@@ -9,7 +9,6 @@ import { Textarea } from "@cloudflare/kumo";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
 import { Input } from "@cloudflare/kumo/components/input";
-import { Text } from "@cloudflare/kumo/components/text";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { PenTool, Save } from "lucide-react";
@@ -197,11 +196,11 @@ function SigningSettings() {
           title="Default deadline"
           description="Days recipients have to sign after send."
         >
-          <div className="flex items-center gap-2">
-            <div className="w-24">
+          <div className="flex max-w-xs items-end gap-3">
+            <div className="min-w-0 flex-1">
               <Input
                 id="default-deadline-days"
-                aria-label="Default deadline in days"
+                label="Days to sign"
                 type="number"
                 min={1}
                 max={365}
@@ -215,9 +214,9 @@ function SigningSettings() {
                 }
               />
             </div>
-            <Text variant="secondary" as="span">
-              days
-            </Text>
+            <span className="text-muted-foreground pb-2.5 text-sm whitespace-nowrap">
+              after send
+            </span>
           </div>
         </SettingsSection>
 

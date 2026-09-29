@@ -76,7 +76,14 @@ app.use("/*", async (c, next) => {
   return next();
 });
 
-app.use("/:slug/*", organizationMiddleware);
+// `/me/*` is the signed-in user, not an org slug. Org-scoped routes are
+// `/{slug}/me/...` — only those need organizationMiddleware.
+app.use("/:slug/*", async (c, next) => {
+  if (c.req.param("slug") === "me") {
+    return next();
+  }
+  return organizationMiddleware(c, next);
+});
 
 const getRouteDef = createRoute({
   method: "get",

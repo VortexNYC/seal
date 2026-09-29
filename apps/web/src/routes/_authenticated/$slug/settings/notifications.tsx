@@ -183,7 +183,11 @@ function NotificationSettings() {
           <LayerCard.Primary className="space-y-4">
             <div className="flex flex-wrap gap-2">
               {formData.reminderSchedule.map((day) => (
-                <Badge key={day} variant="secondary">
+                <Badge
+                  key={day}
+                  variant="outline"
+                  className="border-border bg-muted/40 text-foreground"
+                >
                   Day {day}
                   <button
                     type="button"

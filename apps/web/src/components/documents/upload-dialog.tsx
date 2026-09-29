@@ -293,11 +293,10 @@ function useUploadController({
 function UploadDialogHeader() {
   return (
     <>
-      <Dialog.Title>Upload Document</Dialog.Title>
+      <Dialog.Title>Upload a document</Dialog.Title>
       <Dialog.Description>
-        Drag and drop a file here or click to browse. One file at a time.
-        Maximum file size: {getMaxFileSizeDisplay()}. Supported types:{" "}
-        {getSupportedFileTypesDisplay()}.
+        One file · up to {getMaxFileSizeDisplay()} ·{" "}
+        {getSupportedFileTypesDisplay()}
       </Dialog.Description>
     </>
   );
@@ -359,8 +358,8 @@ function UploadDialogBody({
         multiple={false}
         disabled={controller.uploading}
         showFileList={false}
-        title="Drag & drop a document here, or click to select"
-        description="PDF, DOCX, XLSX, PPTX, or CSV — one file at a time"
+        title="Drop a file here, or click to browse"
+        description="PDF, DOCX, XLSX, PPTX, or CSV"
         onFilesAccepted={(files) => {
           void controller.handleFilesAccepted(files);
         }}

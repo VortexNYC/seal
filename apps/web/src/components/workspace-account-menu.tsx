@@ -100,11 +100,14 @@ export function WorkspaceAccountMenu({
                 )}
               </div>
               <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
+                <span className="text-muted-foreground truncate text-[10px] font-medium tracking-wide uppercase">
+                  Workspace
+                </span>
                 <span className="text-sidebar-foreground truncate font-medium">
                   {active?.name ?? "Workspace"}
                 </span>
                 <span className="text-muted-foreground truncate text-xs">
-                  {user.name}
+                  Signed in as {user.name}
                 </span>
               </div>
               <CaretUpDown className="text-muted-foreground ml-auto size-4 shrink-0" />
@@ -117,7 +120,7 @@ export function WorkspaceAccountMenu({
             sideOffset={4}
           >
             <DropdownMenu.Group>
-              <DropdownMenu.Label>Workspaces</DropdownMenu.Label>
+              <DropdownMenu.Label>Switch workspace</DropdownMenu.Label>
               {teams.map((team) => {
                 const isActive = team.slug === active?.slug;
                 return (
@@ -160,6 +163,7 @@ export function WorkspaceAccountMenu({
             ) : null}
             <DropdownMenu.Separator />
             <DropdownMenu.Group>
+              <DropdownMenu.Label>Account</DropdownMenu.Label>
               <DropdownMenu.Label className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                   <div className="bg-sidebar-accent overflow-hidden rounded-lg">
@@ -183,11 +187,8 @@ export function WorkspaceAccountMenu({
                   </div>
                 </div>
               </DropdownMenu.Label>
-            </DropdownMenu.Group>
-            <DropdownMenu.Separator />
-            <DropdownMenu.Group>
               <DropdownMenu.Item icon={User} onClick={() => onOpenProfile?.()}>
-                Profile
+                Profile settings
               </DropdownMenu.Item>
             </DropdownMenu.Group>
             <DropdownMenu.Separator />

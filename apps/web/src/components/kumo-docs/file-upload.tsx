@@ -101,19 +101,19 @@ export function FileUpload({
       <div
         {...getRootProps()}
         className={cn(
-          "border-border bg-card text-foreground flex min-h-48 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors",
-          "hover:border-foreground/30 hover:bg-muted/40",
-          isDragActive && "border-primary bg-primary/5",
+          "border-border bg-muted/30 text-foreground flex min-h-40 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors",
+          "hover:border-foreground/40 hover:bg-muted/50",
+          isDragActive && "border-primary bg-primary/10",
           disabled && "cursor-not-allowed opacity-50"
         )}
       >
         <input {...getInputProps()} />
-        <div className="bg-muted text-foreground flex size-12 items-center justify-center rounded-full">
+        <div className="bg-background text-foreground border-border flex size-11 items-center justify-center rounded-full border">
           <Upload className="size-5" aria-hidden />
         </div>
         <div>
           <p className="text-foreground text-sm font-medium">{title}</p>
-          <p className="text-muted-foreground mt-1 text-xs">
+          <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
             {description ?? getSupportedFileTypesDisplay()}
           </p>
         </div>

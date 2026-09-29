@@ -54,12 +54,12 @@ export function SigningChromeSection({
         hideSealBranding: false,
         customFooterText: formData.customFooterText || undefined,
       });
-      toast.success("Signing chrome updated");
+      toast.success("Recipient brand strip updated");
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to update signing chrome"
+          : "Failed to update recipient brand strip"
       );
     } finally {
       setIsSubmitting(false);
@@ -73,8 +73,8 @@ export function SigningChromeSection({
   return (
     <FeatureGate
       tier="pro"
-      feature="Signing chrome (Pro)"
-      description="White-label signing page footer text. Workspace brand colors and email from live under General. Seal product identity stays on."
+      feature="Recipient brand strip (Pro)"
+      description="Optional footer on the signing page and in document emails. Workspace colors and email-from live under General. Seal product identity stays on."
     >
       <form
         id="signing-chrome"
@@ -86,10 +86,11 @@ export function SigningChromeSection({
         <LayerCard className="border-dashed">
           <LayerCard.Secondary>
             <Text as="h2" variant="heading">
-              Signing chrome
+              Recipient-facing brand strip
             </Text>
             <Text variant="secondary">
-              Tenant identity, colors, and email from belong on{" "}
+              Optional footer line on the signing page and in document emails.
+              Workspace name, colors, and email-from live under{" "}
               <Link
                 className="text-primary underline-offset-4 hover:underline"
                 params={{ slug }}
@@ -97,7 +98,7 @@ export function SigningChromeSection({
               >
                 General → Workspace profile
               </Link>
-              . This section is Sign-only chrome gated by the Pro Sign SKU.
+              . Pro Sign feature — Seal product chrome stays visible.
             </Text>
           </LayerCard.Secondary>
         </LayerCard>
@@ -107,18 +108,18 @@ export function SigningChromeSection({
             <div className="flex items-center gap-2">
               <Palette className="h-5 w-5" />
               <Text as="h2" variant="heading">
-                Enable signing chrome
+                Show custom footer
               </Text>
             </div>
             <Text variant="secondary">
-              When on, recipients see suite brand (from General) plus optional
-              custom footer text on the signing page and in document emails.
+              When on, recipients see your workspace brand (from General) plus
+              the footer text below on the signing page and in document emails.
               Seal product chrome stays visible.
             </Text>
           </LayerCard.Secondary>
           <LayerCard.Primary>
             <Checkbox
-              label="Apply custom signing chrome"
+              label="Apply custom footer"
               checked={formData.enabled}
               onCheckedChange={(checked) =>
                 setFormData({ ...formData, enabled: checked })
@@ -159,7 +160,7 @@ export function SigningChromeSection({
         <div className="flex justify-end">
           <Button type="submit" disabled={isSubmitting}>
             <FloppyDisk className="mr-2 h-4 w-4" />
-            {isSubmitting ? "Saving…" : "Save signing chrome"}
+            {isSubmitting ? "Saving…" : "Save brand strip"}
           </Button>
         </div>
       </form>

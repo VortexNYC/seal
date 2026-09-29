@@ -50,7 +50,11 @@ export function DocumentPdfOpsPanel({
     >
       <div className="space-y-2">
         <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
-          Rotate
+          Rotate pages
+        </p>
+        <p className="text-muted-foreground text-[11px]">
+          Turn the PDF before sending — whole document or the page you&apos;re
+          on.
         </p>
         <div className="flex flex-wrap gap-1">
           <Button
@@ -59,7 +63,7 @@ export function DocumentPdfOpsPanel({
             variant={scope === "all" ? "primary" : "ghost"}
             onClick={() => setScope("all")}
           >
-            All pages
+            Entire PDF
           </Button>
           <Button
             type="button"
@@ -67,7 +71,7 @@ export function DocumentPdfOpsPanel({
             variant={scope === "current" ? "primary" : "ghost"}
             onClick={() => setScope("current")}
           >
-            Page {currentPage}
+            This page ({currentPage})
           </Button>
         </div>
         <div className="flex flex-wrap gap-1">
@@ -93,10 +97,10 @@ export function DocumentPdfOpsPanel({
 
       <div className="border-border space-y-2 border-t pt-4">
         <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
-          Merge into new draft
+          Combine with another draft
         </p>
         <p className="text-muted-foreground text-[11px]">
-          Select other draft PDFs to append after this document.
+          Append other draft PDFs after this one into a new draft.
         </p>
         {mergeCandidates.length === 0 ? (
           <p className="text-muted-foreground text-xs">

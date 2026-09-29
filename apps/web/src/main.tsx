@@ -27,15 +27,31 @@ const queryClient = new QueryClient({
 
 const AppLink = forwardRef<HTMLAnchorElement, LinkComponentProps>(
   ({ to, ...rest }, ref) => {
+    // Cap: Documentation → docs.seal.nyc. Absolute URLs must stay real <a>
+    // tags — TanStack Link treats them as in-app paths and blanks the SPA.
+    const href = typeof to === "string" ? to : "";
+    const isExternal = /^https?:\/\//i.test(href);
+
     const { pathname, search } = useMemo(() => {
-      const resolved = to ? (to.startsWith("/") ? to : `/${to}`) : "/";
+      if (isExternal) {
+        return { pathname: "/", search: {} as Record<string, string> };
+      }
+      const resolved = href
+        ? href.startsWith("/")
+          ? href
+          : `/${href}`
+        : "/";
       const url = new URL(resolved, "http://localhost");
       const searchRecord: Record<string, string> = {};
       url.searchParams.forEach((value, key) => {
         searchRecord[key] = value;
       });
       return { pathname: `${url.pathname}${url.hash}`, search: searchRecord };
-    }, [to]);
+    }, [href, isExternal]);
+
+    if (isExternal) {
+      return <a ref={ref} href={href} {...rest} />;
+    }
 
     return <Link ref={ref} to={pathname} search={search} {...rest} />;
   }
