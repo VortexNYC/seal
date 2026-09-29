@@ -17,6 +17,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
+import { isOrganizationAdminRole } from "@vortex-api/better-auth-ui";
+
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
 import { useOrganization } from "@/hooks/use-organization";
@@ -59,8 +61,7 @@ function ApiKeysPage() {
     null
   );
 
-  const isAdmin =
-    organization?.userRole === "owner" || organization?.userRole === "admin";
+  const isAdmin = isOrganizationAdminRole(organization?.userRole);
 
   const createMutation = useMutation({
     mutationFn: (input: { name: string; scopes: string[] }) =>

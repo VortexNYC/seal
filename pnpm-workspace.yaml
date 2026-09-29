@@ -22,6 +22,7 @@ catalog:
 allowBuilds:
   "@scarf/scarf": false
   "@playwright/browser-chromium": true
+  "@posthog/cli": true
   "@swc/core": true
   core-js: true
   core-js-pure: true
@@ -31,9 +32,9 @@ allowBuilds:
   sharp: true
   simple-git-hooks: true
   workerd: true
-
 onlyBuiltDependencies:
   - "@playwright/browser-chromium"
+  - "@posthog/cli"
   - "@swc/core"
   - core-js
   - core-js-pure
@@ -72,7 +73,8 @@ minimumReleaseAgeExclude:
   - '@astrojs/cloudflare@14.3.3'
   - '@astrojs/react@6.0.6'
   - astro@7.3.3
-  - '@vortex-api/better-auth-ui@0.1.4 || 0.2.1 || 0.2.2 || 0.2.3 || 0.2.5'
+  - '@vortex-api/better-auth-ui@0.1.4 || 0.2.1 || 0.2.2 || 0.2.3 || 0.2.5 || 0.2.7 || 0.2.9'
+  - '@posthog/cli@0.18.9'
 
 overrides:
   "wrangler": "^4.133.0"

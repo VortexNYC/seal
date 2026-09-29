@@ -7,6 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   AuthProvider,
+  isOrganizationAdminRole,
   OrganizationProfile,
   useAuth,
 } from "@vortex-api/better-auth-ui";
@@ -96,8 +97,7 @@ function GeneralSettingsContent() {
     setProduct(productFromMetadata(organization?.metadata));
   }, [organization]);
 
-  const isAdmin =
-    organization?.userRole === "owner" || organization?.userRole === "admin";
+  const isAdmin = isOrganizationAdminRole(organization?.userRole);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
