@@ -1,11 +1,11 @@
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 import { UserIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type JSX } from "react";
 
 interface AddMyselfDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
   userEmail?: string;
   userName?: string;
 }
@@ -19,19 +19,26 @@ export function AddMyselfDialog({
   onConfirm,
   userEmail,
   userName,
-}: AddMyselfDialogProps) {
+}: AddMyselfDialogProps): JSX.Element {
   const [isConfirming, setIsConfirming] = useState(false);
 
-  // Reset state when dialog closes
   useEffect(() => {
     if (!open) {
       setIsConfirming(false);
     }
   }, [open]);
 
-  const handleConfirm = () => {
+  const handleConfirm = (): void => {
+    if (isConfirming) return;
     setIsConfirming(true);
-    onConfirm();
+    void (async () => {
+      try {
+        await onConfirm();
+      } finally {
+        // Parent closes on success/error; reset if it stays open.
+        setIsConfirming(false);
+      }
+    })();
   };
 
   return (
@@ -57,11 +64,11 @@ export function AddMyselfDialog({
               </AlertDialogPrimitive.Description>
 
               <div className="bg-muted border-border/50 mt-3 rounded-md border px-3 py-2">
-                {userName && (
+                {userName ? (
                   <div className="text-foreground text-sm font-medium">
                     {userName}
                   </div>
-                )}
+                ) : null}
                 <div className="text-muted-foreground text-sm">{userEmail}</div>
               </div>
             </div>
@@ -76,14 +83,16 @@ export function AddMyselfDialog({
                 </button>
               </AlertDialogPrimitive.Cancel>
 
-              <button
-                type="button"
-                onClick={handleConfirm}
-                disabled={isConfirming}
-                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isConfirming ? "Adding..." : "Add as signer"}
-              </button>
+              <AlertDialogPrimitive.Action asChild>
+                <button
+                  type="button"
+                  onClick={handleConfirm}
+                  disabled={isConfirming || !userEmail}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isConfirming ? "Adding..." : "Add as signer"}
+                </button>
+              </AlertDialogPrimitive.Action>
             </div>
           </div>
         </AlertDialogPrimitive.Content>

@@ -421,8 +421,10 @@ function DocumentDetailPage() {
     }
   };
 
-  const handleAddMyselfConfirm = async () => {
-    if (!user?.primaryEmailAddress?.emailAddress) {
+  const handleAddMyselfConfirm = async (): Promise<void> => {
+    const email =
+      userEmail ?? user?.primaryEmailAddress?.emailAddress ?? undefined;
+    if (!email) {
       toast.error("Could not get your email address");
       docState.setAddMyselfOpen(false);
       return;
@@ -431,8 +433,8 @@ function DocumentDetailPage() {
     try {
       await addRecipients([
         {
-          email: user.primaryEmailAddress.emailAddress,
-          name: user.fullName || undefined,
+          email,
+          name: user?.fullName || undefined,
           role: "signer",
         },
       ]);
@@ -979,7 +981,9 @@ function DocumentDetailPage() {
           selectedRecipientId={fieldPlacement.selectedRecipientId}
           onRecipientSelect={fieldPlacement.setSelectedRecipientId}
           onConfirm={fieldPlacement.handleConfirmFieldPlacement}
-          fieldType={fieldPlacement.pendingFieldData?.fieldType || "field"}
+          fieldType={
+            fieldPlacement.pendingFieldData?.fieldType || "signature"
+          }
           pageNumber={fieldPlacement.pendingFieldData?.page || 1}
         />
 

@@ -187,6 +187,13 @@ function getBaseUrl(): string {
   }
   return "";
 }
+/** Many mutation routes return `{ success: true }` rather than 204/empty. */
+const mutationOkSchema = z.union([
+  z.undefined(),
+  z.null(),
+  z.object({ success: z.literal(true) }),
+]);
+
 async function apiFetch<T>(
   path: string,
   schema: z.ZodType<T>,
@@ -1204,7 +1211,7 @@ export async function sendDocument(
 ): Promise<void> {
   await apiFetch(
     `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/send`,
-    z.void(),
+    mutationOkSchema,
     {
       method: "POST",
       body: JSON.stringify(options ?? {}),
@@ -1217,7 +1224,7 @@ export async function cancelDocument(
 ): Promise<void> {
   await apiFetch(
     `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/cancel`,
-    z.void(),
+    mutationOkSchema,
     { method: "POST" }
   );
 }

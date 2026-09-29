@@ -4,9 +4,11 @@ import {
   CheckCircleIcon,
   ChevronDownIcon,
   ClockIcon,
+  ExternalLinkIcon,
   PenLineIcon,
   XCircleIcon,
 } from "lucide-react";
+import type { JSX } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -35,6 +37,7 @@ interface RecipientData {
   email: string;
   role: "signer" | "viewer" | "approver";
   status: RecipientStatus;
+  signingToken?: string;
 }
 
 interface InAppSigningSectionProps {
@@ -53,7 +56,7 @@ export function InAppSigningSection({
   isOpen,
   onOpenChange,
   onFieldsRefetch,
-}: InAppSigningSectionProps) {
+}: InAppSigningSectionProps): JSX.Element {
   void documentId;
   void onFieldsRefetch;
 
@@ -69,8 +72,16 @@ export function InAppSigningSection({
   const isCompleted =
     recipient.status === "signed" || recipient.status === "approved";
   const isDeclined = recipient.status === "declined";
+  const signingHref = recipient.signingToken
+    ? `/sign/${recipient.signingToken}`
+    : null;
 
-  const getStatusConfig = () => {
+  const getStatusConfig = (): {
+    bgColor: string;
+    textColor: string;
+    icon: typeof CheckCircleIcon;
+    label: string;
+  } => {
     if (isCompleted) {
       return {
         bgColor: "bg-success-surface",
@@ -95,62 +106,45 @@ export function InAppSigningSection({
     };
   };
 
-  const statusConfig = getStatusConfig();
-  const StatusIcon = statusConfig.icon;
+  const status = getStatusConfig();
+  const StatusIcon = status.icon;
 
   return (
-    <Collapsible.Root
-      open={isOpen}
-      onOpenChange={onOpenChange}
-      className="border-warning/30 bg-warning-surface/50 overflow-hidden rounded-2xl border-2 shadow-sm sm:rounded-xl"
-    >
-      <Collapsible.Trigger className="hover:bg-warning-surface/80 flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
-        <div className="flex items-center gap-3">
+    <Collapsible.Root open={isOpen} onOpenChange={onOpenChange}>
+      <Collapsible.Trigger className="hover:bg-muted/50 flex w-full items-center justify-between rounded-lg px-1 py-2 text-left">
+        <div className="flex items-center gap-2">
           <div
             className={cn(
-              "flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg",
-              statusConfig.bgColor,
-              statusConfig.textColor
+              "flex h-8 w-8 items-center justify-center rounded-full",
+              status.bgColor,
+              status.textColor
             )}
           >
-            <PenLineIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
+            <StatusIcon className="h-4 w-4" />
           </div>
-          <div className="text-left">
-            <span className="text-foreground block font-sans text-[0.9375rem] font-semibold sm:text-sm">
+          <div>
+            <div className="text-foreground text-sm font-semibold">
               Your Signature
-            </span>
-            <span
-              className={cn(
-                "flex items-center gap-1 font-sans text-xs",
-                statusConfig.textColor
-              )}
-            >
-              <StatusIcon className="h-3 w-3" />
-              {statusConfig.label}
-            </span>
+            </div>
+            <div className={cn("text-xs font-medium", status.textColor)}>
+              {status.label}
+            </div>
           </div>
         </div>
         <ChevronDownIcon
           className={cn(
-            "text-muted-foreground h-4 w-4 transition-transform duration-200",
+            "text-muted-foreground h-4 w-4 transition-transform",
             isOpen && "rotate-180"
           )}
         />
       </Collapsible.Trigger>
-      <Collapsible.Panel
-        id="in-app-signing-content"
-        className="border-warning/20 border-t px-5 pb-5 sm:px-4 sm:pb-4"
-      >
-        {canSign && fields.length > 0 && (
-          <div className="mt-4 mb-4">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-muted-foreground font-sans text-xs font-medium">
-                Progress
-              </span>
-              <span
-                className="text-muted-foreground font-sans text-xs"
-                aria-live="polite"
-              >
+
+      <Collapsible.Panel className="px-1 pt-2 pb-1">
+        {canSign && requiredFields.length > 0 && (
+          <div className="mb-3 space-y-2">
+            <div className="text-muted-foreground flex items-center justify-between text-xs">
+              <span>Progress</span>
+              <span>
                 {filledRequiredFields.length} of {requiredFields.length}{" "}
                 required fields
               </span>
@@ -166,18 +160,40 @@ export function InAppSigningSection({
 
         {canSign && (
           <div className="mt-4 space-y-2">
-            <p className="text-muted-foreground text-sm">
-              In-app signing is being migrated to the Cloudflare Worker backend.
-              For now, recipients sign through the secure public signing link.
-            </p>
-            <Button
-              disabled
-              className="h-11 w-full text-sm font-medium"
-              type="button"
-            >
-              <PenLineIcon className="mr-2 h-4 w-4" />
-              Signing temporarily unavailable
-            </Button>
+            {signingHref ? (
+              <>
+                <p className="text-muted-foreground text-sm">
+                  Open the secure signing page to review and complete your
+                  fields.
+                </p>
+                <Button
+                  className="h-11 w-full text-sm font-medium"
+                  type="button"
+                  onClick={() => {
+                    window.open(signingHref, "_blank", "noopener,noreferrer");
+                  }}
+                >
+                  <PenLineIcon className="mr-2 h-4 w-4" />
+                  Open signing page
+                  <ExternalLinkIcon className="ml-2 h-3.5 w-3.5 opacity-70" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="text-muted-foreground text-sm">
+                  Your signing link is not available yet. Check your email for
+                  the invitation, or ask the sender to resend it.
+                </p>
+                <Button
+                  disabled
+                  className="h-11 w-full text-sm font-medium"
+                  type="button"
+                >
+                  <PenLineIcon className="mr-2 h-4 w-4" />
+                  Signing link unavailable
+                </Button>
+              </>
+            )}
           </div>
         )}
 

@@ -109,6 +109,14 @@ export function ESignature({
       setCanvasWidth(Math.max(280, Math.min(600, width)));
     };
     updateWidth();
+    const node = canvasContainerRef.current;
+    const observer =
+      typeof ResizeObserver !== "undefined" && node
+        ? new ResizeObserver(() => {
+            updateWidth();
+          })
+        : null;
+    if (node && observer) observer.observe(node);
     let rafId = 0;
     const onResize = (): void => {
       cancelAnimationFrame(rafId);
@@ -117,11 +125,12 @@ export function ESignature({
     window.addEventListener("resize", onResize);
     window.addEventListener("orientationchange", onResize);
     return () => {
+      observer?.disconnect();
       cancelAnimationFrame(rafId);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("orientationchange", onResize);
     };
-  }, []);
+  }, [method]);
 
   useEffect(() => {
     setTypedName(defaultTypedName);
@@ -195,6 +204,13 @@ export function ESignature({
     emitPending({ method: "typed", dataUrl, typedName: trimmed });
   }
 
+  // Type tab shows a live preview from typedName; Accept needs the pending
+  // data URL even when the name came from defaultTypedName without keystrokes.
+  useEffect(() => {
+    if (method !== "typed") return;
+    syncTypedPending(typedName);
+  }, [method, typedName, selectedFont, currentFontFamily]);
+
   function submitDrawn(): void {
     const canvas = canvasRef.current;
     if (!canvas || canvas.isEmpty()) return;
@@ -264,6 +280,7 @@ export function ESignature({
             className="border-border overflow-hidden rounded-lg border-2 border-dashed bg-white"
           >
             <SignatureCanvas
+              key={canvasWidth}
               ref={(ref) => {
                 canvasRef.current = ref;
               }}
