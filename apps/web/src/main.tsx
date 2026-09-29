@@ -98,10 +98,10 @@ if (POSTHOG_KEY) {
     enable_heatmaps: !guestSurface,
     enable_recording_console_log: false,
     capture_performance: false,
-    // SEA-73: never boot recorder/surveys on /sign or /verify.
+    // SEA-73: no Replay/surveys on /sign or /verify. Funnel events still capture
+    // anonymously (person_profiles: identified_only; no identify on guests).
     disable_session_recording: guestSurface,
     disable_surveys: guestSurface,
-    opt_out_capturing_by_default: guestSurface,
     session_recording: {
       maskAllInputs: true,
       maskTextSelector: "[data-ph-mask]",

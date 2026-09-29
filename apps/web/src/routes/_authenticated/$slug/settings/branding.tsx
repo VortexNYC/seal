@@ -1,7 +1,6 @@
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
 import { Input } from "@cloudflare/kumo/components/input";
-import { Label } from "@cloudflare/kumo/components/label";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
 import { FloppyDisk, Palette } from "@phosphor-icons/react";
@@ -165,9 +164,9 @@ function BrandingSettings() {
                 Remove the Seal branding footer from signing pages.
               </Text>
               <div className="space-y-2 border-t pt-4">
-                <Label htmlFor="custom-footer">Custom footer text</Label>
                 <Input
                   id="custom-footer"
+                  label="Custom footer text"
                   placeholder="e.g. Acme Corp — Confidential"
                   value={formData.customFooterText}
                   onChange={(e) =>

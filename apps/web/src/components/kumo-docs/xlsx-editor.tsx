@@ -132,6 +132,7 @@ export function XlsxEditor({
                   {Array.from({ length: colCount }, (_, ci) => (
                     <td key={ci} className="border-border/40 border p-0">
                       <Input
+                        aria-label={`Cell row ${ri + 1} column ${ci + 1}`}
                         value={row[ci] ?? ""}
                         onChange={(e) => updateCell(ri, ci, e.target.value)}
                         className="h-8 rounded-none border-0 text-xs shadow-none"

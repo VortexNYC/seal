@@ -14,8 +14,14 @@ import type { ReactNode } from "react";
 
 import { containers, email, fonts, status, surfaces, text } from "../styles.js";
 
-/** Hosted from apps/web/public/logo after deploy. */
-const SEAL_LOCKUP_URL = "https://app.seal.nyc/logo/seal-lockup-light.png";
+/** Hosted from apps/web/public after deploy. */
+const SEAL_LOCKUP_LIGHT_URL =
+  "https://app.seal.nyc/logo/seal-lockup-light.png";
+const SEAL_LOCKUP_DARK_URL = "https://app.seal.nyc/logo/seal-lockup-dark.png";
+const HEDVIG_SANS_URL =
+  "https://app.seal.nyc/fonts/hedvig-letters-sans.woff2";
+const HEDVIG_SERIF_URL =
+  "https://app.seal.nyc/fonts/hedvig-letters-serif.woff2";
 
 const sealEmailBrand = {
   name: "Seal",
@@ -43,7 +49,28 @@ export function EmailLayout({
 }: EmailLayoutProps) {
   return (
     <Html lang="en">
-      <Head />
+      <Head>
+        <style>{`
+          @font-face {
+            font-family: "Hedvig Letters Sans";
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: url("${HEDVIG_SANS_URL}") format("woff2");
+          }
+          @font-face {
+            font-family: "Hedvig Letters Serif";
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: url("${HEDVIG_SERIF_URL}") format("woff2");
+          }
+          @media (prefers-color-scheme: dark) {
+            .seal-lockup-light { display: none !important; }
+            .seal-lockup-dark { display: block !important; }
+          }
+        `}</style>
+      </Head>
       <Preview>{preview}</Preview>
       <Body
         style={{
@@ -55,7 +82,8 @@ export function EmailLayout({
         <Container style={containers.card}>
           <Section style={{ marginBottom: "28px" }}>
             <Img
-              src={SEAL_LOCKUP_URL}
+              className="seal-lockup-light"
+              src={SEAL_LOCKUP_LIGHT_URL}
               alt="Seal"
               width={140}
               height={36}
@@ -67,7 +95,27 @@ export function EmailLayout({
                 textDecoration: "none",
               }}
             />
-            <Heading as="h1" style={text.heading}>
+            <Img
+              className="seal-lockup-dark"
+              src={SEAL_LOCKUP_DARK_URL}
+              alt="Seal"
+              width={140}
+              height={36}
+              style={{
+                display: "none",
+                margin: "0 0 20px 0",
+                border: "0",
+                outline: "none",
+                textDecoration: "none",
+              }}
+            />
+            <Heading
+              as="h1"
+              style={{
+                ...text.heading,
+                fontFamily: fonts.serif,
+              }}
+            >
               {subtitle}
             </Heading>
           </Section>
