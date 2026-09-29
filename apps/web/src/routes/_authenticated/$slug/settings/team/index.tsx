@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   AuthProvider,
   InviteMemberForm,
+  isOrganizationAdminRole,
   OrganizationMembers,
 } from "@vortex-api/better-auth-ui";
 
@@ -23,8 +24,7 @@ function TeamSettings() {
 
   const { data: organization } = useOrganization(slug);
 
-  const canManage =
-    organization?.userRole === "owner" || organization?.userRole === "admin";
+  const canManage = isOrganizationAdminRole(organization?.userRole);
 
   if (client === null) {
     return (
