@@ -539,6 +539,57 @@ describe("document power routes", () => {
     expect(res.status).toBe(400);
   });
 
+  it("compare-pdf diffs against another draft (text-level)", async () => {
+    const app = await seedFixture();
+    // Second doc shares the org — its PDF can differ freely.
+    const otherKey = "uploads/power-other";
+    await env.DOCUMENTS_BUCKET.put(otherKey, await makePdf(2), {
+      httpMetadata: { contentType: "application/pdf" },
+    });
+    const db = createD1(env.D1);
+    await db.insert(documents).values({
+      id: "doc_other",
+      publicId: "doc_other_pub",
+      organizationId: "org_power",
+      ownerId: "user_1",
+      name: "Other Doc",
+      status: "draft",
+      documentStatus: "active",
+      sharingMode: "private",
+      storageKey: otherKey,
+      contentType: "application/pdf",
+      pageCount: 2,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const res = await app.fetch(
+      powerPost(DOC_PUBLIC_ID, "compare-pdf", {
+        withPublicId: "doc_other_pub",
+      }),
+      env
+    );
+    expect(res.status).toBe(200);
+    const json = z
+      .object({
+        success: z.boolean(),
+        pagesDifferent: z.number(),
+        linesAdded: z.number(),
+        linesRemoved: z.number(),
+        pages: z.array(
+          z.object({
+            page: z.number(),
+            added: z.array(z.string()),
+            removed: z.array(z.string()),
+          })
+        ),
+      })
+      .parse(await res.json());
+    // The converter mock returns identical text for both sides.
+    expect(json.pagesDifferent).toBe(0);
+    expect(json.pages).toEqual([]);
+  });
+
   it("compress-pdf honours the org convert egress gate", async () => {
     const app = await seedFixture();
     const db = createD1(env.D1);

@@ -18,6 +18,7 @@ import {
   ocrPdfBytes,
   optimizePdfBytes,
   pdfToImagesZip,
+  pdfToText,
 } from "../platform/document-conversion.js";
 import {
   FeatureDisabledError,
@@ -36,6 +37,7 @@ import {
   splitPdfPages,
   watermarkPdf,
 } from "../platform/pdf-ops.js";
+import { diffPageTexts } from "../platform/pdf-diff.js";
 import { redactPdfRegions } from "../platform/pdf-redact.js";
 import {
   commitDocumentPdfRemap,
@@ -1588,6 +1590,78 @@ app.post("/ocr-pdf", async (c) => {
   }
 
   return c.json({ success: true, storageId, pageCount, lang: parsed.data.lang });
+});
+
+const compareBodySchema = z.object({
+  withPublicId: z.string().min(1),
+});
+
+/**
+ * Text-level compare between this draft and another draft in the org:
+ * pdftotext on both, per-page line diff. Read-only — no storage mutation.
+ */
+app.post("/compare-pdf", async (c) => {
+  const user = c.get("user");
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+  const organizationId = c.get("organization").id;
+  const publicId = publicIdFromPath(new URL(c.req.url).pathname);
+  if (!publicId) return c.json({ error: "not_found" }, 404);
+
+  const parsed = compareBodySchema.safeParse(
+    await c.req.json().catch(() => ({}))
+  );
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocByPublicId(db, organizationId, publicId);
+  const other = await loadOrgDocByPublicId(
+    db,
+    organizationId,
+    parsed.data.withPublicId
+  );
+  if (!doc || !other) return c.json({ error: "not_found" }, 404);
+  if (!doc.storageKey || !other.storageKey) {
+    return c.json({ error: "no_pdf" }, 400);
+  }
+
+  const [aObj, bObj] = await Promise.all([
+    c.env.DOCUMENTS_BUCKET.get(doc.storageKey),
+    c.env.DOCUMENTS_BUCKET.get(other.storageKey),
+  ]);
+  if (!aObj || !bObj) return c.json({ error: "storage_missing" }, 404);
+
+  try {
+    await assertConvertEnabled(c.env, organizationId);
+  } catch (error) {
+    if (error instanceof FeatureDisabledError) {
+      return c.json({ error: error.code }, 403);
+    }
+    throw error;
+  }
+
+  let diff;
+  try {
+    const [aText, bText] = await Promise.all([
+      pdfToText(c.env, await aObj.arrayBuffer()),
+      pdfToText(c.env, await bObj.arrayBuffer()),
+    ]);
+    diff = diffPageTexts(aText, bText);
+  } catch (error) {
+    if (error instanceof ConversionError) {
+      return c.json(
+        { error: error.message },
+        error.statusCode === 504 ? 504 : 502
+      );
+    }
+    throw error;
+  }
+
+  return c.json({
+    success: true,
+    documentA: { publicId: doc.publicId, name: doc.name },
+    documentB: { publicId: other.publicId, name: other.name },
+    ...diff,
+  });
 });
 
 export default app;

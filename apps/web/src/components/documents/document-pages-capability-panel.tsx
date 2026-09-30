@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
-import { DocumentPdfOpsPanel } from "@/components/kumo-docs/document-pdf-ops-panel";
+import { DocumentPdfOpsPanel, type DocumentPdfOpsPanelProps } from "@/components/kumo-docs/document-pdf-ops-panel";
 import {
   DocumentSplitsPanel,
   createInitialSplits,
@@ -11,6 +11,7 @@ import {
 } from "@/components/kumo-docs/document-splits-panel";
 import {
   compressDocumentPdf,
+  compareDocumentPdf,
   cropDocumentPdf,
   exportDocumentPdfImages,
   flattenDocumentPdf,
@@ -265,6 +266,25 @@ export function DocumentPagesCapabilityPanel({
     },
   });
 
+  const [compareResult, setCompareResult] = useState<DocumentPdfOpsPanelProps["compareResult"]>(null);
+  const compareMutation = useMutation({
+    mutationFn: (input: { withPublicId: string }) =>
+      compareDocumentPdf(organizationSlug, documentPublicId, input),
+    onSuccess: (result) => {
+      setCompareResult({
+        pagesDifferent: result.pagesDifferent,
+        linesAdded: result.linesAdded,
+        linesRemoved: result.linesRemoved,
+        pages: result.pages,
+      });
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to compare PDFs"
+      );
+    },
+  });
+
   const mergeMutation = useMutation({
     mutationFn: (input: { sourcePublicIds: string[]; title?: string }) =>
       mergeDocumentPdf(organizationSlug, documentPublicId, input),
@@ -328,6 +348,8 @@ export function DocumentPagesCapabilityPanel({
         flattening={flattenMutation.isPending}
         exporting={exportImagesMutation.isPending}
         ocred={ocrMutation.isPending}
+        comparing={compareMutation.isPending}
+        compareResult={compareResult}
         protectedDownloadUrl={protectedDownloadUrl}
         imagesDownloadUrl={imagesDownloadUrl}
         watermarking={watermarkMutation.isPending}
@@ -345,6 +367,7 @@ export function DocumentPagesCapabilityPanel({
         onFlatten={() => flattenMutation.mutate()}
         onExportImages={(input) => exportImagesMutation.mutate(input)}
         onOcr={(input) => ocrMutation.mutate(input)}
+        onCompare={(input) => compareMutation.mutate(input)}
         onMerge={(input) => mergeMutation.mutate(input)}
         className={docked ? "p-0" : undefined}
       />

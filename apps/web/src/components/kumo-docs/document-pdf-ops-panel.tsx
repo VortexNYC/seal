@@ -1,5 +1,6 @@
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
+import { Select } from "@cloudflare/kumo/components/select";
 import type { JSX } from "react";
 import { useEffect, useState } from "react";
 
@@ -24,12 +25,20 @@ export type DocumentPdfOpsPanelProps = {
   flattening?: boolean;
   exporting?: boolean;
   ocred?: boolean;
+  comparing?: boolean;
   merging?: boolean;
   /** Download URL for the last protected copy this session produced. */
   protectedDownloadUrl?: string | null;
   /** Download URL for the last exported images ZIP this session produced. */
   imagesDownloadUrl?: string | null;
-  /** Other draft docs available to merge (publicId + name). */
+  /** Last compare result produced this session. */
+  compareResult?: {
+    pagesDifferent: number;
+    linesAdded: number;
+    linesRemoved: number;
+    pages: Array<{ page: number; added: string[]; removed: string[] }>;
+  } | null;
+  /** Other draft docs available to merge/compare (publicId + name). */
   mergeCandidates?: Array<{ publicId: string; name: string }>;
   onRotate: (input: { degrees: 90 | 180 | 270; pages?: number[] }) => void;
   onOrganize: (input: { pages: number[] }) => void;
@@ -66,6 +75,7 @@ export type DocumentPdfOpsPanelProps = {
   onFlatten: () => void;
   onExportImages: (input: { format: "png" | "jpeg"; dpi: number }) => void;
   onOcr: (input: { lang: string }) => void;
+  onCompare: (input: { withPublicId: string }) => void;
   onMerge: (input: { sourcePublicIds: string[]; title?: string }) => void;
 };
 
@@ -103,9 +113,11 @@ export function DocumentPdfOpsPanel({
   flattening = false,
   exporting = false,
   ocred = false,
+  comparing = false,
   merging = false,
   protectedDownloadUrl = null,
   imagesDownloadUrl = null,
+  compareResult = null,
   mergeCandidates = [],
   onRotate,
   onOrganize,
@@ -118,6 +130,7 @@ export function DocumentPdfOpsPanel({
   onFlatten,
   onExportImages,
   onOcr,
+  onCompare,
   onMerge,
 }: DocumentPdfOpsPanelProps): JSX.Element {
   const [scope, setScope] = useState<"all" | "current">("all");
@@ -145,6 +158,7 @@ export function DocumentPdfOpsPanel({
   const [exportFormat, setExportFormat] = useState<"png" | "jpeg">("png");
   const [exportDpi, setExportDpi] = useState(150);
   const [ocrLang, setOcrLang] = useState("eng");
+  const [compareTarget, setCompareTarget] = useState("");
   const [selectedMergeIds, setSelectedMergeIds] = useState<string[]>([]);
   const [mergeTitle, setMergeTitle] = useState("");
 
@@ -692,6 +706,61 @@ export function DocumentPdfOpsPanel({
         >
           {ocred ? "Running OCR…" : "Run OCR"}
         </Button>
+      </div>
+
+      <div className="border-border space-y-2 border-t pt-4">
+        <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
+          Compare with another draft
+        </p>
+        <p className="text-muted-foreground text-[11px]">
+          Text-level diff — lists lines added and removed per page.
+        </p>
+        <Select
+          value={compareTarget}
+          onValueChange={(v) => setCompareTarget(v ?? "")}
+          placeholder="Choose a draft…"
+        >
+          {mergeCandidates.map((d) => (
+            <Select.Option key={d.publicId} value={d.publicId}>
+              {d.name}
+            </Select.Option>
+          ))}
+        </Select>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={comparing || !compareTarget}
+          onClick={() => onCompare({ withPublicId: compareTarget })}
+        >
+          {comparing ? "Comparing…" : "Compare"}
+        </Button>
+        {compareResult ? (
+          <div className="bg-muted max-h-64 space-y-2 overflow-y-auto rounded-md p-2 text-xs">
+            <p className="text-foreground font-medium">
+              {compareResult.pagesDifferent === 0
+                ? "Identical text — no differences."
+                : `${compareResult.pagesDifferent} page(s) differ: +${compareResult.linesAdded} −${compareResult.linesRemoved} lines`}
+            </p>
+            {compareResult.pages.map((p) => (
+              <div key={p.page} className="space-y-0.5">
+                <p className="text-muted-foreground font-semibold">
+                  Page {p.page}
+                </p>
+                {p.removed.map((l, i) => (
+                  <p key={`r${i}`} className="text-destructive truncate">
+                    − {l}
+                  </p>
+                ))}
+                {p.added.map((l, i) => (
+                  <p key={`a${i}`} className="text-success truncate">
+                    + {l}
+                  </p>
+                ))}
+              </div>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <div className="border-border space-y-2 border-t pt-4">
