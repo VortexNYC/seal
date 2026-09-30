@@ -13,24 +13,13 @@ import {
   user as userTable,
 } from "../global/schema.js";
 import { writeAuditLog } from "../platform/audit-log.js";
+import { autoStampRecipientFields } from "../platform/auto-sign-fields.js";
+import { certificateStorageKey } from "../platform/certificate-of-completion.js";
+import { generateAndStoreCertificateOfCompletion } from "../platform/certificate-store.js";
 import {
-  ESIGN_CONSENT_VERSION,
-  hashEsignConsentText,
-  readOrgEsignConsentText,
-  resolveEsignConsentText,
-} from "../platform/esign-consent.js";
-import {
-  PRIVACY_NOTICE_VERSION,
-  hashPrivacyNoticeText,
-  readOrgPrivacyNoticeText,
-  resolvePrivacyNoticeText,
-} from "../platform/privacy-notice.js";
-import { readOrgSigningCompliance } from "../platform/signing-settings.js";
-import { getSessionUser } from "../platform/session.js";
-import {
-  describeEsignOptOutMethod,
-  resolveEsignOptOutMethod,
-} from "../platform/esign-opt-out.js";
+  auditMetaFromContext,
+  tryAuditDocumentByteAccess,
+} from "../platform/document-access-audit.js";
 import {
   buildDocumentUrl,
   buildSignedPdfDownloadUrl,
@@ -40,10 +29,25 @@ import {
   sendSigningCompleteEmail,
   sendSigningOtpEmail,
 } from "../platform/email.js";
-import { autoStampRecipientFields } from "../platform/auto-sign-fields.js";
-import { generateAndStoreCertificateOfCompletion } from "../platform/certificate-store.js";
-import { certificateStorageKey } from "../platform/certificate-of-completion.js";
+import {
+  ESIGN_CONSENT_VERSION,
+  hashEsignConsentText,
+  readOrgEsignConsentText,
+  resolveEsignConsentText,
+} from "../platform/esign-consent.js";
+import {
+  describeEsignOptOutMethod,
+  resolveEsignOptOutMethod,
+} from "../platform/esign-opt-out.js";
 import { generateAndStoreFinalPdf } from "../platform/final-pdf-store.js";
+import { sha256PdfBytes } from "../platform/final-pdf.js";
+import {
+  PRIVACY_NOTICE_VERSION,
+  hashPrivacyNoticeText,
+  readOrgPrivacyNoticeText,
+  resolvePrivacyNoticeText,
+} from "../platform/privacy-notice.js";
+import { getSessionUser } from "../platform/session.js";
 import {
   isSignerAuthVerified,
   markAccessCodeVerified,
@@ -56,16 +60,13 @@ import {
   verifyAccessCode,
   verifyEmailOtpChallenge,
 } from "../platform/signer-auth.js";
+import { readOrgSigningCompliance } from "../platform/signing-settings.js";
 import {
   commitSigningSubmit,
   RecipientAlreadyCompletedError,
 } from "../platform/signing-submit.js";
 import { recordUsageEvent } from "../platform/usage-events.js";
 import { emitWebhookEvent } from "../platform/webhook-events.js";
-import {
-  auditMetaFromContext,
-  tryAuditDocumentByteAccess,
-} from "../platform/document-access-audit.js";
 
 /**
  * SEA-64 reopen (Vortex live evidence 2026-09-25): public-submit path used
@@ -695,15 +696,24 @@ app.openapi(authChallengeRouteDef, async (c) => {
 
   const method = normalizeAuthMethod(recipient.authMethod);
   if (method !== "email_otp") {
-    return c.json({ error: "Email OTP is not required for this recipient" }, 400);
+    return c.json(
+      { error: "Email OTP is not required for this recipient" },
+      400
+    );
   }
 
-  if (isSignerAuthVerified(recipient.authMethod, recipient.authenticationData)) {
+  if (
+    isSignerAuthVerified(recipient.authMethod, recipient.authenticationData)
+  ) {
     return c.json({ error: "Already verified" }, 400);
   }
 
   const docRows = await db
-    .select({ id: documents.id, name: documents.name, status: documents.status })
+    .select({
+      id: documents.id,
+      name: documents.name,
+      status: documents.status,
+    })
     .from(documents)
     .where(eq(documents.id, recipient.documentId))
     .limit(1);
@@ -795,7 +805,9 @@ app.openapi(authVerifyRouteDef, async (c) => {
     return c.json({ success: true, method: "none" });
   }
 
-  if (isSignerAuthVerified(recipient.authMethod, recipient.authenticationData)) {
+  if (
+    isSignerAuthVerified(recipient.authMethod, recipient.authenticationData)
+  ) {
     return c.json({ success: true, method });
   }
 
@@ -935,10 +947,7 @@ app.openapi(submitRouteDef, async (c) => {
     if (compliance.requireSignerAccount) {
       const session = await getSessionUser(c.env, c.req.raw);
       const sessionEmail = session?.user?.email?.toLowerCase() ?? null;
-      if (
-        !sessionEmail ||
-        sessionEmail !== recipient.email.toLowerCase()
-      ) {
+      if (!sessionEmail || sessionEmail !== recipient.email.toLowerCase()) {
         return c.json(
           {
             error:
@@ -1294,7 +1303,10 @@ app.openapi(submitRouteDef, async (c) => {
               const bytes = new Uint8Array(await object.arrayBuffer());
               // Cap attachment size — large tax PDFs still get a download link.
               const MAX_ATTACH_BYTES = 8 * 1024 * 1024;
-              if (bytes.byteLength > 0 && bytes.byteLength <= MAX_ATTACH_BYTES) {
+              if (
+                bytes.byteLength > 0 &&
+                bytes.byteLength <= MAX_ATTACH_BYTES
+              ) {
                 const safeName = (doc.name || "document")
                   .replace(/[^\w.\- ]+/g, "")
                   .trim()
@@ -1581,7 +1593,8 @@ app.openapi(signedPdfRouteDef, async (c) => {
         via: "signing-signed-pdf",
         recipientId: recipient.id,
       },
-      ipAddress: c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
+      ipAddress:
+        c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
       userAgent: c.req.header("user-agent"),
     });
   } catch (err) {
@@ -1678,7 +1691,8 @@ app.openapi(certificateRouteDef, async (c) => {
         recipientId: recipient.id,
         artifact: "certificate_of_completion",
       },
-      ipAddress: c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
+      ipAddress:
+        c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
       userAgent: c.req.header("user-agent"),
     });
   } catch (err) {
@@ -2542,6 +2556,112 @@ app.openapi(verifyRouteDef, async (c) => {
     documentHash: doc.documentHash ?? null,
     createdAt: doc.createdAt.getTime(),
   });
+});
+
+/**
+ * Verify a sealed PDF by upload — SHA-256 the submitted bytes and match
+ * `documents.documentHash`. Public + unauthenticated: the hash itself is
+ * the capability (anyone holding the PDF may verify it). Returns the same
+ * payload as the qrToken route plus `hashMatch` — a miss returns
+ * `{verified:false, hashMatch:false}` (tampered bytes or never ours).
+ */
+const verifyUploadRouteDef = createRoute({
+  method: "post",
+  path: "/verify-upload",
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/pdf": {
+          schema: { type: "string", format: "binary" },
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": {
+          schema: verifyResultSchema.extend({ hashMatch: z.boolean() }),
+        },
+      },
+      description: "Uploaded-PDF verification result",
+    },
+    400: { description: "Expected an application/pdf body" },
+    413: { description: "PDF too large to verify" },
+  },
+});
+
+const VERIFY_MAX_BYTES = 50 * 1024 * 1024;
+
+app.openapi(verifyUploadRouteDef, async (c) => {
+  const contentType = c.req.header("content-type") ?? "";
+  if (!contentType.startsWith("application/pdf")) {
+    return c.json({ error: "Expected an application/pdf body" }, 400);
+  }
+  const bytes = await c.req.arrayBuffer();
+  if (bytes.byteLength === 0 || bytes.byteLength > VERIFY_MAX_BYTES) {
+    return c.json({ error: "PDF too large to verify" }, 413);
+  }
+
+  const hash = await sha256PdfBytes(new Uint8Array(bytes));
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(eq(documents.documentHash, hash))
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc || doc.status !== "completed" || doc.documentStatus === "deleted") {
+    return c.json(
+      {
+        verified: false,
+        hashMatch: false,
+        documentName: "",
+        completedAt: null,
+        signerCount: 0,
+        signers: [],
+        documentHash: hash,
+        createdAt: 0,
+      },
+      200
+    );
+  }
+
+  const signers: Array<{
+    name: string;
+    maskedEmail: string;
+    role: string;
+    signedAt: number | null;
+  }> = [];
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(eq(recipients.documentId, doc.id));
+  for (const r of recipientRows) {
+    if (r.status !== "signed" && r.status !== "approved") continue;
+    signers.push({
+      name: r.name ?? r.email,
+      maskedEmail: maskEmail(r.email),
+      role: r.role,
+      signedAt: r.signedAt?.getTime() ?? r.approvedAt?.getTime() ?? null,
+    });
+  }
+
+  return c.json(
+    {
+      verified: true,
+      hashMatch: true,
+      documentName: doc.name,
+      completedAt: doc.completedAt ? doc.completedAt.getTime() : null,
+      signerCount: signers.length,
+      signers,
+      documentHash: doc.documentHash ?? hash,
+      createdAt: doc.createdAt.getTime(),
+    },
+    200
+  );
 });
 
 function isRecord(value: unknown): value is Record<string, unknown> {
