@@ -29,7 +29,11 @@ export class DocumentPage {
     this.page = page;
     this.documentTitle = page.locator('[data-testid="document-title"]');
     this.documentCanvas = page.locator("canvas");
-    this.documentDropTarget = page.locator("[data-engine='pdfium']").first();
+    this.documentDropTarget = page
+      .locator(
+        '[data-testid="document-canvas-field-overlay"], [data-engine="pdfium"]'
+      )
+      .first();
     this.documentPreview = page
       .locator('[data-kumo-docs="viewer-shell"]')
       .first();
