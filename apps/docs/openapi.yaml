@@ -490,6 +490,22 @@ components:
           type: string
           description: Contiguous excerpt from the document, or the literal `not_found`
 
+    ReviewPack:
+      type: object
+      required: [id, title, columns, builtin, created_at]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        model: { type: string, nullable: true }
+        columns:
+          type: array
+          items: { $ref: "#/components/schemas/ReviewColumn" }
+        builtin:
+          type: boolean
+          description: true for Vortex-authored packs shipped with the build
+        created_at: { type: string, format: date-time }
+
     Revision:
       type: object
       required:
@@ -3320,13 +3336,19 @@ paths:
           application/json:
             schema:
               type: object
-              required: [title, model, columns, documentIds]
+              required: [title, documentIds]
               properties:
                 title: { type: string, maxLength: 200 }
                 model:
                   type: string
-                  description: Provider/model key (`echo/test` for local stub)
+                  description: Provider/model key (`echo/test` for local stub). Optional when `pack_id` supplies a default.
                   maxLength: 120
+                pack_id:
+                  type: string
+                  description: >
+                    Review pack to expand — `builtin/nda`, `builtin/msa`,
+                    `builtin/employment`, or an org-authored `pack_*` id.
+                    Explicit `columns`/`model` override pack defaults.
                 columns:
                   type: array
                   minItems: 1
@@ -3463,6 +3485,82 @@ paths:
                     { type: string, format: date-time, nullable: true }
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /review-packs:
+    get:
+      tags: [Revisions]
+      operationId: listReviewPacks
+      summary: List review packs (builtin + org-authored)
+      responses:
+        "200":
+          description: Packs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  packs:
+                    type: array
+                    items: { $ref: "#/components/schemas/ReviewPack" }
+    post:
+      tags: [Revisions]
+      operationId: createReviewPack
+      summary: Create an org-authored review pack
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, columns]
+              properties:
+                title: { type: string, maxLength: 200 }
+                description: { type: string, maxLength: 2000 }
+                model: { type: string, maxLength: 120 }
+                columns:
+                  type: array
+                  minItems: 1
+                  maxItems: 32
+                  items: { $ref: "#/components/schemas/ReviewColumn" }
+      responses:
+        "201":
+          description: Pack created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReviewPack" }
+
+  /review-packs/{id}:
+    get:
+      tags: [Revisions]
+      operationId: getReviewPack
+      summary: Get a review pack
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Pack
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReviewPack" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Revisions]
+      operationId: deleteReviewPack
+      summary: Delete an org-authored review pack
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Deleted
         "404":
           $ref: "#/components/responses/NotFound"
 
