@@ -12,6 +12,7 @@ import {
 import {
   compressDocumentPdf,
   compareDocumentPdf,
+  convertDocumentPdfToOffice,
   convertDocumentPdfToPdfa,
   cropDocumentPdf,
   exportDocumentPdfImages,
@@ -253,6 +254,23 @@ export function DocumentPagesCapabilityPanel({
     },
   });
 
+  const [officeDownloadUrl, setOfficeDownloadUrl] = useState<string | null>(
+    null
+  );
+  const toOfficeMutation = useMutation({
+    mutationFn: (input: { format: "docx" | "xlsx" | "pptx" }) =>
+      convertDocumentPdfToOffice(organizationSlug, documentPublicId, input),
+    onSuccess: (result) => {
+      setOfficeDownloadUrl(result.downloadUrl);
+      toast.success("Office file ready — download link below");
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to convert to Office"
+      );
+    },
+  });
+
   const ocrMutation = useMutation({
     mutationFn: (input: { lang: string }) =>
       ocrDocumentPdf(organizationSlug, documentPublicId, input),
@@ -362,12 +380,14 @@ export function DocumentPagesCapabilityPanel({
         protecting={protectMutation.isPending}
         flattening={flattenMutation.isPending}
         exporting={exportImagesMutation.isPending}
+        officing={toOfficeMutation.isPending}
         ocred={ocrMutation.isPending}
         comparing={compareMutation.isPending}
         compareResult={compareResult}
         pdfaing={pdfaMutation.isPending}
         protectedDownloadUrl={protectedDownloadUrl}
         imagesDownloadUrl={imagesDownloadUrl}
+        officeDownloadUrl={officeDownloadUrl}
         watermarking={watermarkMutation.isPending}
         numbering={numberPagesMutation.isPending}
         merging={mergeMutation.isPending}
@@ -382,6 +402,7 @@ export function DocumentPagesCapabilityPanel({
         onProtect={(input) => protectMutation.mutate(input)}
         onFlatten={() => flattenMutation.mutate()}
         onExportImages={(input) => exportImagesMutation.mutate(input)}
+        onToOffice={(input) => toOfficeMutation.mutate(input)}
         onOcr={(input) => ocrMutation.mutate(input)}
         onCompare={(input) => compareMutation.mutate(input)}
         onToPdfa={(input) => pdfaMutation.mutate(input)}

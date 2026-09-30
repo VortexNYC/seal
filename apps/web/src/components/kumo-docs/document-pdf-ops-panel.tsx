@@ -24,6 +24,7 @@ export type DocumentPdfOpsPanelProps = {
   protecting?: boolean;
   flattening?: boolean;
   exporting?: boolean;
+  officing?: boolean;
   ocred?: boolean;
   comparing?: boolean;
   pdfaing?: boolean;
@@ -32,6 +33,8 @@ export type DocumentPdfOpsPanelProps = {
   protectedDownloadUrl?: string | null;
   /** Download URL for the last exported images ZIP this session produced. */
   imagesDownloadUrl?: string | null;
+  /** Download URL for the last Office export this session produced. */
+  officeDownloadUrl?: string | null;
   /** Last compare result produced this session. */
   compareResult?: {
     pagesDifferent: number;
@@ -75,6 +78,7 @@ export type DocumentPdfOpsPanelProps = {
   onProtect: (input: { userPassword?: string; ownerPassword?: string }) => void;
   onFlatten: () => void;
   onExportImages: (input: { format: "png" | "jpeg"; dpi: number }) => void;
+  onToOffice: (input: { format: "docx" | "xlsx" | "pptx" }) => void;
   onOcr: (input: { lang: string }) => void;
   onCompare: (input: { withPublicId: string }) => void;
   onToPdfa: (input: { format: "PDF/A-1b" | "PDF/A-2b" | "PDF/A-3b" }) => void;
@@ -114,12 +118,14 @@ export function DocumentPdfOpsPanel({
   protecting = false,
   flattening = false,
   exporting = false,
+  officing = false,
   ocred = false,
   comparing = false,
   pdfaing = false,
   merging = false,
   protectedDownloadUrl = null,
   imagesDownloadUrl = null,
+  officeDownloadUrl = null,
   compareResult = null,
   mergeCandidates = [],
   onRotate,
@@ -132,6 +138,7 @@ export function DocumentPdfOpsPanel({
   onProtect,
   onFlatten,
   onExportImages,
+  onToOffice,
   onOcr,
   onCompare,
   onToPdfa,
@@ -160,6 +167,9 @@ export function DocumentPdfOpsPanel({
   });
   const [protectPassword, setProtectPassword] = useState("");
   const [exportFormat, setExportFormat] = useState<"png" | "jpeg">("png");
+  const [officeFormat, setOfficeFormat] = useState<"docx" | "xlsx" | "pptx">(
+    "docx"
+  );
   const [exportDpi, setExportDpi] = useState(150);
   const [ocrLang, setOcrLang] = useState("eng");
   const [compareTarget, setCompareTarget] = useState("");
@@ -681,6 +691,47 @@ export function DocumentPdfOpsPanel({
             className="text-foreground block text-xs underline"
           >
             Download images ZIP
+          </a>
+        ) : null}
+      </div>
+
+      <div className="border-border space-y-2 border-t pt-4">
+        <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
+          Convert to Office
+        </p>
+        <p className="text-muted-foreground text-[11px]">
+          Export as Word, Excel, or PowerPoint. Layout-locked — text boxes,
+          not flowing prose.
+        </p>
+        <div className="flex gap-2">
+          {(["docx", "xlsx", "pptx"] as const).map((f) => (
+            <Button
+              key={f}
+              type="button"
+              size="sm"
+              variant={officeFormat === f ? "primary" : "outline"}
+              onClick={() => setOfficeFormat(f)}
+            >
+              {f.toUpperCase()}
+            </Button>
+          ))}
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          disabled={officing || pageCount < 1}
+          onClick={() => onToOffice({ format: officeFormat })}
+        >
+          {officing ? "Converting…" : `Convert to ${officeFormat.toUpperCase()}`}
+        </Button>
+        {officeDownloadUrl ? (
+          <a
+            href={officeDownloadUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="text-foreground block text-xs underline"
+          >
+            Download {officeFormat.toUpperCase()}
           </a>
         ) : null}
       </div>

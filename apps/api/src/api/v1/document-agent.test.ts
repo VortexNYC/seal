@@ -272,6 +272,26 @@ describe("document agent pdf routes", () => {
     expect(json.format).toBe("jpeg");
   });
 
+  it("converts a draft to Office via the agent surface", async () => {
+    await seedFixture();
+    const app = createApp(writeMcp);
+    const res = await app.fetch(
+      agentPost("to-office", { id: DOC_ID, format: "docx" }),
+      env
+    );
+    expect(res.status).toBe(200);
+    const json = z
+      .object({
+        success: z.boolean(),
+        storage_id: z.string(),
+        format: z.string(),
+        download_url: z.string().nullable(),
+      })
+      .parse(await res.json());
+    expect(json.success).toBe(true);
+    expect(json.format).toBe("docx");
+  });
+
   it("OCRs a draft via the agent surface", async () => {
     await seedFixture();
     const app = createApp(writeMcp);

@@ -21,6 +21,7 @@ import {
   ocrPdfBytes,
   optimizePdfBytes,
   pdfToImagesZip,
+  pdfToOfficeBytes,
   pdfToText,
 } from "../platform/document-conversion.js";
 import {
@@ -1519,6 +1520,102 @@ app.post("/export-pdf-images", async (c) => {
     size: zip.byteLength,
     format: parsed.data.format,
     dpi: parsed.data.dpi,
+    downloadUrl: token
+      ? `${origin}/api/v1/documents/download-file?token=${encodeURIComponent(token)}`
+      : null,
+  });
+});
+
+const officeBodySchema = z.object({
+  format: z.enum(["docx", "xlsx", "pptx"]).default("docx"),
+});
+
+const OFFICE_CONTENT_TYPES: Record<"docx" | "xlsx" | "pptx", string> = {
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+};
+
+/**
+ * Convert a draft PDF to an Office format (docx/xlsx/pptx) via headless
+ * LibreOffice in pdf-tools. Produces a download artifact — the working
+ * draft is untouched. Fidelity is layout-locked (text boxes, not flowing
+ * prose): honest export, same class as free-tier converters.
+ */
+app.post("/pdf-to-office", async (c) => {
+  const user = c.get("user");
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+  const organizationId = c.get("organization").id;
+  const publicId = publicIdFromPath(new URL(c.req.url).pathname);
+  if (!publicId) return c.json({ error: "not_found" }, 404);
+
+  const parsed = officeBodySchema.safeParse(
+    await c.req.json().catch(() => ({}))
+  );
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+  const format = parsed.data.format;
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocByPublicId(db, organizationId, publicId);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  try {
+    await assertConvertEnabled(c.env, organizationId);
+  } catch (error) {
+    if (error instanceof FeatureDisabledError) {
+      return c.json({ error: error.code }, 403);
+    }
+    throw error;
+  }
+
+  let office: ArrayBuffer;
+  try {
+    office = await pdfToOfficeBytes(c.env, {
+      bytes: await object.arrayBuffer(),
+      format,
+    });
+  } catch (error) {
+    if (error instanceof ConversionError) {
+      return c.json(
+        { error: error.message },
+        error.statusCode === 504 ? 504 : 502
+      );
+    }
+    throw error;
+  }
+
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, office, {
+    httpMetadata: { contentType: OFFICE_CONTENT_TYPES[format] },
+    customMetadata: {
+      organizationId,
+      uploadedBy: user.user.id,
+      convertedFrom: doc.storageKey,
+    },
+  });
+
+  const origin = new URL(c.req.url).origin;
+  const token = await createDownloadToken(c.env, {
+    userId: user.user.id,
+    organizationId,
+    storageKey: storageId,
+    documentName: `${doc.name}.${format}`,
+    documentId: doc.id,
+    actorType: "user",
+  });
+
+  return c.json({
+    success: true,
+    storageId,
+    format,
+    size: office.byteLength,
     downloadUrl: token
       ? `${origin}/api/v1/documents/download-file?token=${encodeURIComponent(token)}`
       : null,

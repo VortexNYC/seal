@@ -548,6 +548,28 @@ export function registerDocumentAgentTools(
   );
 
   server.tool(
+    "seal_convert_document_pdf_to_office",
+    "Convert a draft PDF to an Office file — docx/xlsx/pptx artifact with download_url. Layout-locked fidelity (Draw import); working draft unchanged.",
+    {
+      id: z.string().describe("Document ID"),
+      format: z
+        .enum(["docx", "xlsx", "pptx"])
+        .default("docx")
+        .describe("Output format"),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/to-office",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
     "seal_ocr_document_pdf",
     "OCR a draft PDF — adds a searchable text layer to scanned/image pages (ocrmypdf --skip-text; existing text preserved).",
     {

@@ -30,6 +30,7 @@ async function handle(request) {
       url.pathname === "/decrypt-pdf" ||
       url.pathname === "/flatten-pdf" ||
       url.pathname === "/pdf-to-images" ||
+      url.pathname === "/pdf-to-office" ||
       url.pathname === "/ocr-pdf" ||
       url.pathname === "/to-pdfa")
   ) {

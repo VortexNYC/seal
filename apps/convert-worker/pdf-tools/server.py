@@ -72,6 +72,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._ocr(pdf)
                 return
 
+            if self.path.startswith("/pdf-to-office"):
+                self._pdf_to_office(pdf)
+                return
+
             self._send(404, b"not found")
         except RuntimeError as e:
             self._send(422, str(e).encode())
@@ -134,6 +138,41 @@ class Handler(BaseHTTPRequestHandler):
         )
         with open(dst, "rb") as f:
             self._send(200, f.read(), "application/pdf")
+
+    def _pdf_to_office(self, pdf: bytes) -> None:
+        qs = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+        fmt = (qs.get("format", ["docx"])[0]).lower()
+        if fmt not in ("docx", "xlsx", "pptx"):
+            self._send(400, b"format must be docx, xlsx, or pptx")
+            return
+
+        workdir = tempfile.mkdtemp(prefix="office-")
+        src = os.path.join(workdir, "in.pdf")
+        with open(src, "wb") as f:
+            f.write(pdf)
+
+        # PDF imports into Draw; fidelity is layout-locked (text boxes, not
+        # flowing prose) — honest export, same class as free-tier tools.
+        run(
+            [
+                "soffice",
+                "--headless",
+                # Per-request user profile — concurrent soffice runs share a
+                # lock otherwise.
+                f"-env:UserInstallation=file://{workdir}/lo-profile",
+                "--convert-to",
+                fmt,
+                "--outdir",
+                workdir,
+                src,
+            ],
+            workdir,
+        )
+        out = os.path.join(workdir, f"in.{fmt}")
+        if not os.path.exists(out):
+            raise RuntimeError(f"libreoffice produced no {fmt}")
+        with open(out, "rb") as f:
+            self._send(200, f.read(), "application/octet-stream")
 
 
 def main() -> None:

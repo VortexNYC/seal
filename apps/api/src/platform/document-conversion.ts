@@ -388,6 +388,48 @@ export async function pdfToImagesZip(
   return response.arrayBuffer();
 }
 
+/** Convert a PDF to docx/xlsx/pptx via pdf-tools (headless LibreOffice). */
+export async function pdfToOfficeBytes(
+  env: CloudflareBindings,
+  input: {
+    bytes: ArrayBuffer | Uint8Array;
+    format: "docx" | "xlsx" | "pptx";
+  }
+): Promise<ArrayBuffer> {
+  if (!env.SEAL_CONVERT_WORKER) {
+    throw new ConversionError(
+      "converter_not_configured",
+      503,
+      "SEAL_CONVERT_WORKER service binding is not configured"
+    );
+  }
+
+  const response = await env.SEAL_CONVERT_WORKER.fetch(
+    new Request(
+      `http://internal/pdf-to-office?format=${input.format}`,
+      {
+        method: "POST",
+        body: new Uint8Array(input.bytes),
+        headers: {
+          "Content-Type": "application/pdf",
+          "x-internal-api-key": env.INTERNAL_API_KEY,
+        },
+      }
+    )
+  );
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new ConversionError(
+      "pdf_to_office_failed",
+      response.status === 504 ? 504 : 502,
+      text
+    );
+  }
+
+  return response.arrayBuffer();
+}
+
 /** Extract embedded text from a PDF via pdf-tools (pdftotext -layout). */
 export async function pdfToText(
   env: CloudflareBindings,

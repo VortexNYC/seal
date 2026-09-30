@@ -507,6 +507,35 @@ describe("document power routes", () => {
     expect(object).not.toBeNull();
   });
 
+  it("pdf-to-office produces an Office artifact without touching the draft", async () => {
+    const app = await seedFixture();
+    const res = await app.fetch(
+      powerPost(DOC_PUBLIC_ID, "pdf-to-office", { format: "docx" }),
+      env
+    );
+    expect(res.status).toBe(200);
+    const json = z
+      .object({
+        success: z.boolean(),
+        storageId: z.string(),
+        format: z.string(),
+        downloadUrl: z.string().nullable(),
+      })
+      .parse(await res.json());
+    expect(json.format).toBe("docx");
+    const object = await env.DOCUMENTS_BUCKET.get(json.storageId);
+    expect(object).not.toBeNull();
+    expect(object?.customMetadata?.convertedFrom).toBeTruthy();
+
+    // Draft's storageKey must be unchanged (artifact model).
+    const db = createD1(env.D1);
+    const docs = await db
+      .select({ storageKey: documents.storageKey })
+      .from(documents)
+      .where(eq(documents.id, DOC_ID));
+    expect(docs[0]?.storageKey).not.toBe(json.storageId);
+  });
+
   it("ocr-pdf claims the searchable PDF onto the doc", async () => {
     const app = await seedFixture();
     const res = await app.fetch(

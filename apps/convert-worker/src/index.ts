@@ -369,6 +369,45 @@ app.post("/pdf-to-images", async (c) => {
   });
 });
 
+/**
+ * Convert a PDF to an Office format via pdf-tools (headless LibreOffice).
+ * Query: format=docx|xlsx|pptx (default docx). Returns the office file.
+ */
+app.post("/pdf-to-office", async (c) => {
+  const contentType = c.req.header("content-type") ?? "";
+  const body = await c.req.arrayBuffer();
+  if (!contentType.startsWith("application/pdf")) {
+    return c.text("Expected application/pdf body", 400);
+  }
+  const url = new URL(c.req.url);
+  const format = url.searchParams.get("format") ?? "docx";
+
+  const id = c.env.PDF_TOOLS.idFromName("pdftools");
+  const container = c.env.PDF_TOOLS.get(id);
+  const response = await container.fetch(
+    new Request(
+      `http://internal/pdf-to-office?format=${encodeURIComponent(format)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/pdf" },
+        body,
+      }
+    )
+  );
+
+  if (!response.ok) {
+    const text = await response.text();
+    return new Response(text, { status: response.status });
+  }
+
+  return new Response(await response.arrayBuffer(), {
+    headers: {
+      "Content-Type": "application/octet-stream",
+      "Content-Disposition": `attachment; filename="converted.${format}"`,
+    },
+  });
+});
+
 /** Extract embedded text via pdf-tools (pdftotext -layout). */
 app.post("/pdf-to-text", async (c) => {
   const contentType = c.req.header("content-type") ?? "";

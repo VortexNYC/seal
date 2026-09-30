@@ -1925,6 +1925,44 @@ paths:
                   dpi: { type: number }
                   download_url: { type: string, nullable: true }
 
+  /documents/pdf/to-office:
+    post:
+      tags: [Documents]
+      operationId: convertDocumentPdfToOffice
+      summary: Convert a draft PDF to an Office format
+      description: >
+        Runs headless LibreOffice in the pdf-tools container and returns a
+        docx/xlsx/pptx artifact with a `download_url`. Artifact model — the
+        working draft is unchanged. Fidelity is layout-locked (PDF imports
+        into Draw: text boxes, not flowing prose). Honours the org
+        `egress.allow_convert` gate.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string }
+                format:
+                  type: string
+                  enum: [docx, xlsx, pptx]
+                  default: docx
+      responses:
+        "200":
+          description: Office file created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  storage_id: { type: string }
+                  format: { type: string }
+                  size: { type: integer }
+                  download_url: { type: string, nullable: true }
+
   /documents/pdf/ocr:
     post:
       tags: [Documents]
