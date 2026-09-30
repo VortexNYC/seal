@@ -2269,6 +2269,26 @@ export async function flattenDocumentPdf(
   );
 }
 
+const exportPdfImagesResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  size: z.number().int(),
+  format: z.enum(["png", "jpeg"]),
+  dpi: z.number(),
+  downloadUrl: z.string().nullable(),
+});
+export async function exportDocumentPdfImages(
+  organizationSlug: string,
+  publicId: string,
+  input: { format?: "png" | "jpeg"; dpi?: number }
+): Promise<z.infer<typeof exportPdfImagesResultSchema>> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/export-pdf-images`,
+    exportPdfImagesResultSchema,
+    { method: "POST", body: JSON.stringify(input) }
+  );
+}
+
 const documentLayoutBlocksSchema = z.object({
   blocks: z.array(
     z.object({
