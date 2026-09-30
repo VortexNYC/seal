@@ -1772,3 +1772,46 @@ export const jobs = sqliteTable(
     index("jobs_orgStatus_idx").on(table.organizationId, table.status),
   ]
 );
+
+export const revisionSuggestions = sqliteTable(
+  "revision_suggestions",
+  {
+    id: text("id").primaryKey(),
+    publicId: text("public_id").notNull().unique(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    documentId: text("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    /** Optional link back to the review cell that produced it. */
+    reviewCellId: text("review_cell_id"),
+    /** insert | delete | replace */
+    kind: text("kind").notNull(),
+    /** pending | accepted | rejected */
+    status: text("status").notNull().default("pending"),
+    /** Verbatim quote from the document text the edit attaches to. */
+    anchorQuote: text("anchor_quote").notNull(),
+    anchorPage: integer("anchor_page"),
+    /** JSON {x,y,width,height} — normalized page geometry. */
+    anchorBbox: text("anchor_bbox"),
+    /** Replacement text for replace; inserted text for insert. */
+    proposedText: text("proposed_text"),
+    rationale: text("rationale"),
+    /** Set on accept — the derived counter-proposal draft. */
+    derivedDocumentId: text("derived_document_id"),
+    createdBy: text("created_by").notNull(), // agent | user
+    createdById: text("created_by_id"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    resolvedAt: integer("resolved_at", { mode: "timestamp_ms" }),
+  },
+  (table) => [
+    index("revisionSuggestions_doc_idx").on(table.documentId),
+    index("revisionSuggestions_orgStatus_idx").on(
+      table.organizationId,
+      table.status
+    ),
+  ]
+);
