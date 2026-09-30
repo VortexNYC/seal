@@ -3474,6 +3474,21 @@ export async function acceptRevision(
   );
 }
 
+export async function acceptAllRevisions(
+  slug: string,
+  documentId: string,
+  output: "pdf" | "docx" = "pdf"
+): Promise<{ derived_document_id: string; accepted: number }> {
+  return apiFetch(
+    `${reviewsBase(slug)}/revisions/accept-all`,
+    z.object({ derived_document_id: z.string(), accepted: z.number() }),
+    {
+      method: "POST",
+      body: JSON.stringify({ document_id: documentId, output }),
+    }
+  );
+}
+
 export async function rejectRevision(
   slug: string,
   id: string

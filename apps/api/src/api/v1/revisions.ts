@@ -1,8 +1,10 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { z } from "zod";
 
 import { createD1 } from "../../global/db.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import {
+  acceptAllPendingForDocument,
   acceptRevision,
   createRevision,
   listRevisions,
@@ -86,6 +88,41 @@ app.get("/", async (c) => {
 });
 
 /** Accept — applies the edit and materializes a derived draft document. */
+/** Accept every pending revision on a document → one derived doc. */
+app.post("/accept-all", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+  const parsed = z
+    .object({
+      document_id: z.string().min(1),
+      output: z.enum(["pdf", "docx"]).optional(),
+    })
+    .safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+  const db = createD1(c.env.D1);
+  try {
+    const result = await acceptAllPendingForDocument(
+      c.env,
+      db,
+      organizationId,
+      parsed.data.document_id,
+      { output: parsed.data.output === "docx" ? "docx" : "pdf" }
+    );
+    return c.json(result);
+  } catch (err) {
+    if (err instanceof RevisionError) {
+      return c.json({ error: err.code }, err.status);
+    }
+    throw err;
+  }
+});
+
 app.post("/:id/accept", async (c) => {
   const mcp = c.get("mcp");
   if (!mcpHasScope(mcp, "documents:write")) {

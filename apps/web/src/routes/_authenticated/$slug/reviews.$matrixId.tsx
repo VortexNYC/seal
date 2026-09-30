@@ -23,6 +23,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import {
+  acceptAllRevisions,
   acceptRevision,
   getDocuments,
   getReviewMatrix,
@@ -451,6 +452,18 @@ function RevisionsRail({
     docIds.has(r.document_id)
   );
 
+  const bulkResolve = useMutation({
+    mutationFn: (args: { documentId: string; output: "pdf" | "docx" }) =>
+      acceptAllRevisions(slug, args.documentId, args.output),
+    onSuccess: (r, args) => {
+      toast.success(
+        `${r.accepted} redline${r.accepted === 1 ? "" : "s"} accepted — one ${args.output === "docx" ? "Word tracked-changes" : "PDF"} draft`
+      );
+      void queryClient.invalidateQueries({ queryKey: ["revisions", slug] });
+    },
+    onError: (e) => toast.error(getErrorMessage(e)),
+  });
+
   const resolve = useMutation({
     mutationFn: (args: {
       id: string;
@@ -476,11 +489,49 @@ function RevisionsRail({
 
   if (pending.length === 0) return null;
 
+  const byDoc = new Map<string, typeof pending>();
+  for (const r of pending) {
+    byDoc.set(r.document_id, [...(byDoc.get(r.document_id) ?? []), r]);
+  }
+
   return (
     <section className="mt-8">
       <h2 className="text-sm font-semibold">
         Pending redlines ({pending.length})
       </h2>
+      {[...byDoc.entries()].map(([docId, revs]) => (
+        <div
+          key={docId}
+          className="border-border mt-3 flex items-center justify-between rounded-md border px-3 py-2"
+        >
+          <span className="text-muted-foreground text-xs">
+            {revs.length} on {docId.slice(0, 8)}…
+          </span>
+          <div className="flex gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={bulkResolve.isPending}
+              onClick={() =>
+                bulkResolve.mutate({ documentId: docId, output: "pdf" })
+              }
+            >
+              <CheckIcon className="mr-1 size-3" /> Accept all → PDF
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={bulkResolve.isPending}
+              title="Accept all as one Word tracked-changes file"
+              onClick={() =>
+                bulkResolve.mutate({ documentId: docId, output: "docx" })
+              }
+            >
+              <FileTextIcon className="mr-1 size-3" /> Accept all → .docx
+            </Button>
+          </div>
+        </div>
+      ))}
       <ul className="mt-2 flex flex-col gap-2">
         {pending.map((rev) => (
           <li

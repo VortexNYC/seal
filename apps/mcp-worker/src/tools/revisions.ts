@@ -111,6 +111,27 @@ export function registerRevisionTools(
   );
 
   server.tool(
+    "seal_accept_all_revisions",
+    "Accept every pending revision on a document in one shot — one derived draft (or one tracked-changes .docx with output=docx).",
+    {
+      document_id: z.string().describe("Document public ID"),
+      output: z
+        .enum(["pdf", "docx"])
+        .optional()
+        .describe("docx = Word tracked-changes artifact"),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/revisions/accept-all",
+        { document_id: args.document_id, output: args.output },
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
     "seal_reject_revision",
     "Reject a pending revision — closes it without producing a document.",
     { id: z.string().describe("Revision public ID (rev_…)") },
