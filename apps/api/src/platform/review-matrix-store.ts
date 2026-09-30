@@ -6,7 +6,7 @@
  * do not hang the Hono request lifecycle on those.
  */
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, count, desc, eq, inArray } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import {
@@ -608,6 +608,63 @@ export async function generateReviewMatrix(
     .where(eq(reviewMatrices.id, matrix.id));
 
   return getReviewMatrix(db, organizationId, matrixPublicId);
+}
+
+/** Lightweight list for the UI index — no row/cell fan-out. */
+export async function listReviewMatrices(
+  db: Db,
+  organizationId: string
+): Promise<
+  {
+    id: string;
+    title: string;
+    model: string;
+    status: string;
+    row_count: number;
+    column_count: number;
+    created_at: string;
+    updated_at: string;
+  }[]
+> {
+  const rows = await db
+    .select()
+    .from(reviewMatrices)
+    .where(eq(reviewMatrices.organizationId, organizationId))
+    .orderBy(desc(reviewMatrices.createdAt));
+  const rowCounts = new Map<string, number>();
+  if (rows.length > 0) {
+    const counts = await db
+      .select({ matrixId: reviewRows.matrixId, n: count() })
+      .from(reviewRows)
+      .where(
+        inArray(
+          reviewRows.matrixId,
+          rows.map((m) => m.id)
+        )
+      )
+      .groupBy(reviewRows.matrixId);
+    for (const r of counts) rowCounts.set(r.matrixId, r.n);
+  }
+  return rows.map((m) => {
+    let columnCount = 0;
+    try {
+      columnCount = ZReviewColumn.array().parse(
+        JSON.parse(m.columnsConfig)
+      ).length;
+    } catch {
+      columnCount = 0;
+    }
+    return {
+      id: m.publicId,
+      title: m.title,
+      model: m.model,
+      status: m.status,
+      row_count: rowCounts.get(m.id) ?? 0,
+      column_count: columnCount,
+      created_at: m.createdAt.toISOString(),
+      updated_at: m.updatedAt.toISOString(),
+    };
+  });
 }
 
 /**

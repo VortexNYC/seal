@@ -3209,3 +3209,252 @@ export async function getAuditLogs(
   if (params?.cursor) url.searchParams.set("cursor", params.cursor);
   return apiFetch(`${url.pathname}${url.search}`, auditLogListSchema);
 }
+
+// ── Reviews (legal review matrix + packs + redlines) ──────────────────────
+
+const reviewColumnSchema = z.object({
+  index: z.number().int(),
+  name: z.string(),
+  prompt: z.string(),
+});
+
+const reviewCitationSchema = z.object({
+  documentId: z.string(),
+  page: z.number().int().optional(),
+  bbox: z
+    .object({
+      x: z.number(),
+      y: z.number(),
+      width: z.number(),
+      height: z.number(),
+    })
+    .optional(),
+  quote: z.string(),
+});
+export type ApiReviewCitation = z.infer<typeof reviewCitationSchema>;
+
+const reviewCellSchema = z.object({
+  id: z.string(),
+  row_id: z.string(),
+  column_index: z.number().int(),
+  status: z.enum(["pending", "generating", "done", "error"]),
+  summary: z.string().nullable(),
+  flag: z.enum(["green", "amber", "red", "grey"]).nullable(),
+  reasoning: z.string().nullable(),
+  citations: z.array(reviewCitationSchema),
+});
+export type ApiReviewCell = z.infer<typeof reviewCellSchema>;
+
+const reviewMatrixSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  model: z.string(),
+  status: z.string(),
+  columns: z.array(reviewColumnSchema),
+  rows: z.array(
+    z.object({
+      id: z.string(),
+      document_id: z.string(),
+      cells: z.array(reviewCellSchema),
+    })
+  ),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+export type ApiReviewMatrix = z.infer<typeof reviewMatrixSchema>;
+
+const reviewMatrixListItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  model: z.string(),
+  status: z.string(),
+  row_count: z.number(),
+  column_count: z.number(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+export type ApiReviewMatrixListItem = z.infer<
+  typeof reviewMatrixListItemSchema
+>;
+
+const reviewPackSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string().nullable(),
+  model: z.string().nullable(),
+  columns: z.array(reviewColumnSchema),
+  builtin: z.boolean(),
+  created_at: z.string(),
+});
+export type ApiReviewPack = z.infer<typeof reviewPackSchema>;
+
+const revisionSchema = z.object({
+  id: z.string(),
+  document_id: z.string(),
+  review_cell_id: z.string().nullable(),
+  kind: z.enum(["insert", "delete", "replace"]),
+  status: z.enum(["pending", "accepted", "rejected"]),
+  anchor_quote: z.string(),
+  anchor_page: z.number().nullable(),
+  anchor_bbox: z
+    .object({
+      x: z.number(),
+      y: z.number(),
+      width: z.number(),
+      height: z.number(),
+    })
+    .nullable(),
+  proposed_text: z.string().nullable(),
+  rationale: z.string().nullable(),
+  derived_document_id: z.string().nullable(),
+  created_by: z.string(),
+  created_at: z.string(),
+  resolved_at: z.string().nullable(),
+});
+export type ApiRevision = z.infer<typeof revisionSchema>;
+
+const reviewsBase = (slug: string) =>
+  `/api/reviews/${encodeURIComponent(slug)}`;
+
+export async function getReviewMatrices(
+  slug: string
+): Promise<ApiReviewMatrixListItem[]> {
+  const data = await apiFetch(
+    reviewsBase(slug),
+    z.object({ matrices: z.array(reviewMatrixListItemSchema) })
+  );
+  return data.matrices;
+}
+
+export async function getReviewMatrix(
+  slug: string,
+  id: string
+): Promise<ApiReviewMatrix> {
+  return apiFetch(
+    `${reviewsBase(slug)}/${encodeURIComponent(id)}`,
+    reviewMatrixSchema
+  );
+}
+
+export async function createReviewMatrix(
+  slug: string,
+  input: {
+    title: string;
+    documentIds: string[];
+    pack_id?: string;
+    model?: string;
+    columns?: { index: number; name: string; prompt: string }[];
+  }
+): Promise<ApiReviewMatrix> {
+  return apiFetch(reviewsBase(slug), reviewMatrixSchema, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function generateReviewMatrix(
+  slug: string,
+  id: string
+): Promise<{ job_id: string; status: string }> {
+  return apiFetch(
+    `${reviewsBase(slug)}/${encodeURIComponent(id)}/generate`,
+    z.object({ job_id: z.string(), status: z.string() }),
+    { method: "POST" }
+  );
+}
+
+/**
+ * SSE stream of a generating matrix — same-origin session auth, so plain
+ * EventSource works (cookies travel automatically). Returns a close handle.
+ */
+export function openReviewStream(
+  slug: string,
+  id: string,
+  onState: (state: {
+    id: string;
+    status: string;
+    cells: {
+      id: string;
+      row_id: string;
+      column_index: number;
+      status: string;
+      flag: string | null;
+      summary: string | null;
+    }[];
+  }) => void
+): () => void {
+  const source = new EventSource(
+    `${getBaseUrl()}${reviewsBase(slug)}/${encodeURIComponent(id)}/stream`
+  );
+  source.addEventListener("state", (ev) => {
+    try {
+      onState(JSON.parse((ev as MessageEvent).data as string));
+    } catch {
+      // malformed frame — ignore
+    }
+  });
+  return () => source.close();
+}
+
+export async function getReviewPacks(slug: string): Promise<ApiReviewPack[]> {
+  const data = await apiFetch(
+    `${reviewsBase(slug)}/packs`,
+    z.object({ packs: z.array(reviewPackSchema) })
+  );
+  return data.packs;
+}
+
+export async function listRevisions(
+  slug: string,
+  options: { documentId?: string; status?: string } = {}
+): Promise<ApiRevision[]> {
+  const query = new URLSearchParams();
+  if (options.documentId) query.set("document_id", options.documentId);
+  if (options.status) query.set("status", options.status);
+  const qs = query.toString();
+  const data = await apiFetch(
+    `${reviewsBase(slug)}/revisions${qs ? `?${qs}` : ""}`,
+    z.object({ revisions: z.array(revisionSchema) })
+  );
+  return data.revisions;
+}
+
+export async function proposeRevision(
+  slug: string,
+  input: {
+    document_id: string;
+    kind: "insert" | "delete" | "replace";
+    anchor_quote: string;
+    proposed_text?: string;
+    rationale?: string;
+    review_cell_id?: string;
+  }
+): Promise<ApiRevision> {
+  return apiFetch(`${reviewsBase(slug)}/revisions`, revisionSchema, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function acceptRevision(
+  slug: string,
+  id: string,
+  output: "pdf" | "docx" = "pdf"
+): Promise<ApiRevision> {
+  return apiFetch(
+    `${reviewsBase(slug)}/revisions/${encodeURIComponent(id)}/accept${output === "docx" ? "?output=docx" : ""}`,
+    revisionSchema,
+    { method: "POST" }
+  );
+}
+
+export async function rejectRevision(
+  slug: string,
+  id: string
+): Promise<ApiRevision> {
+  return apiFetch(
+    `${reviewsBase(slug)}/revisions/${encodeURIComponent(id)}/reject`,
+    revisionSchema,
+    { method: "POST" }
+  );
+}
