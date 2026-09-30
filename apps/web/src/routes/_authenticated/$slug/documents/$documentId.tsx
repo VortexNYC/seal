@@ -5,12 +5,7 @@ import {
   createFileRoute,
   useRouter,
 } from "@tanstack/react-router";
-import {
-  ArrowLeftIcon,
-  Loader2Icon,
-  SaveIcon,
-  SendIcon,
-} from "lucide-react";
+import { ArrowLeftIcon, Loader2Icon, SaveIcon, SendIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 
 import { FIELD_TYPES } from "@/components/documents/field-toolbar";
@@ -52,13 +47,13 @@ import { DocumentCanvas } from "../../../../components/documents/document-canvas
 import { DocumentCapabilityRail } from "../../../../components/documents/document-capability-rail";
 import { DocumentOfficeEditPanel } from "../../../../components/documents/document-office-edit-panel";
 import { DocumentPagesCapabilityPanel } from "../../../../components/documents/document-pages-capability-panel";
+import { DocumentPresence } from "../../../../components/documents/document-presence";
+import { DocumentSidebar } from "../../../../components/documents/document-sidebar";
 import {
   DocumentLayoutCanvasOverlay,
   DocumentStructurePanel,
 } from "../../../../components/documents/document-structure-panel";
 import type { DocumentCapabilityId } from "../../../../components/documents/document-workspace";
-import { DocumentPresence } from "../../../../components/documents/document-presence";
-import { DocumentSidebar } from "../../../../components/documents/document-sidebar";
 import { FieldOptionsDialog } from "../../../../components/documents/field-options-dialog";
 import { FieldPropertiesDialog } from "../../../../components/documents/field-properties-dialog";
 import { useDocumentState } from "../../../../components/documents/hooks/use-document-state";
@@ -68,16 +63,17 @@ import {
 } from "../../../../components/documents/hooks/use-field-placement";
 import { usePdfPageThumbnails } from "../../../../components/documents/hooks/use-pdf-page-thumbnails";
 import { usePdfViewer } from "../../../../components/documents/hooks/use-pdf-viewer";
+import { useSectionState } from "../../../../components/documents/hooks/use-section-state";
+import { PaymentConfigModal } from "../../../../components/documents/payment-config-modal";
+import { RecipientOptionsDialog } from "../../../../components/documents/recipient-options-dialog";
+import { RecipientSelectorDialog } from "../../../../components/documents/recipient-selector-dialog";
+import { RemoveRecipientDialog } from "../../../../components/documents/remove-recipient-dialog";
+import { SaveAsTemplateDialog } from "../../../../components/documents/save-as-template-dialog";
+import { SendDocumentDialog } from "../../../../components/documents/send-document-dialog";
 import {
   DocumentViewerShell,
   ThumbnailSidebar,
 } from "../../../../components/kumo-docs";
-import { useSectionState } from "../../../../components/documents/hooks/use-section-state";
-import { PaymentConfigModal } from "../../../../components/documents/payment-config-modal";
-import { RecipientOptionsDialog } from "../../../../components/documents/recipient-options-dialog";import { RecipientSelectorDialog } from "../../../../components/documents/recipient-selector-dialog";
-import { RemoveRecipientDialog } from "../../../../components/documents/remove-recipient-dialog";
-import { SaveAsTemplateDialog } from "../../../../components/documents/save-as-template-dialog";
-import { SendDocumentDialog } from "../../../../components/documents/send-document-dialog";
 
 export const Route = createFileRoute(
   "/_authenticated/$slug/documents/$documentId"
@@ -85,11 +81,24 @@ export const Route = createFileRoute(
   component: DocumentDetailPage,
   pendingComponent: DocumentDetailSkeleton,
   errorComponent: DocumentErrorComponent,
-  validateSearch: (search: Record<string, unknown>): { focus?: "recipients" | "send" } => {
+  validateSearch: (
+    search: Record<string, unknown>
+  ): {
+    focus?: "recipients" | "send";
+    hl?: string;
+  } => {
+    const out: { focus?: "recipients" | "send"; hl?: string } = {};
     if (search.focus === "recipients" || search.focus === "send") {
-      return { focus: search.focus };
+      out.focus = search.focus;
     }
-    return {};
+    // ?hl=page,x,y,w,h — citation/deep-link highlight, percent-of-page
+    if (
+      typeof search.hl === "string" &&
+      /^\d+,(\d+\.?\d*,){3}\d+\.?\d*$/.test(search.hl)
+    ) {
+      out.hl = search.hl;
+    }
+    return out;
   },
   head: () => ({
     meta: [
@@ -127,7 +136,7 @@ function DocumentErrorComponent(props: ErrorComponentProps) {
 
 function DocumentDetailPage() {
   const { slug, documentId } = Route.useParams();
-  const { focus } = Route.useSearch();
+  const { focus, hl } = Route.useSearch();
   const documentPublicId = documentId;
   const router = useRouter();
 
@@ -250,13 +259,29 @@ function DocumentDetailPage() {
     : false;
 
   // ── Custom hooks ────────────────────────────────────────────────────────
-  const [capability, setCapability] =
-    useState<DocumentCapabilityId>("fields");
+  const [capability, setCapability] = useState<DocumentCapabilityId>("fields");
   const [layoutActiveBlockId, setLayoutActiveBlockId] = useState<string | null>(
     null
   );
   const [pdfReloadKey, setPdfReloadKey] = useState(0);
   const pdfViewer = usePdfViewer(slug, documentPublicId, pdfReloadKey);
+
+  // ?hl=page,x,y,w,h — citation/deep-link highlight (percent-of-page)
+  const [hlRect, setHlRect] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
+  const hlApplied = useRef(false);
+  useEffect(() => {
+    if (!hl || hlApplied.current || !pdfViewer.numPages) return;
+    const [page, x, y, w, h] = hl.split(",").map(Number);
+    if (!page || page < 1 || page > pdfViewer.numPages) return;
+    hlApplied.current = true;
+    pdfViewer.setCurrentPage(page);
+    setHlRect({ x, y, w, h });
+  }, [hl, pdfViewer.numPages, pdfViewer.setCurrentPage]);
 
   const saveMarkupMutation = useMutation({
     mutationFn: async (buffer: ArrayBuffer) => {
@@ -328,8 +353,7 @@ function DocumentDetailPage() {
     !documentData.workflowStatus ||
     prepStatuses.has(documentData.workflowStatus);
 
-  const canEdit =
-    documentData.status === "active" && isPrepStatus;
+  const canEdit = documentData.status === "active" && isPrepStatus;
 
   // SEA-85: OCR/detect field_candidates → one-tap Accept on Fields canvas.
   const fieldSuggestions = useAIFieldSuggestions(documentPublicId, {
@@ -419,8 +443,7 @@ function DocumentDetailPage() {
       signatureFields.map((f) => ({
         publicId: f.publicId,
         label: f.label,
-        bindingKey:
-          f.properties?.bindingKey ?? f.properties?.binding_key ?? "",
+        bindingKey: f.properties?.bindingKey ?? f.properties?.binding_key ?? "",
       })),
     [signatureFields]
   );
@@ -654,206 +677,223 @@ function DocumentDetailPage() {
                 />
               }
               main={
-            <div
-              ref={pdfViewer.pdfWrapperRef}
-              className="bg-background relative flex min-h-0 flex-col gap-3 p-3 md:p-4"
-            >
-              {canEdit ? (
-                <DocumentCapabilityRail
-                  active={capability}
-                  onChange={setCapability}
-                />
-              ) : null}
+                <div
+                  ref={pdfViewer.pdfWrapperRef}
+                  className="bg-background relative flex min-h-0 flex-col gap-3 p-3 md:p-4"
+                >
+                  {canEdit ? (
+                    <DocumentCapabilityRail
+                      active={capability}
+                      onChange={setCapability}
+                    />
+                  ) : null}
 
-              {sharedPdfCanvas && pdfViewer.pdfUrl ? (
-                <>
-                  {canEdit &&
-                  isScannedOrImageDocument &&
-                  capability === "fields" ? (
-                    <div className="border-kumo-warning/30 bg-kumo-warning-tint/40 text-kumo-warning rounded-lg border px-3 py-2 text-xs">
-                      This is a scanned or image-only PDF. Field detection is
-                      not available — drag fields onto the document manually.
-                    </div>
-                  ) : null}
-                  {canEdit &&
-                  capability === "fields" &&
-                  fieldSuggestions.suggestions &&
-                  fieldSuggestions.suggestions.fields.length > 0 ? (
-                    <AIFieldReviewBar
-                      suggestions={fieldSuggestions.suggestions}
-                      selectedIndices={fieldSuggestions.selectedIndices}
-                      isApplying={fieldSuggestions.isApplying}
-                      selectAll={fieldSuggestions.selectAll}
-                      selectHighConfidence={
-                        fieldSuggestions.selectHighConfidence
-                      }
-                      handleApply={() => {
-                        void fieldSuggestions.handleApply();
-                      }}
-                      handleDismiss={() => {
-                        void fieldSuggestions.handleDismiss();
-                      }}
-                    />
-                  ) : null}
-                  <DocumentCanvas
-                    src={pdfViewer.pdfUrl}
-                    interaction={
-                      !canEdit ||
-                      capability === "pages" ||
-                      capability === "layout"
-                        ? "view"
-                        : capability === "markup"
-                          ? "markup"
-                          : "fields"
-                    }
-                    currentPage={pdfViewer.currentPage}
-                    onPageChange={pdfViewer.handlePageChange}
-                    onZoomChange={pdfViewer.setCurrentZoom}
-                    onDocumentMeta={(meta) => {
-                      pdfViewer.onDocumentLoadSuccess({
-                        numPages: meta.numPages,
-                      });
-                      pdfViewer.handlePageDimensions(
-                        pdfViewer.currentPage,
-                        meta.pageWidth,
-                        meta.pageHeight
-                      );
-                    }}
-                    fields={fieldPlacement.placedFields}
-                    selectedFieldId={
-                      canEdit && capability === "fields"
-                        ? fieldPlacement.selectedFieldId
-                        : null
-                    }
-                    onFieldSelect={
-                      canEdit && capability === "fields"
-                        ? fieldPlacement.handleFieldSelect
-                        : undefined
-                    }
-                    onFieldUpdate={
-                      canEdit && capability === "fields"
-                        ? fieldPlacement.handleFieldUpdate
-                        : undefined
-                    }
-                    onFieldDragOver={
-                      canEdit && capability === "fields"
-                        ? fieldPlacement.handleFieldDragOver
-                        : undefined
-                    }
-                    onFieldDrop={
-                      canEdit && capability === "fields"
-                        ? fieldPlacement.handleFieldDrop
-                        : undefined
-                    }
-                    fieldContainerRef={pdfViewer.containerRef}
-                    fieldDragging={Boolean(fieldPlacement.draggingFieldType)}
-                    fieldOverlayExtra={
-                      <>
-                        {canEdit &&
-                        capability === "fields" &&
-                        fieldSuggestions.suggestions &&
-                        fieldSuggestions.suggestions.fields.length > 0 ? (
-                          <AIFieldOverlays
-                            suggestions={fieldSuggestions.suggestions}
-                            selectedIndices={fieldSuggestions.selectedIndices}
-                            toggleField={fieldSuggestions.toggleField}
-                            currentPage={pdfViewer.currentPage}
-                            pdfPageWidth={pdfViewer.pdfWidth}
-                            pdfPageHeight={pdfViewer.pdfHeight}
-                          />
-                        ) : null}
-                        {canEdit && capability === "layout" ? (
-                          <DocumentLayoutCanvasOverlay
-                            organizationSlug={slug}
-                            documentPublicId={documentPublicId}
-                            currentPage={pdfViewer.currentPage}
-                            pageWidth={pdfViewer.pdfWidth}
-                            pageHeight={pdfViewer.pdfHeight}
-                            activeBlockId={layoutActiveBlockId}
-                            onActiveBlockIdChange={setLayoutActiveBlockId}
-                          />
-                        ) : null}
-                        {showAiFeatures &&
-                        documentAnnotations.annotations ? (
-                          <AIAnnotationOverlays
-                            annotations={documentAnnotations.annotations}
-                            enabledCategories={
-                              documentAnnotations.enabledCategories
-                            }
-                            currentPage={pdfViewer.currentPage}
-                            pdfPageWidth={pdfViewer.pdfWidth}
-                            pdfPageHeight={pdfViewer.pdfHeight}
-                          />
-                        ) : null}
-                      </>
-                    }
-                    onSaveMarkup={
-                      canEdit && capability === "markup"
-                        ? async (buffer) => {
-                            await saveMarkupMutation.mutateAsync(buffer);
+                  {sharedPdfCanvas && pdfViewer.pdfUrl ? (
+                    <>
+                      {canEdit &&
+                      isScannedOrImageDocument &&
+                      capability === "fields" ? (
+                        <div className="border-kumo-warning/30 bg-kumo-warning-tint/40 text-kumo-warning rounded-lg border px-3 py-2 text-xs">
+                          This is a scanned or image-only PDF. Field detection
+                          is not available — drag fields onto the document
+                          manually.
+                        </div>
+                      ) : null}
+                      {canEdit &&
+                      capability === "fields" &&
+                      fieldSuggestions.suggestions &&
+                      fieldSuggestions.suggestions.fields.length > 0 ? (
+                        <AIFieldReviewBar
+                          suggestions={fieldSuggestions.suggestions}
+                          selectedIndices={fieldSuggestions.selectedIndices}
+                          isApplying={fieldSuggestions.isApplying}
+                          selectAll={fieldSuggestions.selectAll}
+                          selectHighConfidence={
+                            fieldSuggestions.selectHighConfidence
                           }
-                        : undefined
-                    }
-                    savingMarkup={saveMarkupMutation.isPending}
-                  />
-                  {canEdit && capability === "pages" ? (
-                    <DocumentPagesCapabilityPanel
-                      organizationSlug={slug}
-                      documentPublicId={documentPublicId}
-                      pageCount={pdfViewer.numPages ?? 0}
-                      currentPage={pdfViewer.currentPage}
-                      docked
-                      onPdfChanged={() => {
-                        setPdfReloadKey((key) => key + 1);
-                      }}
-                      onPageJump={pdfViewer.handlePageChange}
-                    />
-                  ) : null}
-                  {canEdit && capability === "layout" ? (
-                    <DocumentStructurePanel
+                          handleApply={() => {
+                            void fieldSuggestions.handleApply();
+                          }}
+                          handleDismiss={() => {
+                            void fieldSuggestions.handleDismiss();
+                          }}
+                        />
+                      ) : null}
+                      <DocumentCanvas
+                        src={pdfViewer.pdfUrl}
+                        interaction={
+                          !canEdit ||
+                          capability === "pages" ||
+                          capability === "layout"
+                            ? "view"
+                            : capability === "markup"
+                              ? "markup"
+                              : "fields"
+                        }
+                        currentPage={pdfViewer.currentPage}
+                        onPageChange={pdfViewer.handlePageChange}
+                        onZoomChange={pdfViewer.setCurrentZoom}
+                        onDocumentMeta={(meta) => {
+                          pdfViewer.onDocumentLoadSuccess({
+                            numPages: meta.numPages,
+                          });
+                          pdfViewer.handlePageDimensions(
+                            pdfViewer.currentPage,
+                            meta.pageWidth,
+                            meta.pageHeight
+                          );
+                        }}
+                        fields={fieldPlacement.placedFields}
+                        selectedFieldId={
+                          canEdit && capability === "fields"
+                            ? fieldPlacement.selectedFieldId
+                            : null
+                        }
+                        onFieldSelect={
+                          canEdit && capability === "fields"
+                            ? fieldPlacement.handleFieldSelect
+                            : undefined
+                        }
+                        onFieldUpdate={
+                          canEdit && capability === "fields"
+                            ? fieldPlacement.handleFieldUpdate
+                            : undefined
+                        }
+                        onFieldDragOver={
+                          canEdit && capability === "fields"
+                            ? fieldPlacement.handleFieldDragOver
+                            : undefined
+                        }
+                        onFieldDrop={
+                          canEdit && capability === "fields"
+                            ? fieldPlacement.handleFieldDrop
+                            : undefined
+                        }
+                        fieldContainerRef={pdfViewer.containerRef}
+                        fieldDragging={Boolean(
+                          fieldPlacement.draggingFieldType
+                        )}
+                        fieldOverlayExtra={
+                          <>
+                            {hlRect && pdfViewer.currentPage > 0 ? (
+                              <div
+                                data-testid="citation-highlight"
+                                className="border-kumo-warning bg-kumo-warning/20 pointer-events-none absolute rounded-sm border-2"
+                                style={{
+                                  left: `${hlRect.x}%`,
+                                  top: `${hlRect.y}%`,
+                                  width: `${hlRect.w}%`,
+                                  height: `${hlRect.h}%`,
+                                }}
+                              />
+                            ) : null}
+                            {canEdit &&
+                            capability === "fields" &&
+                            fieldSuggestions.suggestions &&
+                            fieldSuggestions.suggestions.fields.length > 0 ? (
+                              <AIFieldOverlays
+                                suggestions={fieldSuggestions.suggestions}
+                                selectedIndices={
+                                  fieldSuggestions.selectedIndices
+                                }
+                                toggleField={fieldSuggestions.toggleField}
+                                currentPage={pdfViewer.currentPage}
+                                pdfPageWidth={pdfViewer.pdfWidth}
+                                pdfPageHeight={pdfViewer.pdfHeight}
+                              />
+                            ) : null}
+                            {canEdit && capability === "layout" ? (
+                              <DocumentLayoutCanvasOverlay
+                                organizationSlug={slug}
+                                documentPublicId={documentPublicId}
+                                currentPage={pdfViewer.currentPage}
+                                pageWidth={pdfViewer.pdfWidth}
+                                pageHeight={pdfViewer.pdfHeight}
+                                activeBlockId={layoutActiveBlockId}
+                                onActiveBlockIdChange={setLayoutActiveBlockId}
+                              />
+                            ) : null}
+                            {showAiFeatures &&
+                            documentAnnotations.annotations ? (
+                              <AIAnnotationOverlays
+                                annotations={documentAnnotations.annotations}
+                                enabledCategories={
+                                  documentAnnotations.enabledCategories
+                                }
+                                currentPage={pdfViewer.currentPage}
+                                pdfPageWidth={pdfViewer.pdfWidth}
+                                pdfPageHeight={pdfViewer.pdfHeight}
+                              />
+                            ) : null}
+                          </>
+                        }
+                        onSaveMarkup={
+                          canEdit && capability === "markup"
+                            ? async (buffer) => {
+                                await saveMarkupMutation.mutateAsync(buffer);
+                              }
+                            : undefined
+                        }
+                        savingMarkup={saveMarkupMutation.isPending}
+                      />
+                      {canEdit && capability === "pages" ? (
+                        <DocumentPagesCapabilityPanel
+                          organizationSlug={slug}
+                          documentPublicId={documentPublicId}
+                          pageCount={pdfViewer.numPages ?? 0}
+                          currentPage={pdfViewer.currentPage}
+                          docked
+                          onPdfChanged={() => {
+                            setPdfReloadKey((key) => key + 1);
+                          }}
+                          onPageJump={pdfViewer.handlePageChange}
+                        />
+                      ) : null}
+                      {canEdit && capability === "layout" ? (
+                        <DocumentStructurePanel
+                          organizationSlug={slug}
+                          documentPublicId={documentPublicId}
+                          canEdit={canEdit}
+                          currentPage={pdfViewer.currentPage}
+                          pageWidth={pdfViewer.pdfWidth}
+                          pageHeight={pdfViewer.pdfHeight}
+                          docked
+                          activeBlockId={layoutActiveBlockId}
+                          onActiveBlockIdChange={setLayoutActiveBlockId}
+                        />
+                      ) : null}
+                    </>
+                  ) : canEdit && capability === "office" ? (
+                    <DocumentOfficeEditPanel
                       organizationSlug={slug}
                       documentPublicId={documentPublicId}
                       canEdit={canEdit}
-                      currentPage={pdfViewer.currentPage}
-                      pageWidth={pdfViewer.pdfWidth}
-                      pageHeight={pdfViewer.pdfHeight}
-                      docked
-                      activeBlockId={layoutActiveBlockId}
-                      onActiveBlockIdChange={setLayoutActiveBlockId}
+                      onSaved={() => {
+                        setPdfReloadKey((key) => key + 1);
+                      }}
                     />
-                  ) : null}
-                </>
-              ) : canEdit && capability === "office" ? (
-                <DocumentOfficeEditPanel
-                  organizationSlug={slug}
-                  documentPublicId={documentPublicId}
-                  canEdit={canEdit}
-                  onSaved={() => {
-                    setPdfReloadKey((key) => key + 1);
-                  }}
-                />
-              ) : (
-                <>
-                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                    <div className="text-foreground flex items-center gap-3 font-serif text-lg font-medium sm:flex-wrap sm:text-base">
-                      <span>Document Preview</span>
-                      {pdfViewer.numPages && (
-                        <span className="bg-muted text-muted-foreground rounded-full px-2.5 py-1 font-sans text-xs font-medium">
-                          {pdfViewer.numPages}{" "}
-                          {pdfViewer.numPages === 1 ? "page" : "pages"}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="border-border bg-card text-muted-foreground relative overflow-hidden rounded-lg border p-16 text-center shadow-sm">
-                    <div className="flex flex-col items-center gap-3">
-                      <Loader2Icon className="size-5 animate-spin" />
-                      <span>Loading document…</span>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+                  ) : (
+                    <>
+                      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                        <div className="text-foreground flex items-center gap-3 font-serif text-lg font-medium sm:flex-wrap sm:text-base">
+                          <span>Document Preview</span>
+                          {pdfViewer.numPages && (
+                            <span className="bg-muted text-muted-foreground rounded-full px-2.5 py-1 font-sans text-xs font-medium">
+                              {pdfViewer.numPages}{" "}
+                              {pdfViewer.numPages === 1 ? "page" : "pages"}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="border-border bg-card text-muted-foreground relative overflow-hidden rounded-lg border p-16 text-center shadow-sm">
+                        <div className="flex flex-col items-center gap-3">
+                          <Loader2Icon className="size-5 animate-spin" />
+                          <span>Loading document…</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
               }
             />
           </div>
@@ -999,9 +1039,7 @@ function DocumentDetailPage() {
           selectedRecipientId={fieldPlacement.selectedRecipientId}
           onRecipientSelect={fieldPlacement.setSelectedRecipientId}
           onConfirm={fieldPlacement.handleConfirmFieldPlacement}
-          fieldType={
-            fieldPlacement.pendingFieldData?.fieldType || "signature"
-          }
+          fieldType={fieldPlacement.pendingFieldData?.fieldType || "signature"}
           pageNumber={fieldPlacement.pendingFieldData?.page || 1}
         />
 

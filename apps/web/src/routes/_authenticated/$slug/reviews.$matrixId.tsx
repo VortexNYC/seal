@@ -11,7 +11,7 @@ import { Textarea } from "@cloudflare/kumo/components/input";
 import { Select } from "@cloudflare/kumo/components/select";
 import { Table } from "@cloudflare/kumo/components/table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   CheckIcon,
   FileTextIcon,
@@ -263,7 +263,7 @@ function CellDetail({
         <div className="font-medium">Citations</div>
         <ul className="mt-1 flex flex-col gap-2">
           {cell.citations.map((cit, i) => (
-            <CitationRow key={i} citation={cit} />
+            <CitationRow key={i} citation={cit} slug={slug} />
           ))}
           {cell.citations.length === 0 ? (
             <li className="text-muted-foreground text-xs">None</li>
@@ -303,7 +303,13 @@ function CellDetail({
   );
 }
 
-function CitationRow({ citation }: { citation: ApiReviewCitation }) {
+function CitationRow({
+  citation,
+  slug,
+}: {
+  citation: ApiReviewCitation;
+  slug: string;
+}) {
   if (citation.quote === "not_found") {
     return (
       <li className="text-muted-foreground text-xs italic">
@@ -311,6 +317,10 @@ function CitationRow({ citation }: { citation: ApiReviewCitation }) {
       </li>
     );
   }
+  const hl =
+    citation.page && citation.bbox
+      ? `${citation.page},${(citation.bbox.x * 100).toFixed(2)},${(citation.bbox.y * 100).toFixed(2)},${(citation.bbox.width * 100).toFixed(2)},${(citation.bbox.height * 100).toFixed(2)}`
+      : undefined;
   return (
     <li className="border-border rounded-md border p-2 text-xs">
       <blockquote className="text-muted-foreground italic">
@@ -319,7 +329,20 @@ function CitationRow({ citation }: { citation: ApiReviewCitation }) {
       {citation.page ? (
         <div className="text-muted-foreground mt-1">
           p. {citation.page}
-          {citation.bbox ? " · anchored" : ""}
+          {hl ? (
+            <>
+              {" "}
+              ·{" "}
+              <Link
+                to="/$slug/documents/$documentId"
+                params={{ slug, documentId: citation.documentId }}
+                search={{ hl }}
+                className="text-primary underline"
+              >
+                jump to highlight
+              </Link>
+            </>
+          ) : null}
         </div>
       ) : null}
     </li>
