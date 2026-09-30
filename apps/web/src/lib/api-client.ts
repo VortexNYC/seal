@@ -2289,6 +2289,24 @@ export async function exportDocumentPdfImages(
   );
 }
 
+const ocrDocumentPdfResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  pageCount: z.number().int(),
+  lang: z.string(),
+});
+export async function ocrDocumentPdf(
+  organizationSlug: string,
+  publicId: string,
+  input?: { lang?: string }
+): Promise<z.infer<typeof ocrDocumentPdfResultSchema>> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/ocr-pdf`,
+    ocrDocumentPdfResultSchema,
+    { method: "POST", body: JSON.stringify(input ?? {}) }
+  );
+}
+
 const documentLayoutBlocksSchema = z.object({
   blocks: z.array(
     z.object({

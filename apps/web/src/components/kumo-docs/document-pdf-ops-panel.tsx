@@ -23,6 +23,7 @@ export type DocumentPdfOpsPanelProps = {
   protecting?: boolean;
   flattening?: boolean;
   exporting?: boolean;
+  ocred?: boolean;
   merging?: boolean;
   /** Download URL for the last protected copy this session produced. */
   protectedDownloadUrl?: string | null;
@@ -64,6 +65,7 @@ export type DocumentPdfOpsPanelProps = {
   onProtect: (input: { userPassword?: string; ownerPassword?: string }) => void;
   onFlatten: () => void;
   onExportImages: (input: { format: "png" | "jpeg"; dpi: number }) => void;
+  onOcr: (input: { lang: string }) => void;
   onMerge: (input: { sourcePublicIds: string[]; title?: string }) => void;
 };
 
@@ -100,6 +102,7 @@ export function DocumentPdfOpsPanel({
   protecting = false,
   flattening = false,
   exporting = false,
+  ocred = false,
   merging = false,
   protectedDownloadUrl = null,
   imagesDownloadUrl = null,
@@ -114,6 +117,7 @@ export function DocumentPdfOpsPanel({
   onProtect,
   onFlatten,
   onExportImages,
+  onOcr,
   onMerge,
 }: DocumentPdfOpsPanelProps): JSX.Element {
   const [scope, setScope] = useState<"all" | "current">("all");
@@ -140,6 +144,7 @@ export function DocumentPdfOpsPanel({
   const [protectPassword, setProtectPassword] = useState("");
   const [exportFormat, setExportFormat] = useState<"png" | "jpeg">("png");
   const [exportDpi, setExportDpi] = useState(150);
+  const [ocrLang, setOcrLang] = useState("eng");
   const [selectedMergeIds, setSelectedMergeIds] = useState<string[]>([]);
   const [mergeTitle, setMergeTitle] = useState("");
 
@@ -659,6 +664,34 @@ export function DocumentPdfOpsPanel({
             Download images ZIP
           </a>
         ) : null}
+      </div>
+
+      <div className="border-border space-y-2 border-t pt-4">
+        <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
+          Make searchable (OCR)
+        </p>
+        <p className="text-muted-foreground text-[11px]">
+          Add a text layer to scanned pages — existing text is preserved.
+        </p>
+        <Input
+          label="Language"
+          value={ocrLang}
+          onChange={(e) => setOcrLang(e.target.value)}
+          placeholder="eng"
+          maxLength={20}
+        />
+        <Button
+          type="button"
+          size="sm"
+          disabled={
+            ocred ||
+            pageCount < 1 ||
+            !/^[a-z]{3}(\+[a-z]{3})*$/.test(ocrLang.trim())
+          }
+          onClick={() => onOcr({ lang: ocrLang.trim() })}
+        >
+          {ocred ? "Running OCR…" : "Run OCR"}
+        </Button>
       </div>
 
       <div className="border-border space-y-2 border-t pt-4">

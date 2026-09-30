@@ -1925,6 +1925,43 @@ paths:
                   dpi: { type: number }
                   download_url: { type: string, nullable: true }
 
+  /documents/pdf/ocr:
+    post:
+      tags: [Documents]
+      operationId: ocrDocumentPdf
+      summary: OCR a draft PDF (add a searchable text layer)
+      description: >
+        Runs ocrmypdf --skip-text in the pdf-tools container — pages that
+        lack a text layer are OCR'd and existing text is preserved. The
+        searchable PDF claims the document's storageKey. Honours the org
+        `egress.allow_convert` gate.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string }
+                lang:
+                  type: string
+                  pattern: "^[a-z]{3}(\\+[a-z]{3})*$"
+                  default: eng
+                  description: Tesseract language code(s), e.g. eng or eng+fra
+      responses:
+        "200":
+          description: OCR complete
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  storage_id: { type: string }
+                  page_count: { type: integer }
+                  lang: { type: string }
+
   /documents/send:
     post:
       tags: [Documents]

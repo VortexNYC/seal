@@ -341,6 +341,41 @@ app.post("/pdf-to-text", async (c) => {
   });
 });
 
+/**
+ * OCR a PDF via pdf-tools ocrmypdf (--skip-text: only pages lacking a
+ * text layer get OCR'd). Query: lang=eng (tesseract code, + joined).
+ */
+app.post("/ocr-pdf", async (c) => {
+  const contentType = c.req.header("content-type") ?? "";
+  const body = await c.req.arrayBuffer();
+  if (!contentType.startsWith("application/pdf")) {
+    return c.text("Expected application/pdf body", 400);
+  }
+  const lang = new URL(c.req.url).searchParams.get("lang") ?? "eng";
+
+  const id = c.env.PDF_TOOLS.idFromName("pdftools");
+  const container = c.env.PDF_TOOLS.get(id);
+  const response = await container.fetch(
+    new Request(`http://internal/ocr?lang=${encodeURIComponent(lang)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/pdf" },
+      body,
+    })
+  );
+
+  if (!response.ok) {
+    const text = await response.text();
+    return new Response(text, { status: response.status });
+  }
+
+  return new Response(await response.arrayBuffer(), {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": 'attachment; filename="ocred.pdf"',
+    },
+  });
+});
+
 app.post("/convert", async (c) => {
   const contentType = c.req.header("content-type") ?? "";
   if (!contentType.startsWith("multipart/form-data")) {
