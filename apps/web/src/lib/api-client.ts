@@ -2253,6 +2253,22 @@ export async function unlockDocumentPdf(
   );
 }
 
+const flattenDocumentPdfResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  pageCount: z.number().int(),
+});
+export async function flattenDocumentPdf(
+  organizationSlug: string,
+  publicId: string
+): Promise<z.infer<typeof flattenDocumentPdfResultSchema>> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/flatten-pdf`,
+    flattenDocumentPdfResultSchema,
+    { method: "POST", body: JSON.stringify({}) }
+  );
+}
+
 const documentLayoutBlocksSchema = z.object({
   blocks: z.array(
     z.object({

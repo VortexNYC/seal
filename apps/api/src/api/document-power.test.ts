@@ -461,6 +461,30 @@ describe("document power routes", () => {
     expect(docs[0]?.storageKey).toBe(json.storageId);
   });
 
+  it("flatten-pdf swaps storageKey via the guarded claim", async () => {
+    const app = await seedFixture();
+    const res = await app.fetch(
+      powerPost(DOC_PUBLIC_ID, "flatten-pdf", {}),
+      env
+    );
+    expect(res.status).toBe(200);
+    const json = z
+      .object({
+        success: z.boolean(),
+        storageId: z.string(),
+        pageCount: z.number(),
+      })
+      .parse(await res.json());
+    const db = createD1(env.D1);
+    const docs = await db
+      .select({ storageKey: documents.storageKey })
+      .from(documents)
+      .where(eq(documents.id, DOC_ID));
+    expect(docs[0]?.storageKey).toBe(json.storageId);
+    const object = await env.DOCUMENTS_BUCKET.get(json.storageId);
+    expect(object).not.toBeNull();
+  });
+
   it("compress-pdf honours the org convert egress gate", async () => {
     const app = await seedFixture();
     const db = createD1(env.D1);

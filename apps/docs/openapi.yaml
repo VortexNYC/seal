@@ -1851,6 +1851,37 @@ paths:
         "400":
           description: not_encrypted / invalid_pdf / wrong password
 
+  /documents/pdf/flatten:
+    post:
+      tags: [Documents]
+      operationId: flattenDocumentPdf
+      summary: Flatten annotations and form fields into page content
+      description: >
+        Runs pdfengines/flatten — annotation appearance streams and AcroForm
+        values are baked into the page bytes. Seal signature fields live in
+        the database and are unaffected. Honours the org
+        `egress.allow_convert` gate.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string }
+      responses:
+        "200":
+          description: Flattened
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  storage_id: { type: string }
+                  page_count: { type: integer }
+
   /documents/send:
     post:
       tags: [Documents]

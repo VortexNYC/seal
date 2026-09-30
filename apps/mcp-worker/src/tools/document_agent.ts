@@ -504,6 +504,24 @@ export function registerDocumentAgentTools(
   );
 
   server.tool(
+    "seal_flatten_document_pdf",
+    "Flatten annotations and AcroForm fields into page content (pdfengines/flatten). Seal signature fields (stored in the database) are unaffected.",
+    {
+      id: z.string().describe("Document ID"),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/flatten",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
     "seal_unlock_document_pdf",
     "Unlock a password-protected draft PDF in place (LibreOffice re-export — may shift complex layouts). Claims the usable bytes onto the document.",
     {
