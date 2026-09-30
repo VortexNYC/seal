@@ -2185,6 +2185,207 @@ paths:
                   page_count: { type: integer }
                   format: { type: string }
 
+  /documents/pdf/merge:
+    post:
+      tags: [Documents]
+      operationId: mergeDocumentPdfs
+      summary: Merge multiple draft PDFs into a new document
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ids]
+              properties:
+                ids:
+                  type: array
+                  minItems: 2
+                  maxItems: 20
+                  items: { type: string }
+                  description: Document public IDs, merged in order
+                title: { type: string, maxLength: 200 }
+      responses:
+        "201":
+          description: Merged document created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  id: { type: string }
+                  public_id: { type: string }
+                  storage_id: { type: string }
+                  page_count: { type: integer }
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /documents/pdf/rotate:
+    post:
+      tags: [Documents]
+      operationId: rotateDocumentPdf
+      summary: Rotate pages of a draft PDF
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, degrees]
+              properties:
+                id: { type: string }
+                degrees: { type: integer, enum: [90, 180, 270] }
+                pages:
+                  type: array
+                  items: { type: integer, minimum: 1 }
+                  description: 1-based page list; omit for all pages
+      responses:
+        "200": { description: Rotated — new storage_id }
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /documents/pdf/replace:
+    post:
+      tags: [Documents]
+      operationId: replaceDocumentPdf
+      summary: Replace the working PDF of a draft (fields remapped)
+      description: >
+        Atomic swap of the document's PDF bytes — existing fields are
+        remapped onto the new file where pages/geometry still line up.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, content_base64]
+              properties:
+                id: { type: string }
+                content_base64:
+                  type: string
+                  description: Base64-encoded PDF
+      responses:
+        "200": { description: Replaced }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /documents/original/replace:
+    post:
+      tags: [Documents]
+      operationId: replaceDocumentOriginal
+      summary: Replace a draft's original file (office/CSV → re-converted PDF)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, content_base64, content_type]
+              properties:
+                id: { type: string }
+                content_base64: { type: string }
+                content_type:
+                  type: string
+                  description: Original MIME type (docx, xlsx, html, pdf, …)
+      responses:
+        "200": { description: Replaced — storage_id + content_type }
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /documents/layout-blocks:
+    get:
+      tags: [Documents]
+      operationId: getDocumentLayoutBlocks
+      summary: Layout blocks for field placement hints
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Layout blocks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  blocks: { type: array, items: { type: object } }
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /documents/extraction-schema:
+    get:
+      tags: [Documents]
+      operationId: getDocumentExtractionSchema
+      summary: Get the structured-extraction schema for a document
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Schema object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  schema: { type: object, additionalProperties: true }
+    post:
+      tags: [Documents]
+      operationId: putDocumentExtractionSchema
+      summary: Set the structured-extraction schema for a draft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, schema]
+              properties:
+                id: { type: string }
+                schema: { type: object, additionalProperties: true }
+      responses:
+        "200": { description: Schema set }
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /documents/parsed:
+    get:
+      tags: [Documents]
+      operationId: getDocumentParsed
+      summary: Parsed text + field candidates for a document
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Parsed content }
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /documents/download-file:
+    get:
+      tags: [Documents]
+      operationId: downloadDocumentFile
+      summary: Download file bytes via a download token
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: File bytes
+          content:
+            application/octet-stream: {}
+
   /documents/send:
     post:
       tags: [Documents]
@@ -3322,6 +3523,31 @@ paths:
   # ──────────────────────────────────────────────────────────────────────────
 
   /reviews:
+    get:
+      tags: [Reviews]
+      operationId: listReviewMatrices
+      summary: List review matrices (summary rows, no cell fan-out)
+      responses:
+        "200":
+          description: Matrices
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  matrices:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        title: { type: string }
+                        model: { type: string }
+                        status: { type: string }
+                        row_count: { type: integer }
+                        column_count: { type: integer }
+                        created_at: { type: string, format: date-time }
+                        updated_at: { type: string, format: date-time }
     post:
       tags: [Reviews]
       operationId: createReviewMatrix
