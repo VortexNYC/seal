@@ -39,7 +39,7 @@
     "contract:check": "node scripts/check-api-contract.mjs"
   },
   "devDependencies": {
-    "@changesets/cli": "3.0.1",
+    "@changesets/cli": "3.0.3",
     "@seal/tsconfig": "workspace:*",
     "@secretlint/secretlint-rule-preset-recommend": "^13.0.5",
     "@shadcn/lint": "^0.1.0",
