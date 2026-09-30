@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   annotatePdf,
   getPdfPageCount,
+  organizePdfPages,
   percentToPdfRect,
   splitPdfPages,
 } from "./pdf-ops.js";
@@ -46,5 +47,25 @@ describe("pdf-ops", () => {
       { op: "text", page: 2, x: 10, y: 30, text: "Agent note" },
     ]);
     expect(await getPdfPageCount(out)).toBe(2);
+  });
+
+  it("reorders and deletes pages in one pass", async () => {
+    const src = await makePdf(4);
+    const { bytes, pageCount, pageMap } = await organizePdfPages(src, [
+      4, 1, 2,
+    ]);
+    expect(pageCount).toBe(3);
+    expect(await getPdfPageCount(bytes)).toBe(3);
+    expect(pageMap.get(4)).toBe(1);
+    expect(pageMap.get(1)).toBe(2);
+    expect(pageMap.get(2)).toBe(3);
+    expect(pageMap.has(3)).toBe(false);
+  });
+
+  it("rejects duplicate page order entries", async () => {
+    const src = await makePdf(3);
+    await expect(organizePdfPages(src, [1, 1, 2])).rejects.toThrow(
+      "duplicate_pages"
+    );
   });
 });

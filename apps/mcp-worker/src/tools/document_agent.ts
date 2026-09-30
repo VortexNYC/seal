@@ -298,4 +298,29 @@ export function registerDocumentAgentTools(
       return createToolResponse(response);
     }
   );
+
+  server.tool(
+    "seal_organize_document_pdf",
+    "Reorder or delete pages of a draft PDF in place. Pass the new order as 1-based source page numbers (omit a page to delete it). Fields on deleted pages are removed; others are remapped.",
+    {
+      id: z.string().describe("Document ID"),
+      pages: z
+        .array(z.number().int().min(1))
+        .min(1)
+        .max(500)
+        .describe(
+          "New page order using original 1-based page numbers, e.g. [3,1,2] moves page 3 first and drops page 4+"
+        ),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/organize",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
 }

@@ -28,10 +28,12 @@ import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import {
   annotatePdf,
   mergePdfs,
+  organizePdfPages,
   pdfAnnotateOpSchema,
   rotatePdfPages,
   splitPdfPages,
 } from "../../platform/pdf-ops.js";
+import { remapDocumentPagesAfterOrganize } from "../../platform/remap-document-pages.js";
 import { createDownloadToken } from "./download-token.js";
 
 const app = new OpenAPIHono<{
@@ -889,6 +891,83 @@ app.post("/pdf/rotate", async (c) => {
     success: true,
     storage_id: storageId,
     page_count: rotated.pageCount,
+  });
+});
+
+app.post("/pdf/organize", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      id: z.string().min(1),
+      pages: z.array(z.number().int().min(1)).min(1).max(500),
+    })
+    .safeParse(await c.req.json());
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  let organized: Awaited<ReturnType<typeof organizePdfPages>>;
+  try {
+    organized = await organizePdfPages(
+      await object.arrayBuffer(),
+      parsed.data.pages
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "organize_failed";
+    if (message === "duplicate_pages" || message === "no_valid_pages") {
+      return c.json({ error: message }, 400);
+    }
+    throw error;
+  }
+
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, organized.bytes, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: mcp.sub,
+      organizedFrom: doc.storageKey,
+    },
+  });
+
+  const fieldStats = await remapDocumentPagesAfterOrganize(
+    db,
+    doc.id,
+    organized.pageMap
+  );
+
+  await db
+    .update(documents)
+    .set({
+      storageKey: storageId,
+      size: organized.bytes.byteLength,
+      contentType: "application/pdf",
+      pageCount: organized.pageCount,
+      updatedAt: new Date(),
+    })
+    .where(eq(documents.id, doc.id));
+
+  return c.json({
+    success: true,
+    storage_id: storageId,
+    page_count: organized.pageCount,
+    fields_removed: fieldStats.fieldsRemoved,
+    fields_remapped: fieldStats.fieldsRemapped,
   });
 });
 
