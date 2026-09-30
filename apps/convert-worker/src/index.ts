@@ -44,6 +44,59 @@ app.get("/health", (c) => {
   return c.json({ status: "ok" });
 });
 
+/**
+ * PDF-only optimize passthrough: re-encodes images to JPEG via Gotenberg's
+ * pdfengines (qpdf/pdfcpu). Text, vectors, fonts, and structure are left
+ * untouched; the engine never enlarges a file.
+ */
+app.post("/optimize-pdf", async (c) => {
+  const contentType = c.req.header("content-type") ?? "";
+  if (!contentType.startsWith("multipart/form-data")) {
+    return c.text("Expected multipart/form-data", 400);
+  }
+
+  const body = await c.req.parseBody();
+  const file = body.files;
+  if (!file || typeof file === "string") {
+    return c.text("Missing files field", 400);
+  }
+  if (file.type !== "application/pdf") {
+    return c.text(`Unsupported input type: ${file.type}`, 400);
+  }
+
+  const form = new FormData();
+  form.append("files", file, "document.pdf");
+  const quality = Number.parseInt(body.imageQuality?.toString() ?? "", 10);
+  if (Number.isInteger(quality) && quality >= 1 && quality <= 100) {
+    form.append("imageQuality", String(quality));
+  }
+
+  const containerRequest = new Request(
+    "http://internal/forms/pdfengines/optimize",
+    {
+      method: "POST",
+      body: form,
+    }
+  );
+
+  const id = c.env.CONVERTER.idFromName("converter");
+  const container = c.env.CONVERTER.get(id);
+  const response = await container.fetch(containerRequest);
+
+  if (!response.ok) {
+    const text = await response.text();
+    return new Response(text, { status: response.status });
+  }
+
+  const pdf = await response.arrayBuffer();
+  return new Response(pdf, {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": 'attachment; filename="optimized.pdf"',
+    },
+  });
+});
+
 app.post("/convert", async (c) => {
   const contentType = c.req.header("content-type") ?? "";
   if (!contentType.startsWith("multipart/form-data")) {

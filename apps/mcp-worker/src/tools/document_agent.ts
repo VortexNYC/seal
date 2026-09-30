@@ -410,4 +410,29 @@ export function registerDocumentAgentTools(
       return createToolResponse(response);
     }
   );
+
+  server.tool(
+    "seal_compress_document_pdf",
+    "Compress a draft PDF in place (re-encodes images via convert-worker PDF engines — structure/text untouched, never enlarges). Returns size_before/size_after.",
+    {
+      id: z.string().describe("Document ID"),
+      image_quality: z
+        .number()
+        .int()
+        .min(1)
+        .max(100)
+        .optional()
+        .describe("JPEG quality for re-encoded images (default 80)"),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/compress",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
 }

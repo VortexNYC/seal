@@ -99,3 +99,56 @@ export async function convertBytesToPdf(
 
   return response.arrayBuffer();
 }
+
+export interface OptimizePdfInput {
+  bytes: ArrayBuffer | Uint8Array;
+  imageQuality?: number;
+}
+
+/**
+ * Re-encode a draft PDF's images via the convert-worker's Gotenberg
+ * pdfengines /optimize route. Text, vectors, fonts, and structure survive;
+ * the engine never enlarges the file.
+ */
+export async function optimizePdfBytes(
+  env: CloudflareBindings,
+  input: OptimizePdfInput
+): Promise<ArrayBuffer> {
+  if (!env.SEAL_CONVERT_WORKER) {
+    throw new ConversionError(
+      "converter_not_configured",
+      503,
+      "SEAL_CONVERT_WORKER service binding is not configured"
+    );
+  }
+
+  const file = new File([new Uint8Array(input.bytes)], "document.pdf", {
+    type: "application/pdf",
+  });
+  const form = new FormData();
+  form.append("files", file);
+  if (input.imageQuality !== undefined) {
+    form.append("imageQuality", String(input.imageQuality));
+  }
+
+  const response = await env.SEAL_CONVERT_WORKER.fetch(
+    new Request("http://internal/optimize-pdf", {
+      method: "POST",
+      body: form,
+      headers: {
+        "x-internal-api-key": env.INTERNAL_API_KEY,
+      },
+    })
+  );
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new ConversionError(
+      "compress_failed",
+      response.status === 504 ? 504 : 502,
+      text
+    );
+  }
+
+  return response.arrayBuffer();
+}

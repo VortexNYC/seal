@@ -2135,6 +2135,31 @@ export async function cropDocumentPdf(
   );
 }
 
+const compressDocumentPdfResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  pageCount: z.number().int(),
+  sizeBefore: z.number().int(),
+  sizeAfter: z.number().int(),
+});
+export type ApiCompressDocumentPdfResult = z.infer<
+  typeof compressDocumentPdfResultSchema
+>;
+export async function compressDocumentPdf(
+  organizationSlug: string,
+  publicId: string,
+  input: { imageQuality?: number }
+): Promise<ApiCompressDocumentPdfResult> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/compress-pdf`,
+    compressDocumentPdfResultSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
 const documentLayoutBlocksSchema = z.object({
   blocks: z.array(
     z.object({

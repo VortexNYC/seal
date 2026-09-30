@@ -16,8 +16,10 @@ import {
   annotationItemSchema,
 } from "../../platform/document-annotations.js";
 import {
+  ConversionError,
   convertBytesToPdf,
   isConvertibleFileType,
+  optimizePdfBytes,
 } from "../../platform/document-conversion.js";
 import {
   FeatureDisabledError,
@@ -28,6 +30,7 @@ import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import {
   annotatePdf,
   cropPdfPages,
+  getPdfPageCount,
   mergePdfs,
   numberPdfPages,
   organizePdfPages,
@@ -1226,6 +1229,92 @@ app.post("/pdf/crop", async (c) => {
     page_count: cropped.pageCount,
     fields_removed: plan.removeIds.length,
     fields_remapped: plan.updates.length,
+  });
+});
+
+/** Compress a draft PDF via convert-worker pdfengines optimize. */
+app.post("/pdf/compress", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      id: z.string().min(1),
+      image_quality: z.number().int().min(1).max(100).optional(),
+    })
+    .safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  try {
+    await assertConvertEnabled(c.env, organizationId);
+  } catch (error) {
+    if (error instanceof FeatureDisabledError) {
+      return c.json({ error: error.code }, 403);
+    }
+    throw error;
+  }
+
+  const srcBytes = await object.arrayBuffer();
+  let compressed: ArrayBuffer;
+  try {
+    compressed = await optimizePdfBytes(c.env, {
+      bytes: srcBytes,
+      imageQuality: parsed.data.image_quality,
+    });
+  } catch (error) {
+    if (error instanceof ConversionError) {
+      return c.json(
+        { error: error.message },
+        error.statusCode === 504 ? 504 : 502
+      );
+    }
+    throw error;
+  }
+
+  const pageCount = await getPdfPageCount(compressed);
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, compressed, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: mcp.sub,
+      compressedFrom: doc.storageKey,
+    },
+  });
+
+  const claimed = await commitDocumentPdfRemap(db, {
+    documentId: doc.id,
+    expectedStorageKey: doc.storageKey,
+    storageId,
+    size: compressed.byteLength,
+    pageCount,
+    plan: { removeIds: [], updates: [] },
+  });
+  if (!claimed) {
+    return c.json({ error: "document_version_conflict" }, 409);
+  }
+
+  return c.json({
+    success: true,
+    storage_id: storageId,
+    page_count: pageCount,
+    size_before: srcBytes.byteLength,
+    size_after: compressed.byteLength,
   });
 });
 

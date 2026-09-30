@@ -1,6 +1,6 @@
-import type { JSX } from "react";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
+import type { JSX } from "react";
 import { useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
@@ -18,13 +18,11 @@ export type DocumentPdfOpsPanelProps = {
   watermarking?: boolean;
   numbering?: boolean;
   cropping?: boolean;
+  compressing?: boolean;
   merging?: boolean;
   /** Other draft docs available to merge (publicId + name). */
   mergeCandidates?: Array<{ publicId: string; name: string }>;
-  onRotate: (input: {
-    degrees: 90 | 180 | 270;
-    pages?: number[];
-  }) => void;
+  onRotate: (input: { degrees: 90 | 180 | 270; pages?: number[] }) => void;
   onOrganize: (input: { pages: number[] }) => void;
   onCrop: (input: {
     crops: Array<{
@@ -45,6 +43,7 @@ export type DocumentPdfOpsPanelProps = {
     position: "footer-center" | "footer-right" | "footer-left";
     prefix?: string;
   }) => void;
+  onCompress: (input: { imageQuality?: number }) => void;
   onMerge: (input: { sourcePublicIds: string[]; title?: string }) => void;
 };
 
@@ -76,6 +75,7 @@ export function DocumentPdfOpsPanel({
   watermarking = false,
   numbering = false,
   cropping = false,
+  compressing = false,
   merging = false,
   mergeCandidates = [],
   onRotate,
@@ -83,6 +83,7 @@ export function DocumentPdfOpsPanel({
   onCrop,
   onWatermark,
   onNumberPages,
+  onCompress,
   onMerge,
 }: DocumentPdfOpsPanelProps): JSX.Element {
   const [scope, setScope] = useState<"all" | "current">("all");
@@ -99,6 +100,7 @@ export function DocumentPdfOpsPanel({
     "footer-center" | "footer-right" | "footer-left"
   >("footer-center");
   const [numberPrefix, setNumberPrefix] = useState("");
+  const [compressQuality, setCompressQuality] = useState(80);
   const [selectedMergeIds, setSelectedMergeIds] = useState<string[]>([]);
   const [mergeTitle, setMergeTitle] = useState("");
 
@@ -414,6 +416,42 @@ export function DocumentPdfOpsPanel({
           }
         >
           {numbering ? "Numbering…" : "Apply page numbers"}
+        </Button>
+      </div>
+
+      <div className="border-border space-y-2 border-t pt-4">
+        <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
+          Compress
+        </p>
+        <p className="text-muted-foreground text-[11px]">
+          Shrink images for email-size packs. Text and layout stay intact.
+        </p>
+        <div className="flex flex-wrap gap-1">
+          {(
+            [
+              [60, "Smaller file"],
+              [80, "Balanced"],
+              [95, "Best quality"],
+            ] as const
+          ).map(([value, label]) => (
+            <Button
+              key={value}
+              type="button"
+              size="sm"
+              variant={compressQuality === value ? "primary" : "ghost"}
+              onClick={() => setCompressQuality(value)}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          disabled={compressing || pageCount < 1}
+          onClick={() => onCompress({ imageQuality: compressQuality })}
+        >
+          {compressing ? "Compressing…" : "Compress PDF"}
         </Button>
       </div>
 

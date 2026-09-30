@@ -1,6 +1,6 @@
-import type { ReactElement } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { DocumentPdfOpsPanel } from "@/components/kumo-docs/document-pdf-ops-panel";
@@ -10,6 +10,7 @@ import {
   type DocumentSplitGroup,
 } from "@/components/kumo-docs/document-splits-panel";
 import {
+  compressDocumentPdf,
   cropDocumentPdf,
   getDocuments,
   mergeDocumentPdf,
@@ -150,6 +151,27 @@ export function DocumentPagesCapabilityPanel({
     },
   });
 
+  const compressMutation = useMutation({
+    mutationFn: (input: { imageQuality?: number }) =>
+      compressDocumentPdf(organizationSlug, documentPublicId, input),
+    onSuccess: (result) => {
+      const saved = result.sizeBefore - result.sizeAfter;
+      const pct =
+        result.sizeBefore > 0
+          ? Math.round((saved / result.sizeBefore) * 100)
+          : 0;
+      toast.success(
+        pct > 0 ? `Compressed — saved ${pct}%` : "Compressed PDF updated"
+      );
+      onPdfChanged?.();
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to compress PDF"
+      );
+    },
+  });
+
   const mergeMutation = useMutation({
     mutationFn: (input: { sourcePublicIds: string[]; title?: string }) =>
       mergeDocumentPdf(organizationSlug, documentPublicId, input),
@@ -207,6 +229,7 @@ export function DocumentPagesCapabilityPanel({
         rotating={rotateMutation.isPending}
         organizing={organizeMutation.isPending}
         cropping={cropMutation.isPending}
+        compressing={compressMutation.isPending}
         watermarking={watermarkMutation.isPending}
         numbering={numberPagesMutation.isPending}
         merging={mergeMutation.isPending}
@@ -216,6 +239,7 @@ export function DocumentPagesCapabilityPanel({
         onCrop={(input) => cropMutation.mutate(input)}
         onWatermark={(input) => watermarkMutation.mutate(input)}
         onNumberPages={(input) => numberPagesMutation.mutate(input)}
+        onCompress={(input) => compressMutation.mutate(input)}
         onMerge={(input) => mergeMutation.mutate(input)}
         className={docked ? "p-0" : undefined}
       />
