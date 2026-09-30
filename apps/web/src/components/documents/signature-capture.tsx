@@ -78,10 +78,10 @@ export function SignatureCapture({
     : ["drawn", "typed", "uploaded"];
   const hasAvailableMethods = allowedTabs.length > 0 || showLibrary;
 
-  const defaultTab: TabType = showLibrary
-    ? "saved"
-    : (allowedTabs[0] ?? "drawn");
-  const [activeTab, setActiveTab] = useState<TabType>(defaultTab);
+  // Start on Draw/Type/Upload; promote to Saved only after a library load.
+  const [activeTab, setActiveTab] = useState<TabType>(
+    allowedTabs[0] ?? "drawn"
+  );
   const [pendingCapture, setPendingCapture] =
     useState<ESignatureResult | null>(null);
 
@@ -107,7 +107,8 @@ export function SignatureCapture({
 
   const isFirstAdopt = showLibrary && savedSignatures.length === 0;
 
-  // DocuSeal-class: remember a default signature and land on it next time.
+  // DocuSeal-class: land on default signature when the library has one.
+  // First-run (empty library) stays on Draw so Adopt is one Accept away.
   useEffect(() => {
     if (!showLibrary || savedSignatures.length === 0) return;
     const preferred =

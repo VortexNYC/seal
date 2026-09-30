@@ -69,6 +69,12 @@ describe("SignatureCapture", () => {
     expect(screen.getByText("Upload")).toBeInTheDocument();
   });
 
+  test("SEA-84 first-run with empty library starts on Draw, not empty Saved", () => {
+    renderSignatureCapture({ showLibrary: true });
+    const drawTab = screen.getByRole("tab", { name: /Draw/i });
+    expect(drawTab).toHaveAttribute("aria-selected", "true");
+  });
+
   test('shows "Cancel" and "Accept & Sign" buttons', () => {
     renderSignatureCapture();
     expect(screen.getByRole("button", { name: /Cancel/i })).toBeInTheDocument();

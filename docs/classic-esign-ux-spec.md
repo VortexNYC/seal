@@ -41,7 +41,7 @@ proprietary copy). Founder checklist 2026-09-28.
 | ------------------------------------ | ------------------------------------ |
 | SEA-81 sealed inbox PDF              | **done**                             |
 | SEA-82 auto date/name/email/initials | **done**                             |
-| SEA-84 signature adopt               | **code done** — dogfood once on live |
+| SEA-84 signature adopt               | **Form View + modal** — dogfood on live |
 | SEA-85 OCR/detect Accept all         | **wired on DocumentCanvas Fields** — dogfood on live |
 | SEA-83 solo / guided E2E             | **done** (Playwright)                |
 | SEA-86 mobile Form View              | **done** (proved on prod 2026-09-29) |

@@ -1599,6 +1599,7 @@ function SigningPage() {
           onSave={handleFieldSave}
           recipientName={recipient.name || recipient.email}
           signingToken={token}
+          showLibrary={isSignedIn}
         />
       )}
 
