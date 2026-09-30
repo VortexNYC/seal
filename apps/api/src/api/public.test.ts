@@ -1,6 +1,6 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { eq } from "drizzle-orm";
 import { env } from "cloudflare:test";
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 
@@ -16,6 +16,7 @@ import {
   webhookDeliveries,
   webhooks,
 } from "../global/schema.js";
+import { sha256PdfBytes } from "../platform/final-pdf.js";
 import publicRoute from "./public.js";
 
 /** Existing public submit tests exercise token/auth gates without a Seal session. */
@@ -211,6 +212,101 @@ describe("public API", () => {
       expect(signer.name).toBe("Alice Signer");
       expect(signer.maskedEmail).toBe("a****@example.com");
     }
+  });
+
+  it("verifies a sealed PDF by upload (hash match)", async () => {
+    const db = createD1(env.D1);
+
+    await db.insert(organization).values({
+      id: "org_verify_up",
+      name: "Verify Org",
+      slug: "verify-org-up",
+    });
+
+    const pdfBytes = new TextEncoder().encode("%PDF-1.4 fake-sealed-bytes");
+    const documentHash = await sha256PdfBytes(pdfBytes);
+    const completedAt = new Date();
+    await db.insert(documents).values({
+      id: "doc_verify_up",
+      publicId: "doc_pub_verify_up",
+      organizationId: "org_verify_up",
+      name: "Sealed Contract",
+      status: "completed",
+      documentStatus: "active",
+      sharingMode: "private",
+      documentHash,
+      completedAt,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await db.insert(recipients).values({
+      id: "rec_verify_up",
+      publicId: "rec_pub_verify_up",
+      documentId: "doc_verify_up",
+      name: "Bob Signer",
+      email: "bob@example.com",
+      role: "signer",
+      status: "signed",
+      signedAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const app = createApp();
+    const response = await app.fetch(
+      new Request("http://localhost:8787/api/public/verify-upload", {
+        method: "POST",
+        headers: { "content-type": "application/pdf" },
+        body: pdfBytes,
+      }),
+      env
+    );
+
+    expect(response.status).toBe(200);
+    const result = z
+      .object({
+        verified: z.literal(true),
+        hashMatch: z.literal(true),
+        documentName: z.string(),
+        signerCount: z.number(),
+        signers: z.array(
+          z.object({ name: z.string(), maskedEmail: z.string() })
+        ),
+      })
+      .parse(await response.json());
+    expect(result.documentName).toBe("Sealed Contract");
+    expect(result.signerCount).toBe(1);
+    expect(result.signers[0]?.maskedEmail).toBe("b****@example.com");
+  });
+
+  it("rejects tampered bytes — hash miss is unverified, not 404", async () => {
+    const app = createApp();
+    const response = await app.fetch(
+      new Request("http://localhost:8787/api/public/verify-upload", {
+        method: "POST",
+        headers: { "content-type": "application/pdf" },
+        body: new TextEncoder().encode("%PDF-1.4 altered"),
+      }),
+      env
+    );
+    expect(response.status).toBe(200);
+    const result = z
+      .object({ verified: z.literal(false), hashMatch: z.literal(false) })
+      .parse(await response.json());
+    expect(result.verified).toBe(false);
+  });
+
+  it("verify-upload rejects non-PDF bodies", async () => {
+    const app = createApp();
+    const response = await app.fetch(
+      new Request("http://localhost:8787/api/public/verify-upload", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "{}",
+      }),
+      env
+    );
+    expect(response.status).toBe(400);
   });
 
   it("returns null for an unknown qr token", async () => {
