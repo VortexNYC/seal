@@ -29,6 +29,7 @@ describe("upload-validation", () => {
         "application/vnd.openxmlformats-officedocument.presentationml.presentation":
           [".pptx"],
         "text/csv": [".csv"],
+        "text/html": [".html", ".htm"],
         "image/png": [".png"],
         "image/jpeg": [".jpg", ".jpeg"],
       });
@@ -69,7 +70,7 @@ describe("upload-validation", () => {
   describe("getSupportedFileTypesDisplay", () => {
     test("returns all supported file types", () => {
       expect(getSupportedFileTypesDisplay()).toBe(
-        "PDF, DOCX, XLSX, PPTX, CSV, PNG, JPG"
+        "PDF, DOCX, XLSX, PPTX, CSV, HTML, PNG, JPG"
       );
     });
   });
@@ -135,7 +136,7 @@ describe("upload-validation", () => {
       const result = validateFileForUpload(file);
       expect(result.valid).toBe(false);
       expect(result.errors).toContain(
-        "Only PDF, DOCX, XLSX, PPTX, CSV, PNG, and JPG files are supported"
+        "Only PDF, DOCX, XLSX, PPTX, CSV, HTML, PNG, and JPG files are supported"
       );
     });
 
@@ -153,7 +154,7 @@ describe("upload-validation", () => {
       const result = validateFileForUpload(file);
       expect(result.valid).toBe(false);
       expect(result.errors).toContain(
-        "Only PDF, DOCX, XLSX, PPTX, CSV, PNG, and JPG files are supported"
+        "Only PDF, DOCX, XLSX, PPTX, CSV, HTML, PNG, and JPG files are supported"
       );
     });
 
@@ -172,7 +173,7 @@ describe("upload-validation", () => {
       // The source lowercases the extension, so .PDF becomes .pdf
       expect(
         result.errors.some((e) =>
-          e.includes("Only PDF, DOCX, XLSX, PPTX, CSV, PNG, and JPG files are supported")
+          e.includes("Only PDF, DOCX, XLSX, PPTX, CSV, HTML, PNG, and JPG files are supported")
         )
       ).toBe(false);
       expect(result.valid).toBe(true);
