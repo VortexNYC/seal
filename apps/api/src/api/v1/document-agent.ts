@@ -37,8 +37,9 @@ import {
   watermarkPdf,
 } from "../../platform/pdf-ops.js";
 import {
-  remapDocumentFieldsAfterCrop,
-  remapDocumentPagesAfterOrganize,
+  commitDocumentPdfRemap,
+  planCropFieldRemap,
+  planOrganizeFieldRemap,
 } from "../../platform/remap-document-pages.js";
 import { createDownloadToken } from "./download-token.js";
 
@@ -951,29 +952,30 @@ app.post("/pdf/organize", async (c) => {
     },
   });
 
-  const fieldStats = await remapDocumentPagesAfterOrganize(
+  const plan = await planOrganizeFieldRemap(
     db,
     doc.id,
     organized.pageMap
   );
 
-  await db
-    .update(documents)
-    .set({
-      storageKey: storageId,
-      size: organized.bytes.byteLength,
-      contentType: "application/pdf",
-      pageCount: organized.pageCount,
-      updatedAt: new Date(),
-    })
-    .where(eq(documents.id, doc.id));
+  const claimed = await commitDocumentPdfRemap(db, {
+    documentId: doc.id,
+    expectedStorageKey: doc.storageKey,
+    storageId,
+    size: organized.bytes.byteLength,
+    pageCount: organized.pageCount,
+    plan,
+  });
+  if (!claimed) {
+    return c.json({ error: "document_version_conflict" }, 409);
+  }
 
   return c.json({
     success: true,
     storage_id: storageId,
     page_count: organized.pageCount,
-    fields_removed: fieldStats.fieldsRemoved,
-    fields_remapped: fieldStats.fieldsRemapped,
+    fields_removed: plan.removeIds.length,
+    fields_remapped: plan.updates.length,
   });
 });
 
@@ -1204,29 +1206,26 @@ app.post("/pdf/crop", async (c) => {
     },
   });
 
-  const fieldStats = await remapDocumentFieldsAfterCrop(
-    db,
-    doc.id,
-    cropped.applied
-  );
+  const plan = await planCropFieldRemap(db, doc.id, cropped.applied);
 
-  await db
-    .update(documents)
-    .set({
-      storageKey: storageId,
-      size: cropped.bytes.byteLength,
-      contentType: "application/pdf",
-      pageCount: cropped.pageCount,
-      updatedAt: new Date(),
-    })
-    .where(eq(documents.id, doc.id));
+  const claimed = await commitDocumentPdfRemap(db, {
+    documentId: doc.id,
+    expectedStorageKey: doc.storageKey,
+    storageId,
+    size: cropped.bytes.byteLength,
+    pageCount: cropped.pageCount,
+    plan,
+  });
+  if (!claimed) {
+    return c.json({ error: "document_version_conflict" }, 409);
+  }
 
   return c.json({
     success: true,
     storage_id: storageId,
     page_count: cropped.pageCount,
-    fields_removed: fieldStats.fieldsRemoved,
-    fields_remapped: fieldStats.fieldsRemapped,
+    fields_removed: plan.removeIds.length,
+    fields_remapped: plan.updates.length,
   });
 });
 
