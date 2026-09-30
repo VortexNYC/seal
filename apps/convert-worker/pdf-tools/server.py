@@ -108,8 +108,29 @@ class Handler(BaseHTTPRequestHandler):
         author = (payload.get("author") or "Seal").strip() or "Seal"
         title = (payload.get("title") or "Revised document").strip()
 
+        docx_b64 = payload.get("docx_b64")
+        if docx_b64:
+            import base64
+            try:
+                original = base64.b64decode(docx_b64)
+                out_bytes, graft_skipped = graft_tracked_docx(original, edits, author)
+                self.send_response(200)
+                self.send_header(
+                    "Content-Type",
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                )
+                self.send_header("X-Skipped-Edits", str(graft_skipped))
+                self.send_header("X-Grafted", "1")
+                self.send_header("Content-Length", str(len(out_bytes)))
+                self.end_headers()
+                self.wfile.write(out_bytes)
+            except Exception as e:  # noqa: BLE001 — fall back to rebuild below? no: report
+                self._send(422, f"graft failed: {e}".encode())
+            return
+
         # Segments: ("n"|"i"|"d", text). Anchors match only "n" spans —
         # edits target the original text, not earlier proposals.
+        segments: list[list] = [["n", text]]
         skipped = 0
         for edit in edits:
             quote = edit.get("anchor_quote") or ""
@@ -388,6 +409,270 @@ class Handler(BaseHTTPRequestHandler):
             raise RuntimeError(f"libreoffice produced no {fmt}")
         with open(out, "rb") as f:
             self._send(200, f.read(), "application/octet-stream")
+
+
+W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+W = "{%s}" % W_NS
+
+
+def _register_docx_namespaces() -> None:
+    from xml.etree import ElementTree as ET
+
+    ET.register_namespace("w", W_NS)
+    ET.register_namespace(
+        "r", "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+    )
+    ET.register_namespace(
+        "mc", "http://schemas.openxmlformats.org/markup-compatibility/2006"
+    )
+    ET.register_namespace(
+        "wp", "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+    )
+
+
+def _norm_map(text: str) -> tuple[str, list[int]]:
+    r"""Collapse whitespace to single spaces; return (normalized, raw-offset map)."""
+    norm: list[str] = []
+    rmap: list[int] = []
+    prev_space = True
+    for i, ch in enumerate(text):
+        if ch.isspace():
+            if not prev_space:
+                norm.append(" ")
+                rmap.append(i)
+            prev_space = True
+            continue
+        prev_space = False
+        norm.append(ch)
+        rmap.append(i)
+    return "".join(norm), rmap
+
+
+def graft_tracked_docx(
+    docx_bytes: bytes,
+    edits: list[dict],
+    author: str,
+) -> tuple[bytes, int]:
+    """Patch w:ins/w:del runs into an existing .docx's word/document.xml,
+    preserving every other part (styles, images, numbering) untouched.
+    Returns (docx_bytes, skipped_count)."""
+    import copy
+    import datetime
+    import io
+    import zipfile
+    from xml.etree import ElementTree as ET
+
+    _register_docx_namespaces()
+    zin = zipfile.ZipFile(io.BytesIO(docx_bytes))
+    root = ET.fromstring(zin.read("word/document.xml"))
+    body = root.find(W + "body")
+    if body is None:
+        raise ValueError("no w:body")
+
+    # Flat map: every w:t inside a direct w:r child of any w:p — global
+    # offsets across the document (paragraphs get a synthetic "\n" gap).
+    entries: list[tuple] = []  # (para_el, run_el, t_el, start)
+    flat_parts: list[str] = []
+    pos = 0
+    for p in body.iter(W + "p"):
+        for r in p:
+            if r.tag != W + "r":
+                continue
+            t = r.find(W + "t")
+            if t is None or not (t.text):
+                continue
+            entries.append((p, r, t, pos))
+            flat_parts.append(t.text)
+            pos += len(t.text)
+        pos += 1  # synthetic paragraph separator
+    flat = ""
+    # rebuild flat honoring the gaps
+    prev_end = 0
+    pieces: list[str] = []
+    cursor = 0
+    t_iter = iter(entries)
+    running = ""
+    # simpler: concat t texts with "\n" between paragraphs — entries carry
+    # real starts; flat is used only for anchor matching on normalized text.
+    flat = "".join(flat_parts)
+    # recompute true flat offsets without separators: entries[i].start must
+    # equal cumulative t length; adjust entries to t-only offsets.
+    entries2: list[tuple] = []
+    off = 0
+    for p, r, t, _s in entries:
+        entries2.append((p, r, t, off))
+        off += len(t.text or "")
+    entries = entries2
+
+    norm, rmap = _norm_map(flat)
+
+    def raw_span(quote: str) -> tuple[int, int] | None:
+        nq = " ".join(quote.split())
+        if not nq:
+            return None
+        start = norm.find(nq)
+        if start == -1:
+            return None
+        end_norm = start + len(nq) - 1
+        # raw end = raw offset of the LAST normalized char + 1
+        return rmap[start], rmap[end_norm] + 1
+
+    # Resolve every edit to a raw span up front (original text positions).
+    spans: list[tuple[int, int, dict]] = []
+    skipped = 0
+    for e in edits:
+        q = e.get("anchor_quote") or ""
+        rs = raw_span(q) if q else None
+        if rs is None:
+            skipped += 1
+            continue
+        spans.append((rs[0], rs[1], e))
+
+    now = datetime.datetime.now(datetime.timezone.utc).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
+    change_id = [0]
+
+    def nid() -> str:
+        change_id[0] += 1
+        return str(change_id[0])
+
+    def space_attr(text: str) -> dict:
+        return {"{http://www.w3.org/XML/1998/namespace}space": "preserve"} if text != text.strip() else {}
+
+    # Per-run split: each affected (p, r, t, start) gets replaced by a
+    # sequence of [runs | w:del | w:ins] spliced into the paragraph.
+    replacements: dict[int, list] = {}  # id(run_el) -> new children
+    ins_emitted: set[int] = set()  # edit indices whose w:ins already emitted
+
+    for p, r, t, start in entries:
+        text = t.text or ""
+        end = start + len(text)
+        covered = [
+            (i, s_, e_, e)
+            for i, (s_, e_, e) in enumerate(spans)
+            if s_ < end and e_ > start
+        ]
+        if not covered:
+            continue
+        # cut points within this run's text
+        cuts = {0, len(text)}
+        for i, s_, e_, _e in covered:
+            cuts.add(max(0, s_ - start))
+            cuts.add(min(len(text), e_ - start))
+        points = sorted(cuts)
+        seq: list = []
+        for a, b in zip(points, points[1:]):
+            if a == b:
+                continue
+            piece = text[a:b]
+            ga, gb = start + a, start + b
+            edit_idx = next(
+                (i for i, s_, e_, _e in covered if s_ <= ga and e_ >= gb and (gb > s_ and ga < e_)),
+                None,
+            )
+            if edit_idx is None:
+                # untouched piece → normal run (clone rPr)
+                nr = copy.deepcopy(r)
+                nt = nr.find(W + "t")
+                nt.text = piece
+                for k in list(nt.attrib):
+                    del nt.attrib[k]
+                nt.attrib.update(space_attr(piece))
+                seq.append(nr)
+                continue
+            _s_, _e_, edit = spans[edit_idx]
+            kind = edit.get("kind")
+            if kind == "insert":
+                # anchor text stays; ins emitted once after the last piece
+                nr = copy.deepcopy(r)
+                nt = nr.find(W + "t")
+                nt.text = piece
+                for k in list(nt.attrib):
+                    del nt.attrib[k]
+                nt.attrib.update(space_attr(piece))
+                seq.append(nr)
+                if gb >= _e_ and edit_idx not in ins_emitted:
+                    ins_emitted.add(edit_idx)
+                    w_ins = ET.SubElement(body, W + "ins")  # placeholder, re-parented below
+                    w_ins.attrib.update({W + "id": nid(), W + "author": author, W + "date": now})
+                    ir = ET.SubElement(w_ins, W + "r")
+                    it = ET.SubElement(ir, W + "t")
+                    it.attrib.update(space_attr(edit.get("proposed_text") or ""))
+                    it.text = edit.get("proposed_text") or ""
+                    seq.append(w_ins)
+                continue
+            # delete / replace → this piece becomes w:del
+            w_del = ET.Element(W + "del")
+            w_del.attrib.update({W + "id": nid(), W + "author": author, W + "date": now})
+            dr = copy.deepcopy(r)
+            # run inside w:del uses w:delText instead of w:t
+            dt_old = dr.find(W + "t")
+            dr.remove(dt_old)
+            dtext = ET.SubElement(dr, W + "delText")
+            dtext.attrib.update(space_attr(piece))
+            dtext.text = piece
+            w_del.append(dr)
+            seq.append(w_del)
+            if kind == "replace" and gb >= _e_ and edit_idx not in ins_emitted:
+                ins_emitted.add(edit_idx)
+                w_ins = ET.Element(W + "ins")
+                w_ins.attrib.update({W + "id": nid(), W + "author": author, W + "date": now})
+                ir = ET.SubElement(w_ins, W + "r")
+                it = ET.SubElement(ir, W + "t")
+                it.attrib.update(space_attr(edit.get("proposed_text") or ""))
+                it.text = edit.get("proposed_text") or ""
+                seq.append(w_ins)
+        replacements[id(r)] = seq
+
+    # Splice: rebuild each paragraph's child list once
+    for p in body.iter(W + "p"):
+        children = list(p)
+        if not any(id(ch) in replacements for ch in children):
+            continue
+        new_children: list = []
+        for ch in children:
+            seq = replacements.get(id(ch))
+            if seq is None:
+                new_children.append(ch)
+            else:
+                new_children.extend(seq)
+        p[:] = new_children
+
+    out_document = ET.tostring(root, encoding="utf-8", xml_declaration=True)
+
+    # Ensure <w:trackChanges/> in settings.xml
+    settings_bytes = None
+    if "word/settings.xml" in zin.namelist():
+        sroot = ET.fromstring(zin.read("word/settings.xml"))
+        if sroot.find(W + "trackChanges") is None:
+            ET.SubElement(sroot, W + "trackChanges")
+        settings_bytes = ET.tostring(sroot, encoding="utf-8", xml_declaration=True)
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "word/document.xml":
+                data = out_document
+            elif item.filename == "word/settings.xml" and settings_bytes is not None:
+                data = settings_bytes
+            zout.writestr(item, data)
+        if settings_bytes is None:
+            zout.writestr(
+                "word/settings.xml",
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                '<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+                "<w:trackChanges/></w:settings>",
+            )
+            if b"settings" not in zin.read("[Content_Types].xml"):
+                ct = zin.read("[Content_Types].xml").decode()
+                ct = ct.replace(
+                    "</Types>",
+                    '<Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/></Types>',
+                )
+                zout.writestr("[Content_Types].xml", ct)
+    return buf.getvalue(), skipped
 
 
 def main() -> None:

@@ -233,7 +233,10 @@ function CellDetail({
   const flag = cell.flag ? FLAG_STYLES[cell.flag] : null;
 
   return (
-    <aside className="border-border w-80 shrink-0 rounded-lg border p-4">
+    <aside
+      data-testid="cell-panel"
+      className="border-border w-80 shrink-0 rounded-lg border p-4"
+    >
       <div className="flex items-start justify-between gap-2">
         <div>
           <div className="text-sm font-medium">{documentName}</div>
@@ -276,6 +279,7 @@ function CellDetail({
           variant="outline"
           size="sm"
           className="mt-4 w-full"
+          data-testid="propose-redline"
           onClick={() => setProposeOpen(true)}
         >
           <FilePenLineIcon className="mr-1 size-4" />
@@ -559,6 +563,7 @@ function RevisionsRail({
         {pending.map((rev) => (
           <li
             key={rev.id}
+            data-testid={`pending-revision-${rev.id}`}
             className="border-border flex items-start justify-between gap-3 rounded-lg border p-3"
           >
             <div className="min-w-0">

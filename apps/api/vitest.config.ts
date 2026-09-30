@@ -30,6 +30,7 @@ async function handle(request) {
         "content-type":
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "x-skipped-edits": "0",
+        "x-grafted": "1",
       },
     });
   }
