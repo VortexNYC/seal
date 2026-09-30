@@ -22,6 +22,22 @@ async function handle(request) {
     });
   }
 
+  if (request.method === "POST" && url.pathname === "/pdf-to-words") {
+    // Minimal word list covering a quote from the seeded fixture doc text.
+    return new Response(
+      JSON.stringify({
+        words: [
+          { page: 1, x: 0.1, y: 0.1, w: 0.05, h: 0.02, t: "Either" },
+          { page: 1, x: 0.16, y: 0.1, w: 0.05, h: 0.02, t: "party" },
+          { page: 1, x: 0.22, y: 0.1, w: 0.04, h: 0.02, t: "may" },
+          { page: 1, x: 0.27, y: 0.1, w: 0.08, h: 0.02, t: "terminate" },
+          { page: 1, x: 0.36, y: 0.1, w: 0.04, h: 0.02, t: "this" },
+          { page: 1, x: 0.41, y: 0.1, w: 0.09, h: 0.02, t: "Agreement" },
+        ],
+      }),
+      { headers: { "content-type": "application/json" } }
+    );
+  }
   if (
     request.method === "POST" &&
     (url.pathname === "/convert" ||

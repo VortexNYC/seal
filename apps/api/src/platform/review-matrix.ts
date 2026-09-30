@@ -20,6 +20,15 @@ export type ReviewFlag = (typeof REVIEW_FLAGS)[number];
 export const ZReviewCitation = z.object({
   documentId: z.string().min(1),
   page: z.number().int().positive().optional(),
+  /** Normalized 0–1 page geometry of the quoted span (best-effort). */
+  bbox: z
+    .object({
+      x: z.number(),
+      y: z.number(),
+      width: z.number(),
+      height: z.number(),
+    })
+    .optional(),
   quote: z.string().min(1),
 });
 export type ReviewCitation = z.infer<typeof ZReviewCitation>;

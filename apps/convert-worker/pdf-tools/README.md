@@ -9,9 +9,11 @@ Endpoints (POST, `application/pdf` raw body):
 
 - `/to-images?format=png|jpeg&dpi=50..600` → `application/zip` (`page-N.*`)
 - `/to-text` → `text/plain` (`pdftotext -layout`)
+- `/to-words` → `application/json` (`pdftotext -bbox`; per-word 0–1
+  coordinates — the citation-anchoring substrate)
 - `/ocr?lang=eng` → `application/pdf` (ocrmypdf `--skip-text`)
 - `/pdf-to-office?format=docx|xlsx|pptx` → office bytes (soffice `--headless
-  --convert-to`; PDF imports into Draw — layout-locked fidelity)
+--convert-to`; PDF imports into Draw — layout-locked fidelity)
 
 Notes:
 

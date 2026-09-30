@@ -17,6 +17,7 @@ import {
 } from "../global/schema.js";
 import { getProvider, streamKeyedModel } from "./llm/index.js";
 import { ensureProvidersRegistered } from "./llm/providers.js";
+import { anchorQuote, type PdfWord } from "./quote-anchor.js";
 import {
   assertCellCitations,
   ZReviewColumn,
@@ -141,12 +142,7 @@ export function groundCitation(
   return { documentId: documentPublicId, quote: chunk || NOT_FOUND_QUOTE };
 }
 
-const REVIEW_FLAGS: readonly ReviewFlag[] = [
-  "green",
-  "amber",
-  "red",
-  "grey",
-];
+const REVIEW_FLAGS: readonly ReviewFlag[] = ["green", "amber", "red", "grey"];
 
 function parseFlag(value: unknown): ReviewFlag | null {
   return REVIEW_FLAGS.includes(value as ReviewFlag)
@@ -158,9 +154,7 @@ function parseFlag(value: unknown): ReviewFlag | null {
  * Pull the first JSON object out of a model reply (code-fence tolerant).
  * Providers that ignore the schema still surface raw text as the summary.
  */
-function extractJsonObject(
-  raw: string
-): Record<string, unknown> | null {
+function extractJsonObject(raw: string): Record<string, unknown> | null {
   const trimmed = raw.trim();
   const start = trimmed.indexOf("{");
   if (start === -1) return null;
@@ -314,9 +308,9 @@ export async function createReviewMatrix(
   }
 
   if (rowInserts.length > 0) {
-    await db.insert(reviewRows).values(
-      rowInserts.map(({ documentPublicId: _d, ...row }) => row)
-    );
+    await db
+      .insert(reviewRows)
+      .values(rowInserts.map(({ documentPublicId: _d, ...row }) => row));
   }
   if (cellInserts.length > 0) {
     await db.insert(reviewCells).values(cellInserts);
@@ -427,9 +421,7 @@ export async function generateReviewMatrix(
     throw new ReviewMatrixError("not_found", 404);
   }
 
-  const parsedModel = matrix.model.includes("/")
-    ? matrix.model
-    : null;
+  const parsedModel = matrix.model.includes("/") ? matrix.model : null;
   if (!parsedModel) {
     throw new ReviewMatrixError("invalid_model", 400, {
       model: matrix.model,
@@ -452,6 +444,7 @@ export async function generateReviewMatrix(
       documentId: reviewRows.documentId,
       documentPublicId: documents.publicId,
       parsedText: documents.parsedText,
+      storageKey: documents.storageKey,
     })
     .from(reviewRows)
     .innerJoin(documents, eq(documents.id, reviewRows.documentId))
@@ -477,6 +470,9 @@ export async function generateReviewMatrix(
     .where(eq(reviewMatrices.id, matrix.id));
 
   const rowById = new Map(rows.map((r) => [r.rowId, r]));
+
+  // Words are fetched once per document — many cells quote the same row.
+  const wordsCache = new Map<string, Promise<PdfWord[]>>();
 
   for (const cell of pendingCells) {
     const row = rowById.get(cell.rowId);
@@ -508,8 +504,7 @@ export async function generateReviewMatrix(
       const tokensUsed =
         result.usage?.inputTokens !== undefined ||
         result.usage?.outputTokens !== undefined
-          ? (result.usage.inputTokens ?? 0) +
-            (result.usage.outputTokens ?? 0)
+          ? (result.usage.inputTokens ?? 0) + (result.usage.outputTokens ?? 0)
           : null;
 
       const parsed = extractJsonObject(result.text);
@@ -531,6 +526,23 @@ export async function generateReviewMatrix(
         candidateQuote
       );
       const grounded = citation.quote !== NOT_FOUND_QUOTE;
+      if (grounded && row.storageKey) {
+        // Best-effort page/bbox anchor — never fails the cell.
+        try {
+          const anchor = await anchorQuote(
+            env,
+            row.storageKey,
+            citation.quote,
+            wordsCache
+          );
+          if (anchor) {
+            citation.page = anchor.page;
+            citation.bbox = anchor.bbox;
+          }
+        } catch {
+          // Anchoring is additive; a quote-only citation is still valid.
+        }
+      }
       const flag: ReviewFlag =
         parseFlag(parsed?.flag) ?? (grounded ? "green" : "grey");
 

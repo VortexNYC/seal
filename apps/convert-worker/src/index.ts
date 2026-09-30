@@ -408,6 +408,38 @@ app.post("/pdf-to-office", async (c) => {
   });
 });
 
+/**
+ * Per-word geometry via pdf-tools (pdftotext -bbox). Returns JSON:
+ * {words: [{page, x, y, w, h, t}]} with 0–1 normalized coordinates —
+ * the citation-anchoring substrate.
+ */
+app.post("/pdf-to-words", async (c) => {
+  const contentType = c.req.header("content-type") ?? "";
+  const body = await c.req.arrayBuffer();
+  if (!contentType.startsWith("application/pdf")) {
+    return c.text("Expected application/pdf body", 400);
+  }
+
+  const id = c.env.PDF_TOOLS.idFromName("pdftools");
+  const container = c.env.PDF_TOOLS.get(id);
+  const response = await container.fetch(
+    new Request("http://internal/to-words", {
+      method: "POST",
+      headers: { "Content-Type": "application/pdf" },
+      body,
+    })
+  );
+
+  if (!response.ok) {
+    const text = await response.text();
+    return new Response(text, { status: response.status });
+  }
+
+  return new Response(await response.arrayBuffer(), {
+    headers: { "Content-Type": "application/json" },
+  });
+});
+
 /** Extract embedded text via pdf-tools (pdftotext -layout). */
 app.post("/pdf-to-text", async (c) => {
   const contentType = c.req.header("content-type") ?? "";
