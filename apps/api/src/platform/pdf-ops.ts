@@ -263,3 +263,168 @@ export async function organizePdfPages(
   return { bytes, pageCount: pageOrder.length, pageMap };
 }
 
+/** Helvetica/WinAnsi-safe text for pdf-lib stamps. */
+function sanitizeStampText(value: string): string {
+  return value
+    .replace(/\u2194/g, "<->")
+    .replace(/[^\x09\x0A\x0D\x20-\x7E]/g, "?");
+}
+
+function resolvePageTargets(
+  count: number,
+  pages?: number[]
+): number[] {
+  const targets =
+    pages && pages.length > 0
+      ? [...new Set(pages)].filter((p) => p >= 1 && p <= count)
+      : Array.from({ length: count }, (_, i) => i + 1);
+  if (targets.length === 0) {
+    throw new Error("no_valid_pages");
+  }
+  return targets;
+}
+
+export type WatermarkPdfOptions = {
+  text: string;
+  /** 0–1, default 0.22 */
+  opacity?: number;
+  position?: "diagonal" | "center" | "footer";
+  color?: string;
+  /** Font size in points; defaults by position */
+  size?: number;
+  /** 1-based pages; omit for all */
+  pages?: number[];
+};
+
+/**
+ * Stamp a text watermark onto selected pages of a draft PDF.
+ */
+export async function watermarkPdf(
+  pdfBytes: ArrayBuffer | Uint8Array,
+  options: WatermarkPdfOptions
+): Promise<{ bytes: Uint8Array; pageCount: number }> {
+  const text = sanitizeStampText(options.text.trim());
+  if (text.length === 0) {
+    throw new Error("empty_watermark");
+  }
+  if (text.length > 120) {
+    throw new Error("watermark_too_long");
+  }
+
+  const doc = await PDFDocument.load(pdfBytes);
+  const font = await doc.embedFont(StandardFonts.HelveticaBold);
+  const count = doc.getPageCount();
+  const targets = resolvePageTargets(count, options.pages);
+  const opacity = Math.min(1, Math.max(0.05, options.opacity ?? 0.22));
+  const position = options.position ?? "diagonal";
+  const color = parseColor(options.color, rgb(0.55, 0.55, 0.55));
+
+  for (const pageNum of targets) {
+    const page = doc.getPage(pageNum - 1);
+    const { width: pw, height: ph } = page.getSize();
+    const size =
+      options.size ??
+      (position === "footer" ? 10 : Math.min(72, Math.max(28, pw * 0.08)));
+    const textWidth = font.widthOfTextAtSize(text, size);
+
+    if (position === "footer") {
+      page.drawText(text, {
+        x: Math.max(24, (pw - textWidth) / 2),
+        y: 28,
+        size,
+        font,
+        color,
+        opacity,
+      });
+    } else if (position === "center") {
+      page.drawText(text, {
+        x: Math.max(24, (pw - textWidth) / 2),
+        y: ph / 2 - size / 2,
+        size,
+        font,
+        color,
+        opacity,
+      });
+    } else {
+      // Diagonal across the page center.
+      page.drawText(text, {
+        x: pw / 2 - textWidth / 2,
+        y: ph / 2 - size / 2,
+        size,
+        font,
+        color,
+        opacity,
+        rotate: degrees(-35),
+      });
+    }
+  }
+
+  const bytes = await doc.save();
+  return { bytes, pageCount: count };
+}
+
+export type NumberPdfPagesOptions = {
+  /** `n` → "1"; `n_of_m` → "1 of 12". Default `n_of_m`. */
+  format?: "n" | "n_of_m";
+  position?: "footer-center" | "footer-right" | "footer-left";
+  /** Display number for the first stamped page (default 1). */
+  startAt?: number;
+  prefix?: string;
+  size?: number;
+  color?: string;
+  /** 1-based pages; omit for all */
+  pages?: number[];
+};
+
+/**
+ * Stamp page numbers onto a draft PDF (footer by default).
+ */
+export async function numberPdfPages(
+  pdfBytes: ArrayBuffer | Uint8Array,
+  options: NumberPdfPagesOptions = {}
+): Promise<{ bytes: Uint8Array; pageCount: number }> {
+  const doc = await PDFDocument.load(pdfBytes);
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const count = doc.getPageCount();
+  const targets = resolvePageTargets(count, options.pages);
+  const format = options.format ?? "n_of_m";
+  const position = options.position ?? "footer-center";
+  const startAt = options.startAt ?? 1;
+  const prefix = sanitizeStampText(options.prefix ?? "");
+  const size = options.size ?? 10;
+  const color = parseColor(options.color, rgb(0.25, 0.25, 0.25));
+
+  for (let i = 0; i < targets.length; i++) {
+    const pageNum = targets[i];
+    if (pageNum === undefined) continue;
+    const page = doc.getPage(pageNum - 1);
+    const { width: pw } = page.getSize();
+    const display = startAt + i;
+    const body =
+      format === "n" ? String(display) : `${display} of ${count}`;
+    const label = sanitizeStampText(
+      prefix.length > 0 ? `${prefix}${body}` : body
+    );
+    const textWidth = font.widthOfTextAtSize(label, size);
+    const margin = 36;
+    const x =
+      position === "footer-left"
+        ? margin
+        : position === "footer-right"
+          ? Math.max(margin, pw - margin - textWidth)
+          : Math.max(margin, (pw - textWidth) / 2);
+
+    page.drawText(label, {
+      x,
+      y: 24,
+      size,
+      font,
+      color,
+      opacity: 0.9,
+    });
+  }
+
+  const bytes = await doc.save();
+  return { bytes, pageCount: count };
+}
+

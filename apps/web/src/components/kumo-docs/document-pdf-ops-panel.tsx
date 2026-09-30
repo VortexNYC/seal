@@ -15,6 +15,8 @@ export type DocumentPdfOpsPanelProps = {
   className?: string;
   rotating?: boolean;
   organizing?: boolean;
+  watermarking?: boolean;
+  numbering?: boolean;
   merging?: boolean;
   /** Other draft docs available to merge (publicId + name). */
   mergeCandidates?: Array<{ publicId: string; name: string }>;
@@ -23,12 +25,22 @@ export type DocumentPdfOpsPanelProps = {
     pages?: number[];
   }) => void;
   onOrganize: (input: { pages: number[] }) => void;
+  onWatermark: (input: {
+    text: string;
+    position: "diagonal" | "center" | "footer";
+    pages?: number[];
+  }) => void;
+  onNumberPages: (input: {
+    format: "n" | "n_of_m";
+    position: "footer-center" | "footer-right" | "footer-left";
+    prefix?: string;
+  }) => void;
   onMerge: (input: { sourcePublicIds: string[]; title?: string }) => void;
 };
 
 /**
- * Human PDF ops — rotate / organize / merge.
- * Mirrors agent seal_rotate / seal_organize / seal_merge tools.
+ * Human PDF ops — rotate / organize / watermark / number / merge.
+ * Mirrors matching seal_* agent tools.
  */
 export function DocumentPdfOpsPanel({
   pageCount,
@@ -36,16 +48,29 @@ export function DocumentPdfOpsPanel({
   className,
   rotating = false,
   organizing = false,
+  watermarking = false,
+  numbering = false,
   merging = false,
   mergeCandidates = [],
   onRotate,
   onOrganize,
+  onWatermark,
+  onNumberPages,
   onMerge,
 }: DocumentPdfOpsPanelProps): JSX.Element {
   const [scope, setScope] = useState<"all" | "current">("all");
   const [pageOrder, setPageOrder] = useState<number[]>(() =>
     identityPageOrder(pageCount)
   );
+  const [watermarkText, setWatermarkText] = useState("DRAFT");
+  const [watermarkPosition, setWatermarkPosition] = useState<
+    "diagonal" | "center" | "footer"
+  >("diagonal");
+  const [numberFormat, setNumberFormat] = useState<"n" | "n_of_m">("n_of_m");
+  const [numberPosition, setNumberPosition] = useState<
+    "footer-center" | "footer-right" | "footer-left"
+  >("footer-center");
+  const [numberPrefix, setNumberPrefix] = useState("");
   const [selectedMergeIds, setSelectedMergeIds] = useState<string[]>([]);
   const [mergeTitle, setMergeTitle] = useState("");
 
@@ -205,6 +230,123 @@ export function DocumentPdfOpsPanel({
             </Button>
           ))}
         </div>
+      </div>
+
+      <div className="border-border space-y-2 border-t pt-4">
+        <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
+          Watermark
+        </p>
+        <p className="text-muted-foreground text-[11px]">
+          Stamp text across the PDF before send (DRAFT, CONFIDENTIAL, …).
+        </p>
+        <Input
+          label="Watermark text"
+          value={watermarkText}
+          onChange={(e) => setWatermarkText(e.target.value)}
+          maxLength={120}
+        />
+        <div className="flex flex-wrap gap-1">
+          {(
+            [
+              ["diagonal", "Diagonal"],
+              ["center", "Center"],
+              ["footer", "Footer"],
+            ] as const
+          ).map(([value, label]) => (
+            <Button
+              key={value}
+              type="button"
+              size="sm"
+              variant={watermarkPosition === value ? "primary" : "ghost"}
+              onClick={() => setWatermarkPosition(value)}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          disabled={
+            watermarking || pageCount < 1 || watermarkText.trim().length === 0
+          }
+          onClick={() =>
+            onWatermark({
+              text: watermarkText.trim(),
+              position: watermarkPosition,
+              pages: scope === "current" ? [currentPage] : undefined,
+            })
+          }
+        >
+          {watermarking ? "Stamping…" : "Apply watermark"}
+        </Button>
+      </div>
+
+      <div className="border-border space-y-2 border-t pt-4">
+        <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
+          Page numbers
+        </p>
+        <p className="text-muted-foreground text-[11px]">
+          Footer stamps for assembled packs.
+        </p>
+        <div className="flex flex-wrap gap-1">
+          {(
+            [
+              ["n_of_m", "1 of N"],
+              ["n", "Number only"],
+            ] as const
+          ).map(([value, label]) => (
+            <Button
+              key={value}
+              type="button"
+              size="sm"
+              variant={numberFormat === value ? "primary" : "ghost"}
+              onClick={() => setNumberFormat(value)}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {(
+            [
+              ["footer-center", "Center"],
+              ["footer-left", "Left"],
+              ["footer-right", "Right"],
+            ] as const
+          ).map(([value, label]) => (
+            <Button
+              key={value}
+              type="button"
+              size="sm"
+              variant={numberPosition === value ? "primary" : "ghost"}
+              onClick={() => setNumberPosition(value)}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+        <Input
+          label="Prefix (optional)"
+          placeholder='Prefix (optional), e.g. "Page "'
+          value={numberPrefix}
+          onChange={(e) => setNumberPrefix(e.target.value)}
+          maxLength={40}
+        />
+        <Button
+          type="button"
+          size="sm"
+          disabled={numbering || pageCount < 1}
+          onClick={() =>
+            onNumberPages({
+              format: numberFormat,
+              position: numberPosition,
+              prefix: numberPrefix.trim() || undefined,
+            })
+          }
+        >
+          {numbering ? "Numbering…" : "Apply page numbers"}
+        </Button>
       </div>
 
       <div className="border-border space-y-2 border-t pt-4">

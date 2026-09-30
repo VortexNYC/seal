@@ -1541,6 +1541,86 @@ paths:
                   fields_remapped: { type: integer }
         "400":
           description: Invalid page order (empty, duplicate, or out of range)
+  /documents/pdf/watermark:
+    post:
+      tags: [Documents]
+      operationId: watermarkDocumentPdf
+      summary: Stamp a text watermark onto a draft PDF
+      description: >
+        Draws a Helvetica-bold text stamp on selected pages (default: all).
+        Positions: diagonal (default), center, or footer. Deterministic pdf-lib
+        — no Seal-hosted model inference.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, text]
+              properties:
+                id: { type: string }
+                text: { type: string, maxLength: 120 }
+                opacity: { type: number, minimum: 0.05, maximum: 1 }
+                position:
+                  type: string
+                  enum: [diagonal, center, footer]
+                color: { type: string, description: "Hex color, e.g. #888888" }
+                size: { type: number, minimum: 6, maximum: 120 }
+                pages:
+                  type: array
+                  items: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Watermarked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  storage_id: { type: string }
+                  page_count: { type: integer }
+  /documents/pdf/number-pages:
+    post:
+      tags: [Documents]
+      operationId: numberDocumentPdfPages
+      summary: Stamp page numbers onto a draft PDF
+      description: >
+        Footer page numbers via pdf-lib. Format `n` or `n_of_m` (default).
+        Optional prefix (e.g. "Page ").
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string }
+                format:
+                  type: string
+                  enum: [n, n_of_m]
+                position:
+                  type: string
+                  enum: [footer-center, footer-right, footer-left]
+                start_at: { type: integer, minimum: 0 }
+                prefix: { type: string, maxLength: 40 }
+                size: { type: number, minimum: 6, maximum: 48 }
+                color: { type: string }
+                pages:
+                  type: array
+                  items: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Numbered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  storage_id: { type: string }
+                  page_count: { type: integer }
 
   /documents/send:
     post:
