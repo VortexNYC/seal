@@ -36,6 +36,8 @@ import { Route as AuthenticatedSlugContactsContactIdRouteImport } from './routes
 import { Route as AuthenticatedSlugDocumentsIndexRouteImport } from './routes/_authenticated/$slug/documents/index'
 import { Route as AuthenticatedSlugDocumentsDocumentIdRouteImport } from './routes/_authenticated/$slug/documents/$documentId'
 import { Route as AuthenticatedSlugOnboardingComplianceRouteImport } from './routes/_authenticated/$slug/onboarding/compliance'
+import { Route as AuthenticatedSlugReviewsIndexRouteImport } from './routes/_authenticated/$slug/reviews.index'
+import { Route as AuthenticatedSlugReviewsMatrixIdRouteImport } from './routes/_authenticated/$slug/reviews.$matrixId'
 import { Route as AuthenticatedSlugSettingsIndexRouteImport } from './routes/_authenticated/$slug/settings/index'
 import { Route as AuthenticatedSlugSettingsAiRouteImport } from './routes/_authenticated/$slug/settings/ai'
 import { Route as AuthenticatedSlugSettingsAuditLogRouteImport } from './routes/_authenticated/$slug/settings/audit-log'
@@ -198,6 +200,18 @@ const AuthenticatedSlugOnboardingComplianceRoute =
     path: '/onboarding/compliance',
     getParentRoute: () => AuthenticatedSlugRoute,
   } as any)
+const AuthenticatedSlugReviewsIndexRoute =
+  AuthenticatedSlugReviewsIndexRouteImport.update({
+    id: '/reviews/',
+    path: '/reviews/',
+    getParentRoute: () => AuthenticatedSlugRoute,
+  } as any)
+const AuthenticatedSlugReviewsMatrixIdRoute =
+  AuthenticatedSlugReviewsMatrixIdRouteImport.update({
+    id: '/reviews/$matrixId',
+    path: '/reviews/$matrixId',
+    getParentRoute: () => AuthenticatedSlugRoute,
+  } as any)
 const AuthenticatedSlugSettingsIndexRoute =
   AuthenticatedSlugSettingsIndexRouteImport.update({
     id: '/settings/',
@@ -337,6 +351,7 @@ export interface FileRoutesByFullPath {
   '/$slug/contacts/$contactId': typeof AuthenticatedSlugContactsContactIdRoute
   '/$slug/documents/$documentId': typeof AuthenticatedSlugDocumentsDocumentIdRoute
   '/$slug/onboarding/compliance': typeof AuthenticatedSlugOnboardingComplianceRoute
+  '/$slug/reviews/$matrixId': typeof AuthenticatedSlugReviewsMatrixIdRoute
   '/$slug/settings/ai': typeof AuthenticatedSlugSettingsAiRoute
   '/$slug/settings/audit-log': typeof AuthenticatedSlugSettingsAuditLogRoute
   '/$slug/settings/branding': typeof AuthenticatedSlugSettingsBrandingRoute
@@ -347,6 +362,7 @@ export interface FileRoutesByFullPath {
   '/$slug/settings/team': typeof AuthenticatedSlugSettingsTeamRouteWithChildren
   '/$slug/contacts/': typeof AuthenticatedSlugContactsIndexRoute
   '/$slug/documents/': typeof AuthenticatedSlugDocumentsIndexRoute
+  '/$slug/reviews/': typeof AuthenticatedSlugReviewsIndexRoute
   '/$slug/settings/': typeof AuthenticatedSlugSettingsIndexRoute
   '/onboarding/choose-organization/': typeof AuthenticatedOnboardingChooseOrganizationIndexRoute
   '/$slug/settings/developer/api-keys': typeof AuthenticatedSlugSettingsDeveloperApiKeysRoute
@@ -380,6 +396,7 @@ export interface FileRoutesByTo {
   '/$slug/contacts/$contactId': typeof AuthenticatedSlugContactsContactIdRoute
   '/$slug/documents/$documentId': typeof AuthenticatedSlugDocumentsDocumentIdRoute
   '/$slug/onboarding/compliance': typeof AuthenticatedSlugOnboardingComplianceRoute
+  '/$slug/reviews/$matrixId': typeof AuthenticatedSlugReviewsMatrixIdRoute
   '/$slug/settings/ai': typeof AuthenticatedSlugSettingsAiRoute
   '/$slug/settings/audit-log': typeof AuthenticatedSlugSettingsAuditLogRoute
   '/$slug/settings/branding': typeof AuthenticatedSlugSettingsBrandingRoute
@@ -388,6 +405,7 @@ export interface FileRoutesByTo {
   '/$slug/settings/signing': typeof AuthenticatedSlugSettingsSigningRoute
   '/$slug/contacts': typeof AuthenticatedSlugContactsIndexRoute
   '/$slug/documents': typeof AuthenticatedSlugDocumentsIndexRoute
+  '/$slug/reviews': typeof AuthenticatedSlugReviewsIndexRoute
   '/$slug/settings': typeof AuthenticatedSlugSettingsIndexRoute
   '/onboarding/choose-organization': typeof AuthenticatedOnboardingChooseOrganizationIndexRoute
   '/$slug/settings/developer/api-keys': typeof AuthenticatedSlugSettingsDeveloperApiKeysRoute
@@ -427,6 +445,7 @@ export interface FileRoutesById {
   '/_authenticated/$slug/contacts/$contactId': typeof AuthenticatedSlugContactsContactIdRoute
   '/_authenticated/$slug/documents/$documentId': typeof AuthenticatedSlugDocumentsDocumentIdRoute
   '/_authenticated/$slug/onboarding/compliance': typeof AuthenticatedSlugOnboardingComplianceRoute
+  '/_authenticated/$slug/reviews/$matrixId': typeof AuthenticatedSlugReviewsMatrixIdRoute
   '/_authenticated/$slug/settings/ai': typeof AuthenticatedSlugSettingsAiRoute
   '/_authenticated/$slug/settings/audit-log': typeof AuthenticatedSlugSettingsAuditLogRoute
   '/_authenticated/$slug/settings/branding': typeof AuthenticatedSlugSettingsBrandingRoute
@@ -437,6 +456,7 @@ export interface FileRoutesById {
   '/_authenticated/$slug/settings/team': typeof AuthenticatedSlugSettingsTeamRouteWithChildren
   '/_authenticated/$slug/contacts/': typeof AuthenticatedSlugContactsIndexRoute
   '/_authenticated/$slug/documents/': typeof AuthenticatedSlugDocumentsIndexRoute
+  '/_authenticated/$slug/reviews/': typeof AuthenticatedSlugReviewsIndexRoute
   '/_authenticated/$slug/settings/': typeof AuthenticatedSlugSettingsIndexRoute
   '/_authenticated/onboarding/choose-organization/': typeof AuthenticatedOnboardingChooseOrganizationIndexRoute
   '/_authenticated/$slug/settings/developer/api-keys': typeof AuthenticatedSlugSettingsDeveloperApiKeysRoute
@@ -475,6 +495,7 @@ export interface FileRouteTypes {
     | '/$slug/contacts/$contactId'
     | '/$slug/documents/$documentId'
     | '/$slug/onboarding/compliance'
+    | '/$slug/reviews/$matrixId'
     | '/$slug/settings/ai'
     | '/$slug/settings/audit-log'
     | '/$slug/settings/branding'
@@ -485,6 +506,7 @@ export interface FileRouteTypes {
     | '/$slug/settings/team'
     | '/$slug/contacts/'
     | '/$slug/documents/'
+    | '/$slug/reviews/'
     | '/$slug/settings/'
     | '/onboarding/choose-organization/'
     | '/$slug/settings/developer/api-keys'
@@ -518,6 +540,7 @@ export interface FileRouteTypes {
     | '/$slug/contacts/$contactId'
     | '/$slug/documents/$documentId'
     | '/$slug/onboarding/compliance'
+    | '/$slug/reviews/$matrixId'
     | '/$slug/settings/ai'
     | '/$slug/settings/audit-log'
     | '/$slug/settings/branding'
@@ -526,6 +549,7 @@ export interface FileRouteTypes {
     | '/$slug/settings/signing'
     | '/$slug/contacts'
     | '/$slug/documents'
+    | '/$slug/reviews'
     | '/$slug/settings'
     | '/onboarding/choose-organization'
     | '/$slug/settings/developer/api-keys'
@@ -564,6 +588,7 @@ export interface FileRouteTypes {
     | '/_authenticated/$slug/contacts/$contactId'
     | '/_authenticated/$slug/documents/$documentId'
     | '/_authenticated/$slug/onboarding/compliance'
+    | '/_authenticated/$slug/reviews/$matrixId'
     | '/_authenticated/$slug/settings/ai'
     | '/_authenticated/$slug/settings/audit-log'
     | '/_authenticated/$slug/settings/branding'
@@ -574,6 +599,7 @@ export interface FileRouteTypes {
     | '/_authenticated/$slug/settings/team'
     | '/_authenticated/$slug/contacts/'
     | '/_authenticated/$slug/documents/'
+    | '/_authenticated/$slug/reviews/'
     | '/_authenticated/$slug/settings/'
     | '/_authenticated/onboarding/choose-organization/'
     | '/_authenticated/$slug/settings/developer/api-keys'
@@ -786,6 +812,20 @@ declare module '@tanstack/react-router' {
       path: '/onboarding/compliance'
       fullPath: '/$slug/onboarding/compliance'
       preLoaderRoute: typeof AuthenticatedSlugOnboardingComplianceRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
+    }
+    '/_authenticated/$slug/reviews/': {
+      id: '/_authenticated/$slug/reviews/'
+      path: '/reviews'
+      fullPath: '/$slug/reviews/'
+      preLoaderRoute: typeof AuthenticatedSlugReviewsIndexRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
+    }
+    '/_authenticated/$slug/reviews/$matrixId': {
+      id: '/_authenticated/$slug/reviews/$matrixId'
+      path: '/reviews/$matrixId'
+      fullPath: '/$slug/reviews/$matrixId'
+      preLoaderRoute: typeof AuthenticatedSlugReviewsMatrixIdRouteImport
       parentRoute: typeof AuthenticatedSlugRoute
     }
     '/_authenticated/$slug/settings/': {
@@ -1029,6 +1069,7 @@ interface AuthenticatedSlugRouteChildren {
   AuthenticatedSlugTemplatesRoute: typeof AuthenticatedSlugTemplatesRoute
   AuthenticatedSlugIndexRoute: typeof AuthenticatedSlugIndexRoute
   AuthenticatedSlugOnboardingComplianceRoute: typeof AuthenticatedSlugOnboardingComplianceRoute
+  AuthenticatedSlugReviewsMatrixIdRoute: typeof AuthenticatedSlugReviewsMatrixIdRoute
   AuthenticatedSlugSettingsAiRoute: typeof AuthenticatedSlugSettingsAiRoute
   AuthenticatedSlugSettingsAuditLogRoute: typeof AuthenticatedSlugSettingsAuditLogRoute
   AuthenticatedSlugSettingsBrandingRoute: typeof AuthenticatedSlugSettingsBrandingRoute
@@ -1037,6 +1078,7 @@ interface AuthenticatedSlugRouteChildren {
   AuthenticatedSlugSettingsSecurityRoute: typeof AuthenticatedSlugSettingsSecurityRoute
   AuthenticatedSlugSettingsSigningRoute: typeof AuthenticatedSlugSettingsSigningRoute
   AuthenticatedSlugSettingsTeamRoute: typeof AuthenticatedSlugSettingsTeamRouteWithChildren
+  AuthenticatedSlugReviewsIndexRoute: typeof AuthenticatedSlugReviewsIndexRoute
   AuthenticatedSlugSettingsIndexRoute: typeof AuthenticatedSlugSettingsIndexRoute
   AuthenticatedSlugSettingsDeveloperApiKeysRoute: typeof AuthenticatedSlugSettingsDeveloperApiKeysRoute
   AuthenticatedSlugSettingsDeveloperWebhooksRoute: typeof AuthenticatedSlugSettingsDeveloperWebhooksRoute
@@ -1053,6 +1095,7 @@ const AuthenticatedSlugRouteChildren: AuthenticatedSlugRouteChildren = {
   AuthenticatedSlugIndexRoute: AuthenticatedSlugIndexRoute,
   AuthenticatedSlugOnboardingComplianceRoute:
     AuthenticatedSlugOnboardingComplianceRoute,
+  AuthenticatedSlugReviewsMatrixIdRoute: AuthenticatedSlugReviewsMatrixIdRoute,
   AuthenticatedSlugSettingsAiRoute: AuthenticatedSlugSettingsAiRoute,
   AuthenticatedSlugSettingsAuditLogRoute:
     AuthenticatedSlugSettingsAuditLogRoute,
@@ -1067,6 +1110,7 @@ const AuthenticatedSlugRouteChildren: AuthenticatedSlugRouteChildren = {
   AuthenticatedSlugSettingsSigningRoute: AuthenticatedSlugSettingsSigningRoute,
   AuthenticatedSlugSettingsTeamRoute:
     AuthenticatedSlugSettingsTeamRouteWithChildren,
+  AuthenticatedSlugReviewsIndexRoute: AuthenticatedSlugReviewsIndexRoute,
   AuthenticatedSlugSettingsIndexRoute: AuthenticatedSlugSettingsIndexRoute,
   AuthenticatedSlugSettingsDeveloperApiKeysRoute:
     AuthenticatedSlugSettingsDeveloperApiKeysRoute,

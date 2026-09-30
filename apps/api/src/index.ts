@@ -17,6 +17,7 @@ import feedback from "./api/feedback.js";
 import folders from "./api/folders.js";
 import mcpOauth, { buildAuthorizationServerMetadata } from "./api/mcp-oauth.js";
 import notifications from "./api/notifications.js";
+import orgReviews from "./api/org-reviews.js";
 import organizations from "./api/organizations.js";
 import publicApi from "./api/public.js";
 import savedSignatures from "./api/saved-signatures.js";
@@ -757,6 +758,7 @@ app.route("/api/notifications", notifications);
 app.route("/api/organizations", organizations);
 app.route("/api/organizations", scim);
 app.route("/api/public", publicApi);
+app.route("/api/reviews", orgReviews);
 app.route("/api/saved-signatures", savedSignatures);
 app.route("/api/users", users);
 
