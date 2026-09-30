@@ -12,6 +12,7 @@ import {
 import {
   compressDocumentPdf,
   cropDocumentPdf,
+  flattenDocumentPdf,
   getDocuments,
   protectDocumentPdf,
   redactDocumentPdf,
@@ -218,6 +219,19 @@ export function DocumentPagesCapabilityPanel({
     },
   });
 
+  const flattenMutation = useMutation({
+    mutationFn: () => flattenDocumentPdf(organizationSlug, documentPublicId),
+    onSuccess: () => {
+      toast.success("PDF flattened");
+      onPdfChanged?.();
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to flatten PDF"
+      );
+    },
+  });
+
   const mergeMutation = useMutation({
     mutationFn: (input: { sourcePublicIds: string[]; title?: string }) =>
       mergeDocumentPdf(organizationSlug, documentPublicId, input),
@@ -278,6 +292,7 @@ export function DocumentPagesCapabilityPanel({
         compressing={compressMutation.isPending}
         redacting={redactMutation.isPending}
         protecting={protectMutation.isPending}
+        flattening={flattenMutation.isPending}
         protectedDownloadUrl={protectedDownloadUrl}
         watermarking={watermarkMutation.isPending}
         numbering={numberPagesMutation.isPending}
@@ -291,6 +306,7 @@ export function DocumentPagesCapabilityPanel({
         onCompress={(input) => compressMutation.mutate(input)}
         onRedact={(input) => redactMutation.mutate(input)}
         onProtect={(input) => protectMutation.mutate(input)}
+        onFlatten={() => flattenMutation.mutate()}
         onMerge={(input) => mergeMutation.mutate(input)}
         className={docked ? "p-0" : undefined}
       />

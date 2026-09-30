@@ -21,6 +21,7 @@ export type DocumentPdfOpsPanelProps = {
   compressing?: boolean;
   redacting?: boolean;
   protecting?: boolean;
+  flattening?: boolean;
   merging?: boolean;
   /** Download URL for the last protected copy this session produced. */
   protectedDownloadUrl?: string | null;
@@ -58,6 +59,7 @@ export type DocumentPdfOpsPanelProps = {
     }>;
   }) => void;
   onProtect: (input: { userPassword?: string; ownerPassword?: string }) => void;
+  onFlatten: () => void;
   onMerge: (input: { sourcePublicIds: string[]; title?: string }) => void;
 };
 
@@ -92,6 +94,7 @@ export function DocumentPdfOpsPanel({
   compressing = false,
   redacting = false,
   protecting = false,
+  flattening = false,
   merging = false,
   protectedDownloadUrl = null,
   mergeCandidates = [],
@@ -103,6 +106,7 @@ export function DocumentPdfOpsPanel({
   onCompress,
   onRedact,
   onProtect,
+  onFlatten,
   onMerge,
 }: DocumentPdfOpsPanelProps): JSX.Element {
   const [scope, setScope] = useState<"all" | "current">("all");
@@ -577,6 +581,25 @@ export function DocumentPdfOpsPanel({
             Download protected PDF
           </a>
         ) : null}
+      </div>
+
+      <div className="border-border space-y-2 border-t pt-4">
+        <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
+          Flatten annotations &amp; forms
+        </p>
+        <p className="text-muted-foreground text-[11px]">
+          Bake annotation and form appearances into the page — interactive
+          overlays become static content. Signature fields you placed here
+          are unaffected.
+        </p>
+        <Button
+          type="button"
+          size="sm"
+          disabled={flattening || pageCount < 1}
+          onClick={() => onFlatten()}
+        >
+          {flattening ? "Flattening…" : "Flatten PDF"}
+        </Button>
       </div>
 
       <div className="border-border space-y-2 border-t pt-4">

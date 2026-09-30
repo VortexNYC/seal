@@ -234,6 +234,24 @@ describe("document agent pdf routes", () => {
     expect(await res.json()).toMatchObject({ error: "not_encrypted" });
   });
 
+  it("flattens a draft via the agent surface", async () => {
+    await seedFixture();
+    const app = createApp(writeMcp);
+    const res = await app.fetch(
+      agentPost("flatten", { id: DOC_ID }),
+      env
+    );
+    expect(res.status).toBe(200);
+    const json = z
+      .object({
+        success: z.boolean(),
+        storage_id: z.string(),
+        page_count: z.number(),
+      })
+      .parse(await res.json());
+    expect(json.success).toBe(true);
+  });
+
   it("compresses a draft via the agent surface", async () => {
     await seedFixture();
     const app = createApp(writeMcp);

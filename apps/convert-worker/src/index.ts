@@ -213,6 +213,54 @@ app.post("/decrypt-pdf", async (c) => {
   });
 });
 
+/**
+ * Flatten a PDF via Gotenberg pdfengines /flatten (pdfcpu/PDFtk): bakes
+ * annotation and AcroForm appearance streams into page content.
+ */
+app.post("/flatten-pdf", async (c) => {
+  const contentType = c.req.header("content-type") ?? "";
+  if (!contentType.startsWith("multipart/form-data")) {
+    return c.text("Expected multipart/form-data", 400);
+  }
+
+  const body = await c.req.parseBody();
+  const file = body.files;
+  if (!file || typeof file === "string") {
+    return c.text("Missing files field", 400);
+  }
+  if (file.type !== "application/pdf") {
+    return c.text(`Unsupported input type: ${file.type}`, 400);
+  }
+
+  const form = new FormData();
+  form.append("files", file, "document.pdf");
+
+  const containerRequest = new Request(
+    "http://internal/forms/pdfengines/flatten",
+    {
+      method: "POST",
+      body: form,
+    }
+  );
+
+  const id = c.env.CONVERTER.idFromName("converter");
+  const container = c.env.CONVERTER.get(id);
+  const response = await container.fetch(containerRequest);
+
+  if (!response.ok) {
+    const text = await response.text();
+    return new Response(text, { status: response.status });
+  }
+
+  const pdf = await response.arrayBuffer();
+  return new Response(pdf, {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": 'attachment; filename="flattened.pdf"',
+    },
+  });
+});
+
 app.post("/convert", async (c) => {
   const contentType = c.req.header("content-type") ?? "";
   if (!contentType.startsWith("multipart/form-data")) {
