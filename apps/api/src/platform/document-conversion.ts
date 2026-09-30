@@ -350,7 +350,11 @@ export async function convertToPdfaBytes(
 /** Rasterise a PDF to per-page images; returns a ZIP of page-*.{png,jpg}. */
 export async function pdfToImagesZip(
   env: CloudflareBindings,
-  input: { bytes: ArrayBuffer | Uint8Array; format?: "png" | "jpeg"; dpi?: number }
+  input: {
+    bytes: ArrayBuffer | Uint8Array;
+    format?: "png" | "jpeg";
+    dpi?: number;
+  }
 ): Promise<ArrayBuffer> {
   if (!env.SEAL_CONVERT_WORKER) {
     throw new ConversionError(
@@ -363,17 +367,14 @@ export async function pdfToImagesZip(
   const format = input.format === "jpeg" ? "jpeg" : "png";
   const dpi = Math.max(50, Math.min(600, Math.round(input.dpi ?? 150)));
   const response = await env.SEAL_CONVERT_WORKER.fetch(
-    new Request(
-      `http://internal/pdf-to-images?format=${format}&dpi=${dpi}`,
-      {
-        method: "POST",
-        body: new Uint8Array(input.bytes),
-        headers: {
-          "Content-Type": "application/pdf",
-          "x-internal-api-key": env.INTERNAL_API_KEY,
-        },
-      }
-    )
+    new Request(`http://internal/pdf-to-images?format=${format}&dpi=${dpi}`, {
+      method: "POST",
+      body: new Uint8Array(input.bytes),
+      headers: {
+        "Content-Type": "application/pdf",
+        "x-internal-api-key": env.INTERNAL_API_KEY,
+      },
+    })
   );
 
   if (!response.ok) {
@@ -405,17 +406,14 @@ export async function pdfToOfficeBytes(
   }
 
   const response = await env.SEAL_CONVERT_WORKER.fetch(
-    new Request(
-      `http://internal/pdf-to-office?format=${input.format}`,
-      {
-        method: "POST",
-        body: new Uint8Array(input.bytes),
-        headers: {
-          "Content-Type": "application/pdf",
-          "x-internal-api-key": env.INTERNAL_API_KEY,
-        },
-      }
-    )
+    new Request(`http://internal/pdf-to-office?format=${input.format}`, {
+      method: "POST",
+      body: new Uint8Array(input.bytes),
+      headers: {
+        "Content-Type": "application/pdf",
+        "x-internal-api-key": env.INTERNAL_API_KEY,
+      },
+    })
   );
 
   if (!response.ok) {
@@ -545,4 +543,53 @@ export async function decryptPdfBytes(
   }
 
   return response.arrayBuffer();
+}
+
+export type TrackedDocxEdit = {
+  kind: "insert" | "delete" | "replace";
+  anchor_quote: string;
+  proposed_text?: string | null;
+};
+
+/**
+ * Build a .docx with real tracked changes (w:ins/w:del runs + trackChanges
+ * settings) via pdf-tools — the negotiation round-trip: Word opens it as
+ * pending redlines attributed to the given author.
+ */
+export async function trackedDocxBytes(
+  env: CloudflareBindings,
+  payload: {
+    title: string;
+    text: string;
+    edits: TrackedDocxEdit[];
+    author?: string;
+  }
+): Promise<{ bytes: ArrayBuffer; skippedEdits: number }> {
+  if (!env.SEAL_CONVERT_WORKER) {
+    throw new ConversionError(
+      "converter_not_configured",
+      503,
+      "SEAL_CONVERT_WORKER service binding is not configured"
+    );
+  }
+  const response = await env.SEAL_CONVERT_WORKER.fetch(
+    new Request("http://internal/tracked-docx", {
+      method: "POST",
+      body: JSON.stringify(payload),
+      headers: {
+        "content-type": "application/json",
+        "x-internal-api-key": env.INTERNAL_API_KEY,
+      },
+    })
+  );
+  if (!response.ok) {
+    const text = await response.text();
+    throw new ConversionError(
+      "tracked_docx_failed",
+      response.status === 504 ? 504 : 502,
+      text
+    );
+  }
+  const skippedEdits = Number(response.headers.get("x-skipped-edits") ?? "0");
+  return { bytes: await response.arrayBuffer(), skippedEdits };
 }

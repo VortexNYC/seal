@@ -244,6 +244,61 @@ describe("revisions API", () => {
     expect(again.status).toBe(409);
   });
 
+  it("accept?output=docx materializes a tracked-changes Word file", async () => {
+    const { docPublicId, token, db } = await seed();
+    const createRes = await indexApp.request(
+      "/api/v1/revisions",
+      {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          document_id: docPublicId,
+          kind: "replace",
+          anchor_quote: "thirty days written notice",
+          proposed_text: "sixty days written notice",
+        }),
+      },
+      env
+    );
+    const created = revisionSchema.parse(await createRes.json());
+
+    const res = await indexApp.request(
+      `/api/v1/revisions/${created.id}/accept?output=docx`,
+      { method: "POST", headers: { authorization: `Bearer ${token}` } },
+      env
+    );
+    expect(res.status).toBe(200);
+    const accepted = revisionSchema.parse(await res.json());
+    expect(accepted.status).toBe("accepted");
+
+    // Derived doc carries the docx as its original + a PDF working copy.
+    const derived = await db
+      .select()
+      .from(documents)
+      .where(eq(documents.publicId, accepted.derived_document_id!));
+    expect(derived[0]?.originalContentType).toBe(
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    );
+    expect(derived[0]?.originalStorageKey).toBeTruthy();
+    const docxObj = await env.DOCUMENTS_BUCKET.get(
+      derived[0]!.originalStorageKey!
+    );
+    expect(docxObj).not.toBeNull();
+    const docxBytes = new Uint8Array(await docxObj!.arrayBuffer());
+    expect(docxBytes[0]).toBe(0x50); // PK
+    expect(docxBytes[1]).toBe(0x4b);
+
+    // The source doc is untouched.
+    const src = await db
+      .select({ parsedText: documents.parsedText })
+      .from(documents)
+      .where(eq(documents.publicId, docPublicId));
+    expect(src[0]?.parsedText).toContain("thirty days written notice");
+  });
+
   it("reject closes the suggestion without a derived doc", async () => {
     const { docPublicId, token } = await seed();
     const createRes = await indexApp.request(

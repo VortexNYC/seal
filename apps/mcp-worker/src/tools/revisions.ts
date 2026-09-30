@@ -85,12 +85,23 @@ export function registerRevisionTools(
 
   server.tool(
     "seal_accept_revision",
-    "Accept a pending revision — applies the text edit and creates a derived counter-proposal draft (new document, re-parsed).",
-    { id: z.string().describe("Revision public ID (rev_…)") },
+    "Accept a pending revision — applies the text edit and creates a derived counter-proposal draft (new document, re-parsed). output=docx produces a Word tracked-changes file (w:ins/w:del) as the derived doc's original — the counterparty sees real redlines.",
+    {
+      id: z.string().describe("Revision public ID (rev_…)"),
+      output: z
+        .enum(["pdf", "docx"])
+        .optional()
+        .describe(
+          "pdf = derived PDF from revised text (default); docx = Word tracked-changes round-trip file"
+        ),
+    },
     async (args, extra) => {
       const authToken = getAuthToken(extra);
+      const path =
+        `/revisions/${encodeURIComponent(args.id)}/accept` +
+        (args.output === "docx" ? "?output=docx" : "");
       const response = await client.post<unknown>(
-        `/revisions/${encodeURIComponent(args.id)}/accept`,
+        path,
         {},
         undefined,
         authToken

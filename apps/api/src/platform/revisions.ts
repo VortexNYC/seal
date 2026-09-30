@@ -14,7 +14,7 @@ import { z } from "zod";
 import { createD1 } from "../global/db.js";
 import { documents, revisionSuggestions } from "../global/schema.js";
 import { parseDocumentFromStorage } from "./anydoc.js";
-import { convertBytesToPdf } from "./document-conversion.js";
+import { convertBytesToPdf, trackedDocxBytes } from "./document-conversion.js";
 import { anchorQuote } from "./quote-anchor.js";
 
 type Db = ReturnType<typeof createD1>;
@@ -215,7 +215,8 @@ export async function acceptRevision(
   env: CloudflareBindings,
   db: Db,
   organizationId: string,
-  publicId: string
+  publicId: string,
+  opts?: { output?: "pdf" | "docx" }
 ): Promise<ApiRevision> {
   const rows = await db
     .select()
@@ -247,13 +248,56 @@ export async function acceptRevision(
     proposedText: s.proposedText,
   });
 
-  // Revised text → printable HTML → PDF via the convert worker.
-  const html = revisedTextToHtml(doc.name, revised);
-  const pdfBytes = await convertBytesToPdf(env, {
-    bytes: new TextEncoder().encode(html),
-    contentType: "text/html",
-    name: `${doc.name} — revised`,
-  });
+  // output=docx → real tracked-changes OOXML (w:ins/w:del) + a converted
+  // PDF preview as the working storageKey. output=pdf → revised text via
+  // HTML → PDF. The docx is the round-trip artifact; the PDF is ours.
+  let pdfBytes: ArrayBuffer;
+  let originalKey: string | null = null;
+  let originalContentType: string | null = null;
+  if (opts?.output === "docx") {
+    const docx = await trackedDocxBytes(env, {
+      title: `${doc.name} — redline`,
+      text: doc.parsedText ?? "",
+      edits: [
+        {
+          kind: s.kind as RevisionKind,
+          anchor_quote: s.anchorQuote,
+          proposed_text: s.proposedText,
+        },
+      ],
+      author: "Seal revision",
+    });
+    const docxKey = `uploads/${crypto.randomUUID()}`;
+    const docxBytes = new Uint8Array(docx.bytes);
+    await env.DOCUMENTS_BUCKET.put(docxKey, docxBytes, {
+      httpMetadata: {
+        contentType:
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      },
+      customMetadata: {
+        organizationId,
+        derivedFrom: doc.id,
+        revision: s.publicId,
+        tracked: "true",
+      },
+    });
+    pdfBytes = await convertBytesToPdf(env, {
+      bytes: docx.bytes,
+      contentType:
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      name: `${doc.name} — revised`,
+    });
+    originalKey = docxKey;
+    originalContentType =
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  } else {
+    const html = revisedTextToHtml(doc.name, revised);
+    pdfBytes = await convertBytesToPdf(env, {
+      bytes: new TextEncoder().encode(html),
+      contentType: "text/html",
+      name: `${doc.name} — revised`,
+    });
+  }
 
   const storageId = `uploads/${crypto.randomUUID()}`;
   await env.DOCUMENTS_BUCKET.put(storageId, pdfBytes, {
@@ -289,6 +333,8 @@ export async function acceptRevision(
     parsedFormat: parsed?.format ?? "pdf",
     pdfType: parsed?.pdfType ?? null,
     parentDocumentId: doc.id,
+    originalStorageKey: originalKey,
+    originalContentType,
     fieldCandidates: parsed?.fieldCandidates.length
       ? JSON.stringify(parsed.fieldCandidates)
       : null,

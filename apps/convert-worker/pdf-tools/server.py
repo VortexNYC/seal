@@ -53,6 +53,11 @@ class Handler(BaseHTTPRequestHandler):
         if length <= 0 or length > MAX_BYTES:
             self._send(400, b"missing or oversized pdf body")
             return
+
+        if self.path == "/tracked-docx":
+            self._tracked_docx(length)
+            return
+
         pdf = self.rfile.read(length)
         if not pdf.startswith(PDF_MAGIC):
             self._send(400, b"not a pdf")
@@ -85,6 +90,150 @@ class Handler(BaseHTTPRequestHandler):
             self._send(422, str(e).encode())
         except Exception as e:  # noqa: BLE001
             self._send(500, str(e).encode())
+
+    def _tracked_docx(self, length: int) -> None:
+        """JSON {title, text, edits:[{kind, anchor_quote, proposed_text, author?}]}
+        -> .docx with w:ins/w:del tracked changes (Word shows real redlines).
+        Anchors locate in the ORIGINAL text; unfound anchors are skipped with a
+        `skipped` count in a response header (body is still a valid docx)."""
+        import json
+
+        try:
+            payload = json.loads(self.rfile.read(length).decode())
+        except Exception:
+            self._send(400, b"invalid json")
+            return
+        text = payload.get("text") or ""
+        edits = payload.get("edits") or []
+        author = (payload.get("author") or "Seal").strip() or "Seal"
+        title = (payload.get("title") or "Revised document").strip()
+
+        # Segments: ("n"|"i"|"d", text). Anchors match only "n" spans —
+        # edits target the original text, not earlier proposals.
+        skipped = 0
+        for edit in edits:
+            quote = edit.get("anchor_quote") or ""
+            proposed = edit.get("proposed_text") or ""
+            kind = edit.get("kind")
+            if not quote:
+                skipped += 1
+                continue
+            new_segments: list[list] = []
+            applied = False
+            for seg in segments:
+                if applied or seg[0] != "n" or quote not in seg[1]:
+                    new_segments.append(seg)
+                    continue
+                idx = seg[1].find(quote)
+                before, after = seg[1][:idx], seg[1][idx + len(quote):]
+                if kind == "delete":
+                    new_segments += [["n", before], ["d", quote], ["n", after]]
+                elif kind == "replace":
+                    new_segments += [
+                        ["n", before],
+                        ["d", quote],
+                        ["i", proposed],
+                        ["n", after],
+                    ]
+                else:
+                    new_segments += [
+                        ["n", before + quote],
+                        ["i", proposed],
+                        ["n", after],
+                    ]
+                applied = True
+            segments = [seg for seg in new_segments if seg[1]]
+            if not applied:
+                skipped += 1
+
+        def esc(t: str) -> str:
+            return (t.replace("&", "&amp;").replace("<", "&lt;")
+                     .replace(">", "&gt;").replace('"', "&quot;"))
+
+        now = "2026-01-01T00:00:00Z"  # deterministic-ish; callers don't care
+        import datetime
+        now = datetime.datetime.now(datetime.timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        )
+
+        # Render segments → w:p paragraphs (split on blank lines in "n" text).
+        body_parts: list[str] = []
+        buf: list[str] = []  # current paragraph runs
+
+        def flush_paragraph() -> None:
+            if not buf:
+                return
+            body_parts.append("<w:p>" + "".join(buf) + "</w:p>")
+            buf.clear()
+
+        def emit_norm(chunk: str) -> None:
+            paras = re.split(r"\n\s*\n", chunk)
+            for i, para in enumerate(paras):
+                if i > 0:
+                    flush_paragraph()
+                if para:
+                    ptext = para.replace("\n", " ")
+                    buf.append(
+                        f'<w:r><w:t xml:space="preserve">{esc(ptext)}</w:t></w:r>'
+                    )
+
+        for kind, chunk in segments:
+            if kind == "n":
+                emit_norm(chunk)
+            elif kind == "d":
+                buf.append(
+                    f'<w:del w:author="{esc(author)}" w:date="{now}">'
+                    f'<w:r><w:delText xml:space="preserve">{esc(chunk)}</w:delText></w:r></w:del>'
+                )
+            else:
+                buf.append(
+                    f'<w:ins w:author="{esc(author)}" w:date="{now}">'
+                    f'<w:r><w:t xml:space="preserve">{esc(chunk)}</w:t></w:r></w:ins>'
+                )
+        flush_paragraph()
+
+        document_xml = (
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+            "<w:body>" + "".join(body_parts) + "</w:body></w:document>"
+        )
+        content_types = (
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+            '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+            '<Default Extension="xml" ContentType="application/xml"/>'
+            '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+            '<Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>'
+            "</Types>"
+        )
+        rels = (
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'
+            "</Relationships>"
+        )
+        settings = (
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            '<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+            "<w:trackChanges/></w:settings>"
+        )
+
+        buf_io = io.BytesIO()
+        with zipfile.ZipFile(buf_io, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr("[Content_Types].xml", content_types)
+            zf.writestr("_rels/.rels", rels)
+            zf.writestr("word/document.xml", document_xml)
+            zf.writestr("word/settings.xml", settings)
+        self.send_response(200)
+        self.send_header(
+            "Content-Type",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
+        self.send_header("X-Skipped-Edits", str(skipped))
+        body = buf_io.getvalue()
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     def _to_images(self, pdf: bytes) -> None:
         qs = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)

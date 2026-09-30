@@ -14,6 +14,8 @@ Endpoints (POST, `application/pdf` raw body):
 - `/ocr?lang=eng` → `application/pdf` (ocrmypdf `--skip-text`)
 - `/pdf-to-office?format=docx|xlsx|pptx` → office bytes (soffice `--headless
 --convert-to`; PDF imports into Draw — layout-locked fidelity)
+- `/tracked-docx` → `.docx` with `w:ins`/`w:del` tracked changes (JSON in —
+  `{title, text, edits[]}`; the redline round-trip artifact)
 
 Notes:
 

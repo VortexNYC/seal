@@ -3647,6 +3647,16 @@ paths:
           in: path
           required: true
           schema: { type: string }
+        - name: output
+          in: query
+          schema:
+            type: string
+            enum: [pdf, docx]
+            description: >
+              `docx` produces a Word tracked-changes file (`w:ins`/`w:del`
+              runs, `<w:trackChanges/>` settings) as the derived doc's
+              `original` — the counterproposal opens as real redlines in
+              Word. The working copy stays a converted PDF.
       responses:
         "200":
           description: Accepted — derived_document_id points to the new draft

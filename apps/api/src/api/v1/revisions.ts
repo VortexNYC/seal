@@ -97,11 +97,13 @@ app.post("/:id/accept", async (c) => {
   }
   const db = createD1(c.env.D1);
   try {
+    const output = c.req.query("output");
     const revision = await acceptRevision(
       c.env,
       db,
       organizationId,
-      c.req.param("id")
+      c.req.param("id"),
+      { output: output === "docx" ? "docx" : "pdf" }
     );
     return c.json(revision);
   } catch (err) {

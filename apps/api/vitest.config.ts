@@ -22,6 +22,18 @@ async function handle(request) {
     });
   }
 
+  if (request.method === "POST" && url.pathname === "/tracked-docx") {
+    // Minimal zip placeholder — the test only asserts the artifact exists.
+    const encoder = new TextEncoder();
+    return new Response(encoder.encode("PK\\u0003\\u0004docx-placeholder"), {
+      headers: {
+        "content-type":
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "x-skipped-edits": "0",
+      },
+    });
+  }
+
   if (request.method === "POST" && url.pathname === "/pdf-to-words") {
     // Minimal word list covering a quote from the seeded fixture doc text.
     return new Response(
