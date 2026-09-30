@@ -33,6 +33,11 @@ async function handle(request) {
           { page: 1, x: 0.27, y: 0.1, w: 0.08, h: 0.02, t: "terminate" },
           { page: 1, x: 0.36, y: 0.1, w: 0.04, h: 0.02, t: "this" },
           { page: 1, x: 0.41, y: 0.1, w: 0.09, h: 0.02, t: "Agreement" },
+          { page: 1, x: 0.51, y: 0.1, w: 0.03, h: 0.02, t: "on" },
+          { page: 1, x: 0.55, y: 0.1, w: 0.05, h: 0.02, t: "thirty" },
+          { page: 1, x: 0.61, y: 0.1, w: 0.05, h: 0.02, t: "days" },
+          { page: 1, x: 0.67, y: 0.1, w: 0.05, h: 0.02, t: "written" },
+          { page: 1, x: 0.73, y: 0.1, w: 0.05, h: 0.02, t: "notice." },
         ],
       }),
       { headers: { "content-type": "application/json" } }
