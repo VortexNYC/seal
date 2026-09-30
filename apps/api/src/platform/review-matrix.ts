@@ -42,8 +42,12 @@ export type ReviewColumn = z.infer<typeof ZReviewColumn>;
 
 export const ZReviewMatrixCreate = z.object({
   title: z.string().min(1).max(200),
-  model: z.string().min(1).max(120),
-  columns: z.array(ZReviewColumn).min(1).max(32),
+  /** Optional when pack_id supplies a default model. */
+  model: z.string().min(1).max(120).optional(),
+  /** Optional when pack_id supplies columns. Explicit values win. */
+  columns: z.array(ZReviewColumn).min(1).max(32).optional(),
+  /** Review pack to expand into columns/model (builtin/* or pack_*). */
+  pack_id: z.string().min(1).max(64).optional(),
   documentIds: z.array(z.string().min(1)).min(1).max(100),
 });
 export type ReviewMatrixCreate = z.infer<typeof ZReviewMatrixCreate>;

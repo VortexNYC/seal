@@ -245,10 +245,23 @@ export async function createReviewMatrix(
     });
   }
 
+  // pack_id expansion happens at the route layer; by the time the store is
+  // called, columns + model must be resolved values.
+  const columns = input.columns;
+  const model = input.model;
+  if (!columns || columns.length === 0) {
+    throw new ReviewMatrixError("invalid_input", 400, {
+      columns: "required",
+    });
+  }
+  if (!model) {
+    throw new ReviewMatrixError("invalid_input", 400, { model: "required" });
+  }
+
   const matrixId = crypto.randomUUID();
   const matrixPublicId = newPublicId("rm");
   const now = new Date();
-  const columnsJson = JSON.stringify(input.columns);
+  const columnsJson = JSON.stringify(columns);
 
   await db.insert(reviewMatrices).values({
     id: matrixId,
@@ -256,7 +269,7 @@ export async function createReviewMatrix(
     organizationId,
     ownerId,
     title: input.title,
-    model: input.model,
+    model,
     status: "draft",
     columnsConfig: columnsJson,
     createdAt: now,
@@ -293,7 +306,7 @@ export async function createReviewMatrix(
       createdAt: now,
       documentPublicId: doc.publicId,
     });
-    for (const col of input.columns) {
+    for (const col of columns) {
       cellInserts.push({
         id: crypto.randomUUID(),
         publicId: newPublicId("rc"),

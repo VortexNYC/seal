@@ -14,7 +14,7 @@ import { registerImportTools } from "./imports";
 import { registerInteractionTools } from "./interaction";
 import { registerMemberTools } from "./members";
 import { registerRecipientTools } from "./recipients";
-import { registerReviewTools } from "./reviews";
+import { registerReviewPackTools, registerReviewTools } from "./reviews";
 import { registerRevisionTools } from "./revisions";
 import { registerSearchTools } from "./search";
 import { registerSettingsTools } from "./settings";
@@ -45,6 +45,7 @@ export function registerAllTools(
   registerMemberTools(server, client);
   registerRecipientTools(server, client);
   registerReviewTools(server, client);
+  registerReviewPackTools(server, client);
   registerRevisionTools(server, client);
   registerSearchTools(server, client);
   registerSettingsTools(server, client);
