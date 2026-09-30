@@ -1488,6 +1488,7 @@ function SigningPage() {
       data-embedded={isEmbedded ? "true" : undefined}
     >
       <SigningShell
+        embedded={isEmbedded}
         title={doc.name}
         instruction={
           isCompleted
