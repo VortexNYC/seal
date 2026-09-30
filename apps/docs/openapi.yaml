@@ -3679,6 +3679,55 @@ paths:
         "409":
           description: Already resolved
 
+  /jobs/{id}/stream:
+    get:
+      tags: [Jobs]
+      operationId: streamJob
+      summary: SSE stream of job state
+      description: >
+        `state` events carry the full job payload on every status change;
+        `:hb` comments keep the socket warm; the stream closes on
+        `done`/`error` or after ~4.5 minutes (reconnect to resume). Because
+        `EventSource` can't set headers, `?access_token=` (MCP or api token)
+        is accepted on this path only.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: access_token
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: text/event-stream of job state
+          content:
+            text/event-stream: {}
+
+  /reviews/{id}/stream:
+    get:
+      tags: [Reviews]
+      operationId: streamReviewMatrix
+      summary: SSE stream of matrix + cell state
+      description: >
+        `state` events carry `{id, status, cells[]}` — per-cell
+        `{id, row_id, column_index, status, flag, summary}` — on every
+        change; closes when the matrix leaves `generating`/`draft`.
+        `?access_token=` supported like the jobs stream.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: access_token
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: text/event-stream of matrix state
+          content:
+            text/event-stream: {}
+
   # ──────────────────────────────────────────────────────────────────────────
   # Imports
   # ──────────────────────────────────────────────────────────────────────────

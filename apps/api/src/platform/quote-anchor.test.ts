@@ -83,3 +83,20 @@ describe("chunkWords", () => {
     expect(chunkWords([])).toEqual([]);
   });
 });
+
+describe("sseResponse", () => {
+  it("emits state events and closes on terminal", async () => {
+    const { sseResponse } = await import("./sse.js");
+    const states = [{ s: "queued" }, { s: "done" }];
+    const res = sseResponse({
+      poll: async () => {
+        const v = states.shift() ?? { s: "done" };
+        return { changed: true, terminal: v.s === "done", value: v };
+      },
+    });
+    expect(res.headers.get("content-type")).toBe("text/event-stream");
+    const text = await res.text();
+    expect(text).toContain("event: state");
+    expect(text).toContain('"s":"done"');
+  });
+});
