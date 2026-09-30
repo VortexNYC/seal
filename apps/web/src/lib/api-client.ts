@@ -2196,6 +2196,63 @@ export async function redactDocumentPdf(
   );
 }
 
+const protectDocumentPdfResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  size: z.number().int(),
+  downloadUrl: z.string().nullable(),
+});
+export type ApiProtectDocumentPdfResult = z.infer<
+  typeof protectDocumentPdfResultSchema
+>;
+export async function protectDocumentPdf(
+  organizationSlug: string,
+  publicId: string,
+  input: {
+    userPassword?: string;
+    ownerPassword?: string;
+    allowPrinting?: boolean;
+    allowCopying?: boolean;
+    allowModifying?: boolean;
+    allowAnnotating?: boolean;
+    allowFillingForms?: boolean;
+    allowAssembling?: boolean;
+  }
+): Promise<ApiProtectDocumentPdfResult> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/protect-pdf`,
+    protectDocumentPdfResultSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+const unlockDocumentPdfResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  pageCount: z.number().int(),
+  warnings: z.array(z.string()),
+});
+export type ApiUnlockDocumentPdfResult = z.infer<
+  typeof unlockDocumentPdfResultSchema
+>;
+export async function unlockDocumentPdf(
+  organizationSlug: string,
+  publicId: string,
+  input: { password: string }
+): Promise<ApiUnlockDocumentPdfResult> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/unlock-pdf`,
+    unlockDocumentPdfResultSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
 const documentLayoutBlocksSchema = z.object({
   blocks: z.array(
     z.object({

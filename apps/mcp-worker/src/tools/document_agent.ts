@@ -466,4 +466,59 @@ export function registerDocumentAgentTools(
       return createToolResponse(response);
     }
   );
+
+  server.tool(
+    "seal_protect_document_pdf",
+    "Create a password-protected copy of a draft PDF (qpdf encrypt via convert-worker). Draft stays unencrypted; returns download_url for the encrypted artifact.",
+    {
+      id: z.string().describe("Document ID"),
+      user_password: z
+        .string()
+        .min(1)
+        .max(128)
+        .optional()
+        .describe("Password required to open"),
+      owner_password: z
+        .string()
+        .min(1)
+        .max(128)
+        .optional()
+        .describe("Owner password (full access)"),
+      allow_printing: z.boolean().optional(),
+      allow_copying: z.boolean().optional(),
+      allow_modifying: z.boolean().optional(),
+      allow_annotating: z.boolean().optional(),
+      allow_filling_forms: z.boolean().optional(),
+      allow_assembling: z.boolean().optional(),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/protect",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
+    "seal_unlock_document_pdf",
+    "Unlock a password-protected draft PDF in place (LibreOffice re-export — may shift complex layouts). Claims the usable bytes onto the document.",
+    {
+      id: z.string().describe("Document ID"),
+      password: z.string().min(1).max(128).describe("PDF open password"),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/unlock",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
 }

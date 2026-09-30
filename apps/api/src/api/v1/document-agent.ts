@@ -4,6 +4,7 @@
  */
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { and, desc, eq, ne } from "drizzle-orm";
+import { PDFDocument } from "pdf-lib";
 import { z } from "zod";
 
 import { createD1 } from "../../global/db.js";
@@ -18,6 +19,8 @@ import {
 import {
   ConversionError,
   convertBytesToPdf,
+  decryptPdfBytes,
+  encryptPdfBytes,
   isConvertibleFileType,
   optimizePdfBytes,
 } from "../../platform/document-conversion.js";
@@ -1400,6 +1403,206 @@ app.post("/pdf/redact", async (c) => {
     fields_removed: plan.removeIds.length,
     scrubbed_text: result.scrubbedStrings.join(" ").slice(0, 2000),
     warnings: result.warnings,
+  });
+});
+
+/**
+ * Password-protect a draft PDF: produces a downloadable encrypted artifact.
+ * The working draft stays unencrypted — pdf-lib cannot read encrypted PDFs.
+ */
+app.post("/pdf/protect", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      id: z.string().min(1),
+      user_password: z.string().min(1).max(128).optional(),
+      owner_password: z.string().min(1).max(128).optional(),
+      allow_printing: z.boolean().optional(),
+      allow_copying: z.boolean().optional(),
+      allow_modifying: z.boolean().optional(),
+      allow_annotating: z.boolean().optional(),
+      allow_filling_forms: z.boolean().optional(),
+      allow_assembling: z.boolean().optional(),
+    })
+    .safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+  if (!parsed.data.user_password && !parsed.data.owner_password) {
+    return c.json({ error: "validation_error" }, 400);
+  }
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  try {
+    await assertConvertEnabled(c.env, organizationId);
+  } catch (error) {
+    if (error instanceof FeatureDisabledError) {
+      return c.json({ error: error.code }, 403);
+    }
+    throw error;
+  }
+
+  let encrypted: ArrayBuffer;
+  try {
+    encrypted = await encryptPdfBytes(c.env, {
+      bytes: await object.arrayBuffer(),
+      userPassword: parsed.data.user_password,
+      ownerPassword: parsed.data.owner_password,
+      allowPrinting: parsed.data.allow_printing,
+      allowCopying: parsed.data.allow_copying,
+      allowModifying: parsed.data.allow_modifying,
+      allowAnnotating: parsed.data.allow_annotating,
+      allowFillingForms: parsed.data.allow_filling_forms,
+      allowAssembling: parsed.data.allow_assembling,
+    });
+  } catch (error) {
+    if (error instanceof ConversionError) {
+      return c.json(
+        { error: error.message },
+        error.statusCode === 504 ? 504 : 502
+      );
+    }
+    throw error;
+  }
+
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, encrypted, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: mcp.sub,
+      protectedFrom: doc.storageKey,
+    },
+  });
+
+  const origin = new URL(c.req.url).origin;
+  const token = await createDownloadToken(c.env, {
+    userId: mcp.sub,
+    organizationId,
+    storageKey: storageId,
+    documentName: `${doc.name}-protected.pdf`,
+    documentId: doc.id,
+    actorType: "agent",
+  });
+
+  return c.json({
+    success: true,
+    storage_id: storageId,
+    size: encrypted.byteLength,
+    download_url: token
+      ? `${origin}/api/v1/documents/download-file?token=${encodeURIComponent(token)}`
+      : null,
+  });
+});
+
+/** Unlock an encrypted PDF at storageKey; usable bytes claim the doc. */
+app.post("/pdf/unlock", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      id: z.string().min(1),
+      password: z.string().min(1).max(128),
+    })
+    .safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  const srcBytes = await object.arrayBuffer();
+  try {
+    await PDFDocument.load(srcBytes);
+    return c.json({ error: "not_encrypted" }, 400);
+  } catch (error) {
+    // pdf-lib's EncryptedPDFError loses its prototype in the transpiled
+    // bundle (tslib __extends on Error) — match on the message.
+    const msg = error instanceof Error ? error.message : "";
+    if (!msg.includes("`PDFDocument.load` is encrypted")) {
+      return c.json({ error: "invalid_pdf" }, 400);
+    }
+  }
+
+  try {
+    await assertConvertEnabled(c.env, organizationId);
+  } catch (error) {
+    if (error instanceof FeatureDisabledError) {
+      return c.json({ error: error.code }, 403);
+    }
+    throw error;
+  }
+
+  let decrypted: ArrayBuffer;
+  try {
+    decrypted = await decryptPdfBytes(c.env, {
+      bytes: srcBytes,
+      password: parsed.data.password,
+    });
+  } catch (error) {
+    if (error instanceof ConversionError) {
+      return c.json(
+        { error: error.message },
+        error.statusCode === 504 ? 504 : error.statusCode === 400 ? 400 : 502
+      );
+    }
+    throw error;
+  }
+
+  const pageCount = await getPdfPageCount(decrypted);
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, decrypted, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: mcp.sub,
+      decryptedFrom: doc.storageKey,
+    },
+  });
+
+  const claimed = await commitDocumentPdfRemap(db, {
+    documentId: doc.id,
+    expectedStorageKey: doc.storageKey,
+    storageId,
+    size: decrypted.byteLength,
+    pageCount,
+    plan: { removeIds: [], updates: [] },
+  });
+  if (!claimed) {
+    return c.json({ error: "document_version_conflict" }, 409);
+  }
+
+  return c.json({
+    success: true,
+    storage_id: storageId,
+    page_count: pageCount,
+    warnings: ["libreoffice_roundtrip"],
   });
 });
 

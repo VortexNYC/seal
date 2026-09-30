@@ -152,3 +152,110 @@ export async function optimizePdfBytes(
 
   return response.arrayBuffer();
 }
+
+export interface EncryptPdfInput {
+  bytes: ArrayBuffer | Uint8Array;
+  userPassword?: string;
+  ownerPassword?: string;
+  allowPrinting?: boolean;
+  allowCopying?: boolean;
+  allowModifying?: boolean;
+  allowAnnotating?: boolean;
+  allowFillingForms?: boolean;
+  allowAssembling?: boolean;
+}
+
+/** Encrypt a PDF via convert-worker (Gotenberg pdfengines /encrypt). */
+export async function encryptPdfBytes(
+  env: CloudflareBindings,
+  input: EncryptPdfInput
+): Promise<ArrayBuffer> {
+  if (!env.SEAL_CONVERT_WORKER) {
+    throw new ConversionError(
+      "converter_not_configured",
+      503,
+      "SEAL_CONVERT_WORKER service binding is not configured"
+    );
+  }
+
+  const file = new File([new Uint8Array(input.bytes)], "document.pdf", {
+    type: "application/pdf",
+  });
+  const form = new FormData();
+  form.append("files", file);
+  if (input.userPassword) form.append("userPassword", input.userPassword);
+  if (input.ownerPassword) form.append("ownerPassword", input.ownerPassword);
+  for (const [key, value] of Object.entries({
+    allowPrinting: input.allowPrinting,
+    allowCopying: input.allowCopying,
+    allowModifying: input.allowModifying,
+    allowAnnotating: input.allowAnnotating,
+    allowFillingForms: input.allowFillingForms,
+    allowAssembling: input.allowAssembling,
+  })) {
+    if (value !== undefined) form.append(key, String(value));
+  }
+
+  const response = await env.SEAL_CONVERT_WORKER.fetch(
+    new Request("http://internal/encrypt-pdf", {
+      method: "POST",
+      body: form,
+      headers: {
+        "x-internal-api-key": env.INTERNAL_API_KEY,
+      },
+    })
+  );
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new ConversionError(
+      "encrypt_failed",
+      response.status === 504 ? 504 : 502,
+      text
+    );
+  }
+
+  return response.arrayBuffer();
+}
+
+/** Decrypt a password-protected PDF via convert-worker (LibreOffice roundtrip). */
+export async function decryptPdfBytes(
+  env: CloudflareBindings,
+  input: { bytes: ArrayBuffer | Uint8Array; password: string }
+): Promise<ArrayBuffer> {
+  if (!env.SEAL_CONVERT_WORKER) {
+    throw new ConversionError(
+      "converter_not_configured",
+      503,
+      "SEAL_CONVERT_WORKER service binding is not configured"
+    );
+  }
+
+  const file = new File([new Uint8Array(input.bytes)], "document.pdf", {
+    type: "application/pdf",
+  });
+  const form = new FormData();
+  form.append("files", file);
+  form.append("password", input.password);
+
+  const response = await env.SEAL_CONVERT_WORKER.fetch(
+    new Request("http://internal/decrypt-pdf", {
+      method: "POST",
+      body: form,
+      headers: {
+        "x-internal-api-key": env.INTERNAL_API_KEY,
+      },
+    })
+  );
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new ConversionError(
+      "decrypt_failed",
+      response.status === 400 ? 400 : response.status === 504 ? 504 : 502,
+      text
+    );
+  }
+
+  return response.arrayBuffer();
+}

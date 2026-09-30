@@ -13,6 +13,7 @@ import {
   compressDocumentPdf,
   cropDocumentPdf,
   getDocuments,
+  protectDocumentPdf,
   redactDocumentPdf,
   mergeDocumentPdf,
   numberDocumentPdfPages,
@@ -200,6 +201,23 @@ export function DocumentPagesCapabilityPanel({
     },
   });
 
+  const [protectedDownloadUrl, setProtectedDownloadUrl] = useState<
+    string | null
+  >(null);
+  const protectMutation = useMutation({
+    mutationFn: (input: { userPassword?: string; ownerPassword?: string }) =>
+      protectDocumentPdf(organizationSlug, documentPublicId, input),
+    onSuccess: (result) => {
+      setProtectedDownloadUrl(result.downloadUrl);
+      toast.success("Protected copy ready — download link below");
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to protect PDF"
+      );
+    },
+  });
+
   const mergeMutation = useMutation({
     mutationFn: (input: { sourcePublicIds: string[]; title?: string }) =>
       mergeDocumentPdf(organizationSlug, documentPublicId, input),
@@ -259,6 +277,8 @@ export function DocumentPagesCapabilityPanel({
         cropping={cropMutation.isPending}
         compressing={compressMutation.isPending}
         redacting={redactMutation.isPending}
+        protecting={protectMutation.isPending}
+        protectedDownloadUrl={protectedDownloadUrl}
         watermarking={watermarkMutation.isPending}
         numbering={numberPagesMutation.isPending}
         merging={mergeMutation.isPending}
@@ -270,6 +290,7 @@ export function DocumentPagesCapabilityPanel({
         onNumberPages={(input) => numberPagesMutation.mutate(input)}
         onCompress={(input) => compressMutation.mutate(input)}
         onRedact={(input) => redactMutation.mutate(input)}
+        onProtect={(input) => protectMutation.mutate(input)}
         onMerge={(input) => mergeMutation.mutate(input)}
         className={docked ? "p-0" : undefined}
       />

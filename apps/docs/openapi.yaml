@@ -1768,6 +1768,89 @@ paths:
                     type: array
                     items: { type: string }
 
+  /documents/pdf/protect:
+    post:
+      tags: [Documents]
+      operationId: protectDocumentPdf
+      summary: Produce a password-protected copy of a draft PDF
+      description: >
+        Encrypts the PDF via convert-worker pdfengines (qpdf) and stores an
+        encrypted artifact; `download_url` fetches it. The working draft
+        stays unencrypted — Seal's own pipeline cannot read encrypted PDFs.
+        Honours the org `egress.allow_convert` gate.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string }
+                user_password:
+                  type: string
+                  maxLength: 128
+                  description: Password required to open the PDF
+                owner_password:
+                  type: string
+                  maxLength: 128
+                  description: Password granting full access (defaults to user)
+                allow_printing: { type: boolean }
+                allow_copying: { type: boolean }
+                allow_modifying: { type: boolean }
+                allow_annotating: { type: boolean }
+                allow_filling_forms: { type: boolean }
+                allow_assembling: { type: boolean }
+      responses:
+        "200":
+          description: Protected copy created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  storage_id: { type: string }
+                  size: { type: integer }
+                  download_url: { type: string, nullable: true }
+
+  /documents/pdf/unlock:
+    post:
+      tags: [Documents]
+      operationId: unlockDocumentPdf
+      summary: Unlock an encrypted draft PDF in place
+      description: >
+        Decrypts a password-protected PDF via LibreOffice re-export and
+        claims the usable bytes back onto the document (the draft was not
+        readable by pdf-lib anyway). Returns `libreoffice_roundtrip` in
+        `warnings` — layout may shift on complex documents.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, password]
+              properties:
+                id: { type: string }
+                password: { type: string, maxLength: 128 }
+      responses:
+        "200":
+          description: Unlocked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  storage_id: { type: string }
+                  page_count: { type: integer }
+                  warnings:
+                    type: array
+                    items: { type: string }
+        "400":
+          description: not_encrypted / invalid_pdf / wrong password
+
   /documents/send:
     post:
       tags: [Documents]
