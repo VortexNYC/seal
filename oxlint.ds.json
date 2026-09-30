@@ -1,0 +1,34 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json",
+  "jsPlugins": ["@shadcn/lint"],
+  "ignorePatterns": [
+    "**/.blume/**",
+    "**/node_modules/**",
+    "**/routeTree.gen.ts",
+    "**/dist/**"
+  ],
+  "rules": {
+    "shadcn/no-raw-colors": [
+      "error",
+      {
+        "message": "Use the theme token (e.g. bg-*/text-* names from styles.css), or declare a new --color-* there. ADR-002."
+      }
+    ],
+    "shadcn/no-arbitrary-values": [
+      "warn",
+      {
+        "message": "Prefer the theme scale — move off-token values to a token when the design calls for one."
+      }
+    ],
+    "shadcn/no-inline-styles": "warn",
+    "shadcn/require-static-classes": "warn",
+    "shadcn/no-restyle": [
+      "warn",
+      {
+        "componentImports": ["@cloudflare/kumo/components/*"],
+        "allow": ["layout"],
+        "message": "Kumo primitives own their look — prefer size/variant props over visual restyling. ADR-002."
+      }
+    ]
+  }
+}

@@ -17,7 +17,6 @@ import { PlusIcon, ScaleIcon, TrashIcon } from "lucide-react";
 import { useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
-import { useSuspenseOrganization } from "@/hooks/use-organization";
 import {
   createReviewMatrix,
   getDocuments,
