@@ -437,6 +437,7 @@ app.post("/tracked-docx", async (c) => {
       "content-type":
         response.headers.get("content-type") ?? "application/octet-stream",
       "x-skipped-edits": response.headers.get("x-skipped-edits") ?? "0",
+      "x-grafted": response.headers.get("x-grafted") ?? "0",
     },
   });
 });

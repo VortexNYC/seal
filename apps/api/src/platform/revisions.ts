@@ -260,6 +260,21 @@ function revisedTextToHtml(title: string, text: string): string {
  * derived draft that re-parses + re-extracts fields. The source stays
  * untouched; the suggestion records derivedDocumentId.
  */
+const DOCX_MIME =
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+/** Original docx bytes for surgical grafting, when the doc came in as .docx. */
+async function originalDocxBytes(
+  env: CloudflareBindings,
+  doc: { originalStorageKey: string | null; originalContentType: string | null }
+): Promise<ArrayBuffer | undefined> {
+  if (!doc.originalStorageKey || doc.originalContentType !== DOCX_MIME) {
+    return undefined;
+  }
+  const obj = await env.DOCUMENTS_BUCKET.get(doc.originalStorageKey);
+  return obj ? obj.arrayBuffer() : undefined;
+}
+
 export async function acceptRevision(
   env: CloudflareBindings,
   db: Db,
@@ -315,6 +330,7 @@ export async function acceptRevision(
         },
       ],
       author: "Seal revision",
+      docxBytes: await originalDocxBytes(env, doc),
     });
     const docxKey = `uploads/${crypto.randomUUID()}`;
     const docxBytes = new Uint8Array(docx.bytes);
@@ -466,6 +482,7 @@ export async function acceptAllPendingForDocument(
         proposed_text: e.proposedText,
       })),
       author: "Seal revision",
+      docxBytes: await originalDocxBytes(env, doc),
     });
     const docxKey = `uploads/${crypto.randomUUID()}`;
     await env.DOCUMENTS_BUCKET.put(docxKey, new Uint8Array(docx.bytes), {

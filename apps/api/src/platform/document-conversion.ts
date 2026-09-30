@@ -551,6 +551,14 @@ export type TrackedDocxEdit = {
   proposed_text?: string | null;
 };
 
+function toBase64(bytes: Uint8Array): string {
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 8192) {
+    bin += String.fromCharCode(...bytes.subarray(i, i + 8192));
+  }
+  return btoa(bin);
+}
+
 /**
  * Build a .docx with real tracked changes (w:ins/w:del runs + trackChanges
  * settings) via pdf-tools — the negotiation round-trip: Word opens it as
@@ -563,8 +571,10 @@ export async function trackedDocxBytes(
     text: string;
     edits: TrackedDocxEdit[];
     author?: string;
+    /** Original .docx bytes — graft edits into its XML (format preserved). */
+    docxBytes?: ArrayBuffer;
   }
-): Promise<{ bytes: ArrayBuffer; skippedEdits: number }> {
+): Promise<{ bytes: ArrayBuffer; skippedEdits: number; grafted: boolean }> {
   if (!env.SEAL_CONVERT_WORKER) {
     throw new ConversionError(
       "converter_not_configured",
@@ -572,10 +582,14 @@ export async function trackedDocxBytes(
       "SEAL_CONVERT_WORKER service binding is not configured"
     );
   }
+  const { docxBytes, ...rest } = payload;
   const response = await env.SEAL_CONVERT_WORKER.fetch(
     new Request("http://internal/tracked-docx", {
       method: "POST",
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        ...rest,
+        docx_b64: docxBytes ? toBase64(new Uint8Array(docxBytes)) : undefined,
+      }),
       headers: {
         "content-type": "application/json",
         "x-internal-api-key": env.INTERNAL_API_KEY,
@@ -591,5 +605,9 @@ export async function trackedDocxBytes(
     );
   }
   const skippedEdits = Number(response.headers.get("x-skipped-edits") ?? "0");
-  return { bytes: await response.arrayBuffer(), skippedEdits };
+  return {
+    bytes: await response.arrayBuffer(),
+    skippedEdits,
+    grafted: response.headers.get("x-grafted") === "1",
+  };
 }
