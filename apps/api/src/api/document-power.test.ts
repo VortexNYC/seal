@@ -485,6 +485,28 @@ describe("document power routes", () => {
     expect(object).not.toBeNull();
   });
 
+  it("export-pdf-images produces a ZIP artifact", async () => {
+    const app = await seedFixture();
+    const res = await app.fetch(
+      powerPost(DOC_PUBLIC_ID, "export-pdf-images", {
+        format: "png",
+        dpi: 150,
+      }),
+      env
+    );
+    expect(res.status).toBe(200);
+    const json = z
+      .object({
+        success: z.boolean(),
+        storageId: z.string(),
+        format: z.string(),
+        downloadUrl: z.string().nullable(),
+      })
+      .parse(await res.json());
+    const object = await env.DOCUMENTS_BUCKET.get(json.storageId);
+    expect(object).not.toBeNull();
+  });
+
   it("compress-pdf honours the org convert egress gate", async () => {
     const app = await seedFixture();
     const db = createD1(env.D1);

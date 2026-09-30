@@ -259,6 +259,47 @@ export async function flattenPdfBytes(
   return response.arrayBuffer();
 }
 
+/** Rasterise a PDF to per-page images; returns a ZIP of page-*.{png,jpg}. */
+export async function pdfToImagesZip(
+  env: CloudflareBindings,
+  input: { bytes: ArrayBuffer | Uint8Array; format?: "png" | "jpeg"; dpi?: number }
+): Promise<ArrayBuffer> {
+  if (!env.SEAL_CONVERT_WORKER) {
+    throw new ConversionError(
+      "converter_not_configured",
+      503,
+      "SEAL_CONVERT_WORKER service binding is not configured"
+    );
+  }
+
+  const format = input.format === "jpeg" ? "jpeg" : "png";
+  const dpi = Math.max(50, Math.min(600, Math.round(input.dpi ?? 150)));
+  const response = await env.SEAL_CONVERT_WORKER.fetch(
+    new Request(
+      `http://internal/pdf-to-images?format=${format}&dpi=${dpi}`,
+      {
+        method: "POST",
+        body: new Uint8Array(input.bytes),
+        headers: {
+          "Content-Type": "application/pdf",
+          "x-internal-api-key": env.INTERNAL_API_KEY,
+        },
+      }
+    )
+  );
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new ConversionError(
+      "export_images_failed",
+      response.status === 504 ? 504 : 502,
+      text
+    );
+  }
+
+  return response.arrayBuffer();
+}
+
 /** Decrypt a password-protected PDF via convert-worker (LibreOffice roundtrip). */
 export async function decryptPdfBytes(
   env: CloudflareBindings,

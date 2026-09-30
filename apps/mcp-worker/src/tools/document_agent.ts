@@ -504,6 +504,31 @@ export function registerDocumentAgentTools(
   );
 
   server.tool(
+    "seal_export_document_pdf_images",
+    "Export every page of a draft PDF as images — returns a ZIP artifact (page-N.png|jpg) and download_url. Working draft unchanged.",
+    {
+      id: z.string().describe("Document ID"),
+      format: z.enum(["png", "jpeg"]).default("png").describe("Image format"),
+      dpi: z
+        .number()
+        .min(50)
+        .max(600)
+        .default(150)
+        .describe("Render DPI (50–600)"),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/export-images",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
     "seal_flatten_document_pdf",
     "Flatten annotations and AcroForm fields into page content (pdfengines/flatten). Seal signature fields (stored in the database) are unaffected.",
     {

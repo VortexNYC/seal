@@ -12,6 +12,7 @@ import {
 import {
   compressDocumentPdf,
   cropDocumentPdf,
+  exportDocumentPdfImages,
   flattenDocumentPdf,
   getDocuments,
   protectDocumentPdf,
@@ -232,6 +233,23 @@ export function DocumentPagesCapabilityPanel({
     },
   });
 
+  const [imagesDownloadUrl, setImagesDownloadUrl] = useState<string | null>(
+    null
+  );
+  const exportImagesMutation = useMutation({
+    mutationFn: (input: { format: "png" | "jpeg"; dpi: number }) =>
+      exportDocumentPdfImages(organizationSlug, documentPublicId, input),
+    onSuccess: (result) => {
+      setImagesDownloadUrl(result.downloadUrl);
+      toast.success("Images ready — download link below");
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to export images"
+      );
+    },
+  });
+
   const mergeMutation = useMutation({
     mutationFn: (input: { sourcePublicIds: string[]; title?: string }) =>
       mergeDocumentPdf(organizationSlug, documentPublicId, input),
@@ -293,7 +311,9 @@ export function DocumentPagesCapabilityPanel({
         redacting={redactMutation.isPending}
         protecting={protectMutation.isPending}
         flattening={flattenMutation.isPending}
+        exporting={exportImagesMutation.isPending}
         protectedDownloadUrl={protectedDownloadUrl}
+        imagesDownloadUrl={imagesDownloadUrl}
         watermarking={watermarkMutation.isPending}
         numbering={numberPagesMutation.isPending}
         merging={mergeMutation.isPending}
@@ -307,6 +327,7 @@ export function DocumentPagesCapabilityPanel({
         onRedact={(input) => redactMutation.mutate(input)}
         onProtect={(input) => protectMutation.mutate(input)}
         onFlatten={() => flattenMutation.mutate()}
+        onExportImages={(input) => exportImagesMutation.mutate(input)}
         onMerge={(input) => mergeMutation.mutate(input)}
         className={docked ? "p-0" : undefined}
       />

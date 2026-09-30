@@ -1882,6 +1882,49 @@ paths:
                   storage_id: { type: string }
                   page_count: { type: integer }
 
+  /documents/pdf/export-images:
+    post:
+      tags: [Documents]
+      operationId: exportDocumentPdfImages
+      summary: Export every page of a draft PDF as images
+      description: >
+        Rasterises each page via poppler (pdftoppm) in the pdf-tools
+        container and returns a ZIP artifact (`page-N.png|jpg`) with a
+        `download_url`. Artifact model — the working draft is unchanged.
+        Honours the org `egress.allow_convert` gate.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string }
+                format:
+                  type: string
+                  enum: [png, jpeg]
+                  default: png
+                dpi:
+                  type: number
+                  minimum: 50
+                  maximum: 600
+                  default: 150
+      responses:
+        "200":
+          description: Images ZIP created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  storage_id: { type: string }
+                  size: { type: integer }
+                  format: { type: string }
+                  dpi: { type: number }
+                  download_url: { type: string, nullable: true }
+
   /documents/send:
     post:
       tags: [Documents]

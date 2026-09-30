@@ -22,9 +22,12 @@ export type DocumentPdfOpsPanelProps = {
   redacting?: boolean;
   protecting?: boolean;
   flattening?: boolean;
+  exporting?: boolean;
   merging?: boolean;
   /** Download URL for the last protected copy this session produced. */
   protectedDownloadUrl?: string | null;
+  /** Download URL for the last exported images ZIP this session produced. */
+  imagesDownloadUrl?: string | null;
   /** Other draft docs available to merge (publicId + name). */
   mergeCandidates?: Array<{ publicId: string; name: string }>;
   onRotate: (input: { degrees: 90 | 180 | 270; pages?: number[] }) => void;
@@ -60,6 +63,7 @@ export type DocumentPdfOpsPanelProps = {
   }) => void;
   onProtect: (input: { userPassword?: string; ownerPassword?: string }) => void;
   onFlatten: () => void;
+  onExportImages: (input: { format: "png" | "jpeg"; dpi: number }) => void;
   onMerge: (input: { sourcePublicIds: string[]; title?: string }) => void;
 };
 
@@ -95,8 +99,10 @@ export function DocumentPdfOpsPanel({
   redacting = false,
   protecting = false,
   flattening = false,
+  exporting = false,
   merging = false,
   protectedDownloadUrl = null,
+  imagesDownloadUrl = null,
   mergeCandidates = [],
   onRotate,
   onOrganize,
@@ -107,6 +113,7 @@ export function DocumentPdfOpsPanel({
   onRedact,
   onProtect,
   onFlatten,
+  onExportImages,
   onMerge,
 }: DocumentPdfOpsPanelProps): JSX.Element {
   const [scope, setScope] = useState<"all" | "current">("all");
@@ -131,6 +138,8 @@ export function DocumentPdfOpsPanel({
     height: "10",
   });
   const [protectPassword, setProtectPassword] = useState("");
+  const [exportFormat, setExportFormat] = useState<"png" | "jpeg">("png");
+  const [exportDpi, setExportDpi] = useState(150);
   const [selectedMergeIds, setSelectedMergeIds] = useState<string[]>([]);
   const [mergeTitle, setMergeTitle] = useState("");
 
@@ -600,6 +609,56 @@ export function DocumentPdfOpsPanel({
         >
           {flattening ? "Flattening…" : "Flatten PDF"}
         </Button>
+      </div>
+
+      <div className="border-border space-y-2 border-t pt-4">
+        <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
+          Export pages as images
+        </p>
+        <div className="flex gap-2">
+          {(["png", "jpeg"] as const).map((f) => (
+            <Button
+              key={f}
+              type="button"
+              size="sm"
+              variant={exportFormat === f ? "primary" : "outline"}
+              onClick={() => setExportFormat(f)}
+            >
+              {f.toUpperCase()}
+            </Button>
+          ))}
+          {[72, 150, 300].map((d) => (
+            <Button
+              key={d}
+              type="button"
+              size="sm"
+              variant={exportDpi === d ? "primary" : "outline"}
+              onClick={() => setExportDpi(d)}
+            >
+              {d}dpi
+            </Button>
+          ))}
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          disabled={exporting || pageCount < 1}
+          onClick={() =>
+            onExportImages({ format: exportFormat, dpi: exportDpi })
+          }
+        >
+          {exporting ? "Exporting…" : "Export images ZIP"}
+        </Button>
+        {imagesDownloadUrl ? (
+          <a
+            href={imagesDownloadUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="text-foreground block text-xs underline"
+          >
+            Download images ZIP
+          </a>
+        ) : null}
       </div>
 
       <div className="border-border space-y-2 border-t pt-4">

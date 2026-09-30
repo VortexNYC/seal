@@ -23,9 +23,16 @@ export class Converter extends Container {
   override sleepAfter = "60s";
 }
 
+/** Poppler-tools container (image export, text extract, OCR, repair). */
+export class PdfTools extends Container {
+  override defaultPort = 8080;
+  override sleepAfter = "60s";
+}
+
 type Bindings = {
   INTERNAL_API_KEY?: string;
   CONVERTER: DurableObjectNamespace<Converter>;
+  PDF_TOOLS: DurableObjectNamespace<PdfTools>;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -258,6 +265,79 @@ app.post("/flatten-pdf", async (c) => {
       "Content-Type": "application/pdf",
       "Content-Disposition": 'attachment; filename="flattened.pdf"',
     },
+  });
+});
+
+/**
+ * Rasterise a PDF to per-page images via the pdf-tools container.
+ * Query: format=png|jpeg (default png), dpi=50..600 (default 150).
+ * Returns application/zip — one image per page.
+ */
+app.post("/pdf-to-images", async (c) => {
+  const contentType = c.req.header("content-type") ?? "";
+  const body = await c.req.arrayBuffer();
+  if (!contentType.startsWith("application/pdf")) {
+    return c.text("Expected application/pdf body", 400);
+  }
+  const url = new URL(c.req.url);
+  const format = url.searchParams.get("format") ?? "png";
+  const dpi = url.searchParams.get("dpi") ?? "150";
+
+  const id = c.env.PDF_TOOLS.idFromName("pdftools");
+  const container = c.env.PDF_TOOLS.get(id);
+  const response = await container.fetch(
+    new Request(
+      `http://internal/to-images?format=${encodeURIComponent(format)}&dpi=${encodeURIComponent(dpi)}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/pdf",
+        },
+        body,
+      }
+    )
+  );
+
+  if (!response.ok) {
+    const text = await response.text();
+    return new Response(text, { status: response.status });
+  }
+
+  return new Response(await response.arrayBuffer(), {
+    headers: {
+      "Content-Type": "application/zip",
+      "Content-Disposition": 'attachment; filename="pages.zip"',
+    },
+  });
+});
+
+/** Extract embedded text via pdf-tools (pdftotext -layout). */
+app.post("/pdf-to-text", async (c) => {
+  const contentType = c.req.header("content-type") ?? "";
+  const body = await c.req.arrayBuffer();
+  if (!contentType.startsWith("application/pdf")) {
+    return c.text("Expected application/pdf body", 400);
+  }
+
+  const id = c.env.PDF_TOOLS.idFromName("pdftools");
+  const container = c.env.PDF_TOOLS.get(id);
+  const response = await container.fetch(
+    new Request("http://internal/to-text", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/pdf",
+      },
+      body,
+    })
+  );
+
+  if (!response.ok) {
+    const text = await response.text();
+    return new Response(text, { status: response.status });
+  }
+
+  return new Response(await response.arrayBuffer(), {
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
   });
 });
 
