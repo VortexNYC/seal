@@ -166,6 +166,14 @@ const matrixSchema = z.object({
               documentId: z.string(),
               quote: z.string(),
               page: z.number().optional(),
+              bbox: z
+                .object({
+                  x: z.number(),
+                  y: z.number(),
+                  width: z.number(),
+                  height: z.number(),
+                })
+                .optional(),
             })
           ),
         })
@@ -196,6 +204,8 @@ describe("POST/GET /api/v1/reviews", () => {
     const { userId, orgId, db } = await seedOrgAndUser();
 
     const docPublicId = `doc_${crypto.randomUUID().slice(0, 8)}`;
+    const storageKey = `uploads/${crypto.randomUUID()}`;
+    await env.DOCUMENTS_BUCKET.put(storageKey, "%PDF-1.4 fake");
     await db.insert(documents).values({
       id: crypto.randomUUID(),
       publicId: docPublicId,
@@ -203,6 +213,7 @@ describe("POST/GET /api/v1/reviews", () => {
       ownerId: userId,
       name: "NDA",
       status: "draft",
+      storageKey,
       parsedText:
         "Either party may terminate this Agreement on thirty days written notice.",
     });
@@ -288,6 +299,11 @@ describe("POST/GET /api/v1/reviews", () => {
           cell?.citations[0]?.quote ?? "___"
         )
     ).toBe(true);
+    // Anchored citation carries page + normalized bbox when the quote lands.
+    if (cell?.citations[0]?.quote !== "not_found") {
+      expect(cell?.citations[0]?.page).toBe(1);
+      expect(cell?.citations[0]?.bbox).toBeDefined();
+    }
 
     const getRes = await indexApp.request(
       `http://localhost/api/v1/reviews/${created.id}`,
