@@ -1135,6 +1135,12 @@ paths:
           $ref: "#/components/responses/NotFound"
 
   /documents/update:
+    post:
+      tags: [Documents]
+      deprecated: true
+      summary: Update a document (legacy alias — use PUT)
+      responses:
+        "200": { description: Updated }
     put:
       tags: [Documents]
       operationId: updateDocument
@@ -1177,6 +1183,12 @@ paths:
           $ref: "#/components/responses/NotFound"
 
   /documents/delete:
+    post:
+      tags: [Documents]
+      deprecated: true
+      summary: Delete a document (legacy alias — use DELETE)
+      responses:
+        "200": { description: Deleted }
     delete:
       tags: [Documents]
       operationId: deleteDocument
@@ -2643,6 +2655,12 @@ paths:
           $ref: "#/components/responses/NotFound"
 
   /recipients/update:
+    post:
+      tags: [Recipients]
+      deprecated: true
+      summary: Update a recipient (legacy alias — use PUT)
+      responses:
+        "200": { description: Updated }
     put:
       tags: [Recipients]
       operationId: updateRecipient
@@ -2689,6 +2707,12 @@ paths:
           $ref: "#/components/responses/NotFound"
 
   /recipients/delete:
+    post:
+      tags: [Recipients]
+      deprecated: true
+      summary: Delete a recipient (legacy alias — use DELETE)
+      responses:
+        "200": { description: Deleted }
     delete:
       tags: [Recipients]
       operationId: removeRecipient
@@ -3349,6 +3373,12 @@ paths:
           $ref: "#/components/responses/NotFound"
 
   /contacts/delete:
+    post:
+      tags: [Contacts]
+      deprecated: true
+      summary: Delete a contact (legacy alias — use DELETE)
+      responses:
+        "200": { description: Deleted }
     delete:
       tags: [Contacts]
       operationId: deleteContact
@@ -4549,6 +4579,43 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /organizations/{organizationSlug}/audit:
+    get:
+      tags: [Audit]
+      operationId: listOrgAuditLog
+      summary: List organization audit events (filtered, cursor-paginated)
+      parameters:
+        - name: organizationSlug
+          in: path
+          required: true
+          schema: { type: string }
+        - name: actor
+          in: query
+          schema: { type: string }
+        - name: action
+          in: query
+          schema: { type: string }
+        - name: resourceType
+          in: query
+          schema: { type: string }
+        - name: from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100 }
+        - name: cursor
+          in: query
+          schema: { type: integer, minimum: 0 }
+      responses:
+        "200": { description: Audit events }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403": { description: Requires admin }
+
   /organizations/{organizationSlug}/audit/verify:
     get:
       tags: [Audit]
@@ -4831,6 +4898,90 @@ paths:
   # ──────────────────────────────────────────────────────────────────────────
   # API tokens
   # ──────────────────────────────────────────────────────────────────────────
+
+  /organizations/{organizationSlug}/webhooks:
+    get:
+      tags: [Webhooks]
+      operationId: listOrgWebhooks
+      summary: List webhooks for an organization
+      parameters:
+        - name: organizationSlug
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Webhook list }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Webhooks]
+      operationId: createOrgWebhook
+      summary: Create an organization webhook
+      parameters:
+        - name: organizationSlug
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, url, events]
+              properties:
+                name: { type: string }
+                url: { type: string, format: uri }
+                description: { type: string }
+                events:
+                  type: array
+                  items: { type: string }
+                  description: Event types — see /webhooks/event-types
+      responses:
+        "201":
+          description: Created — includes the signing secret (shown once)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  secret: { type: string }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "403": { description: Requires admin }
+
+  /organizations/{organizationSlug}/webhooks/event-types:
+    get:
+      tags: [Webhooks]
+      operationId: listOrgWebhookEventTypes
+      summary: Supported webhook event types
+      parameters:
+        - name: organizationSlug
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Event type catalog }
+
+  /organizations/{organizationSlug}/webhooks/{webhookId}:
+    delete:
+      tags: [Webhooks]
+      operationId: deleteOrgWebhook
+      summary: Delete an organization webhook
+      parameters:
+        - name: organizationSlug
+          in: path
+          required: true
+          schema: { type: string }
+        - name: webhookId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Deleted }
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /organizations/{organizationSlug}/tokens:
     get:
