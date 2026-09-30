@@ -58,6 +58,8 @@ interface FieldInputManagerProps {
   onSave: (value?: string, signatureImageUrl?: string) => Promise<void>;
   recipientName?: string;
   signingToken?: string;
+  /** SEA-84: signed-in signers get adopt / library on Form View too. */
+  showLibrary?: boolean;
 }
 
 interface FieldInputContentProps {
@@ -70,6 +72,7 @@ interface FieldInputContentProps {
   validationRules?: FieldInputManagerProps["validationRules"];
   signingToken?: string;
   recipientName?: string;
+  showLibrary?: boolean;
   onValueChange: (value: string) => void;
   onValidationChange: (valid: boolean, error?: string) => void;
   onSignatureCapture: (
@@ -94,6 +97,7 @@ type FieldRendererProps = FieldInputContentProps & {
 
 const signatureRenderer = ({
   recipientName,
+  showLibrary,
   onSignatureCapture,
   onCancelSignature,
 }: FieldRendererProps): ReactNode => (
@@ -101,6 +105,7 @@ const signatureRenderer = ({
     recipientName={recipientName}
     onSignatureCapture={onSignatureCapture}
     onCancel={onCancelSignature}
+    showLibrary={showLibrary}
   />
 );
 
@@ -226,6 +231,7 @@ function FieldInputContent({
   validationRules,
   signingToken,
   recipientName,
+  showLibrary,
   onValueChange,
   onValidationChange,
   onSignatureCapture,
@@ -251,6 +257,7 @@ function FieldInputContent({
     validationRules,
     signingToken,
     recipientName,
+    showLibrary,
     onValueChange,
     onValidationChange,
     onSignatureCapture,
@@ -416,6 +423,7 @@ export function FieldInputManager({
   onSave,
   recipientName,
   signingToken,
+  showLibrary = false,
 }: FieldInputManagerProps) {
   const dialogText = getDialogText(fieldType, isRequired);
   const fieldState = useFieldInputState({
@@ -444,6 +452,7 @@ export function FieldInputManager({
             validationRules={validationRules}
             signingToken={signingToken}
             recipientName={recipientName}
+            showLibrary={showLibrary}
             onValueChange={fieldState.setValue}
             onValidationChange={fieldState.handleValidationChange}
             onSignatureCapture={fieldState.handleSignatureCapture}
