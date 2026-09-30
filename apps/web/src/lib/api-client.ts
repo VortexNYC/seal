@@ -2160,6 +2160,42 @@ export async function compressDocumentPdf(
   );
 }
 
+const redactDocumentPdfResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  regionsApplied: z.number().int(),
+  opsScrubbed: z.number().int(),
+  annotsScrubbed: z.number().int(),
+  fieldsRemoved: z.number().int(),
+  scrubbedText: z.string(),
+  warnings: z.array(z.string()),
+});
+export type ApiRedactDocumentPdfResult = z.infer<
+  typeof redactDocumentPdfResultSchema
+>;
+export async function redactDocumentPdf(
+  organizationSlug: string,
+  publicId: string,
+  input: {
+    regions: Array<{
+      page: number;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    }>;
+  }
+): Promise<ApiRedactDocumentPdfResult> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/redact-pdf`,
+    redactDocumentPdfResultSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
 const documentLayoutBlocksSchema = z.object({
   blocks: z.array(
     z.object({

@@ -320,6 +320,46 @@ describe("document power routes", () => {
     expect(fields).toHaveLength(1);
   });
 
+  it("redact-pdf scrubs the region and removes intersecting fields", async () => {
+    const app = await seedFixture();
+    const db = createD1(env.D1);
+    // Field entirely inside the region → must be dropped.
+    await seedField("field_in", 1, { x: 10, y: 10, width: 20, height: 5 });
+    // Field outside → survives.
+    await seedField("field_out", 1, { x: 60, y: 60, width: 20, height: 5 });
+
+    const res = await app.fetch(
+      powerPost(DOC_PUBLIC_ID, "redact-pdf", {
+        regions: [{ page: 1, x: 0, y: 0, width: 50, height: 30 }],
+      }),
+      env
+    );
+    expect(res.status).toBe(200);
+    const json = z
+      .object({
+        success: z.boolean(),
+        storageId: z.string(),
+        regionsApplied: z.number(),
+        opsScrubbed: z.number(),
+        fieldsRemoved: z.number(),
+        scrubbedText: z.string(),
+        warnings: z.array(z.string()),
+      })
+      .parse(await res.json());
+    expect(json.success).toBe(true);
+    expect(json.regionsApplied).toBe(1);
+    expect(json.fieldsRemoved).toBe(1);
+
+    const fields = await db
+      .select({ id: signatureFields.id })
+      .from(signatureFields)
+      .where(eq(signatureFields.documentId, DOC_ID));
+    expect(fields.map((f) => f.id)).toEqual(["field_out"]);
+
+    const object = await env.DOCUMENTS_BUCKET.get(json.storageId);
+    expect(object).not.toBeNull();
+  });
+
   it("compress-pdf honours the org convert egress gate", async () => {
     const app = await seedFixture();
     const db = createD1(env.D1);

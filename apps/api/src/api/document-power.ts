@@ -30,10 +30,12 @@ import {
   splitPdfPages,
   watermarkPdf,
 } from "../platform/pdf-ops.js";
+import { redactPdfRegions } from "../platform/pdf-redact.js";
 import {
   commitDocumentPdfRemap,
   planCropFieldRemap,
   planOrganizeFieldRemap,
+  planRedactFieldRemap,
 } from "../platform/remap-document-pages.js";
 import type { Variables } from "../platform/types.js";
 import { createDownloadToken } from "./v1/download-token.js";
@@ -1048,6 +1050,89 @@ app.post("/compress-pdf", async (c) => {
     pageCount,
     sizeBefore: srcBytes.byteLength,
     sizeAfter: compressed.byteLength,
+  });
+});
+
+const redactBodySchema = z.object({
+  regions: z
+    .array(
+      z.object({
+        page: z.number().int().min(1),
+        x: z.number().min(0).max(100),
+        y: z.number().min(0).max(100),
+        width: z.number().min(0.5).max(100),
+        height: z.number().min(0.5).max(100),
+      })
+    )
+    .min(1)
+    .max(200),
+});
+
+/**
+ * True redaction: removes content-stream operators inside each region
+ * (text, images, fully-contained paths/annots) — not just a visual overlay.
+ * Returns a receipt of what was scrubbed.
+ */
+app.post("/redact-pdf", async (c) => {
+  const user = c.get("user");
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+  const organizationId = c.get("organization").id;
+  const publicId = publicIdFromPath(new URL(c.req.url).pathname);
+  if (!publicId) return c.json({ error: "not_found" }, 404);
+
+  const parsed = redactBodySchema.safeParse(
+    await c.req.json().catch(() => ({}))
+  );
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocByPublicId(db, organizationId, publicId);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  const result = await redactPdfRegions(
+    await object.arrayBuffer(),
+    parsed.data.regions
+  );
+
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, result.bytes, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: user.user.id,
+      redactedFrom: doc.storageKey,
+    },
+  });
+
+  const plan = await planRedactFieldRemap(db, doc.id, parsed.data.regions);
+  const claimed = await commitDocumentPdfRemap(db, {
+    documentId: doc.id,
+    expectedStorageKey: doc.storageKey,
+    storageId,
+    size: result.bytes.byteLength,
+    pageCount: await getPdfPageCount(result.bytes),
+    plan,
+  });
+  if (!claimed) {
+    return c.json({ error: "document_version_conflict" }, 409);
+  }
+
+  return c.json({
+    success: true,
+    storageId,
+    regionsApplied: result.regionsApplied,
+    opsScrubbed: result.opsScrubbed,
+    annotsScrubbed: result.annotsScrubbed,
+    fieldsRemoved: plan.removeIds.length,
+    scrubbedText: result.scrubbedStrings.join(" ").slice(0, 2000),
+    warnings: result.warnings,
   });
 });
 

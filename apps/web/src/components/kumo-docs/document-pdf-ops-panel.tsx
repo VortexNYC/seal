@@ -19,6 +19,7 @@ export type DocumentPdfOpsPanelProps = {
   numbering?: boolean;
   cropping?: boolean;
   compressing?: boolean;
+  redacting?: boolean;
   merging?: boolean;
   /** Other draft docs available to merge (publicId + name). */
   mergeCandidates?: Array<{ publicId: string; name: string }>;
@@ -44,6 +45,15 @@ export type DocumentPdfOpsPanelProps = {
     prefix?: string;
   }) => void;
   onCompress: (input: { imageQuality?: number }) => void;
+  onRedact: (input: {
+    regions: Array<{
+      page: number;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    }>;
+  }) => void;
   onMerge: (input: { sourcePublicIds: string[]; title?: string }) => void;
 };
 
@@ -76,6 +86,7 @@ export function DocumentPdfOpsPanel({
   numbering = false,
   cropping = false,
   compressing = false,
+  redacting = false,
   merging = false,
   mergeCandidates = [],
   onRotate,
@@ -84,6 +95,7 @@ export function DocumentPdfOpsPanel({
   onWatermark,
   onNumberPages,
   onCompress,
+  onRedact,
   onMerge,
 }: DocumentPdfOpsPanelProps): JSX.Element {
   const [scope, setScope] = useState<"all" | "current">("all");
@@ -101,6 +113,12 @@ export function DocumentPdfOpsPanel({
   >("footer-center");
   const [numberPrefix, setNumberPrefix] = useState("");
   const [compressQuality, setCompressQuality] = useState(80);
+  const [redactRect, setRedactRect] = useState({
+    x: "0",
+    y: "0",
+    width: "50",
+    height: "10",
+  });
   const [selectedMergeIds, setSelectedMergeIds] = useState<string[]>([]);
   const [mergeTitle, setMergeTitle] = useState("");
 
@@ -452,6 +470,64 @@ export function DocumentPdfOpsPanel({
           onClick={() => onCompress({ imageQuality: compressQuality })}
         >
           {compressing ? "Compressing…" : "Compress PDF"}
+        </Button>
+      </div>
+
+      <div className="border-border space-y-2 border-t pt-4">
+        <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
+          Redact region
+        </p>
+        <p className="text-muted-foreground text-[11px]">
+          Permanently remove content inside a box on this page — text under
+          it is deleted, not just hidden. Values are % of page.
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {(
+            [
+              ["x", "Left %"],
+              ["y", "Top %"],
+              ["width", "Width %"],
+              ["height", "Height %"],
+            ] as const
+          ).map(([key, label]) => (
+            <Input
+              key={key}
+              label={label}
+              type="number"
+              min={0}
+              max={100}
+              value={redactRect[key]}
+              onChange={(e) =>
+                setRedactRect((prev) => ({ ...prev, [key]: e.target.value }))
+              }
+            />
+          ))}
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          variant="destructive"
+          disabled={
+            redacting ||
+            pageCount < 1 ||
+            Number(redactRect.width) <= 0 ||
+            Number(redactRect.height) <= 0
+          }
+          onClick={() =>
+            onRedact({
+              regions: [
+                {
+                  page: currentPage,
+                  x: Number(redactRect.x),
+                  y: Number(redactRect.y),
+                  width: Number(redactRect.width),
+                  height: Number(redactRect.height),
+                },
+              ],
+            })
+          }
+        >
+          {redacting ? "Redacting…" : `Redact on page ${currentPage}`}
         </Button>
       </div>
 

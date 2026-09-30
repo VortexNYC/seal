@@ -39,10 +39,12 @@ import {
   splitPdfPages,
   watermarkPdf,
 } from "../../platform/pdf-ops.js";
+import { redactPdfRegions } from "../../platform/pdf-redact.js";
 import {
   commitDocumentPdfRemap,
   planCropFieldRemap,
   planOrganizeFieldRemap,
+  planRedactFieldRemap,
 } from "../../platform/remap-document-pages.js";
 import { createDownloadToken } from "./download-token.js";
 
@@ -1315,6 +1317,89 @@ app.post("/pdf/compress", async (c) => {
     page_count: pageCount,
     size_before: srcBytes.byteLength,
     size_after: compressed.byteLength,
+  });
+});
+
+/**
+ * True redaction: removes content inside the given regions from the PDF
+ * bytes (not an overlay). Fields intersecting a region are removed; the
+ * response includes a scrub receipt.
+ */
+app.post("/pdf/redact", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      id: z.string().min(1),
+      regions: z
+        .array(
+          z.object({
+            page: z.number().int().min(1),
+            x: z.number().min(0).max(100),
+            y: z.number().min(0).max(100),
+            width: z.number().min(0.5).max(100),
+            height: z.number().min(0.5).max(100),
+          })
+        )
+        .min(1)
+        .max(200),
+    })
+    .safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  const result = await redactPdfRegions(
+    await object.arrayBuffer(),
+    parsed.data.regions
+  );
+
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, result.bytes, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: mcp.sub,
+      redactedFrom: doc.storageKey,
+    },
+  });
+
+  const plan = await planRedactFieldRemap(db, doc.id, parsed.data.regions);
+  const claimed = await commitDocumentPdfRemap(db, {
+    documentId: doc.id,
+    expectedStorageKey: doc.storageKey,
+    storageId,
+    size: result.bytes.byteLength,
+    pageCount: await getPdfPageCount(result.bytes),
+    plan,
+  });
+  if (!claimed) {
+    return c.json({ error: "document_version_conflict" }, 409);
+  }
+
+  return c.json({
+    success: true,
+    storage_id: storageId,
+    regions_applied: result.regionsApplied,
+    ops_scrubbed: result.opsScrubbed,
+    annots_scrubbed: result.annotsScrubbed,
+    fields_removed: plan.removeIds.length,
+    scrubbed_text: result.scrubbedStrings.join(" ").slice(0, 2000),
+    warnings: result.warnings,
   });
 });
 
