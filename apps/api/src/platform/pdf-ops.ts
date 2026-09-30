@@ -428,3 +428,103 @@ export async function numberPdfPages(
   return { bytes, pageCount: count };
 }
 
+export type CropPdfPageOp = {
+  /** 1-based page number */
+  page: number;
+  /** Top-left percent-of-page rect (0–100), same space as fields/annotate */
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+export type CropPdfResult = {
+  bytes: Uint8Array;
+  pageCount: number;
+  /** Crops that were applied (validated/clamped), keyed by 1-based page */
+  applied: Map<number, CropPdfPageOp>;
+};
+
+function clampCropOp(op: CropPdfPageOp): CropPdfPageOp {
+  const x = Math.min(99, Math.max(0, op.x));
+  const y = Math.min(99, Math.max(0, op.y));
+  const width = Math.min(100 - x, Math.max(1, op.width));
+  const height = Math.min(100 - y, Math.max(1, op.height));
+  return { page: op.page, x, y, width, height };
+}
+
+/**
+ * Bake page crops into a new PDF (drawPage into a smaller page).
+ * Pages without a crop op are copied full-size. Field remapping is caller's job.
+ */
+export async function cropPdfPages(
+  pdfBytes: ArrayBuffer | Uint8Array,
+  crops: CropPdfPageOp[]
+): Promise<CropPdfResult> {
+  if (crops.length === 0) {
+    throw new Error("no_crops");
+  }
+
+  const src = await PDFDocument.load(pdfBytes);
+  const srcCount = src.getPageCount();
+  const applied = new Map<number, CropPdfPageOp>();
+
+  for (const raw of crops) {
+    if (!Number.isInteger(raw.page) || raw.page < 1 || raw.page > srcCount) {
+      throw new Error("no_valid_pages");
+    }
+    if (
+      !Number.isFinite(raw.x) ||
+      !Number.isFinite(raw.y) ||
+      !Number.isFinite(raw.width) ||
+      !Number.isFinite(raw.height)
+    ) {
+      throw new Error("invalid_crop");
+    }
+    applied.set(raw.page, clampCropOp(raw));
+  }
+
+  const out = await PDFDocument.create();
+
+  for (let index = 0; index < srcCount; index++) {
+    const pageNum = index + 1;
+    const srcPage = src.getPage(index);
+    const { width: pw, height: ph } = srcPage.getSize();
+    const embeddedPages = await out.embedPdf(src, [index]);
+    const embedded = embeddedPages[0];
+    if (!embedded) {
+      throw new Error("invalid_crop");
+    }
+    const crop = applied.get(pageNum);
+
+    if (!crop) {
+      const page = out.addPage([pw, ph]);
+      page.drawPage(embedded, { x: 0, y: 0, width: pw, height: ph });
+      continue;
+    }
+
+    const rect = percentToPdfRect(
+      pw,
+      ph,
+      crop.x,
+      crop.y,
+      crop.width,
+      crop.height
+    );
+    if (rect.width < 1 || rect.height < 1) {
+      throw new Error("invalid_crop");
+    }
+
+    const page = out.addPage([rect.width, rect.height]);
+    page.drawPage(embedded, {
+      x: -rect.x,
+      y: -rect.y,
+      width: pw,
+      height: ph,
+    });
+  }
+
+  const bytes = await out.save();
+  return { bytes, pageCount: srcCount, applied };
+}
+

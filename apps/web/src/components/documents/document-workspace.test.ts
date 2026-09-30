@@ -37,4 +37,10 @@ describe("DOCUMENT_CAPABILITIES", () => {
     expect(tools).toContain("seal_watermark_document_pdf");
     expect(tools).toContain("seal_number_document_pdf_pages");
   });
+
+  it("lists crop on Pages for agents", () => {
+    expect(getDocumentCapability("pages").agentTools).toContain(
+      "seal_crop_document_pdf"
+    );
+  });
 });

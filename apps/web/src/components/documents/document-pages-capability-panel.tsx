@@ -10,6 +10,7 @@ import {
   type DocumentSplitGroup,
 } from "@/components/kumo-docs/document-splits-panel";
 import {
+  cropDocumentPdf,
   getDocuments,
   mergeDocumentPdf,
   numberDocumentPdfPages,
@@ -86,6 +87,31 @@ export function DocumentPagesCapabilityPanel({
     onError: (error) => {
       toast.error(
         error instanceof Error ? error.message : "Failed to organize pages"
+      );
+    },
+  });
+
+  const cropMutation = useMutation({
+    mutationFn: (input: {
+      crops: Array<{
+        page: number;
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+      }>;
+    }) => cropDocumentPdf(organizationSlug, documentPublicId, input),
+    onSuccess: (result) => {
+      const removed =
+        result.fieldsRemoved > 0
+          ? ` Removed ${result.fieldsRemoved} field${result.fieldsRemoved === 1 ? "" : "s"} outside the crop.`
+          : "";
+      toast.success(`Crop applied.${removed}`);
+      onPdfChanged?.();
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to crop PDF"
       );
     },
   });
@@ -180,12 +206,14 @@ export function DocumentPagesCapabilityPanel({
         currentPage={currentPage}
         rotating={rotateMutation.isPending}
         organizing={organizeMutation.isPending}
+        cropping={cropMutation.isPending}
         watermarking={watermarkMutation.isPending}
         numbering={numberPagesMutation.isPending}
         merging={mergeMutation.isPending}
         mergeCandidates={mergeCandidates}
         onRotate={(input) => rotateMutation.mutate(input)}
         onOrganize={(input) => organizeMutation.mutate(input)}
+        onCrop={(input) => cropMutation.mutate(input)}
         onWatermark={(input) => watermarkMutation.mutate(input)}
         onNumberPages={(input) => numberPagesMutation.mutate(input)}
         onMerge={(input) => mergeMutation.mutate(input)}

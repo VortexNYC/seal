@@ -38,10 +38,11 @@ export const DOCUMENT_CAPABILITIES = [
   {
     id: "pages",
     label: "Pages",
-    description: "Rotate, organize, watermark, number, combine, or split",
+    description: "Rotate, organize, crop, watermark, number, combine, or split",
     agentTools: [
       "seal_rotate_document_pdf",
       "seal_organize_document_pdf",
+      "seal_crop_document_pdf",
       "seal_watermark_document_pdf",
       "seal_number_document_pdf_pages",
       "seal_merge_documents_pdf",

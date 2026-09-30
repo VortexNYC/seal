@@ -27,6 +27,7 @@ import { buildDocumentLayoutBlocks } from "../../platform/document-layout-blocks
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import {
   annotatePdf,
+  cropPdfPages,
   mergePdfs,
   numberPdfPages,
   organizePdfPages,
@@ -35,7 +36,10 @@ import {
   splitPdfPages,
   watermarkPdf,
 } from "../../platform/pdf-ops.js";
-import { remapDocumentPagesAfterOrganize } from "../../platform/remap-document-pages.js";
+import {
+  remapDocumentFieldsAfterCrop,
+  remapDocumentPagesAfterOrganize,
+} from "../../platform/remap-document-pages.js";
 import { createDownloadToken } from "./download-token.js";
 
 const app = new OpenAPIHono<{
@@ -1134,6 +1138,95 @@ app.post("/pdf/number-pages", async (c) => {
     success: true,
     storage_id: storageId,
     page_count: numbered.pageCount,
+  });
+});
+
+const cropPageSchema = z.object({
+  page: z.number().int().min(1),
+  x: z.number().min(0).max(100),
+  y: z.number().min(0).max(100),
+  width: z.number().min(1).max(100),
+  height: z.number().min(1).max(100),
+});
+
+app.post("/pdf/crop", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      id: z.string().min(1),
+      crops: z.array(cropPageSchema).min(1).max(500),
+    })
+    .safeParse(await c.req.json());
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  let cropped: Awaited<ReturnType<typeof cropPdfPages>>;
+  try {
+    cropped = await cropPdfPages(
+      await object.arrayBuffer(),
+      parsed.data.crops
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "crop_failed";
+    if (
+      message === "no_crops" ||
+      message === "no_valid_pages" ||
+      message === "invalid_crop"
+    ) {
+      return c.json({ error: message }, 400);
+    }
+    throw error;
+  }
+
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, cropped.bytes, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: mcp.sub,
+      croppedFrom: doc.storageKey,
+    },
+  });
+
+  const fieldStats = await remapDocumentFieldsAfterCrop(
+    db,
+    doc.id,
+    cropped.applied
+  );
+
+  await db
+    .update(documents)
+    .set({
+      storageKey: storageId,
+      size: cropped.bytes.byteLength,
+      contentType: "application/pdf",
+      pageCount: cropped.pageCount,
+      updatedAt: new Date(),
+    })
+    .where(eq(documents.id, doc.id));
+
+  return c.json({
+    success: true,
+    storage_id: storageId,
+    page_count: cropped.pageCount,
+    fields_removed: fieldStats.fieldsRemoved,
+    fields_remapped: fieldStats.fieldsRemapped,
   });
 });
 

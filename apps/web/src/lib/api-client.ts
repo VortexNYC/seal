@@ -2102,6 +2102,39 @@ export async function numberDocumentPdfPages(
   );
 }
 
+const cropDocumentPdfResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  pageCount: z.number().int(),
+  fieldsRemoved: z.number().int(),
+  fieldsRemapped: z.number().int(),
+});
+export type ApiCropDocumentPdfResult = z.infer<
+  typeof cropDocumentPdfResultSchema
+>;
+export async function cropDocumentPdf(
+  organizationSlug: string,
+  publicId: string,
+  input: {
+    crops: Array<{
+      page: number;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    }>;
+  }
+): Promise<ApiCropDocumentPdfResult> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/crop-pdf`,
+    cropDocumentPdfResultSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
 const documentLayoutBlocksSchema = z.object({
   blocks: z.array(
     z.object({

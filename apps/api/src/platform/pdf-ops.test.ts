@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   annotatePdf,
+  cropPdfPages,
   getPdfPageCount,
   numberPdfPages,
   organizePdfPages,
@@ -96,5 +97,25 @@ describe("pdf-ops", () => {
     });
     expect(pageCount).toBe(3);
     expect(await getPdfPageCount(bytes)).toBe(3);
+  });
+
+  it("crops a page into a smaller baked page", async () => {
+    const src = await makePdf(2);
+    const { bytes, pageCount, applied } = await cropPdfPages(src, [
+      { page: 1, x: 10, y: 10, width: 80, height: 80 },
+    ]);
+    expect(pageCount).toBe(2);
+    expect(await getPdfPageCount(bytes)).toBe(2);
+    expect(applied.get(1)?.width).toBe(80);
+
+    const cropped = await PDFDocument.load(bytes);
+    const page0 = cropped.getPage(0);
+    const page1 = cropped.getPage(1);
+    expect(page0.getWidth()).toBeLessThan(page1.getWidth());
+  });
+
+  it("rejects empty crop list", async () => {
+    const src = await makePdf(1);
+    await expect(cropPdfPages(src, [])).rejects.toThrow("no_crops");
   });
 });
