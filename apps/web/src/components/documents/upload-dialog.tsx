@@ -1,6 +1,5 @@
 import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
-import { Input } from "@cloudflare/kumo/components/input";
 import { Label } from "@cloudflare/kumo/components/label";
 import { Meter } from "@cloudflare/kumo/components/meter";
 import { useMutation } from "@tanstack/react-query";
@@ -217,22 +216,16 @@ function useUploadController({
     );
   };
 
-  const handleFilesAccepted = async (acceptedFiles: File[]) => {
-    const validatedFiles = await buildUploadFiles(acceptedFiles);
-    // Product upload is single-file — replace, don't accumulate.
-    state.setFiles(validatedFiles);
-  };
-
-  const handleFilesRejected = (rejectedFiles: FileRejection[]) => {
-    showRejectedFileErrors(rejectedFiles);
-  };
-
-  const uploadFile = (fileWithStatus: FileWithStatus, index: number) =>
+  const uploadFile = (
+    fileWithStatus: FileWithStatus,
+    index: number,
+    description: string
+  ) =>
     uploadSingleFileWithRetry({
       fileWithStatus,
       index,
       organizationId,
-      description: state.description,
+      description,
       createDocument: (input) => createDocumentMutation.mutateAsync(input),
       uploadDocument: (publicId, contentBase64, contentType) =>
         uploadDocumentMutation.mutateAsync({
@@ -244,16 +237,15 @@ function useUploadController({
       trackDocumentUploaded: track.documentUploaded,
     });
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (state.files.length === 0) {
-      toast.error("Please select at least one file");
+  const runUpload = async (files: FileWithStatus[], description: string) => {
+    if (files.length === 0 || atDocumentLimit) {
       return;
     }
-
     state.setUploading(true);
     try {
-      const results = await Promise.allSettled(state.files.map(uploadFile));
+      const results = await Promise.allSettled(
+        files.map((file, index) => uploadFile(file, index, description))
+      );
       const summary = summarizeUploadResults(results);
       showUploadSummary(summary);
       if (summary.failureCount === 0) {
@@ -263,6 +255,27 @@ function useUploadController({
     } finally {
       state.setUploading(false);
     }
+  };
+
+  const handleFilesAccepted = async (acceptedFiles: File[]) => {
+    const validatedFiles = await buildUploadFiles(acceptedFiles);
+    // Product upload is single-file — replace, don't accumulate.
+    state.setFiles(validatedFiles);
+    // Cap: drop → upload immediately (no second click).
+    await runUpload(validatedFiles, state.description);
+  };
+
+  const handleFilesRejected = (rejectedFiles: FileRejection[]) => {
+    showRejectedFileErrors(rejectedFiles);
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (state.files.length === 0) {
+      toast.error("Please select at least one file");
+      return;
+    }
+    await runUpload(state.files, state.description);
   };
 
   return {
@@ -293,9 +306,9 @@ function useUploadController({
 function UploadDialogHeader() {
   return (
     <>
-      <Dialog.Title>Upload a document</Dialog.Title>
+      <Dialog.Title>Upload</Dialog.Title>
       <Dialog.Description>
-        One file · up to {getMaxFileSizeDisplay()} ·{" "}
+        One file · {getMaxFileSizeDisplay()} max ·{" "}
         {getSupportedFileTypesDisplay()}
       </Dialog.Description>
     </>
@@ -353,42 +366,23 @@ function UploadDialogBody({
   readonly controller: UploadController;
 }) {
   return (
-    <div className="flex-1 space-y-4 overflow-y-auto py-4">
+    <div className="flex flex-1 flex-col gap-3 overflow-y-auto py-3">
       <FileUpload
         multiple={false}
         disabled={controller.uploading}
         showFileList={false}
-        title="Drop a file here, or click to browse"
-        description="PDF, DOCX, XLSX, PPTX, or CSV"
+        title={
+          controller.uploading
+            ? "Uploading…"
+            : "Drop a file, or click to browse"
+        }
+        description={undefined}
         onFilesAccepted={(files) => {
           void controller.handleFilesAccepted(files);
         }}
         onFilesRejected={controller.handleFilesRejected}
       />
-      <DescriptionField controller={controller} />
       <SelectedFileList controller={controller} />
-    </div>
-  );
-}
-
-function DescriptionField({
-  controller,
-}: {
-  readonly controller: UploadController;
-}) {
-  if (controller.files.length === 0) return null;
-
-  return (
-    <div className="grid gap-2">
-      <Input
-        id="description"
-        type="text"
-        label="Description (optional)"
-        placeholder="Add a description..."
-        value={controller.description}
-        onChange={(event) => controller.setDescription(event.target.value)}
-        disabled={controller.uploading}
-      />
     </div>
   );
 }
@@ -556,21 +550,16 @@ function UploadDialogFooter({
 }: {
   readonly controller: UploadController;
 }) {
+  // Cap: upload starts on drop — footer is cancel / close only.
   return (
-    <div className="mt-4 flex flex-col-reverse justify-end gap-2 sm:flex-row">
-      <Button type="button" variant="outline" onClick={controller.requestClose}>
-        Cancel
-      </Button>
+    <div className="mt-3 flex justify-end">
       <Button
-        type="submit"
-        variant="primary"
-        disabled={
-          controller.uploading ||
-          controller.files.length === 0 ||
-          controller.atDocumentLimit
-        }
+        type="button"
+        variant="outline"
+        onClick={controller.requestClose}
+        disabled={controller.uploading}
       >
-        {controller.uploading ? "Uploading..." : "Upload Document"}
+        {controller.uploading ? "Uploading…" : "Close"}
       </Button>
     </div>
   );

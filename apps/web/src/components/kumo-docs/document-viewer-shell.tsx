@@ -21,7 +21,7 @@ export function DocumentViewerShell({
     <div
       data-kumo-docs="viewer-shell"
       className={cn(
-        "border-border bg-background relative flex max-h-[min(72vh,48rem)] min-h-0 overflow-hidden rounded-xl border",
+        "border-border bg-background relative flex h-full min-h-0 flex-1 overflow-hidden rounded-xl border",
         className
       )}
     >

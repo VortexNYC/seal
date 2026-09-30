@@ -194,13 +194,13 @@ function SigningSettings() {
 
         <SettingsSection
           title="Default deadline"
-          description="Days recipients have to sign after send."
+          description="How long recipients have after you send."
         >
-          <div className="flex max-w-xs items-end gap-3">
-            <div className="min-w-0 flex-1">
+          <div className="flex max-w-sm items-end gap-2">
+            <div className="w-28 shrink-0">
               <Input
                 id="default-deadline-days"
-                label="Days to sign"
+                label="Days"
                 type="number"
                 min={1}
                 max={365}
@@ -214,9 +214,9 @@ function SigningSettings() {
                 }
               />
             </div>
-            <span className="text-muted-foreground pb-2.5 text-sm whitespace-nowrap">
-              after send
-            </span>
+            <p className="text-muted-foreground mb-2.5 text-sm">
+              after the document is sent
+            </p>
           </div>
         </SettingsSection>
 

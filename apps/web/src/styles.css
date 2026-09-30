@@ -320,6 +320,51 @@
   width: 100% !important;
 }
 
+/*
+ * Cap Account: BAUI settings forms ship as separate LayerCards.
+ * Collapse them into one dense stack — hairline dividers, no postcard gaps.
+ */
+.seal-account-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
+  background: var(--card);
+}
+
+.seal-account-stack > * {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+.seal-account-stack > *:last-child {
+  border-bottom: none !important;
+}
+
+.seal-account-stack > * > * {
+  padding: 1rem 1.125rem !important;
+  gap: 0.75rem !important;
+}
+
+.seal-account-stack h2 {
+  font-size: 0.9375rem !important;
+  line-height: 1.25 !important;
+}
+
+.seal-account-stack button[type="submit"],
+.seal-account-stack [data-kumo-component="Button"][data-variant="primary"] {
+  width: auto !important;
+  align-self: flex-start;
+}
+
 [data-sidebar="header"],
 [data-sidebar="footer"] {
   border-color: var(--sidebar-border) !important;

@@ -9,17 +9,18 @@ import { ClipboardText } from "@cloudflare/kumo/components/clipboard-text";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Empty } from "@cloudflare/kumo/components/empty";
 import { Input } from "@cloudflare/kumo/components/input";
-import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Table } from "@cloudflare/kumo/components/table";
 import { Text } from "@cloudflare/kumo/components/text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { isOrganizationAdminRole } from "@vortex-api/better-auth-ui";
 
 import { PageWrapper } from "@/components/page-wrapper";
+import { DeveloperNav } from "@/components/settings/developer-nav";
 import { SettingsBody } from "@/components/settings-body";
+import { SettingsSection } from "@/components/settings-section";
 import { FormSkeleton } from "@/components/skeletons";
 import { useOrganization } from "@/hooks/use-organization";
 import {
@@ -127,22 +128,12 @@ function WebhooksPage() {
       title="Developer"
     >
       <SettingsBody wide>
-      <div className="flex flex-wrap items-center gap-3 text-sm">
-        <Link
-          to="/$slug/settings/developer/api-keys"
-          params={{ slug }}
-          className="text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
+        <DeveloperNav slug={slug} active="webhooks" />
+        <SettingsSection
+          title="Endpoints"
+          description="Workspace-scoped HTTPS callbacks. The signing secret is shown once at create time."
         >
-          API keys
-        </Link>
-        <span className="font-medium">Webhooks</span>
-      </div>
-      <LayerCard>
-        <LayerCard.Secondary>
-          <div className="flex items-center justify-between gap-3">
-            <Text as="h2" variant="heading">
-              Endpoints
-            </Text>
+          <div className="flex justify-end">
             <Button
               onClick={() => setCreateOpen(true)}
               disabled={!isAdmin}
@@ -151,12 +142,6 @@ function WebhooksPage() {
               Add endpoint
             </Button>
           </div>
-          <Text variant="secondary" size="sm">
-            Workspace-scoped HTTPS callbacks. The signing secret is shown once
-            at create time.
-          </Text>
-        </LayerCard.Secondary>
-        <LayerCard.Primary>
           {isPending ? (
             <FormSkeleton />
           ) : isError ? (
@@ -226,8 +211,7 @@ function WebhooksPage() {
               description="Add an HTTPS URL to receive document and recipient events."
             />
           )}
-        </LayerCard.Primary>
-      </LayerCard>
+        </SettingsSection>
       </SettingsBody>
 
       <Dialog.Root open={createOpen} onOpenChange={setCreateOpen}>

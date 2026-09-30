@@ -48,9 +48,12 @@ function ProfileSettings() {
   return (
     <AuthProvider client={client}>
       <SettingsBody narrow className="items-stretch">
-        <div className="flex w-full max-w-xl flex-col gap-4">
+        {/* Cap: one stacked account surface — not four postcard LayerCards */}
+        <div className="seal-account-stack w-full max-w-lg">
           <UserProfileForm
             className="w-full"
+            title="Profile"
+            description="Name and photo for this Seal account."
             onSuccess={() => {
               toast.success("Profile updated");
             }}

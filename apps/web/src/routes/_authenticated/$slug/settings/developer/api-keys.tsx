@@ -10,17 +10,18 @@ import { ClipboardText } from "@cloudflare/kumo/components/clipboard-text";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Empty } from "@cloudflare/kumo/components/empty";
 import { Input } from "@cloudflare/kumo/components/input";
-import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Table } from "@cloudflare/kumo/components/table";
 import { Text } from "@cloudflare/kumo/components/text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { isOrganizationAdminRole } from "@vortex-api/better-auth-ui";
 
 import { PageWrapper } from "@/components/page-wrapper";
+import { DeveloperNav } from "@/components/settings/developer-nav";
 import { SettingsBody } from "@/components/settings-body";
+import { SettingsSection } from "@/components/settings-section";
 import { FormSkeleton } from "@/components/skeletons";
 import { useOrganization } from "@/hooks/use-organization";
 import {
@@ -109,26 +110,16 @@ function ApiKeysPage() {
 
   return (
     <PageWrapper
-      description="Manage API keys for programmatic access to Seal"
+      description="Programmatic access to the Seal API"
       title="Developer"
     >
       <SettingsBody wide>
-      <div className="flex flex-wrap items-center gap-3 text-sm">
-        <span className="font-medium">API keys</span>
-        <Link
-          to="/$slug/settings/developer/webhooks"
-          params={{ slug }}
-          className="text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
+        <DeveloperNav slug={slug} active="api-keys" />
+        <SettingsSection
+          title="API keys"
+          description="Workspace-scoped tokens for the Seal REST API. The plaintext secret is shown once."
         >
-          Webhooks
-        </Link>
-      </div>
-      <LayerCard>
-        <LayerCard.Secondary>
-          <div className="flex items-center justify-between">
-            <Text as="h2" variant="heading">
-              API keys
-            </Text>
+          <div className="flex justify-end">
             <Button
               onClick={() => setCreateOpen(true)}
               disabled={!isAdmin}
@@ -137,12 +128,6 @@ function ApiKeysPage() {
               Create API key
             </Button>
           </div>
-          <Text variant="secondary" size="sm">
-            Workspace-scoped API tokens for the Seal REST API. Store the
-            plaintext token safely; it is only shown once.
-          </Text>
-        </LayerCard.Secondary>
-        <LayerCard.Primary>
           {isPending ? (
             <FormSkeleton />
           ) : tokens && tokens.length > 0 ? (
@@ -196,8 +181,7 @@ function ApiKeysPage() {
               description="Create an API key to get started."
             />
           )}
-        </LayerCard.Primary>
-      </LayerCard>
+        </SettingsSection>
       </SettingsBody>
 
       <Dialog.Root open={createOpen} onOpenChange={setCreateOpen}>

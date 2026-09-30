@@ -47,8 +47,11 @@ export function PageWrapper({
   return (
     <div
       className={cn(
-        "bg-background flex h-full min-h-0 flex-col overflow-auto overscroll-contain",
-        dense ? "scroll-pb-4" : "scroll-pb-24 sm:scroll-pb-28",
+        "bg-background flex h-full min-h-0 flex-col overscroll-contain",
+        /* Cap: document editor — page itself must not scroll into empty void */
+        dense
+          ? "overflow-hidden scroll-pb-0"
+          : "overflow-auto scroll-pb-24 sm:scroll-pb-28",
         className
       )}
     >
@@ -121,8 +124,9 @@ export function PageWrapper({
       </div>
       <div
         className={cn(
-          "min-h-0 flex-1 p-4 sm:p-6",
-          dense ? "pb-4 sm:pb-6" : "pb-12 sm:pb-16",
+          "min-h-0 flex-1",
+          dense ? "flex flex-col overflow-hidden p-3 sm:p-4" : "p-4 sm:p-6",
+          dense ? "pb-3 sm:pb-4" : "pb-12 sm:pb-16",
           MOTION_PAGE
         )}
       >
