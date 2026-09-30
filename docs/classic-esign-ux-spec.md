@@ -45,7 +45,7 @@ proprietary copy). Founder checklist 2026-09-28.
 | SEA-85 OCR/detect Accept all         | **wired on DocumentCanvas Fields** — dogfood on live |
 | SEA-83 solo / guided E2E             | **done** (Playwright)                |
 | SEA-86 mobile Form View              | **done** (proved on prod 2026-09-29) |
-| SEA-87 field-catalog E2E expand      | open (non-blocking for Mark→Lenore)  |
+| SEA-87 field-catalog E2E expand      | **coverage + matrix** (see §5)       |
 | Recipient roles                      | done                                 |
 | Default recipient auth = email OTP   | done                                 |
 | Signer Seal account gate             | done                                 |
@@ -102,3 +102,41 @@ Family / in-law packets are clear to send.
 - DocuSeal AGPL copy
 - Fat DocuSign chrome
 - Review-matrix SPA
+
+---
+
+## 5. Field catalog coverage matrix (SEA-87)
+
+Toolbar source: `FIELD_TYPES` / `PRIMARY_FIELD_TYPES` in
+`apps/web/src/components/documents/field-toolbar.tsx`.
+
+| Type | Palette | Coverage |
+| ---- | ------- | -------- |
+| signature | Primary | vitest toolbar + e2e place/list (legacy) |
+| initials | Primary | vitest + e2e select + API list |
+| name | Primary | vitest + e2e select + API list |
+| email | Primary | vitest + e2e select + API list |
+| date | Primary | vitest + e2e select (legacy) + API list |
+| text | Primary | vitest + e2e select (legacy) + API list |
+| checkbox | Primary | vitest + e2e select (legacy) + API list |
+| date_signed | Primary | vitest + e2e palette + API list |
+| free_signature | More | vitest + e2e More + API list |
+| number | More | vitest + e2e More + API list |
+| radio | More | vitest + e2e More + API list |
+| dropdown | More | vitest + e2e More + API list |
+| multi_select | More | vitest + e2e More + API list |
+| attachment | More | vitest + e2e More + API list |
+| image | More | vitest + e2e More + API list |
+| phone | More | vitest + e2e More + API list |
+| cells | More | vitest + e2e More + API list |
+| stamp | More | vitest + e2e More + API list |
+| heading | More | vitest + e2e More + API list |
+| strikethrough | More | vitest + e2e More + API list |
+| verification | More | vitest + e2e More + API list |
+| kba | More | vitest + e2e More + API list |
+| payment | More (disabled) | vitest + e2e asserts disabled |
+
+Proof files:
+
+- `apps/web/src/components/documents/field-toolbar.test.tsx`
+- `apps/web/e2e/tests/field-catalog.e2e.ts`
