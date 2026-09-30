@@ -34,8 +34,9 @@ new surface each time.
 - SPA uses a persistent capability rail, not “Leave signature fields” menus.
 - Pages ops (rotate / merge / split) are a first-class capability, not only a
   buried sidebar accordion.
-- Adding OCR, compare, or redaction packs means a new registry entry + panel —
-  not a new top-level product mode.
+- Adding OCR, compress, organize, or other prep tools extends the registry
+  (prefer growing **Pages** first — ADR-009 / `docs/pdf-toolkit-prep-spec.md`)
+  — not a new top-level product mode and not Seal-hosted model inference.
 - Drift between MCP tool names and registry `agentTools` is a bug.
 
 ## Canvas convergence (2026-09-29)

@@ -144,9 +144,11 @@ our standard NDA positions, contractor terms, fallback language. Format
 1. **Provider default for legal work** — Anthropic zero-retention vs. Devin
    subscription (cost: ~free-ish vs. paid API) vs. Workers AI (egress-free,
    weakest). Probably: Devin for routine, Anthropic for escalation.
-2. **OCR execution** — Seal *detects* `pagesNeedingOcr` but nothing OCRs them.
-   Scanned counterparty contracts are common in the real world. Workers AI
-   vision or an external OCR is the gap to close.
+2. **OCR execution** — **Resolved (ADR-009):** Seal *detects* `pagesNeedingOcr`
+   via pdf-inspector; **execution** is `ocrmypdf` + Tesseract in
+   `convert-worker` Containers — not Workers AI vision, not Mistral/Textract.
+   Seal provides the tool; agents/humans call it. See
+   `docs/pdf-toolkit-prep-spec.md` Phase 6.
 3. **mike-workflows license** — content license may differ from Mike's AGPL.
 4. **Commercial Mike license?** — worth one email to open-legal-products if
    the docx engine gets scoped in phase 6.
