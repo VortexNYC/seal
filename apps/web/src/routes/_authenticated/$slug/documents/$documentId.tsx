@@ -5,11 +5,9 @@ import {
   createFileRoute,
   useRouter,
 } from "@tanstack/react-router";
-import { DropdownMenu } from "@cloudflare/kumo/components/dropdown";
 import {
   ArrowLeftIcon,
   Loader2Icon,
-  MoreHorizontalIcon,
   SaveIcon,
   SendIcon,
 } from "lucide-react";
@@ -46,9 +44,12 @@ import {
   useDocumentAnnotations,
 } from "../../../../components/documents/ai-annotation-overlays";
 import { DeleteFieldDialog } from "../../../../components/documents/delete-field-dialog";
-import { DocumentPdfAnnotatePanel } from "../../../../components/documents/document-pdf-annotate-panel";
+import { DocumentCapabilityRail } from "../../../../components/documents/document-capability-rail";
 import { DocumentOfficeEditPanel } from "../../../../components/documents/document-office-edit-panel";
+import { DocumentPagesCapabilityPanel } from "../../../../components/documents/document-pages-capability-panel";
+import { DocumentPdfAnnotatePanel } from "../../../../components/documents/document-pdf-annotate-panel";
 import { DocumentStructurePanel } from "../../../../components/documents/document-structure-panel";
+import type { DocumentCapabilityId } from "../../../../components/documents/document-workspace";
 import { DocumentPresence } from "../../../../components/documents/document-presence";
 import { DocumentSidebar } from "../../../../components/documents/document-sidebar";
 import { FieldOptionsDialog } from "../../../../components/documents/field-options-dialog";
@@ -245,9 +246,8 @@ function DocumentDetailPage() {
     : false;
 
   // ── Custom hooks ────────────────────────────────────────────────────────
-  const [viewerMode, setViewerMode] = useState<
-    "fields" | "annotate" | "edit" | "structure"
-  >("fields");
+  const [capability, setCapability] =
+    useState<DocumentCapabilityId>("fields");
   const [pdfReloadKey, setPdfReloadKey] = useState(0);
   const pdfViewer = usePdfViewer(slug, documentPublicId, pdfReloadKey);
   const pageThumbnails = usePdfPageThumbnails(
@@ -608,39 +608,16 @@ function DocumentDetailPage() {
               main={
             <div
               ref={pdfViewer.pdfWrapperRef}
-              className="bg-background relative p-3 md:p-4"
+              className="bg-background relative flex min-h-0 flex-col gap-3 p-3 md:p-4"
             >
-              {canEdit && viewerMode !== "fields" ? (
-                <div className="border-border bg-muted/40 mb-3 flex flex-col gap-2 rounded-lg border px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <p className="text-foreground text-sm font-medium">
-                      {viewerMode === "annotate"
-                        ? "Mark up PDF"
-                        : viewerMode === "edit"
-                          ? "Edit Word / Excel"
-                          : "Layout & extraction"}
-                    </p>
-                    <p className="text-muted-foreground text-[11px] leading-snug">
-                      {viewerMode === "annotate"
-                        ? "Draw, highlight, or redact on the pages. This edits the PDF itself — not signature fields."
-                        : viewerMode === "edit"
-                          ? "Change the original Office file; Seal rebuilds the PDF when you save."
-                          : "Map regions and fields for agents / data extraction. Not for signing."}
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="shrink-0 self-start"
-                    onClick={() => setViewerMode("fields")}
-                  >
-                    Back to signature fields
-                  </Button>
-                </div>
+              {canEdit ? (
+                <DocumentCapabilityRail
+                  active={capability}
+                  onChange={setCapability}
+                />
               ) : null}
 
-              {viewerMode === "annotate" && canEdit && pdfViewer.pdfUrl ? (
+              {canEdit && capability === "markup" && pdfViewer.pdfUrl ? (
                 <DocumentPdfAnnotatePanel
                   organizationSlug={slug}
                   documentPublicId={documentPublicId}
@@ -649,7 +626,7 @@ function DocumentDetailPage() {
                     setPdfReloadKey((key) => key + 1);
                   }}
                 />
-              ) : viewerMode === "edit" && canEdit ? (
+              ) : canEdit && capability === "office" ? (
                 <DocumentOfficeEditPanel
                   organizationSlug={slug}
                   documentPublicId={documentPublicId}
@@ -658,7 +635,18 @@ function DocumentDetailPage() {
                     setPdfReloadKey((key) => key + 1);
                   }}
                 />
-              ) : viewerMode === "structure" && canEdit ? (
+              ) : canEdit && capability === "pages" ? (
+                <DocumentPagesCapabilityPanel
+                  organizationSlug={slug}
+                  documentPublicId={documentPublicId}
+                  pageCount={pdfViewer.numPages ?? 0}
+                  currentPage={pdfViewer.currentPage}
+                  onPdfChanged={() => {
+                    setPdfReloadKey((key) => key + 1);
+                  }}
+                  onPageJump={pdfViewer.handlePageChange}
+                />
+              ) : canEdit && capability === "layout" ? (
                 <DocumentStructurePanel
                   organizationSlug={slug}
                   documentPublicId={documentPublicId}
@@ -698,62 +686,6 @@ function DocumentDetailPage() {
                       enableKeyboardShortcuts={true}
                       className="w-full justify-center sm:w-auto sm:justify-start"
                     />
-                    {canEdit ? (
-                      <DropdownMenu>
-                        <DropdownMenu.Trigger>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            aria-label="Edit document modes"
-                          >
-                            <MoreHorizontalIcon className="mr-1.5 h-4 w-4" />
-                            Edit document
-                          </Button>
-                        </DropdownMenu.Trigger>
-                        <DropdownMenu.Content align="end" className="min-w-60">
-                          <DropdownMenu.Label>
-                            Leave signature fields
-                          </DropdownMenu.Label>
-                          <DropdownMenu.Group>
-                            <DropdownMenu.Item
-                              onClick={() => setViewerMode("annotate")}
-                            >
-                              <span className="flex flex-col gap-0.5">
-                                <span>Mark up PDF</span>
-                                <span className="text-muted-foreground text-[11px] font-normal whitespace-normal">
-                                  Draw, highlight, or redact on pages
-                                </span>
-                              </span>
-                            </DropdownMenu.Item>
-                            <DropdownMenu.Item
-                              onClick={() => setViewerMode("edit")}
-                            >
-                              <span className="flex flex-col gap-0.5">
-                                <span>Edit Word / Excel</span>
-                                <span className="text-muted-foreground text-[11px] font-normal whitespace-normal">
-                                  Change the original file (DOCX, XLSX, CSV)
-                                </span>
-                              </span>
-                            </DropdownMenu.Item>
-                          </DropdownMenu.Group>
-                          <DropdownMenu.Separator />
-                          <DropdownMenu.Label>Advanced</DropdownMenu.Label>
-                          <DropdownMenu.Group>
-                            <DropdownMenu.Item
-                              onClick={() => setViewerMode("structure")}
-                            >
-                              <span className="flex flex-col gap-0.5">
-                                <span>Layout &amp; extraction</span>
-                                <span className="text-muted-foreground text-[11px] font-normal whitespace-normal">
-                                  Map regions for agents — not for signing
-                                </span>
-                              </span>
-                            </DropdownMenu.Item>
-                          </DropdownMenu.Group>
-                        </DropdownMenu.Content>
-                      </DropdownMenu>
-                    ) : null}
                   </div>
                   <TransformComponent
                     wrapperClass="w-full"
