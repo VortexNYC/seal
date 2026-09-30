@@ -34,8 +34,10 @@ import {
   getAuditRequestMeta,
   writeAuditLog,
 } from "../../platform/audit-log.js";
+import { certificateStorageKey } from "../../platform/certificate-of-completion.js";
+import { generateAndStoreCertificateOfCompletion } from "../../platform/certificate-store.js";
+import { buildSigningUrl } from "../../platform/email.js";
 import { validateFieldGeometry } from "../../platform/field-geometry.js";
-import { FieldTypeEnum as placeableFieldTypeSchema } from "../../platform/field-types.js";
 import {
   mergeFieldProperties,
   parseFieldProperties,
@@ -48,16 +50,14 @@ import {
   materializeSuggestionsFromCandidates,
   suggestionItemSchema,
 } from "../../platform/field-suggestions.js";
-import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
-import { buildSigningUrl } from "../../platform/email.js";
+import { FieldTypeEnum as placeableFieldTypeSchema } from "../../platform/field-types.js";
 import { buildSigningInteraction } from "../../platform/interaction-session.js";
+import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import { recordUsageEvent } from "../../platform/usage-events.js";
 import { emitWebhookEvent } from "../../platform/webhook-events.js";
 import { sendDocumentForSigning } from "../document-send.js";
 import documentAgentRoutes from "./document-agent.js";
 import { materializeAnnotationsFromParsedText } from "./document-agent.js";
-import { certificateStorageKey } from "../../platform/certificate-of-completion.js";
-import { generateAndStoreCertificateOfCompletion } from "../../platform/certificate-store.js";
 import { createDownloadToken, verifyDownloadToken } from "./download-token.js";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -74,6 +74,8 @@ const MAX_PAGE_LIMIT = 100;
 
 type ApiDocument = {
   id: string;
+  /** Public cross-surface id (reviews/revisions/session routes key on this). */
+  public_id?: string;
   title: string;
   description?: string;
   status: string;
@@ -112,7 +114,9 @@ async function folderPublicIdMap(
 ): Promise<Map<string, string>> {
   const ids = [
     ...new Set(
-      folderIds.filter((id): id is string => typeof id === "string" && id.length > 0)
+      folderIds.filter(
+        (id): id is string => typeof id === "string" && id.length > 0
+      )
     ),
   ];
   const map = new Map<string, string>();
@@ -255,6 +259,7 @@ function toApiDocument(
 ): ApiDocument {
   return {
     id: row.id,
+    public_id: (row as { publicId?: string }).publicId,
     title: row.name,
     ...(row.description ? { description: row.description } : {}),
     status: row.status,
@@ -683,8 +688,7 @@ app.post("/", async (c) => {
   const parsedDocument = await parseDocumentFromStorage(c.env, storage_id, {
     organizationId,
   });
-  const originalStorageKey =
-    object.customMetadata?.originalKey ?? null;
+  const originalStorageKey = object.customMetadata?.originalKey ?? null;
   const originalContentType =
     object.customMetadata?.originalContentType ?? null;
   const db = createD1(c.env.D1);
@@ -1729,7 +1733,10 @@ app.get("/certificate", async (c) => {
         ...meta,
       });
     } catch (err) {
-      console.error("[audit] document.downloaded (v1 certificate) failed:", err);
+      console.error(
+        "[audit] document.downloaded (v1 certificate) failed:",
+        err
+      );
     }
   }
 
@@ -1939,8 +1946,6 @@ app.get("/fields", async (c) => {
     }),
   });
 });
-
-
 
 const createFieldSchema = z.object({
   id: z.string().min(1),
@@ -2526,7 +2531,6 @@ app.post("/field-suggestions/apply", async (c) => {
 
   return c.json(result);
 });
-
 
 app.route("/", documentAgentRoutes);
 

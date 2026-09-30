@@ -8,7 +8,7 @@
  * Re-derived docs go through the normal parse → field-candidate pipeline.
  */
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 import { z } from "zod";
 
 import { createD1 } from "../global/db.js";
@@ -98,7 +98,7 @@ async function loadOrgDoc(db: Db, organizationId: string, publicId: string) {
     .where(
       and(
         eq(documents.organizationId, organizationId),
-        eq(documents.publicId, publicId)
+        or(eq(documents.publicId, publicId), eq(documents.id, publicId))
       )
     )
     .limit(1);
@@ -437,7 +437,10 @@ export async function acceptAllPendingForDocument(
     .from(documents)
     .where(
       and(
-        eq(documents.publicId, documentPublicId),
+        or(
+          eq(documents.publicId, documentPublicId),
+          eq(documents.id, documentPublicId)
+        ),
         eq(documents.organizationId, organizationId)
       )
     )

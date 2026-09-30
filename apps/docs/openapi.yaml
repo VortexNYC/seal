@@ -100,6 +100,12 @@ components:
         id:
           type: string
           description: Unique document identifier
+        public_id:
+          type: string
+          description: >
+            Cross-surface document id — reviews, revisions, and the session
+            API key on this value. Either `id` or `public_id` is accepted
+            wherever a document identifier is required.
         title:
           type: string
         description:

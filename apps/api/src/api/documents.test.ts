@@ -1225,4 +1225,55 @@ describe("documents API", () => {
       .parse(await parseJson(deleteResponse));
     expect(deleted.success).toBe(true);
   });
+
+  it("parses the uploaded file — parsedText and field metadata persist", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+
+    const publicId = `doc_${crypto.randomUUID().slice(0, 8)}`;
+    const docId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: docId,
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Upload me",
+      status: "draft",
+      workflowStatus: "draft",
+      documentStatus: "active",
+    });
+
+    const pdfBytes = Buffer.from(
+      "%PDF-1.4 " + "x".repeat(512) + " %%EOF"
+    ).toString("base64");
+    const res = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/test-org/${publicId}/upload`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contentBase64: pdfBytes,
+            contentType: "application/pdf",
+          }),
+        }
+      ),
+      env
+    );
+    expect(res.status).toBe(200);
+    const uploaded = z
+      .object({ storageKey: z.string() })
+      .parse(await parseJson(res));
+
+    const row = await db
+      .select()
+      .from(documents)
+      .where(eq(documents.id, docId))
+      .limit(1);
+    // anydoc mock returns markdown:"test" — proves parse ran on upload
+    expect(row[0]?.parsedText).toBe("test");
+    expect(row[0]?.parsedFormat).toBe("pdf");
+    expect(row[0]?.pageCount).toBe(1);
+    expect(uploaded.storageKey).toBeTruthy();
+  });
 });
