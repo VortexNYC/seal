@@ -2,7 +2,7 @@ import { Button } from "@cloudflare/kumo/components/button";
 import { Collapsible } from "@cloudflare/kumo/components/collapsible";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Label } from "@cloudflare/kumo/components/label";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import {
   ActivityIcon,
   ChevronDownIcon,
@@ -13,33 +13,20 @@ import {
   PlusIcon,
   SaveIcon,
   ScanSearchIcon,
-  ScissorsIcon,
   SendIcon,
   SettingsIcon,
   UserIcon,
   UserPlusIcon,
   UsersIcon,
-  RotateCwIcon,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
-import { useNavigate } from "@tanstack/react-router";
 
 import {
   BindingsPanel,
   CitationReviewPanel,
-  DocumentPdfOpsPanel,
-  DocumentSplitsPanel,
-  createInitialSplits,
   type BindingRow,
-  type DocumentSplitGroup,
 } from "@/components/kumo-docs";
-import {
-  getDocuments,
-  mergeDocumentPdf,
-  rotateDocumentPdf,
-  splitDocument,
-  updateSignatureField,
-} from "@/lib/api-client";
+import { updateSignatureField } from "@/lib/api-client";
 import type { ActivityEvent, ActivityEventType } from "@/lib/document-activity";
 import {
   formatDate,
@@ -606,199 +593,6 @@ function AIInsightsSection({
 }
 
 
-function DocumentPdfOpsSection({
-  slug,
-  documentPublicId,
-  pageCount,
-  currentPage,
-  canEdit,
-  open,
-  onOpenChange,
-  onPdfChanged,
-}: {
-  slug: string;
-  documentPublicId: string;
-  pageCount: number;
-  currentPage: number;
-  canEdit: boolean;
-  open: boolean;
-  onOpenChange: () => void;
-  onPdfChanged?: () => void;
-}) {
-  const navigate = useNavigate();
-
-  const draftsQuery = useQuery({
-    queryKey: ["documents", slug, "drafts-for-merge"],
-    queryFn: () => getDocuments(slug, { workflowStatus: "draft" }),
-    enabled: canEdit && open,
-    staleTime: 30_000,
-  });
-
-  const mergeCandidates = (draftsQuery.data ?? [])
-    .filter((d) => d.publicId !== documentPublicId)
-    .map((d) => ({ publicId: d.publicId, name: d.name }));
-
-  const rotateMutation = useMutation({
-    mutationFn: (input: { degrees: 90 | 180 | 270; pages?: number[] }) =>
-      rotateDocumentPdf(slug, documentPublicId, input),
-    onSuccess: () => {
-      toast.success("PDF rotated");
-      onPdfChanged?.();
-    },
-    onError: (error) => {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to rotate PDF"
-      );
-    },
-  });
-
-  const mergeMutation = useMutation({
-    mutationFn: (input: { sourcePublicIds: string[]; title?: string }) =>
-      mergeDocumentPdf(slug, documentPublicId, input),
-    onSuccess: (result) => {
-      toast.success("Merged into a new draft");
-      void navigate({
-        to: "/$slug/documents/$documentId",
-        params: { slug, documentId: result.publicId },
-      });
-    },
-    onError: (error) => {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to merge PDFs"
-      );
-    },
-  });
-
-  if (!canEdit || pageCount < 1) return null;
-
-  return (
-    <Collapsible.Root
-      open={open}
-      onOpenChange={onOpenChange}
-      className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
-    >
-      <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
-        <div className="flex items-center gap-3">
-          <div className="bg-muted text-foreground flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
-            <RotateCwIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
-          </div>
-          <div className="min-w-0 text-left">
-            <span className="text-foreground block font-sans text-[0.9375rem] font-semibold sm:text-sm">
-              Rotate &amp; combine
-            </span>
-            <span className="text-muted-foreground block text-[11px] font-normal">
-              Fix page orientation or append another draft
-            </span>
-          </div>
-        </div>
-        <ChevronDownIcon
-          className={cn(
-            "text-muted-foreground h-4 w-4 transition-transform duration-200",
-            open && "rotate-180"
-          )}
-        />
-      </Collapsible.Trigger>
-      <Collapsible.Panel className="border-border/50 border-t">
-        <DocumentPdfOpsPanel
-          pageCount={pageCount}
-          currentPage={currentPage}
-          rotating={rotateMutation.isPending}
-          merging={mergeMutation.isPending}
-          mergeCandidates={mergeCandidates}
-          onRotate={(input) => rotateMutation.mutate(input)}
-          onMerge={(input) => mergeMutation.mutate(input)}
-        />
-      </Collapsible.Panel>
-    </Collapsible.Root>
-  );
-}
-
-function DocumentSplitsSection({
-  slug,
-  documentPublicId,
-  pageCount,
-  canEdit,
-  open,
-  onOpenChange,
-  onPageJump,
-}: {
-  slug: string;
-  documentPublicId: string;
-  pageCount: number;
-  canEdit: boolean;
-  open: boolean;
-  onOpenChange: () => void;
-  onPageJump: (page: number) => void;
-}) {
-  const [splits, setSplits] = useState<DocumentSplitGroup[]>(() =>
-    createInitialSplits(pageCount)
-  );
-
-  const applyMutation = useMutation({
-    mutationFn: () =>
-      splitDocument(
-        slug,
-        documentPublicId,
-        splits
-          .filter((s) => s.pages.length > 0 && s.title.trim().length > 0)
-          .map((s) => ({ title: s.title.trim(), pages: s.pages }))
-      ),
-    onSuccess: (result) => {
-      toast.success(
-        `Created ${result.documents.length} document${result.documents.length === 1 ? "" : "s"}`
-      );
-    },
-    onError: (error) => {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to split document"
-      );
-    },
-  });
-
-  if (!canEdit || pageCount < 2) return null;
-
-  return (
-    <Collapsible.Root
-      open={open}
-      onOpenChange={onOpenChange}
-      className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
-    >
-      <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
-        <div className="flex items-center gap-3">
-          <div className="bg-muted text-foreground flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
-            <ScissorsIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
-          </div>
-          <div className="min-w-0 text-left">
-            <span className="text-foreground block font-sans text-[0.9375rem] font-semibold sm:text-sm">
-              Split into documents
-            </span>
-            <span className="text-muted-foreground block text-[11px] font-normal">
-              Break this PDF into separate drafts by page range
-            </span>
-          </div>
-        </div>
-        <ChevronDownIcon
-          className={cn(
-            "text-muted-foreground h-4 w-4 transition-transform duration-200",
-            open && "rotate-180"
-          )}
-        />
-      </Collapsible.Trigger>
-      <Collapsible.Panel className="border-border/50 border-t">
-        <DocumentSplitsPanel
-          className="max-h-96"
-          splits={splits}
-          pageCount={pageCount}
-          onChange={setSplits}
-          onSelectPage={onPageJump}
-          onApply={() => applyMutation.mutate()}
-          applying={applyMutation.isPending}
-        />
-      </Collapsible.Panel>
-    </Collapsible.Root>
-  );
-}
-
 function SignatureFieldsSection({
   documentId,
   recipients,
@@ -1237,8 +1031,6 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
       ? props.currentUserRecipient
       : null;
   const advancedOpen =
-    props.openSections.has("pdf-ops") ||
-    props.openSections.has("splits") ||
     props.openSections.has("doc-settings") ||
     props.openSections.has("bindings");
 
@@ -1358,16 +1150,10 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
           open={advancedOpen}
           onOpenChange={(next) => {
             if (next) {
-              if (!props.openSections.has("pdf-ops")) {
-                props.toggleSection("pdf-ops");
+              if (!props.openSections.has("doc-settings")) {
+                props.toggleSection("doc-settings");
               }
               return;
-            }
-            if (props.openSections.has("pdf-ops")) {
-              props.toggleSection("pdf-ops");
-            }
-            if (props.openSections.has("splits")) {
-              props.toggleSection("splits");
             }
             if (props.openSections.has("doc-settings")) {
               props.toggleSection("doc-settings");
@@ -1379,13 +1165,14 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
         >
           <Collapsible.Trigger className="border-border bg-card hover:bg-muted/40 flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left shadow-sm">
             <span className="flex min-w-0 items-start gap-2">
-              <ScissorsIcon className="mt-0.5 h-4 w-4 shrink-0" />
+              <SettingsIcon className="mt-0.5 h-4 w-4 shrink-0" />
               <span className="min-w-0">
                 <span className="block text-sm font-medium">
-                  Pages &amp; file
+                  Signing extras
                 </span>
                 <span className="text-muted-foreground block text-[11px] font-normal">
-                  Rotate or combine PDFs, or split into separate drafts
+                  Redirect URL and field bindings — use Pages on the workspace
+                  rail for rotate / split
                 </span>
               </span>
             </span>
@@ -1414,25 +1201,6 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
               open={props.openSections.has("bindings")}
               onOpenChange={() => props.toggleSection("bindings")}
               onSaved={props.onBindingsSaved}
-            />
-            <DocumentPdfOpsSection
-              slug={props.slug}
-              documentPublicId={props.documentPublicId}
-              pageCount={props.numPages ?? props.pageCount ?? 0}
-              currentPage={props.currentPage ?? 1}
-              canEdit
-              open={props.openSections.has("pdf-ops")}
-              onOpenChange={() => props.toggleSection("pdf-ops")}
-              onPdfChanged={props.onPdfChanged}
-            />
-            <DocumentSplitsSection
-              slug={props.slug}
-              documentPublicId={props.documentPublicId}
-              pageCount={props.numPages ?? props.pageCount ?? 0}
-              canEdit
-              open={props.openSections.has("splits")}
-              onOpenChange={() => props.toggleSection("splits")}
-              onPageJump={props.onPageJump}
             />
           </Collapsible.Panel>
         </Collapsible.Root>
