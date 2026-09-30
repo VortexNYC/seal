@@ -396,14 +396,23 @@ components:
         next_cursor:
           type: string
 
-
     ContactStatus:
       type: string
       enum: [active, inactive, lead]
 
     Contact:
       type: object
-      required: [id, first_name, last_name, full_name, email, status, created_at, updated_at]
+      required:
+        [
+          id,
+          first_name,
+          last_name,
+          full_name,
+          email,
+          status,
+          created_at,
+          updated_at,
+        ]
       properties:
         id: { type: string }
         first_name: { type: string }
@@ -434,7 +443,8 @@ components:
 
     Folder:
       type: object
-      required: [id, name, type, parent_id, visibility, pinned, created_at, updated_at]
+      required:
+        [id, name, type, parent_id, visibility, pinned, created_at, updated_at]
       properties:
         id: { type: string }
         name: { type: string }
@@ -479,7 +489,8 @@ components:
 
     ReviewCell:
       type: object
-      required: [id, row_id, column_index, status, summary, flag, reasoning, citations]
+      required:
+        [id, row_id, column_index, status, summary, flag, reasoning, citations]
       properties:
         id: { type: string }
         row_id: { type: string }
@@ -509,7 +520,8 @@ components:
 
     ReviewMatrix:
       type: object
-      required: [id, title, model, status, columns, rows, created_at, updated_at]
+      required:
+        [id, title, model, status, columns, rows, created_at, updated_at]
       properties:
         id: { type: string }
         title: { type: string }
@@ -573,7 +585,18 @@ components:
 
     WebhookEndpoint:
       type: object
-      required: [id, name, url, status, events, secret_prefix, created_at, updated_at, stats]
+      required:
+        [
+          id,
+          name,
+          url,
+          status,
+          events,
+          secret_prefix,
+          created_at,
+          updated_at,
+          stats,
+        ]
       properties:
         id: { type: string }
         name: { type: string }
@@ -626,7 +649,8 @@ components:
       properties:
         signing:
           type: object
-          required: [allowed_signature_types, default_deadline_days, esign_consent_text]
+          required:
+            [allowed_signature_types, default_deadline_days, esign_consent_text]
           properties:
             allowed_signature_types:
               type: array
@@ -635,7 +659,13 @@ components:
             esign_consent_text: { type: string, nullable: true }
         notifications:
           type: object
-          required: [reminder_schedule, expiration_alert_days, send_completion_email, send_viewed_notification]
+          required:
+            [
+              reminder_schedule,
+              expiration_alert_days,
+              send_completion_email,
+              send_viewed_notification,
+            ]
           properties:
             reminder_schedule:
               type: array
@@ -672,7 +702,13 @@ components:
                 `convert_disabled`.
         security:
           type: object
-          required: [ip_allowlist, allow_api_access, require_mfa, session_timeout_minutes]
+          required:
+            [
+              ip_allowlist,
+              allow_api_access,
+              require_mfa,
+              session_timeout_minutes,
+            ]
           properties:
             ip_allowlist:
               type: array
@@ -2912,7 +2948,6 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
-
   /uploads:
     post:
       tags: [Uploads]
@@ -3303,26 +3338,88 @@ paths:
       operationId: generateReviewMatrix
       summary: Generate pending review cells
       description: >
-        Runs the matrix model against each pending/error cell. `model` is a
-        `provider/model` key — `echo/*` is always registered for dev/tests;
-        `anthropic/*` registers when `ANTHROPIC_API_KEY` is bound. Each cell
-        parses the model's JSON `{summary, flag, reasoning, quote}` reply and
-        re-validates the quote against `parsedText`; ungroundable cells come
-        back as the literal `not_found`, never invented. Long runs move to a
-        Durable Object / Workflow — poll `GET /reviews/{id}` for status.
+        Enqueues a `review-generate` job — generation runs asynchronously on
+        the org's JobRunner Durable Object, not the request lifecycle. `model`
+        is a `provider/model` key — `echo/*` is always registered for
+        dev/tests; `anthropic/*` registers when `ANTHROPIC_API_KEY` is bound.
+        Each cell parses the model's JSON `{summary, flag, reasoning, quote}`
+        reply and re-validates the quote against `parsedText`; ungroundable
+        cells come back as the literal `not_found`, never invented. Poll
+        `GET /jobs/{job_id}` or `GET /reviews/{id}` for status.
       parameters:
         - name: id
           in: path
           required: true
           schema: { type: string }
       responses:
-        "200":
-          description: Matrix after generation pass
+        "202":
+          description: Generation job queued
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/ReviewMatrix" }
+              schema:
+                type: object
+                required: [job_id, status]
+                properties:
+                  job_id:
+                    type: string
+                    description: Job public ID — poll `GET /jobs/{id}`
+                  status:
+                    type: string
+                    enum: [queued]
         "400":
           $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /jobs/{id}:
+    get:
+      tags: [Jobs]
+      operationId: getJob
+      summary: Poll an async job
+      description: >
+        Returns the job's status (`queued|running|done|error`), error, and
+        result payload. Jobs are created by long-running ops such as
+        `POST /reviews/{id}/generate`; they run on the org's JobRunner
+        Durable Object, sequentially per org with retries (max 3 attempts).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+          description: Job public ID (`job_…`)
+      responses:
+        "200":
+          description: Job state
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  [
+                    id,
+                    type,
+                    status,
+                    error,
+                    result,
+                    created_at,
+                    started_at,
+                    finished_at,
+                  ]
+                properties:
+                  id: { type: string }
+                  type: { type: string }
+                  status:
+                    type: string
+                    enum: [queued, running, done, error]
+                  error: { type: string, nullable: true }
+                  result: { nullable: true }
+                  created_at: { type: string, format: date-time }
+                  started_at:
+                    { type: string, format: date-time, nullable: true }
+                  finished_at:
+                    { type: string, format: date-time, nullable: true }
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -3725,7 +3822,8 @@ paths:
                     eventType: { type: string }
                     status: { type: string }
                     responseStatus: { type: integer, nullable: true }
-                    deliveredAt: { type: string, format: date-time, nullable: true }
+                    deliveredAt:
+                      { type: string, format: date-time, nullable: true }
                     createdAt: { type: string, format: date-time }
         "401":
           $ref: "#/components/responses/Unauthorized"
@@ -4122,7 +4220,8 @@ paths:
               type: object
               required: [sharing_mode]
               properties:
-                sharing_mode: { $ref: "#/components/schemas/DocumentSharingMode" }
+                sharing_mode:
+                  { $ref: "#/components/schemas/DocumentSharingMode" }
       responses:
         "200":
           description: Updated

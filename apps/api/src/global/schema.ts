@@ -1736,9 +1736,39 @@ export const reviewCells = sqliteTable(
   },
   (table) => [
     index("reviewCells_rowId_idx").on(table.rowId),
-    unique("reviewCells_rowColumn_uidx").on(
-      table.rowId,
-      table.columnIndex
-    ),
+    unique("reviewCells_rowColumn_uidx").on(table.rowId, table.columnIndex),
+  ]
+);
+
+export const jobs = sqliteTable(
+  "jobs",
+  {
+    id: text("id").primaryKey(),
+    publicId: text("public_id").notNull().unique(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    /** Job type key — dispatch target for the runner. */
+    type: text("type").notNull(),
+    /** queued | running | done | error */
+    status: text("status").notNull().default("queued"),
+    /** JSON args for the executor. */
+    payload: text("payload").notNull().default("{}"),
+    /** JSON result payload on success. */
+    result: text("result"),
+    error: text("error"),
+    attempts: integer("attempts").notNull().default(0),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+    startedAt: integer("started_at", { mode: "timestamp_ms" }),
+    finishedAt: integer("finished_at", { mode: "timestamp_ms" }),
+  },
+  (table) => [
+    index("jobs_orgStatus_idx").on(table.organizationId, table.status),
   ]
 );

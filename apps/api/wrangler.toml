@@ -44,6 +44,14 @@ service = "seal-anydoc-worker"
 binding = "SEAL_CONVERT_WORKER"
 service = "seal-convert-worker"
 
+[[durable_objects.bindings]]
+name = "JOB_RUNNER"
+class_name = "JobRunner"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["JobRunner"]
+
 [triggers]
 crons = ["0 9 * * *", "*/5 * * * *"]
 
@@ -85,6 +93,14 @@ service = "seal-anydoc-worker"
 [[env.production.services]]
 binding = "SEAL_CONVERT_WORKER"
 service = "seal-convert-worker"
+
+[[env.production.durable_objects.bindings]]
+name = "JOB_RUNNER"
+class_name = "JobRunner"
+
+[[env.production.migrations]]
+tag = "v1"
+new_sqlite_classes = ["JobRunner"]
 
 [env.production.triggers]
 crons = ["0 9 * * *", "*/5 * * * *"]

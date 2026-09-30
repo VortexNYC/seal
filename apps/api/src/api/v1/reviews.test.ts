@@ -13,9 +13,35 @@ import {
   reviewRows,
   user,
 } from "../../global/schema.js";
+import indexApp from "../../index.js";
 import { registerProvider } from "../../platform/llm/index.js";
 import type { ModelProvider } from "../../platform/llm/index.js";
-import indexApp from "../../index.js";
+
+const jobSchema = z.object({
+  job_id: z.string(),
+  status: z.string(),
+});
+
+const apiJobSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  status: z.string(),
+  error: z.string().nullable(),
+  result: z.unknown().nullable(),
+  created_at: z.string(),
+  started_at: z.string().nullable(),
+  finished_at: z.string().nullable(),
+});
+
+/**
+ * Run the org's queued jobs synchronously — in prod the JobRunner DO's
+ * alarm does this; miniflare can't fire DO-storage alarms, so tests drive
+ * the same drain function the alarm calls.
+ */
+async function drainJobs(organizationId: string) {
+  const { drainJobs: drain } = await import("../../platform/jobs.js");
+  await drain(env, organizationId);
+}
 
 const stubProvider: ModelProvider = {
   id: "stub-json",
@@ -229,8 +255,28 @@ describe("POST/GET /api/v1/reviews", () => {
       },
       env
     );
-    expect(generateRes.status).toBe(200);
-    const generated = matrixSchema.parse(await generateRes.json());
+    expect(generateRes.status).toBe(202);
+    const job = jobSchema.parse(await generateRes.json());
+    expect(job.status).toBe("queued");
+
+    await drainJobs(orgId);
+
+    const jobRes = await indexApp.request(
+      `http://localhost/api/v1/jobs/${job.job_id}`,
+      { headers: { authorization: `Bearer ${token}` } },
+      env
+    );
+    expect(jobRes.status).toBe(200);
+    expect(apiJobSchema.parse(await jobRes.json()).status).toBe("done");
+
+    const getRes0 = await indexApp.request(
+      `http://localhost/api/v1/reviews/${created.id}`,
+      {
+        headers: { authorization: `Bearer ${token}` },
+      },
+      env
+    );
+    const generated = matrixSchema.parse(await getRes0.json());
     expect(generated.status).toBe("ready");
     const cell = generated.rows[0]?.cells[0];
     expect(cell?.status).toBe("done");
@@ -267,19 +313,23 @@ describe("POST/GET /api/v1/reviews", () => {
       jti: crypto.randomUUID(),
     });
 
-    const res = await indexApp.request("http://localhost/api/v1/reviews", {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${token}`,
-        "content-type": "application/json",
+    const res = await indexApp.request(
+      "http://localhost/api/v1/reviews",
+      {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          title: "Missing",
+          model: "echo/test",
+          columns: [{ index: 0, name: "X", prompt: "Y" }],
+          documentIds: ["doc_missing"],
+        }),
       },
-      body: JSON.stringify({
-        title: "Missing",
-        model: "echo/test",
-        columns: [{ index: 0, name: "X", prompt: "Y" }],
-        documentIds: ["doc_missing"],
-      }),
-    }, env);
+      env
+    );
     expect(res.status).toBe(404);
   });
 
@@ -337,8 +387,14 @@ describe("POST/GET /api/v1/reviews", () => {
       },
       env
     );
-    expect(generateRes.status).toBe(200);
-    const generated = matrixSchema.parse(await generateRes.json());
+    expect(generateRes.status).toBe(202);
+    await drainJobs(orgId);
+    const genRes = await indexApp.request(
+      `http://localhost/api/v1/reviews/${created.id}`,
+      { headers: { authorization: `Bearer ${token}` } },
+      env
+    );
+    const generated = matrixSchema.parse(await genRes.json());
     const cell = generated.rows[0]?.cells[0];
 
     expect(cell?.status).toBe("done");
@@ -407,7 +463,14 @@ describe("POST/GET /api/v1/reviews", () => {
       },
       env
     );
-    const generated = matrixSchema.parse(await generateRes.json());
+    expect(generateRes.status).toBe(202);
+    await drainJobs(orgId);
+    const genRes = await indexApp.request(
+      `http://localhost/api/v1/reviews/${created.id}`,
+      { headers: { authorization: `Bearer ${token}` } },
+      env
+    );
+    const generated = matrixSchema.parse(await genRes.json());
     const cell = generated.rows[0]?.cells[0];
     expect(cell?.status).toBe("done");
     expect(cell?.citations[0]?.quote).toBe("not_found");
