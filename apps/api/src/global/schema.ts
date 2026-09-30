@@ -1815,3 +1815,28 @@ export const revisionSuggestions = sqliteTable(
     ),
   ]
 );
+
+export const reviewPacks = sqliteTable(
+  "review_packs",
+  {
+    id: text("id").primaryKey(),
+    publicId: text("public_id").notNull().unique(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    description: text("description"),
+    /** Default model key (provider/model) the pack suggests. */
+    model: text("model"),
+    /** JSON array of {index, name, prompt} columns. */
+    columns: text("columns").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [index("reviewPacks_org_idx").on(table.organizationId)]
+);

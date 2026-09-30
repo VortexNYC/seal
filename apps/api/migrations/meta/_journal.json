@@ -337,6 +337,13 @@
       "when": 1740000000047,
       "tag": "0047_revision_suggestions",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "6",
+      "when": 1740000000048,
+      "tag": "0048_review_packs",
+      "breakpoints": true
     }
   ]
 }

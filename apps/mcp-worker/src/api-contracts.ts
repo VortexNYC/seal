@@ -974,7 +974,10 @@ export const createReviewMatrixSchema = z.object({
     .string()
     .min(1)
     .max(120)
-    .describe("Provider/model key, e.g. echo/test"),
+    .optional()
+    .describe(
+      "Provider/model key, e.g. echo/test (optional when pack_id supplies one)"
+    ),
   columns: z
     .array(
       z.object({
@@ -985,7 +988,14 @@ export const createReviewMatrixSchema = z.object({
     )
     .min(1)
     .max(32)
-    .describe("Extraction columns"),
+    .optional()
+    .describe("Extraction columns (optional when pack_id supplies them)"),
+  pack_id: z
+    .string()
+    .optional()
+    .describe(
+      "Review pack to expand into columns/model — builtin/nda, builtin/msa, builtin/employment, or pack_*"
+    ),
   documentIds: z
     .array(z.string().min(1))
     .min(1)

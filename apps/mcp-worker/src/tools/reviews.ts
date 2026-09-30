@@ -98,3 +98,68 @@ export function registerReviewTools(
     }
   );
 }
+
+export function registerReviewPackTools(
+  server: McpServer,
+  client: SealApiClient
+): void {
+  server.tool(
+    "seal_list_review_packs",
+    "List review packs — builtin templates (NDA/MSA/employment) plus org-authored packs. Pass pack_id to seal_create_review to expand columns.",
+    {},
+    async (_args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.get<unknown>(
+        "/review-packs",
+        {},
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
+    "seal_create_review_pack",
+    "Create an org-authored review pack — a named bundle of extraction columns (and optional default model) reusable across matrices.",
+    {
+      title: z.string().min(1).max(200),
+      description: z.string().max(2000).optional(),
+      model: z.string().max(120).optional(),
+      columns: z
+        .array(
+          z.object({
+            index: z.number().int().nonnegative(),
+            name: z.string().min(1).max(120),
+            prompt: z.string().min(1).max(4000),
+          })
+        )
+        .min(1)
+        .max(32),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/review-packs",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
+    "seal_delete_review_pack",
+    "Delete an org-authored review pack (builtin packs can't be deleted).",
+    { id: z.string().describe("Pack public ID (pack_…)") },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.delete<unknown>(
+        `/review-packs/${encodeURIComponent(args.id)}`,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+}

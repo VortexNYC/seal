@@ -9,6 +9,7 @@ import {
   ReviewMatrixError,
 } from "../../platform/review-matrix-store.js";
 import { ZReviewMatrixCreate } from "../../platform/review-matrix.js";
+import { getReviewPack } from "../../platform/review-packs.js";
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
@@ -56,10 +57,34 @@ app.post("/", async (c) => {
 
   const db = createD1(c.env.D1);
   try {
+    // Pack expansion — explicit columns/model override the pack's defaults.
+    let columns = parsed.data.columns;
+    let model = parsed.data.model;
+    if (parsed.data.pack_id) {
+      const pack = await getReviewPack(db, organizationId, parsed.data.pack_id);
+      if (!pack) {
+        return c.json({ error: "pack_not_found" }, 404);
+      }
+      columns = columns ?? pack.columns;
+      model = model ?? pack.model ?? undefined;
+    }
+    if (!columns || columns.length === 0) {
+      return c.json(
+        { error: "validation_error", details: { columns: "required" } },
+        400
+      );
+    }
+    if (!model) {
+      return c.json(
+        { error: "validation_error", details: { model: "required" } },
+        400
+      );
+    }
+
     const matrix = await createReviewMatrix(db, {
       organizationId,
       ownerId: mcp.sub,
-      input: parsed.data,
+      input: { ...parsed.data, columns, model },
     });
     return c.json(matrix, 201);
   } catch (err) {
