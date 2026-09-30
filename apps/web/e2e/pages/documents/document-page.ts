@@ -1,6 +1,28 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
+import {
+  FIELD_TYPE_LABELS,
+  type FieldType,
+} from "../../../src/lib/field-types";
 import { waitForApiResponse } from "../../fixtures/api-helpers";
+
+const PRIMARY_FIELD_TYPES: readonly FieldType[] = [
+  "signature",
+  "initials",
+  "name",
+  "email",
+  "date",
+  "text",
+  "checkbox",
+  "date_signed",
+];
+
+const OPTION_FIELD_TYPES: readonly FieldType[] = [
+  "checkbox",
+  "dropdown",
+  "radio",
+  "multi_select",
+];
 
 export class DocumentPage {
   readonly page: Page;
@@ -23,16 +45,14 @@ export class DocumentPage {
   readonly addMyselfAsSignerButton: Locator;
   readonly recipientSelectorDialog: Locator;
   readonly placeFieldButton: Locator;
-  selectedFieldType: "signature" | "text" | "date" | "checkbox";
+  selectedFieldType: FieldType;
 
   constructor(page: Page) {
     this.page = page;
     this.documentTitle = page.locator('[data-testid="document-title"]');
     this.documentCanvas = page.locator("canvas");
     this.documentDropTarget = page
-      .locator(
-        '[data-testid="document-canvas-field-overlay"], [data-engine="pdfium"]'
-      )
+      .locator('[data-testid="document-canvas-field-overlay"]')
       .first();
     this.documentPreview = page
       .locator('[data-kumo-docs="viewer-shell"]')
@@ -73,13 +93,60 @@ export class DocumentPage {
   }
 
   async addSignatureField(x: number, y: number): Promise<void> {
+    await this.placeCatalogField(this.selectedFieldType, x, y);
+  }
+
+  async selectFieldType(fieldType: FieldType): Promise<void> {
+    this.selectedFieldType = fieldType;
     await this.ensureSignerAvailable();
 
-    const fieldButton = this.page.getByRole("button", {
-      name: new RegExp(`^${this.selectedFieldLabel}$`, "i"),
-    });
+    if (!PRIMARY_FIELD_TYPES.includes(fieldType)) {
+      await this.expandMoreFields();
+    }
+
+    const fieldButton = this.fieldTypeButton(fieldType);
     await fieldButton.waitFor({ state: "visible", timeout: 5000 });
     await expect(fieldButton).toBeEnabled();
+  }
+
+  /** Open the "More fields" section so non-primary types are visible. */
+  async expandMoreFields(): Promise<void> {
+    const toggle = this.page.getByRole("button", {
+      name: /more fields/i,
+    });
+    if (await toggle.isVisible().catch(() => false)) {
+      await toggle.click();
+    }
+  }
+
+  fieldTypeButton(fieldType: FieldType): Locator {
+    return this.page.getByRole("button", {
+      name: FIELD_TYPE_LABELS[fieldType],
+      exact: true,
+    });
+  }
+
+  /**
+   * Drag a catalog field type onto the canvas. For checkbox/dropdown/radio
+   * the options dialog opens — `options` supplies the option labels to save.
+   */
+  async placeCatalogField(
+    fieldType: FieldType,
+    x: number,
+    y: number,
+    opts: { options?: string[] } = {}
+  ): Promise<void> {
+    this.selectedFieldType = fieldType;
+    await this.ensureSignerAvailable();
+
+    if (!PRIMARY_FIELD_TYPES.includes(fieldType)) {
+      await this.expandMoreFields();
+    }
+
+    const fieldButton = this.fieldTypeButton(fieldType);
+    await fieldButton.waitFor({ state: "visible", timeout: 5000 });
+    await expect(fieldButton).toBeEnabled();
+
     const dropTargetBox = await this.documentDropTarget.boundingBox();
     if (!dropTargetBox) {
       throw new Error(
@@ -87,48 +154,53 @@ export class DocumentPage {
       );
     }
 
-    const dropClientX = dropTargetBox.x + x;
-    const dropClientY = dropTargetBox.y + y;
-    const dataTransfer = await this.page.evaluateHandle(
-      () => new DataTransfer()
-    );
+    const isOptionType = OPTION_FIELD_TYPES.includes(fieldType);
+    // Non-option types POST /signature-fields inside the drop handler —
+    // register the waiter before dispatching drop or it races the request.
+    const createdResponse = isOptionType
+      ? null
+      : waitForApiResponse(this.page, "/signature-fields");
 
-    await fieldButton.dispatchEvent("dragstart", { dataTransfer });
-    await this.documentDropTarget.dispatchEvent("dragover", {
-      dataTransfer,
-      clientX: dropClientX,
-      clientY: dropClientY,
-    });
-    await this.documentDropTarget.dispatchEvent("drop", {
-      dataTransfer,
-      clientX: dropClientX,
-      clientY: dropClientY,
+    // Real HTML5 drag — synthesizes actual dataTransfer, so the drop
+    // handler's getData("fieldType") resolves (dispatchEvent does not).
+    await fieldButton.dragTo(this.documentDropTarget, {
+      targetPosition: { x, y },
     });
 
-    await this.recipientSelectorDialog.waitFor({
-      state: "visible",
-      timeout: 5000,
-    });
-    await this.placeFieldButton.click();
-
-    // Wait for field to be created
-    await waitForApiResponse(this.page, "/signature-fields");
+    // Multi-signer docs still show the assign dialog; a sole signer
+    // auto-assigns and skips it. Keep the probe short — it runs per field.
     await this.recipientSelectorDialog
-      .waitFor({ state: "hidden", timeout: 5000 })
+      .waitFor({ state: "visible", timeout: 1200 })
+      .then(async () => {
+        await this.placeFieldButton.click();
+        await this.recipientSelectorDialog
+          .waitFor({ state: "hidden", timeout: 5000 })
+          .catch(() => {});
+      })
       .catch(() => {});
-  }
 
-  async selectFieldType(
-    fieldType: "signature" | "text" | "date" | "checkbox"
-  ): Promise<void> {
-    this.selectedFieldType = fieldType;
-    await this.ensureSignerAvailable();
-
-    const fieldButton = this.page.getByRole("button", {
-      name: new RegExp(`^${this.selectedFieldLabel}$`, "i"),
-    });
-    await fieldButton.waitFor({ state: "visible", timeout: 5000 });
-    await expect(fieldButton).toBeEnabled();
+    if (isOptionType) {
+      const optionsDialog = this.page.getByRole("dialog", {
+        name: /options/i,
+      });
+      await optionsDialog.waitFor({ state: "visible", timeout: 5000 });
+      const labels = opts.options ?? ["Option A", "Option B"];
+      for (const label of labels) {
+        await this.page.getByRole("button", { name: /add option/i }).click();
+        await this.page
+          .locator('input[placeholder="Enter option label..."]')
+          .last()
+          .fill(label);
+      }
+      const optionsCreated = waitForApiResponse(this.page, "/signature-fields");
+      await this.page.getByRole("button", { name: /^save$/i }).click();
+      await optionsCreated;
+      await optionsDialog
+        .waitFor({ state: "hidden", timeout: 5000 })
+        .catch(() => {});
+    } else {
+      await createdResponse;
+    }
   }
 
   async sendDocument(): Promise<void> {
@@ -184,19 +256,27 @@ export class DocumentPage {
   }
 
   private get selectedFieldLabel(): string {
-    switch (this.selectedFieldType) {
-      case "checkbox":
-        return "Checkbox";
-      case "date":
-        return "Date";
-      case "text":
-        return "Text";
-      default:
-        return "Signature";
-    }
+    return FIELD_TYPE_LABELS[this.selectedFieldType];
   }
 
   private async ensureSignerAvailable(): Promise<void> {
+    // The button lives inside the Recipients collapsible — expand it only
+    // when actually collapsed (a blind click would collapse it instead).
+    if (!(await this.addMyselfAsSignerButton.isVisible().catch(() => false))) {
+      const recipientsTrigger = this.page.getByRole("button", {
+        name: /^recipients/i,
+      });
+      const expanded = await recipientsTrigger
+        .getAttribute("aria-expanded")
+        .catch(() => null);
+      if (expanded === "false") {
+        await recipientsTrigger.click();
+      }
+      await this.addMyselfAsSignerButton
+        .waitFor({ state: "visible", timeout: 3000 })
+        .catch(() => {});
+    }
+
     const needsSigner = await this.addMyselfAsSignerButton
       .isVisible()
       .catch(() => false);
@@ -206,10 +286,11 @@ export class DocumentPage {
     }
 
     await this.addMyselfAsSignerButton.click();
+    const recipientsPosted = waitForApiResponse(this.page, "/recipients");
     await this.page.getByRole("button", { name: /add as signer/i }).click();
+    await recipientsPosted;
     await this.addMyselfAsSignerButton
       .waitFor({ state: "hidden", timeout: 5000 })
       .catch(() => {});
-    await this.page.waitForTimeout(500);
   }
 }
