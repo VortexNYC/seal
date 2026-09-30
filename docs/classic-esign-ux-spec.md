@@ -45,7 +45,7 @@ proprietary copy). Founder checklist 2026-09-28.
 | SEA-85 OCR/detect Accept all         | **wired on DocumentCanvas Fields** — dogfood on live |
 | SEA-83 solo / guided E2E             | **done** (Playwright)                |
 | SEA-86 mobile Form View              | **done** (proved on prod 2026-09-29) |
-| SEA-87 field-catalog E2E expand      | open (non-blocking for Mark→Lenore)  |
+| SEA-87 field-catalog E2E expand      | **done** (PR #838)                   |
 | Recipient roles                      | done                                 |
 | Default recipient auth = email OTP   | done                                 |
 | Signer Seal account gate             | done                                 |
