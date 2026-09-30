@@ -5,13 +5,10 @@
  * Route: /{slug}/settings/notifications
  */
 
-import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Label } from "@cloudflare/kumo/components/label";
-import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Switch } from "@cloudflare/kumo/components/switch";
-import { Text } from "@cloudflare/kumo/components/text";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Bell, Save, X } from "lucide-react";
@@ -20,6 +17,7 @@ import { useEffect, useState } from "react";
 import { PageWrapper } from "@/components/page-wrapper";
 import { UserNotificationPreferences } from "@/components/settings/user-notification-preferences";
 import { SettingsBody } from "@/components/settings-body";
+import { SettingsSection } from "@/components/settings-section";
 import { FormSkeleton } from "@/components/skeletons";
 import {
   getNotificationSettings,
@@ -79,24 +77,17 @@ function NotificationSettings() {
     return (
       <PageWrapper title="Notifications">
         <SettingsBody wide>
-          <LayerCard>
-            <LayerCard.Primary className="flex flex-col gap-2 py-6 text-center">
-              <Text as="p" variant="secondary">
-                Workspace notification settings need admin access.
-              </Text>
-              <Text as="p" variant="secondary" size="sm">
-                {error instanceof Error
-                  ? error.message
-                  : "Your personal preferences are below."}
-              </Text>
-            </LayerCard.Primary>
-          </LayerCard>
-          <div id="your-preferences" className="flex flex-col gap-3">
-            <Text as="h2" variant="heading">
-              Your preferences
-            </Text>
-            <UserNotificationPreferences />
-          </div>
+          <SettingsSection
+            title="Workspace notifications"
+            description="Workspace notification settings need admin access."
+          >
+            <p className="text-muted-foreground m-0 text-sm">
+              {error instanceof Error
+                ? error.message
+                : "Your personal preferences are below."}
+            </p>
+          </SettingsSection>
+          <YourPreferencesBlock />
         </SettingsBody>
       </PageWrapper>
     );
@@ -144,10 +135,10 @@ function NotificationSettings() {
         sendViewedNotification: formData.sendViewedNotification,
       });
       toast.success("Notification settings updated");
-    } catch (error) {
+    } catch (submitError) {
       toast.error(
-        error instanceof Error
-          ? error.message
+        submitError instanceof Error
+          ? submitError.message
           : "Failed to update notification settings"
       );
     } finally {
@@ -166,52 +157,43 @@ function NotificationSettings() {
   return (
     <PageWrapper title="Notification Settings">
       <SettingsBody wide>
-      <form onSubmit={handleSubmit} className="grid gap-5 md:grid-cols-2">
-        <LayerCard className="md:col-span-2">
-          <LayerCard.Secondary>
-            <div className="flex items-center gap-2">
-              <Bell className="size-5" />
-              <Text as="h2" variant="heading">
-                Reminder Schedule
-              </Text>
-            </div>
-            <Text variant="secondary">
-              Send automatic reminders to recipients who haven't signed. Specify
-              the number of days after the document is sent.
-            </Text>
-          </LayerCard.Secondary>
-          <LayerCard.Primary className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <SettingsSection
+            title="Reminder schedule"
+            description="Days after send to nudge recipients who haven’t signed."
+            icon={<Bell className="size-4" />}
+          >
             <div className="flex flex-wrap gap-2">
               {formData.reminderSchedule.map((day) => (
-                <Badge
+                <span
                   key={day}
-                  variant="outline"
-                  className="border-border bg-muted/40 text-foreground"
+                  className="border-border bg-muted/50 text-foreground inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-sm tabular-nums"
                 >
                   Day {day}
                   <button
                     type="button"
                     onClick={() => removeReminderDay(day)}
-                    className="hover:text-destructive ml-1"
+                    className="text-muted-foreground hover:text-destructive ml-0.5"
                     aria-label={`Remove day ${day}`}
                   >
-                    <X className="size-3" />
+                    <X className="size-3.5" />
                   </button>
-                </Badge>
+                </span>
               ))}
-              {formData.reminderSchedule.length === 0 && (
-                <Text variant="secondary" as="p">
+              {formData.reminderSchedule.length === 0 ? (
+                <p className="text-muted-foreground m-0 text-sm">
                   No reminders configured
-                </Text>
-              )}
+                </p>
+              ) : null}
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-32">
+            <div className="flex items-end gap-2">
+              <div className="w-28">
                 <Input
                   type="number"
                   min={1}
                   aria-label="Add reminder day"
-                  placeholder="Add day..."
+                  label="Day"
+                  placeholder="e.g. 3"
                   value={newReminderDay}
                   onChange={(e) => setNewReminderDay(e.target.value)}
                   onKeyDown={(e) => {
@@ -222,124 +204,114 @@ function NotificationSettings() {
                   }}
                 />
               </div>
-              <Button type="button" onClick={addReminderDay}>
+              <Button type="button" variant="secondary" onClick={addReminderDay}>
                 Add
               </Button>
             </div>
-          </LayerCard.Primary>
-        </LayerCard>
+          </SettingsSection>
 
-        <LayerCard>
-          <LayerCard.Secondary>
-            <Text as="h2" variant="heading">
-              Expiration Alert
-            </Text>
-            <Text variant="secondary">
-              Notify the sender this many days before a document expires.
-            </Text>
-          </LayerCard.Secondary>
-          <LayerCard.Primary>
-            <div className="flex items-center gap-2">
-              <div className="w-24">
-                <Input
-                  id="expiration-alert-days"
-                  aria-label="Days before expiry"
-                  type="number"
-                  min={1}
-                  max={30}
-                  value={formData.expirationAlertDays}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      expirationAlertDays: Number(e.target.value),
-                    })
-                  }
-                />
-              </div>
-              <Text variant="secondary" as="span">
-                days before expiry
-              </Text>
-            </div>
-          </LayerCard.Primary>
-        </LayerCard>
-
-        <LayerCard>
-          <LayerCard.Secondary>
-            <Text as="h2" variant="heading">
-              Email Notifications
-            </Text>
-            <Text variant="secondary">
-              Control which automatic emails are sent for document events.
-            </Text>
-          </LayerCard.Secondary>
-          <LayerCard.Primary className="space-y-6">
-            <div className="flex items-center justify-between gap-4">
-              <div className="space-y-1">
-                <Label
-                  htmlFor="completion-email"
-                  className="text-sm font-medium"
-                >
-                  Send completion email
-                </Label>
-                <Text variant="secondary" as="p">
-                  Notify the sender when all recipients have signed.
-                </Text>
-              </div>
-              <Switch
-                id="completion-email"
-                checked={formData.sendCompletionEmail}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, sendCompletionEmail: checked })
-                }
-              />
-            </div>
-            <div className="border-t pt-6">
-              <div className="flex items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <Label
-                    htmlFor="viewed-notification"
-                    className="text-sm font-medium"
-                  >
-                    Send viewed notification
-                  </Label>
-                  <Text variant="secondary" as="p">
-                    Notify the sender when a recipient views the document.
-                  </Text>
+          <div className="grid gap-5 md:grid-cols-2">
+            <SettingsSection
+              title="Expiration alert"
+              description="Warn the sender this many days before a document expires."
+            >
+              <div className="flex max-w-xs items-end gap-3">
+                <div className="min-w-0 flex-1">
+                  <Input
+                    id="expiration-alert-days"
+                    aria-label="Days before expiry"
+                    label="Days before expiry"
+                    type="number"
+                    min={1}
+                    max={30}
+                    value={formData.expirationAlertDays}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        expirationAlertDays: Number(e.target.value),
+                      })
+                    }
+                  />
                 </div>
-                <Switch
-                  id="viewed-notification"
-                  checked={formData.sendViewedNotification}
-                  onCheckedChange={(checked) =>
-                    setFormData({
-                      ...formData,
-                      sendViewedNotification: checked,
-                    })
-                  }
-                />
               </div>
-            </div>
-          </LayerCard.Primary>
-        </LayerCard>
+            </SettingsSection>
 
-        <div className="flex justify-end md:col-span-2">
-          <Button type="submit" disabled={isSubmitting}>
-            <Save className="mr-2 size-4" />
-            {isSubmitting ? "Saving..." : "Save Changes"}
-          </Button>
-        </div>
-      </form>
+            <SettingsSection
+              title="Email notifications"
+              description="Automatic emails for document events."
+            >
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex flex-col gap-0.5">
+                    <Label
+                      htmlFor="completion-email"
+                      className="text-sm font-medium"
+                    >
+                      Completion email
+                    </Label>
+                    <p className="text-muted-foreground m-0 text-xs">
+                      When all recipients have signed
+                    </p>
+                  </div>
+                  <Switch
+                    id="completion-email"
+                    checked={formData.sendCompletionEmail}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, sendCompletionEmail: checked })
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex flex-col gap-0.5">
+                    <Label
+                      htmlFor="viewed-notification"
+                      className="text-sm font-medium"
+                    >
+                      Viewed notification
+                    </Label>
+                    <p className="text-muted-foreground m-0 text-xs">
+                      When a recipient opens the document
+                    </p>
+                  </div>
+                  <Switch
+                    id="viewed-notification"
+                    checked={formData.sendViewedNotification}
+                    onCheckedChange={(checked) =>
+                      setFormData({
+                        ...formData,
+                        sendViewedNotification: checked,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            </SettingsSection>
+          </div>
 
-      <div id="your-preferences" className="flex flex-col gap-3">
-        <Text as="h2" variant="heading">
-          Your preferences
-        </Text>
-        <Text variant="secondary" size="sm">
-          Email, in-app, and desktop choices for your account — not the
-          workspace.
-        </Text>
-        <UserNotificationPreferences />
-      </div>
+          <div className="flex justify-end">
+            <Button type="submit" disabled={isSubmitting} variant="primary">
+              <Save className="mr-2 size-4" />
+              {isSubmitting ? "Saving..." : "Save changes"}
+            </Button>
+          </div>
+        </form>
+
+        <YourPreferencesBlock />
       </SettingsBody>
     </PageWrapper>
+  );
+}
+
+function YourPreferencesBlock(): React.JSX.Element {
+  return (
+    <div id="your-preferences" className="flex flex-col gap-3">
+      <h2 className="text-foreground m-0 text-base font-semibold tracking-tight">
+        Your preferences
+      </h2>
+      <p className="text-muted-foreground m-0 text-sm">
+        Email, in-app, and desktop choices for your account — not the workspace.
+      </p>
+      <UserNotificationPreferences />
+    </div>
   );
 }

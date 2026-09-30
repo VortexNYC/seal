@@ -1672,7 +1672,8 @@ function DocumentsPage() {
         />
       }
     >
-      <div className="flex w-full flex-col gap-4">
+      {/* Cap: intentional reading width — not a full-bleed ocean */}
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
         {/* SEA-99: flat toolbar — no nested filter cards */}
         <div className="flex flex-col gap-3">
           <div className="relative">

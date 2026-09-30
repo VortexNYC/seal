@@ -5,7 +5,6 @@ import { Upload } from "lucide-react";
 
 import {
   DROPZONE_ACCEPT_TYPES,
-  getSupportedFileTypesDisplay,
   validateFileForUpload,
 } from "@/lib/upload-validation";
 import { cn } from "@/lib/utils";
@@ -101,21 +100,23 @@ export function FileUpload({
       <div
         {...getRootProps()}
         className={cn(
-          "border-border bg-muted/30 text-foreground flex min-h-40 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors",
-          "hover:border-foreground/40 hover:bg-muted/50",
+          "border-border bg-muted/40 text-foreground flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-5 py-6 text-center transition-colors",
+          "hover:border-foreground/40 hover:bg-muted/60",
           isDragActive && "border-primary bg-primary/10",
           disabled && "cursor-not-allowed opacity-50"
         )}
       >
         <input {...getInputProps()} />
-        <div className="bg-background text-foreground border-border flex size-11 items-center justify-center rounded-full border">
-          <Upload className="size-5" aria-hidden />
+        <div className="bg-background text-foreground border-border flex size-9 items-center justify-center rounded-full border">
+          <Upload className="size-4" aria-hidden />
         </div>
         <div>
           <p className="text-foreground text-sm font-medium">{title}</p>
-          <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-            {description ?? getSupportedFileTypesDisplay()}
-          </p>
+          {description ? (
+            <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed">
+              {description}
+            </p>
+          ) : null}
         </div>
       </div>
       {error ? <p className="text-destructive text-xs">{error}</p> : null}

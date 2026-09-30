@@ -74,14 +74,12 @@ describe("UploadDialog", () => {
 
   test("does not render dialog content when open is false", () => {
     renderDialog({ open: false });
-    expect(screen.queryByText("Upload a document")).not.toBeInTheDocument();
+    expect(screen.queryByText("Upload")).not.toBeInTheDocument();
   });
 
   test("renders dialog title when open is true", () => {
     renderDialog({ open: true });
-    expect(
-      screen.getByRole("heading", { name: "Upload a document" })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Upload" })).toBeInTheDocument();
   });
 
   test("does not show usage stats", () => {
@@ -89,24 +87,14 @@ describe("UploadDialog", () => {
     expect(screen.queryByText("Documents this month")).not.toBeInTheDocument();
   });
 
-  test("upload button is disabled when no files are selected", () => {
-    renderDialog();
-    const uploadButton = screen.getByRole("button", {
-      name: "Upload Document",
-    });
-    expect(uploadButton).toBeDisabled();
-  });
-
-  test("renders dropzone area with document instructions", () => {
+  test("renders dropzone and closes without a separate upload CTA", () => {
     renderDialog();
     expect(
-      screen.getByText("Drop a file here, or click to browse")
+      screen.getByText("Drop a file, or click to browse")
     ).toBeInTheDocument();
-    expect(screen.getByText("PDF, DOCX, XLSX, PPTX, or CSV")).toBeInTheDocument();
-  });
-
-  test("renders cancel button", () => {
-    renderDialog();
-    expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Upload Document" })
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Close" })).toBeInTheDocument();
   });
 });

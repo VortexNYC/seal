@@ -592,10 +592,10 @@ function DocumentDetailPage() {
         </div>
       }
     >
-      <div className="flex flex-col gap-4">
-        <div className="grid gap-4 lg:grid-cols-3">
+      <div className="flex h-full min-h-0 flex-col gap-3">
+        <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-3">
           {/* Left column: PDF Preview — Kumo viewer shell + thumbnail rail */}
-          <div className="lg:col-span-2">
+          <div className="flex min-h-0 flex-col lg:col-span-2">
             <DocumentViewerShell
               left={
                 <ThumbnailSidebar
@@ -608,7 +608,7 @@ function DocumentDetailPage() {
               main={
             <div
               ref={pdfViewer.pdfWrapperRef}
-              className="bg-background relative min-h-full p-3 md:p-4"
+              className="bg-background relative p-3 md:p-4"
             >
               {canEdit && viewerMode !== "fields" ? (
                 <div className="mb-3 flex items-center gap-2">
@@ -811,7 +811,7 @@ function DocumentDetailPage() {
           </div>
 
           {/* Right column: Document Sidebar */}
-          <div>
+          <div className="min-h-0 overflow-y-auto">
             <DocumentSidebar
               documentId={documentId}
               documentPublicId={documentPublicId}
