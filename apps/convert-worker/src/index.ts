@@ -409,6 +409,39 @@ app.post("/pdf-to-office", async (c) => {
 });
 
 /**
+ * Tracked-changes .docx via pdf-tools — JSON {title, text, edits[]} in,
+ * OOXML out (w:ins/w:del runs + <w:trackChanges/> settings). The
+ * counter-proposal round-trip: Word opens it as pending redlines.
+ */
+app.post("/tracked-docx", async (c) => {
+  const contentType = c.req.header("content-type") ?? "";
+  if (!contentType.startsWith("application/json")) {
+    return c.text("Expected application/json body", 400);
+  }
+  const body = await c.req.arrayBuffer();
+  const id = c.env.PDF_TOOLS.idFromName("pdftools");
+  const container = c.env.PDF_TOOLS.get(id);
+  const response = await container.fetch(
+    new Request("http://container/tracked-docx", {
+      method: "POST",
+      body,
+      headers: {
+        "content-type": "application/json",
+        "x-internal-api-key": c.env.INTERNAL_API_KEY ?? "",
+      },
+    })
+  );
+  return new Response(response.body, {
+    status: response.status,
+    headers: {
+      "content-type":
+        response.headers.get("content-type") ?? "application/octet-stream",
+      "x-skipped-edits": response.headers.get("x-skipped-edits") ?? "0",
+    },
+  });
+});
+
+/**
  * Per-word geometry via pdf-tools (pdftotext -bbox). Returns JSON:
  * {words: [{page, x, y, w, h, t}]} with 0–1 normalized coordinates —
  * the citation-anchoring substrate.
