@@ -47,7 +47,10 @@ import { DocumentCanvas } from "../../../../components/documents/document-canvas
 import { DocumentCapabilityRail } from "../../../../components/documents/document-capability-rail";
 import { DocumentOfficeEditPanel } from "../../../../components/documents/document-office-edit-panel";
 import { DocumentPagesCapabilityPanel } from "../../../../components/documents/document-pages-capability-panel";
-import { DocumentStructurePanel } from "../../../../components/documents/document-structure-panel";
+import {
+  DocumentLayoutCanvasOverlay,
+  DocumentStructurePanel,
+} from "../../../../components/documents/document-structure-panel";
 import type { DocumentCapabilityId } from "../../../../components/documents/document-workspace";
 import { DocumentPresence } from "../../../../components/documents/document-presence";
 import { DocumentSidebar } from "../../../../components/documents/document-sidebar";
@@ -244,6 +247,9 @@ function DocumentDetailPage() {
   // ── Custom hooks ────────────────────────────────────────────────────────
   const [capability, setCapability] =
     useState<DocumentCapabilityId>("fields");
+  const [layoutActiveBlockId, setLayoutActiveBlockId] = useState<string | null>(
+    null
+  );
   const [pdfReloadKey, setPdfReloadKey] = useState(0);
   const pdfViewer = usePdfViewer(slug, documentPublicId, pdfReloadKey);
 
@@ -320,14 +326,15 @@ function DocumentDetailPage() {
   const canEdit =
     documentData.status === "active" && isPrepStatus;
 
-  // Fields / Mark up / Pages / read-only view share one EmbedPDF mount.
-  // Office / Layout still swap panels on the same workspace roof.
+  // Fields / Mark up / Pages / Layout / read-only view share one EmbedPDF mount.
+  // Office still swaps a panel on the same workspace roof.
   const sharedPdfCanvas =
     Boolean(pdfViewer.pdfUrl) &&
     (!canEdit ||
       capability === "fields" ||
       capability === "markup" ||
-      capability === "pages");
+      capability === "pages" ||
+      capability === "layout");
 
   const isExpired = documentData.workflowStatus === "expired";
 
@@ -658,7 +665,9 @@ function DocumentDetailPage() {
                   <DocumentCanvas
                     src={pdfViewer.pdfUrl}
                     interaction={
-                      !canEdit || capability === "pages"
+                      !canEdit ||
+                      capability === "pages" ||
+                      capability === "layout"
                         ? "view"
                         : capability === "markup"
                           ? "markup"
@@ -706,17 +715,31 @@ function DocumentDetailPage() {
                     fieldContainerRef={pdfViewer.containerRef}
                     fieldDragging={Boolean(fieldPlacement.draggingFieldType)}
                     fieldOverlayExtra={
-                      showAiFeatures && documentAnnotations.annotations ? (
-                        <AIAnnotationOverlays
-                          annotations={documentAnnotations.annotations}
-                          enabledCategories={
-                            documentAnnotations.enabledCategories
-                          }
-                          currentPage={pdfViewer.currentPage}
-                          pdfPageWidth={pdfViewer.pdfWidth}
-                          pdfPageHeight={pdfViewer.pdfHeight}
-                        />
-                      ) : null
+                      <>
+                        {canEdit && capability === "layout" ? (
+                          <DocumentLayoutCanvasOverlay
+                            organizationSlug={slug}
+                            documentPublicId={documentPublicId}
+                            currentPage={pdfViewer.currentPage}
+                            pageWidth={pdfViewer.pdfWidth}
+                            pageHeight={pdfViewer.pdfHeight}
+                            activeBlockId={layoutActiveBlockId}
+                            onActiveBlockIdChange={setLayoutActiveBlockId}
+                          />
+                        ) : null}
+                        {showAiFeatures &&
+                        documentAnnotations.annotations ? (
+                          <AIAnnotationOverlays
+                            annotations={documentAnnotations.annotations}
+                            enabledCategories={
+                              documentAnnotations.enabledCategories
+                            }
+                            currentPage={pdfViewer.currentPage}
+                            pdfPageWidth={pdfViewer.pdfWidth}
+                            pdfPageHeight={pdfViewer.pdfHeight}
+                          />
+                        ) : null}
+                      </>
                     }
                     onSaveMarkup={
                       canEdit && capability === "markup"
@@ -740,6 +763,19 @@ function DocumentDetailPage() {
                       onPageJump={pdfViewer.handlePageChange}
                     />
                   ) : null}
+                  {canEdit && capability === "layout" ? (
+                    <DocumentStructurePanel
+                      organizationSlug={slug}
+                      documentPublicId={documentPublicId}
+                      canEdit={canEdit}
+                      currentPage={pdfViewer.currentPage}
+                      pageWidth={pdfViewer.pdfWidth}
+                      pageHeight={pdfViewer.pdfHeight}
+                      docked
+                      activeBlockId={layoutActiveBlockId}
+                      onActiveBlockIdChange={setLayoutActiveBlockId}
+                    />
+                  ) : null}
                 </>
               ) : canEdit && capability === "office" ? (
                 <DocumentOfficeEditPanel
@@ -749,15 +785,6 @@ function DocumentDetailPage() {
                   onSaved={() => {
                     setPdfReloadKey((key) => key + 1);
                   }}
-                />
-              ) : canEdit && capability === "layout" ? (
-                <DocumentStructurePanel
-                  organizationSlug={slug}
-                  documentPublicId={documentPublicId}
-                  canEdit={canEdit}
-                  currentPage={pdfViewer.currentPage}
-                  pageWidth={pdfViewer.pdfWidth}
-                  pageHeight={pdfViewer.pdfHeight}
                 />
               ) : (
                 <>
