@@ -23,6 +23,7 @@ import {
   encryptPdfBytes,
   flattenPdfBytes,
   isConvertibleFileType,
+  ocrPdfBytes,
   optimizePdfBytes,
   pdfToImagesZip,
 } from "../../platform/document-conversion.js";
@@ -1766,6 +1767,93 @@ app.post("/pdf/export-images", async (c) => {
     download_url: token
       ? `${origin}/api/v1/documents/download-file?token=${encodeURIComponent(token)}`
       : null,
+  });
+});
+
+/** OCR a draft PDF — text layer added to scanned pages (--skip-text). */
+app.post("/pdf/ocr", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      id: z.string().min(1),
+      lang: z
+        .string()
+        .regex(/^[a-z]{3}(\+[a-z]{3})*$/)
+        .default("eng"),
+    })
+    .safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  try {
+    await assertConvertEnabled(c.env, organizationId);
+  } catch (error) {
+    if (error instanceof FeatureDisabledError) {
+      return c.json({ error: error.code }, 403);
+    }
+    throw error;
+  }
+
+  let ocred: ArrayBuffer;
+  try {
+    ocred = await ocrPdfBytes(c.env, {
+      bytes: await object.arrayBuffer(),
+      lang: parsed.data.lang,
+    });
+  } catch (error) {
+    if (error instanceof ConversionError) {
+      return c.json(
+        { error: error.message },
+        error.statusCode === 504 ? 504 : 502
+      );
+    }
+    throw error;
+  }
+
+  const pageCount = await getPdfPageCount(ocred);
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, ocred, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: mcp.sub,
+      ocredFrom: doc.storageKey,
+    },
+  });
+
+  const claimed = await commitDocumentPdfRemap(db, {
+    documentId: doc.id,
+    expectedStorageKey: doc.storageKey,
+    storageId,
+    size: ocred.byteLength,
+    pageCount,
+    plan: { removeIds: [], updates: [] },
+  });
+  if (!claimed) {
+    return c.json({ error: "document_version_conflict" }, 409);
+  }
+
+  return c.json({
+    success: true,
+    storage_id: storageId,
+    page_count: pageCount,
+    lang: parsed.data.lang,
   });
 });
 

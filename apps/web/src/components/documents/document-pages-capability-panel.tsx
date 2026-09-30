@@ -15,6 +15,7 @@ import {
   exportDocumentPdfImages,
   flattenDocumentPdf,
   getDocuments,
+  ocrDocumentPdf,
   protectDocumentPdf,
   redactDocumentPdf,
   mergeDocumentPdf,
@@ -250,6 +251,20 @@ export function DocumentPagesCapabilityPanel({
     },
   });
 
+  const ocrMutation = useMutation({
+    mutationFn: (input: { lang: string }) =>
+      ocrDocumentPdf(organizationSlug, documentPublicId, input),
+    onSuccess: () => {
+      toast.success("OCR complete — PDF is now searchable");
+      onPdfChanged?.();
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to OCR PDF"
+      );
+    },
+  });
+
   const mergeMutation = useMutation({
     mutationFn: (input: { sourcePublicIds: string[]; title?: string }) =>
       mergeDocumentPdf(organizationSlug, documentPublicId, input),
@@ -312,6 +327,7 @@ export function DocumentPagesCapabilityPanel({
         protecting={protectMutation.isPending}
         flattening={flattenMutation.isPending}
         exporting={exportImagesMutation.isPending}
+        ocred={ocrMutation.isPending}
         protectedDownloadUrl={protectedDownloadUrl}
         imagesDownloadUrl={imagesDownloadUrl}
         watermarking={watermarkMutation.isPending}
@@ -328,6 +344,7 @@ export function DocumentPagesCapabilityPanel({
         onProtect={(input) => protectMutation.mutate(input)}
         onFlatten={() => flattenMutation.mutate()}
         onExportImages={(input) => exportImagesMutation.mutate(input)}
+        onOcr={(input) => ocrMutation.mutate(input)}
         onMerge={(input) => mergeMutation.mutate(input)}
         className={docked ? "p-0" : undefined}
       />

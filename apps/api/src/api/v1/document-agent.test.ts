@@ -272,6 +272,26 @@ describe("document agent pdf routes", () => {
     expect(json.format).toBe("jpeg");
   });
 
+  it("OCRs a draft via the agent surface", async () => {
+    await seedFixture();
+    const app = createApp(writeMcp);
+    const res = await app.fetch(
+      agentPost("ocr", { id: DOC_ID, lang: "eng" }),
+      env
+    );
+    expect(res.status).toBe(200);
+    const json = z
+      .object({
+        success: z.boolean(),
+        storage_id: z.string(),
+        page_count: z.number(),
+        lang: z.string(),
+      })
+      .parse(await res.json());
+    expect(json.success).toBe(true);
+    expect(json.lang).toBe("eng");
+  });
+
   it("compresses a draft via the agent surface", async () => {
     await seedFixture();
     const app = createApp(writeMcp);

@@ -507,6 +507,38 @@ describe("document power routes", () => {
     expect(object).not.toBeNull();
   });
 
+  it("ocr-pdf claims the searchable PDF onto the doc", async () => {
+    const app = await seedFixture();
+    const res = await app.fetch(
+      powerPost(DOC_PUBLIC_ID, "ocr-pdf", { lang: "eng" }),
+      env
+    );
+    expect(res.status).toBe(200);
+    const json = z
+      .object({
+        success: z.boolean(),
+        storageId: z.string(),
+        pageCount: z.number(),
+        lang: z.string(),
+      })
+      .parse(await res.json());
+    const db = createD1(env.D1);
+    const docs = await db
+      .select({ storageKey: documents.storageKey })
+      .from(documents)
+      .where(eq(documents.id, DOC_ID));
+    expect(docs[0]?.storageKey).toBe(json.storageId);
+  });
+
+  it("ocr-pdf rejects a bad lang", async () => {
+    const app = await seedFixture();
+    const res = await app.fetch(
+      powerPost(DOC_PUBLIC_ID, "ocr-pdf", { lang: "english" }),
+      env
+    );
+    expect(res.status).toBe(400);
+  });
+
   it("compress-pdf honours the org convert egress gate", async () => {
     const app = await seedFixture();
     const db = createD1(env.D1);
