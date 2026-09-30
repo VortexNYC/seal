@@ -55,3 +55,31 @@ describe("locateQuoteInWords", () => {
     expect(locateQuoteInWords([], "anything")).toBeNull();
   });
 });
+
+import { chunkWords } from "./pdf-chunks.js";
+
+describe("chunkWords", () => {
+  it("groups words into anchored lines", () => {
+    const words = [
+      { page: 1, x: 0.1, y: 0.1, w: 0.05, h: 0.02, t: "Clause" },
+      { page: 1, x: 0.16, y: 0.1, w: 0.05, h: 0.02, t: "one" },
+      // New y → new line
+      { page: 1, x: 0.1, y: 0.13, w: 0.05, h: 0.02, t: "Second" },
+      { page: 1, x: 0.16, y: 0.13, w: 0.05, h: 0.02, t: "line" },
+      // New page
+      { page: 2, x: 0.1, y: 0.1, w: 0.05, h: 0.02, t: "Page" },
+      { page: 2, x: 0.15, y: 0.1, w: 0.05, h: 0.02, t: "two" },
+    ];
+    const chunks = chunkWords(words);
+    expect(chunks).toHaveLength(3);
+    expect(chunks[0]?.text).toBe("Clause one");
+    expect(chunks[0]?.page).toBe(1);
+    expect(chunks[0]?.bbox.x).toBeCloseTo(0.1);
+    expect(chunks[1]?.text).toBe("Second line");
+    expect(chunks[2]?.page).toBe(2);
+  });
+
+  it("returns empty for no words", () => {
+    expect(chunkWords([])).toEqual([]);
+  });
+});
