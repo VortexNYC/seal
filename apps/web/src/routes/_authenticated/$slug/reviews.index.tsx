@@ -99,6 +99,7 @@ function ReviewsPage() {
             {matrices.map((m) => (
               <Table.Row
                 key={m.id}
+                data-testid={`matrix-row-${m.id}`}
                 onClick={() =>
                   void navigate({
                     to: "/$slug/reviews/$matrixId",
