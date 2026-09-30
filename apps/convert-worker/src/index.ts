@@ -7,6 +7,7 @@ const ALLOWED_INPUT_TYPES = new Set([
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   "text/csv",
+  "text/html",
 ]);
 
 const FILE_EXTENSIONS: Record<string, string> = {
@@ -16,7 +17,14 @@ const FILE_EXTENSIONS: Record<string, string> = {
   "application/vnd.openxmlformats-officedocument.presentationml.presentation":
     ".pptx",
   "text/csv": ".csv",
+  "text/html": ".html",
 };
+
+/**
+ * text/html renders via Gotenberg's Chromium route (which requires the entry
+ * file to be named index.html); office/CSV go through LibreOffice.
+ */
+const CHROMIUM_INPUT_TYPES = new Set(["text/html"]);
 
 export class Converter extends Container {
   override defaultPort = 3000;
@@ -443,11 +451,18 @@ app.post("/convert", async (c) => {
     return c.text(`Unsupported input type: ${file.type}`, 400);
   }
 
+  const viaChromium = CHROMIUM_INPUT_TYPES.has(file.type);
   const form = new FormData();
-  form.append("files", file, `document${FILE_EXTENSIONS[file.type]}`);
+  form.append(
+    "files",
+    file,
+    viaChromium ? "index.html" : `document${FILE_EXTENSIONS[file.type]}`
+  );
 
   const containerRequest = new Request(
-    "http://internal/forms/libreoffice/convert",
+    viaChromium
+      ? "http://internal/forms/chromium/convert/html"
+      : "http://internal/forms/libreoffice/convert",
     {
       method: "POST",
       body: form,
