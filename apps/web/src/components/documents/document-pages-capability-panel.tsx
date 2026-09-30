@@ -22,18 +22,22 @@ export type DocumentPagesCapabilityPanelProps = {
   documentPublicId: string;
   pageCount: number;
   currentPage: number;
+  /** When true, sits under the live DocumentCanvas instead of replacing it. */
+  docked?: boolean;
   onPdfChanged?: () => void;
   onPageJump?: (page: number) => void;
 };
 
 /**
  * Pages capability — rotate / combine / split under the Document Workspace roof.
+ * Prefer `docked` so ops chrome keeps the shared EmbedPDF mount visible.
  */
 export function DocumentPagesCapabilityPanel({
   organizationSlug,
   documentPublicId,
   pageCount,
   currentPage,
+  docked = false,
   onPdfChanged,
   onPageJump,
 }: DocumentPagesCapabilityPanelProps): ReactElement {
@@ -109,7 +113,12 @@ export function DocumentPagesCapabilityPanel({
   return (
     <div
       data-testid="document-pages-capability"
-      className="flex flex-col gap-4"
+      data-docked={docked ? "true" : "false"}
+      className={
+        docked
+          ? "border-border bg-card flex flex-col gap-3 rounded-xl border p-3"
+          : "flex flex-col gap-4"
+      }
     >
       <DocumentPdfOpsPanel
         pageCount={pageCount}
@@ -119,11 +128,12 @@ export function DocumentPagesCapabilityPanel({
         mergeCandidates={mergeCandidates}
         onRotate={(input) => rotateMutation.mutate(input)}
         onMerge={(input) => mergeMutation.mutate(input)}
+        className={docked ? "p-0" : undefined}
       />
       {pageCount >= 2 ? (
         <div className="border-border overflow-hidden rounded-xl border">
           <DocumentSplitsPanel
-            className="max-h-[28rem]"
+            className={docked ? "max-h-[16rem]" : "max-h-[28rem]"}
             splits={splits}
             pageCount={pageCount}
             onChange={setSplits}
