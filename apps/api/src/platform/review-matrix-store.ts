@@ -6,7 +6,7 @@
  * do not hang the Hono request lifecycle on those.
  */
 
-import { and, count, desc, eq, inArray } from "drizzle-orm";
+import { and, count, desc, eq, inArray, or } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import {
@@ -233,7 +233,10 @@ export async function createReviewMatrix(
     .where(
       and(
         eq(documents.organizationId, organizationId),
-        inArray(documents.publicId, input.documentIds)
+        or(
+          inArray(documents.publicId, input.documentIds),
+          inArray(documents.id, input.documentIds)
+        )
       )
     );
 

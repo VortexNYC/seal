@@ -31,6 +31,17 @@ import {
   templates,
   user as userTable,
 } from "../global/schema.js";
+import { parseDocumentFromStorage } from "../platform/anydoc.js";
+import {
+  getAuditActor,
+  getAuditRequestMeta,
+  writeAuditLog,
+} from "../platform/audit-log.js";
+import { generateAndStoreCertificateOfCompletion } from "../platform/certificate-store.js";
+import {
+  auditMetaFromContext,
+  tryAuditDocumentByteAccess,
+} from "../platform/document-access-audit.js";
 import {
   convertBytesToPdf,
   ConversionError,
@@ -38,44 +49,36 @@ import {
   isConvertibleFileType,
   isImageFileType,
 } from "../platform/document-conversion.js";
+import {
+  sendDocumentInvitationEmail,
+  sendOwnershipTransferredEmail,
+} from "../platform/email.js";
 import { ensureContactsFromRecipients } from "../platform/ensure-contacts.js";
+import { ZFieldPropertiesFlat } from "../platform/field-meta.js";
+import { materializeSuggestionsFromCandidates } from "../platform/field-suggestions.js";
+import { FieldTypeEnum } from "../platform/field-types.js";
+import { generateAndStoreFinalPdf } from "../platform/final-pdf-store.js";
 import {
   FeatureDisabledError,
   assertConvertEnabled,
 } from "../platform/org-settings.js";
-import { generateAndStoreCertificateOfCompletion } from "../platform/certificate-store.js";
-import { generateAndStoreFinalPdf } from "../platform/final-pdf-store.js";
+import { organizationMiddleware } from "../platform/organization-middleware.js";
 import {
   hashAccessCode,
   normalizeAuthMethod,
 } from "../platform/signer-auth.js";
 import {
-  getAuditActor,
-  getAuditRequestMeta,
-  writeAuditLog,
-} from "../platform/audit-log.js";
-import {
   readOrgSigningCompliance,
   resolveRecipientAuthMethod,
 } from "../platform/signing-settings.js";
-import {
-  sendDocumentInvitationEmail,
-  sendOwnershipTransferredEmail,
-} from "../platform/email.js";
-import {
-  auditMetaFromContext,
-  tryAuditDocumentByteAccess,
-} from "../platform/document-access-audit.js";
-import { organizationMiddleware } from "../platform/organization-middleware.js";
 import type { Variables } from "../platform/types.js";
-import { FieldTypeEnum } from "../platform/field-types.js";
-import { ZFieldPropertiesFlat } from "../platform/field-meta.js";
 import ai from "./ai.js";
 import documentPower from "./document-power.js";
 import {
   generateSigningToken,
   sendDocumentForSigning,
 } from "./document-send.js";
+import { materializeAnnotationsFromParsedText } from "./v1/document-agent.js";
 
 const DocumentSchema = z
   .object({
@@ -940,7 +943,6 @@ const updateDocumentBodySchema = z.object({
   allowDictateNextSigner: z.boolean().optional(),
 });
 
-
 function validateFieldPosition(
   x: number,
   y: number,
@@ -1267,15 +1269,44 @@ app.openapi(uploadRouteDef, async (c) => {
 
   // Keep pipeline status as draft — "uploaded" was stranding docs where the UI
   // canEdit/send gates only accept draft/expired (classic prepare → send path).
+  const parsedDoc = await parseDocumentFromStorage(c.env, key, {
+    organizationId,
+  });
   await db
     .update(documents)
     .set({
       storageKey: key,
       contentType: finalContentType,
       size: finalBytes.byteLength,
+      parsedText: parsedDoc?.markdown ?? null,
+      parsedTitle: parsedDoc?.title ?? null,
+      parsedFormat: parsedDoc?.format ?? null,
+      pdfType: parsedDoc?.pdfType ?? null,
+      pageCount: parsedDoc?.pageCount ?? doc.pageCount,
+      ocrRequired: parsedDoc?.pagesNeedingOcr?.length ? true : false,
+      fieldCandidates: parsedDoc?.fieldCandidates.length
+        ? JSON.stringify(parsedDoc.fieldCandidates)
+        : null,
       updatedAt: new Date(),
     })
     .where(eq(documents.id, doc.id));
+
+  // Same materialization tail as the v1 claim path — field suggestions and
+  // comment annotations ride along with the parse.
+  if (parsedDoc?.fieldCandidates.length) {
+    await materializeSuggestionsFromCandidates(db, {
+      documentId: doc.id,
+      organizationId,
+      candidatesJson: JSON.stringify(parsedDoc.fieldCandidates),
+    });
+  }
+  if (parsedDoc?.markdown) {
+    await materializeAnnotationsFromParsedText(db, {
+      documentId: doc.id,
+      organizationId,
+      parsedText: parsedDoc.markdown,
+    });
+  }
 
   return c.json({
     storageKey: key,
