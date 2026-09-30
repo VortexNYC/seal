@@ -300,6 +300,42 @@ export async function pdfToImagesZip(
   return response.arrayBuffer();
 }
 
+/** Extract embedded text from a PDF via pdf-tools (pdftotext -layout). */
+export async function pdfToText(
+  env: CloudflareBindings,
+  bytes: ArrayBuffer | Uint8Array
+): Promise<string> {
+  if (!env.SEAL_CONVERT_WORKER) {
+    throw new ConversionError(
+      "converter_not_configured",
+      503,
+      "SEAL_CONVERT_WORKER service binding is not configured"
+    );
+  }
+
+  const response = await env.SEAL_CONVERT_WORKER.fetch(
+    new Request("http://internal/pdf-to-text", {
+      method: "POST",
+      body: new Uint8Array(bytes),
+      headers: {
+        "Content-Type": "application/pdf",
+        "x-internal-api-key": env.INTERNAL_API_KEY,
+      },
+    })
+  );
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new ConversionError(
+      "extract_text_failed",
+      response.status === 504 ? 504 : 502,
+      text
+    );
+  }
+
+  return response.text();
+}
+
 /** OCR a PDF via pdf-tools ocrmypdf — adds a text layer to scanned pages. */
 export async function ocrPdfBytes(
   env: CloudflareBindings,

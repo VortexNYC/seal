@@ -529,6 +529,25 @@ export function registerDocumentAgentTools(
   );
 
   server.tool(
+    "seal_compare_document_pdfs",
+    "Text-level compare between two draft PDFs — returns per-page added/removed lines (read-only; no storage changes).",
+    {
+      id: z.string().describe("First document ID (baseline)"),
+      other_id: z.string().describe("Second document ID (compare target)"),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/compare",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
     "seal_ocr_document_pdf",
     "OCR a draft PDF — adds a searchable text layer to scanned/image pages (ocrmypdf --skip-text; existing text preserved).",
     {

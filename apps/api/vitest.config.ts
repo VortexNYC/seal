@@ -16,6 +16,12 @@ addEventListener("fetch", (event) => {
 
 async function handle(request) {
   const url = new URL(request.url);
+  if (request.method === "POST" && url.pathname === "/pdf-to-text") {
+    return new Response("line one\\nline two\\fsecond page\\n", {
+      headers: { "content-type": "text/plain; charset=utf-8" },
+    });
+  }
+
   if (
     request.method === "POST" &&
     (url.pathname === "/convert" ||
