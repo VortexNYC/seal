@@ -28,18 +28,20 @@ class.
 
 ## Rebuild and publish
 
+Use `cf` (the Cloudflare CLI) — it keeps its own credentials; sign in once
+with `cf auth login` (it does not reuse a wrangler login):
+
 ```bash
 # from repo root
-pnpm exec wrangler containers build apps/convert-worker/pdf-tools -t seal-pdf-tools:v<N>
-pnpm exec wrangler containers push seal-pdf-tools:v<N>
+cf containers build apps/convert-worker/pdf-tools
+cf containers push --tag seal-pdf-tools:v<N>
 ```
 
 Then bump the tag in `../wrangler.jsonc` (dev + prod `PdfTools.image`) and
 land the bump in the same PR as the routes that need it. Build must target
-`linux/amd64` — Apple Silicon `docker build` needs `--platform=linux/amd64`
-or `wrangler containers push` rejects it:
+`linux/amd64` — on Apple Silicon build explicitly or the push is rejected:
 
 ```bash
 docker build --platform=linux/amd64 -t seal-pdf-tools:v<N> apps/convert-worker/pdf-tools
-pnpm exec wrangler containers push seal-pdf-tools:v<N>
+cf containers push --tag seal-pdf-tools:v<N>
 ```
