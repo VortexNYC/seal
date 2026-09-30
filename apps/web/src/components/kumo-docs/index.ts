@@ -17,7 +17,6 @@ export {
   DocumentPdfOpsPanel,
   type DocumentPdfOpsPanelProps,
 } from "./document-pdf-ops-panel";
-export { DocxEditor, type DocxEditorProps } from "./docx-editor";
 export { DocxViewer, type DocxViewerProps } from "./docx-viewer";
 export {
   ESignature,
@@ -77,10 +76,6 @@ export {
   ThumbnailSidebar,
   type ThumbnailPage,
 } from "./thumbnail-sidebar";
-export {
-  XlsxEditor,
-  type XlsxEditorProps,
-} from "./xlsx-editor";
 export {
   XlsxViewer,
   type XlsxSheet,

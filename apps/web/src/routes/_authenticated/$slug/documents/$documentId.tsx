@@ -50,7 +50,6 @@ import {
 import { DeleteFieldDialog } from "../../../../components/documents/delete-field-dialog";
 import { DocumentCanvas } from "../../../../components/documents/document-canvas";
 import { DocumentCapabilityRail } from "../../../../components/documents/document-capability-rail";
-import { DocumentOfficeEditPanel } from "../../../../components/documents/document-office-edit-panel";
 import { DocumentPagesCapabilityPanel } from "../../../../components/documents/document-pages-capability-panel";
 import {
   DocumentLayoutCanvasOverlay,
@@ -340,7 +339,6 @@ function DocumentDetailPage() {
   });
 
   // Fields / Mark up / Pages / Layout / read-only view share one EmbedPDF mount.
-  // Office still swaps a panel on the same workspace roof.
   const sharedPdfCanvas =
     Boolean(pdfViewer.pdfUrl) &&
     (!canEdit ||
@@ -823,15 +821,6 @@ function DocumentDetailPage() {
                     />
                   ) : null}
                 </>
-              ) : canEdit && capability === "office" ? (
-                <DocumentOfficeEditPanel
-                  organizationSlug={slug}
-                  documentPublicId={documentPublicId}
-                  canEdit={canEdit}
-                  onSaved={() => {
-                    setPdfReloadKey((key) => key + 1);
-                  }}
-                />
               ) : (
                 <>
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
