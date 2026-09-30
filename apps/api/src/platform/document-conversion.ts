@@ -19,6 +19,47 @@ const EXTENSIONS: Record<string, string> = {
   "text/csv": ".csv",
 };
 
+/** Raster formats packed straight into a PDF via pdf-lib (no container). */
+export const IMAGE_MIME_TYPES = new Set(["image/png", "image/jpeg"]);
+
+export function isImageFileType(contentType: string): boolean {
+  return IMAGE_MIME_TYPES.has(contentType);
+}
+
+/**
+ * Pack a single PNG/JPEG into a one-page PDF sized to the image. Runs
+ * entirely in-worker — images never leave the platform, so no egress gate
+ * and no convert-worker dependency (Smallpdf "JPG to PDF" parity).
+ */
+export async function imageBytesToPdf(
+  input: ConvertInput
+): Promise<Uint8Array> {
+  const { PDFDocument } = await import("pdf-lib");
+  const bytes = new Uint8Array(input.bytes);
+  const doc = await PDFDocument.create();
+  const image =
+    input.contentType === "image/png"
+      ? await doc.embedPng(bytes)
+      : input.contentType === "image/jpeg"
+        ? await doc.embedJpg(bytes)
+        : null;
+  if (!image) {
+    throw new ConversionError(
+      "unsupported_file_type",
+      400,
+      `No image conversion handler for ${input.contentType}`
+    );
+  }
+  const page = doc.addPage([image.width, image.height]);
+  page.drawImage(image, {
+    x: 0,
+    y: 0,
+    width: image.width,
+    height: image.height,
+  });
+  return doc.save();
+}
+
 export class ConversionError extends Error {
   constructor(
     message: string,

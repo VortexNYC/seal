@@ -22,9 +22,20 @@ const ALLOWED_MIME_TYPES = new Set([
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   "text/csv",
+  "image/png",
+  "image/jpeg",
 ]);
 
-const ALLOWED_EXTENSIONS = new Set([".pdf", ".docx", ".xlsx", ".pptx", ".csv"]);
+const ALLOWED_EXTENSIONS = new Set([
+  ".pdf",
+  ".docx",
+  ".xlsx",
+  ".pptx",
+  ".csv",
+  ".png",
+  ".jpg",
+  ".jpeg",
+]);
 
 /**
  * MIME type to file extensions mapping for react-dropzone
@@ -41,6 +52,8 @@ export const DROPZONE_ACCEPT_TYPES: Record<string, string[]> = {
     ".pptx",
   ],
   "text/csv": [".csv"],
+  "image/png": [".png"],
+  "image/jpeg": [".jpg", ".jpeg"],
 };
 
 /**
@@ -67,7 +80,7 @@ export function getMaxFileSizeDisplay(): string {
  * Get supported file types for display
  */
 export function getSupportedFileTypesDisplay(): string {
-  return "PDF, DOCX, XLSX, PPTX, CSV";
+  return "PDF, DOCX, XLSX, PPTX, CSV, PNG, JPG";
 }
 
 /**
@@ -92,7 +105,7 @@ export function validateFileForUpload(file: File): {
   if (!file.type) {
     errors.push("File type could not be determined");
   } else if (!ALLOWED_MIME_TYPES.has(file.type)) {
-    errors.push("Only PDF, DOCX, XLSX, PPTX, and CSV files are supported");
+    errors.push("Only PDF, DOCX, XLSX, PPTX, CSV, PNG, and JPG files are supported");
   }
 
   // Validate extension
@@ -100,7 +113,7 @@ export function validateFileForUpload(file: File): {
   if (!fileExt) {
     errors.push("File must have an extension");
   } else if (!ALLOWED_EXTENSIONS.has(fileExt)) {
-    errors.push("Only PDF, DOCX, XLSX, PPTX, and CSV files are supported");
+    errors.push("Only PDF, DOCX, XLSX, PPTX, CSV, PNG, and JPG files are supported");
   }
 
   // Trailer-only PDF stubs (~27B) pass size>0 but are not usable documents
