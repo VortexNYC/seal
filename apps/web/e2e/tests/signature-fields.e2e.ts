@@ -216,11 +216,11 @@ test.describe("Signature Fields - Management", () => {
     await expect(field).toBeVisible({ timeout: 5000 });
 
     const isAlreadySelected = await field.evaluate((el) =>
-      el.className.includes("border-primary")
+      el.className.includes("border-kumo-primary")
     );
     if (!isAlreadySelected) {
       await field.click();
-      await expect(field).toHaveClass(/border-primary/, { timeout: 3000 });
+      await expect(field).toHaveClass(/border-kumo-primary/, { timeout: 3000 });
     }
 
     await authenticatedPage.waitForTimeout(100);
@@ -255,7 +255,7 @@ test.describe("Signature Fields - Management", () => {
       .first();
     await expect(field).toBeVisible({ timeout: 5000 });
     await field.click();
-    await expect(field).toHaveClass(/border-primary/, { timeout: 3000 });
+    await expect(field).toHaveClass(/border-kumo-primary/, { timeout: 3000 });
   });
 });
 

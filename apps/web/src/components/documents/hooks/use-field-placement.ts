@@ -266,9 +266,18 @@ export function useFieldPlacement({
     if (!container) return;
 
     const targetPageNumber = currentPage;
+    // The container may BE the page element (single-page overlay) or a
+    // wrapper around per-page overlays — querySelector only sees children,
+    // so check the container itself first.
+    const pageSelector = `[data-page-number="${targetPageNumber}"]`;
+    const engineSelector = "[data-engine='pdfium']";
     const targetPageElement =
-      container.querySelector(`[data-page-number="${targetPageNumber}"]`) ??
-      container.querySelector("[data-engine='pdfium']");
+      (container.matches(pageSelector)
+        ? container
+        : container.querySelector<HTMLElement>(pageSelector)) ??
+      (container.matches(engineSelector)
+        ? container
+        : container.querySelector<HTMLElement>(engineSelector));
     if (!targetPageElement) {
       toast.error("Could not determine drop location");
       setDraggingFieldType(null);
