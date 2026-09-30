@@ -571,6 +571,28 @@ export function registerDocumentAgentTools(
   );
 
   server.tool(
+    "seal_convert_document_pdf_to_pdfa",
+    "Convert a draft PDF to archival PDF/A (1b/2b/3b via Gotenberg pdfengines/convert). The archival PDF replaces the document's stored PDF.",
+    {
+      id: z.string().describe("Document ID"),
+      format: z
+        .enum(["PDF/A-1b", "PDF/A-2b", "PDF/A-3b"])
+        .default("PDF/A-2b")
+        .describe("PDF/A flavour"),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/to-pdfa",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
     "seal_flatten_document_pdf",
     "Flatten annotations and AcroForm fields into page content (pdfengines/flatten). Seal signature fields (stored in the database) are unaffected.",
     {

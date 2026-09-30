@@ -26,6 +26,7 @@ export type DocumentPdfOpsPanelProps = {
   exporting?: boolean;
   ocred?: boolean;
   comparing?: boolean;
+  pdfaing?: boolean;
   merging?: boolean;
   /** Download URL for the last protected copy this session produced. */
   protectedDownloadUrl?: string | null;
@@ -76,6 +77,7 @@ export type DocumentPdfOpsPanelProps = {
   onExportImages: (input: { format: "png" | "jpeg"; dpi: number }) => void;
   onOcr: (input: { lang: string }) => void;
   onCompare: (input: { withPublicId: string }) => void;
+  onToPdfa: (input: { format: "PDF/A-1b" | "PDF/A-2b" | "PDF/A-3b" }) => void;
   onMerge: (input: { sourcePublicIds: string[]; title?: string }) => void;
 };
 
@@ -114,6 +116,7 @@ export function DocumentPdfOpsPanel({
   exporting = false,
   ocred = false,
   comparing = false,
+  pdfaing = false,
   merging = false,
   protectedDownloadUrl = null,
   imagesDownloadUrl = null,
@@ -131,6 +134,7 @@ export function DocumentPdfOpsPanel({
   onExportImages,
   onOcr,
   onCompare,
+  onToPdfa,
   onMerge,
 }: DocumentPdfOpsPanelProps): JSX.Element {
   const [scope, setScope] = useState<"all" | "current">("all");
@@ -159,6 +163,7 @@ export function DocumentPdfOpsPanel({
   const [exportDpi, setExportDpi] = useState(150);
   const [ocrLang, setOcrLang] = useState("eng");
   const [compareTarget, setCompareTarget] = useState("");
+  const [pdfaFormat, setPdfaFormat] = useState<"PDF/A-1b" | "PDF/A-2b" | "PDF/A-3b">("PDF/A-2b");
   const [selectedMergeIds, setSelectedMergeIds] = useState<string[]>([]);
   const [mergeTitle, setMergeTitle] = useState("");
 
@@ -761,6 +766,38 @@ export function DocumentPdfOpsPanel({
             ))}
           </div>
         ) : null}
+      </div>
+
+      <div className="border-border space-y-2 border-t pt-4">
+        <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
+          Archival format (PDF/A)
+        </p>
+        <p className="text-muted-foreground text-[11px]">
+          Convert to a long-term-archival PDF/A flavour — replaces the
+          stored PDF.
+        </p>
+        <Select
+          value={pdfaFormat}
+          onValueChange={(v) =>
+            setPdfaFormat((v ?? "PDF/A-2b") as typeof pdfaFormat)
+          }
+          placeholder="PDF/A flavour"
+        >
+          {(["PDF/A-1b", "PDF/A-2b", "PDF/A-3b"] as const).map((f) => (
+            <Select.Option key={f} value={f}>
+              {f}
+            </Select.Option>
+          ))}
+        </Select>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={pdfaing || pageCount < 1}
+          onClick={() => onToPdfa({ format: pdfaFormat })}
+        >
+          {pdfaing ? "Converting…" : "Convert to PDF/A"}
+        </Button>
       </div>
 
       <div className="border-border space-y-2 border-t pt-4">

@@ -2019,6 +2019,41 @@ paths:
                           type: array
                           items: { type: string }
 
+  /documents/pdf/to-pdfa:
+    post:
+      tags: [Documents]
+      operationId: convertDocumentPdfToPdfA
+      summary: Convert a draft PDF to archival PDF/A
+      description: >
+        Converts to a PDF/A flavour (1b/2b/3b) via Gotenberg
+        pdfengines/convert. The archival PDF claims the document's
+        storageKey. Honours the org `egress.allow_convert` gate.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string }
+                format:
+                  type: string
+                  enum: [PDF/A-1b, PDF/A-2b, PDF/A-3b]
+                  default: PDF/A-2b
+      responses:
+        "200":
+          description: Converted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  storage_id: { type: string }
+                  page_count: { type: integer }
+                  format: { type: string }
+
   /documents/send:
     post:
       tags: [Documents]
