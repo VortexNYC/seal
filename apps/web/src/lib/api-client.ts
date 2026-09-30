@@ -2289,6 +2289,25 @@ export async function exportDocumentPdfImages(
   );
 }
 
+const pdfToOfficeResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  format: z.string(),
+  size: z.number().int(),
+  downloadUrl: z.string().nullable(),
+});
+export async function convertDocumentPdfToOffice(
+  organizationSlug: string,
+  publicId: string,
+  input?: { format?: "docx" | "xlsx" | "pptx" }
+): Promise<z.infer<typeof pdfToOfficeResultSchema>> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/pdf-to-office`,
+    pdfToOfficeResultSchema,
+    { method: "POST", body: JSON.stringify(input ?? {}) }
+  );
+}
+
 const ocrDocumentPdfResultSchema = z.object({
   success: z.boolean(),
   storageId: z.string(),

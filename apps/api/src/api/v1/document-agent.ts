@@ -27,6 +27,7 @@ import {
   ocrPdfBytes,
   optimizePdfBytes,
   pdfToImagesZip,
+  pdfToOfficeBytes,
   pdfToText,
 } from "../../platform/document-conversion.js";
 import {
@@ -1767,6 +1768,100 @@ app.post("/pdf/export-images", async (c) => {
     size: zip.byteLength,
     format: parsed.data.format,
     dpi: parsed.data.dpi,
+    download_url: token
+      ? `${origin}/api/v1/documents/download-file?token=${encodeURIComponent(token)}`
+      : null,
+  });
+});
+
+/**
+ * Convert a draft PDF to an Office format — docx/xlsx/pptx artifact +
+ * download_url. The working draft is untouched; fidelity is layout-locked
+ * (PDF imports into Draw — text boxes, not flowing prose).
+ */
+app.post("/pdf/to-office", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      id: z.string().min(1),
+      format: z.enum(["docx", "xlsx", "pptx"]).default("docx"),
+    })
+    .safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+  const format = parsed.data.format;
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  try {
+    await assertConvertEnabled(c.env, organizationId);
+  } catch (error) {
+    if (error instanceof FeatureDisabledError) {
+      return c.json({ error: error.code }, 403);
+    }
+    throw error;
+  }
+
+  let office: ArrayBuffer;
+  try {
+    office = await pdfToOfficeBytes(c.env, {
+      bytes: await object.arrayBuffer(),
+      format,
+    });
+  } catch (error) {
+    if (error instanceof ConversionError) {
+      return c.json(
+        { error: error.message },
+        error.statusCode === 504 ? 504 : 502
+      );
+    }
+    throw error;
+  }
+
+  const OFFICE_MIME: Record<"docx" | "xlsx" | "pptx", string> = {
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  };
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, office, {
+    httpMetadata: { contentType: OFFICE_MIME[format] },
+    customMetadata: {
+      organizationId,
+      uploadedBy: mcp.sub,
+      convertedFrom: doc.storageKey,
+    },
+  });
+
+  const origin = new URL(c.req.url).origin;
+  const token = await createDownloadToken(c.env, {
+    userId: mcp.sub,
+    organizationId,
+    storageKey: storageId,
+    documentName: `${doc.name}.${format}`,
+    documentId: doc.id,
+    actorType: "agent",
+  });
+
+  return c.json({
+    success: true,
+    storage_id: storageId,
+    format,
+    size: office.byteLength,
     download_url: token
       ? `${origin}/api/v1/documents/download-file?token=${encodeURIComponent(token)}`
       : null,

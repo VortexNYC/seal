@@ -1,7 +1,7 @@
 # seal-pdf-tools container
 
-Alpine + poppler-utils + ocrmypdf/tesseract + a stdlib-only Python HTTP
-shim. Backs the `PdfTools` container class in `../wrangler.jsonc` for
+Alpine + poppler-utils + ocrmypdf/tesseract + LibreOffice + a
+stdlib-only Python HTTP shim. Backs the `PdfTools` container class in `../wrangler.jsonc` for
 operations the Gotenberg image cannot do (page rasterisation, text
 extract, OCR; PDF/A and repair can land here too).
 
@@ -10,6 +10,8 @@ Endpoints (POST, `application/pdf` raw body):
 - `/to-images?format=png|jpeg&dpi=50..600` → `application/zip` (`page-N.*`)
 - `/to-text` → `text/plain` (`pdftotext -layout`)
 - `/ocr?lang=eng` → `application/pdf` (ocrmypdf `--skip-text`)
+- `/pdf-to-office?format=docx|xlsx|pptx` → office bytes (soffice `--headless
+  --convert-to`; PDF imports into Draw — layout-locked fidelity)
 
 Notes:
 
