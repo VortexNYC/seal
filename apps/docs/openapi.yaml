@@ -490,6 +490,33 @@ components:
           type: string
           description: Contiguous excerpt from the document, or the literal `not_found`
 
+    Revision:
+      type: object
+      required:
+        [id, document_id, kind, status, anchor_quote, created_by, created_at]
+      properties:
+        id: { type: string }
+        document_id: { type: string }
+        review_cell_id: { type: string, nullable: true }
+        kind: { type: string, enum: [insert, delete, replace] }
+        status: { type: string, enum: [pending, accepted, rejected] }
+        anchor_quote: { type: string }
+        anchor_page: { type: integer, nullable: true }
+        anchor_bbox:
+          type: object
+          nullable: true
+          properties:
+            x: { type: number }
+            y: { type: number }
+            width: { type: number }
+            height: { type: number }
+        proposed_text: { type: string, nullable: true }
+        rationale: { type: string, nullable: true }
+        derived_document_id: { type: string, nullable: true }
+        created_by: { type: string }
+        created_at: { type: string, format: date-time }
+        resolved_at: { type: string, format: date-time, nullable: true }
+
     ReviewColumn:
       type: object
       required: [index, name, prompt]
@@ -3438,6 +3465,121 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+
+  /revisions:
+    post:
+      tags: [Revisions]
+      operationId: proposeRevision
+      summary: Propose a redline on a draft document
+      description: >
+        Anchors a verbatim quote from the document text and proposes an
+        insert/delete/replace. Auto-attaches `{page, bbox}` when the quote
+        resolves against per-word geometry. Status stays `pending` until a
+        human or agent accepts/rejects; the source document is never
+        mutated — accepting materializes a derived counter-proposal draft.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [document_id, kind, anchor_quote]
+              properties:
+                document_id: { type: string }
+                kind:
+                  type: string
+                  enum: [insert, delete, replace]
+                anchor_quote:
+                  type: string
+                  description: Verbatim excerpt the edit attaches to
+                proposed_text:
+                  type: string
+                  description: Replacement (replace) or inserted text (insert)
+                rationale: { type: string }
+                review_cell_id: { type: string }
+      responses:
+        "201":
+          description: Pending revision created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Revision" }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    get:
+      tags: [Revisions]
+      operationId: listRevisions
+      summary: List revision suggestions
+      parameters:
+        - name: document_id
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, accepted, rejected]
+      responses:
+        "200":
+          description: Revisions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  revisions:
+                    type: array
+                    items: { $ref: "#/components/schemas/Revision" }
+
+  /revisions/{id}/accept:
+    post:
+      tags: [Revisions]
+      operationId: acceptRevision
+      summary: Accept a revision — materializes a derived counter-proposal draft
+      description: >
+        Applies the text edit to the document's parsed content, converts to
+        PDF via the convert worker, and creates a new draft linked by
+        `parent_document_id`. Re-parses fields/annotations on the derived
+        doc. Idempotent-ish: already-resolved revisions return 409.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Accepted — derived_document_id points to the new draft
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Revision" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Already resolved
+
+  /revisions/{id}/reject:
+    post:
+      tags: [Revisions]
+      operationId: rejectRevision
+      summary: Reject a pending revision
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Rejected
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Revision" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Already resolved
 
   # ──────────────────────────────────────────────────────────────────────────
   # Imports
