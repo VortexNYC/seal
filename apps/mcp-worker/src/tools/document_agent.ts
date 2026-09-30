@@ -9,7 +9,9 @@ import { getAuthToken } from "../utils/auth";
 
 function createToolResponse(payload: unknown) {
   return {
-    content: [{ type: "text" as const, text: JSON.stringify(payload, null, 2) }],
+    content: [
+      { type: "text" as const, text: JSON.stringify(payload, null, 2) },
+    ],
   };
 }
 
@@ -66,11 +68,11 @@ export function registerDocumentAgentTools(
 
   server.tool(
     "seal_preview_document",
-    "Preview a document for agents. format=markdown (parsed text + field_candidates), structured (markdown + csv_rows when original is CSV), pdf or original (signed download URL for the PDF or pre-conversion office/CSV file).",
+    "Preview a document for agents. format=markdown (parsed text + field_candidates), structured (markdown + csv_rows when original is CSV), chunks (per-line anchored text with page+bbox — citation/redline targeting), pdf or original (signed download URL for the PDF or pre-conversion office/CSV file).",
     {
       id: z.string().describe("Document ID"),
       format: z
-        .enum(["markdown", "structured", "pdf", "original"])
+        .enum(["markdown", "structured", "chunks", "pdf", "original"])
         .optional()
         .describe("Preview format (default markdown)"),
     },

@@ -140,6 +140,39 @@ describe("document agent pdf routes", () => {
     await db.delete(user);
   });
 
+  it("preview format=chunks returns anchored line chunks", async () => {
+    await seedFixture();
+    const app = createApp(readMcp);
+    const res = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/v1/documents/preview?id=${DOC_ID}&format=chunks`
+      ),
+      env
+    );
+    expect(res.status).toBe(200);
+    const json = z
+      .object({
+        format: z.literal("chunks"),
+        chunks: z.array(
+          z.object({
+            page: z.number().int(),
+            bbox: z.object({
+              x: z.number(),
+              y: z.number(),
+              width: z.number(),
+              height: z.number(),
+            }),
+            text: z.string(),
+          })
+        ),
+        truncated: z.boolean(),
+      })
+      .parse(await res.json());
+    expect(json.chunks.length).toBeGreaterThan(0);
+    expect(json.chunks[0]?.page).toBe(1);
+    expect(json.chunks[0]?.text).toContain("Either");
+  });
+
   it("organizes a draft and remaps fields for an agent", async () => {
     await seedFixture();
     const app = createApp(writeMcp);
@@ -237,10 +270,7 @@ describe("document agent pdf routes", () => {
   it("flattens a draft via the agent surface", async () => {
     await seedFixture();
     const app = createApp(writeMcp);
-    const res = await app.fetch(
-      agentPost("flatten", { id: DOC_ID }),
-      env
-    );
+    const res = await app.fetch(agentPost("flatten", { id: DOC_ID }), env);
     expect(res.status).toBe(200);
     const json = z
       .object({
