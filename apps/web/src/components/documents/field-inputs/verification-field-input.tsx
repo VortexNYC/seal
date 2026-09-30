@@ -43,7 +43,7 @@ export function VerificationFieldInput({
           "Complete identity verification to continue. Provider wiring lands with CompAI / SEA auth."}
       </p>
       {done ? (
-        <p className="text-sm font-medium text-green-700">Verification recorded</p>
+        <p className="text-sm font-medium text-kumo-success">Verification recorded</p>
       ) : (
         <Button type="button" onClick={complete}>
           Start verification

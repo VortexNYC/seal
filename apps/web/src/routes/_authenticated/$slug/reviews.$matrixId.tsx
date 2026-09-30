@@ -7,7 +7,6 @@
 import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
-import { Empty } from "@cloudflare/kumo/components/empty";
 import { Textarea } from "@cloudflare/kumo/components/input";
 import { Select } from "@cloudflare/kumo/components/select";
 import { Table } from "@cloudflare/kumo/components/table";
@@ -23,7 +22,6 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
-import { useSuspenseOrganization } from "@/hooks/use-organization";
 import {
   acceptRevision,
   getDocuments,
@@ -197,7 +195,6 @@ function ReviewMatrixPage() {
         {selectedCell ? (
           <CellDetail
             slug={slug}
-            rowId={selectedCell.rowId}
             cell={selectedCell.cell}
             documentId={
               matrix.rows.find((r) => r.id === selectedCell.rowId)
@@ -219,14 +216,12 @@ function ReviewMatrixPage() {
 
 function CellDetail({
   slug,
-  rowId,
   cell,
   documentId,
   documentName,
   onClose,
 }: {
   slug: string;
-  rowId: string;
   cell: ApiReviewCell;
   documentId: string;
   documentName: string;

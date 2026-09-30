@@ -217,6 +217,9 @@ importers:
       knip:
         specifier: ^6.35.1
         version: 6.35.1
+      oxlint:
+        specifier: 1.82.0
+        version: 1.82.0(oxlint-tsgolint@7.0.2001)(vite-plus@0.3.2(@edge-runtime/vm@5.0.0)(@opentelemetry/api@1.9.1)(@types/node@26.1.1)(esbuild@0.28.2)(happy-dom@20.14.5)(jiti@2.7.0)(jsdom@29.0.1(@noble/hashes@2.4.0))(svelte@5.57.1(@typescript-eslint/types@8.70.0))(terser@5.49.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))
       secretlint:
         specifier: ^13.0.5
         version: 13.0.5(supports-color@10.2.2)

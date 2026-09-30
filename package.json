@@ -2,7 +2,7 @@
   "name": "seal",
   "version": "0.0.1",
   "private": true,
-  "description": "Seal — open-source, agent-native e-signature platform",
+  "description": "Seal \u2014 open-source, agent-native e-signature platform",
   "type": "module",
   "scripts": {
     "dev": "vp run -r dev --filter @seal/api --filter @seal/web --filter @seal/docs",
@@ -31,10 +31,12 @@
     "prove:secret-scan": "node scripts/prove-secret-scan.mjs",
     "prove:pdf-seal": "pnpm --dir apps/api exec tsx ./scripts/prove-pdf-seal.ts",
     "fix": "vp lint --fix && vp fmt",
-    "verify": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run knip",
+    "verify": "pnpm run lint && pnpm run lint:design && pnpm run contract:check && pnpm run format:check && pnpm run typecheck && pnpm run knip",
     "verify:clean": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run knip",
     "clean": "(cd apps/web && pnpm run clean) && git clean -xdf .cache dist node_modules",
-    "prove:signer-contact-sheet": "node scripts/prove-signer-contact-sheet.mjs"
+    "prove:signer-contact-sheet": "node scripts/prove-signer-contact-sheet.mjs",
+    "lint:design": "oxlint -c oxlint.ds.json apps/web/src",
+    "contract:check": "node scripts/check-api-contract.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "3.0.1",
@@ -43,6 +45,7 @@
     "@shadcn/lint": "^0.1.0",
     "cf": "1.0.0-beta.5",
     "knip": "^6.35.1",
+    "oxlint": "1.82.0",
     "secretlint": "^13.0.5",
     "simple-git-hooks": "^2.14.0",
     "tsx": "^4.23.13",
