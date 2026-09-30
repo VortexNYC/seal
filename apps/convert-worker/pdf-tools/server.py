@@ -64,6 +64,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, out, "text/plain; charset=utf-8")
                 return
 
+            if self.path == "/to-words":
+                self._to_words(pdf)
+                return
+
             if self.path.startswith("/to-images"):
                 self._to_images(pdf)
                 return
@@ -108,6 +112,68 @@ class Handler(BaseHTTPRequestHandler):
                     with open(os.path.join(workdir, name), "rb") as f:
                         zf.writestr(name, f.read())
         self._send(200, buf.getvalue(), "application/zip")
+
+    def _to_words(self, pdf: bytes) -> None:
+        """pdftotext -bbox XHTML → JSON word list with 0–1 page coordinates."""
+        import xml.etree.ElementTree as ET
+
+        out = run(
+            ["pdftotext", "-bbox", "-", "-"], "/tmp", stdin=pdf
+        )
+        # pdftotext writes XHTML; tolerate the ns prefix if present.
+        text = out.decode("utf-8", errors="replace")
+        try:
+            root = ET.fromstring(text)
+        except ET.ParseError:
+            self._send(422, b"bbox extraction failed")
+            return
+
+        words = []
+        page_no = 0
+        for page in root.iter():
+            tag = page.tag.split("}")[-1]
+            if tag != "page":
+                continue
+            try:
+                pw = float(page.get("width", "0"))
+                ph = float(page.get("height", "0"))
+            except ValueError:
+                continue
+            if not pw or not ph:
+                continue
+            page_no += 1
+            for word in page.iter():
+                if word.tag.split("}")[-1] != "word" or not word.text:
+                    continue
+                try:
+                    words.append(
+                        {
+                            "page": page_no,
+                            "x": round(float(word.get("xMin", "0")) / pw, 4),
+                            "y": round(float(word.get("yMin", "0")) / ph, 4),
+                            "w": round(
+                                (float(word.get("xMax", "0"))
+                                 - float(word.get("xMin", "0"))) / pw,
+                                4,
+                            ),
+                            "h": round(
+                                (float(word.get("yMax", "0"))
+                                 - float(word.get("yMin", "0"))) / ph,
+                                4,
+                            ),
+                            "t": word.text,
+                        }
+                    )
+                except (TypeError, ValueError):
+                    continue
+
+        import json
+
+        self._send(
+            200,
+            json.dumps({"words": words}).encode(),
+            "application/json",
+        )
 
     def _ocr(self, pdf: bytes) -> None:
         qs = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)

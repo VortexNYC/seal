@@ -474,7 +474,18 @@ components:
       required: [documentId, quote]
       properties:
         documentId: { type: string }
-        page: { type: integer, minimum: 1 }
+        page:
+          type: integer
+          minimum: 1
+          description: Page the quote was located on (best-effort)
+        bbox:
+          type: object
+          description: Normalized 0–1 page geometry of the quoted span
+          properties:
+            x: { type: number }
+            y: { type: number }
+            width: { type: number }
+            height: { type: number }
         quote:
           type: string
           description: Contiguous excerpt from the document, or the literal `not_found`
