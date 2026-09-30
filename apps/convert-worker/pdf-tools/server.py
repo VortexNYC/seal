@@ -25,7 +25,7 @@ def run(cmd: list[str], cwd: str, stdin: bytes | None = None) -> bytes:
     proc = subprocess.run(cmd, input=stdin, capture_output=True, cwd=cwd)
     if proc.returncode != 0:
         raise RuntimeError(
-            f"{cmd[0]} failed ({proc.returncode}): {proc.stderr.decode()[:500]}"
+            f"{cmd[0]} failed ({proc.returncode}): {proc.stderr.decode()[-800:]}"
         )
     return proc.stdout
 
@@ -68,6 +68,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._to_images(pdf)
                 return
 
+            if self.path.startswith("/ocr"):
+                self._ocr(pdf)
+                return
+
             self._send(404, b"not found")
         except RuntimeError as e:
             self._send(422, str(e).encode())
@@ -100,6 +104,36 @@ class Handler(BaseHTTPRequestHandler):
                     with open(os.path.join(workdir, name), "rb") as f:
                         zf.writestr(name, f.read())
         self._send(200, buf.getvalue(), "application/zip")
+
+    def _ocr(self, pdf: bytes) -> None:
+        qs = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+        lang = qs.get("lang", ["eng"])[0]
+        if not re.fullmatch(r"[a-z]{3}(?:\+[a-z]{3})*", lang):
+            self._send(400, b"invalid lang (tesseract codes, e.g. eng or eng+fra)")
+            return
+
+        workdir = tempfile.mkdtemp(prefix="ocr-")
+        src = os.path.join(workdir, "in.pdf")
+        dst = os.path.join(workdir, "out.pdf")
+        with open(src, "wb") as f:
+            f.write(pdf)
+
+        # Tesseract OpenCL profiling emits "Error in pix*:" lines on first
+        # run and caches its profile as ./tesseract_opencl_profile_devices.dat
+        # in CWD. ocrmypdf fails lang detection on any stderr "Error" line,
+        # so pre-warm the profile into this workdir first.
+        try:
+            run(["tesseract", "--list-langs"], workdir)
+        except RuntimeError:
+            pass
+
+        # --skip-text: only OCR pages that lack a text layer.
+        run(
+            ["ocrmypdf", "--skip-text", "-l", lang, "--jobs", "2", src, dst],
+            workdir,
+        )
+        with open(dst, "rb") as f:
+            self._send(200, f.read(), "application/pdf")
 
 
 def main() -> None:

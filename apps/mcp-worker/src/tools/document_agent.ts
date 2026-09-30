@@ -529,6 +529,29 @@ export function registerDocumentAgentTools(
   );
 
   server.tool(
+    "seal_ocr_document_pdf",
+    "OCR a draft PDF — adds a searchable text layer to scanned/image pages (ocrmypdf --skip-text; existing text preserved).",
+    {
+      id: z.string().describe("Document ID"),
+      lang: z
+        .string()
+        .regex(/^[a-z]{3}(\+[a-z]{3})*$/)
+        .default("eng")
+        .describe("Tesseract language code(s), e.g. eng or eng+fra"),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/ocr",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
     "seal_flatten_document_pdf",
     "Flatten annotations and AcroForm fields into page content (pdfengines/flatten). Seal signature fields (stored in the database) are unaffected.",
     {
