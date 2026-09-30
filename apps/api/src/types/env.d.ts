@@ -27,6 +27,8 @@ declare interface CloudflareBindings {
   SEAL_SEALING_P12?: string;
   /** Passphrase for SEAL_SEALING_P12. */
   SEAL_SEALING_P12_PASSPHRASE?: string;
+  /** Optional — registers the Anthropic review-model provider when present. */
+  ANTHROPIC_API_KEY?: string;
   ALLOWED_ORIGINS: string;
   EMAIL_FROM: string;
   APP_URL: string;

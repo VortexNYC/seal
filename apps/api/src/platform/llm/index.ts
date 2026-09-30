@@ -13,3 +13,8 @@ export {
   registerProvider,
   streamKeyedModel,
 } from "./registry.js";
+export {
+  createAnthropicProvider,
+  type AnthropicProviderOptions,
+} from "./anthropic.js";
+export { ensureProvidersRegistered } from "./providers.js";
