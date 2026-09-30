@@ -6,6 +6,7 @@ import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import {
   getReviewMatrix,
   createReviewMatrix,
+  listReviewMatrices,
   ReviewMatrixError,
 } from "../../platform/review-matrix-store.js";
 import { ZReviewMatrixCreate } from "../../platform/review-matrix.js";
@@ -91,6 +92,21 @@ app.post("/", async (c) => {
   } catch (err) {
     return errorResponse(c, err);
   }
+});
+
+/** List matrices (summary rows — no cell fan-out). */
+app.get("/", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:read")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+  const db = createD1(c.env.D1);
+  const matrices = await listReviewMatrices(db, organizationId);
+  return c.json({ matrices });
 });
 
 app.get("/:id", async (c) => {

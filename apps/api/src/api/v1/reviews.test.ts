@@ -510,6 +510,67 @@ describe("GET /api/v1/jobs/:id/stream", () => {
     await db.delete(user);
   });
 
+  it("GET /reviews lists matrices", async () => {
+    const privateJwk = await configureSigningKey();
+    const { userId, orgId, db } = await seedOrgAndUser();
+    const token = await signAccessToken(privateJwk, {
+      sub: userId,
+      organizationId: orgId,
+      scope: "documents:read documents:write",
+      clientId: "test-client",
+      jti: crypto.randomUUID(),
+    });
+    const docPublicId = `doc_${crypto.randomUUID().slice(0, 8)}`;
+    await db.insert(documents).values({
+      id: crypto.randomUUID(),
+      publicId: docPublicId,
+      organizationId: orgId,
+      ownerId: userId,
+      name: "NDA",
+      status: "draft",
+    });
+    const createRes = await indexApp.request(
+      "http://localhost/api/v1/reviews",
+      {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          title: "Listed matrix",
+          model: "echo/test",
+          columns: [{ index: 0, name: "Q", prompt: "P" }],
+          documentIds: [docPublicId],
+        }),
+      },
+      env
+    );
+    expect(createRes.status).toBe(201);
+
+    const res = await indexApp.request(
+      "http://localhost/api/v1/reviews",
+      { headers: { authorization: `Bearer ${token}` } },
+      env
+    );
+    expect(res.status).toBe(200);
+    const body = z
+      .object({
+        matrices: z.array(
+          z.object({
+            id: z.string(),
+            title: z.string(),
+            row_count: z.number(),
+            column_count: z.number(),
+          })
+        ),
+      })
+      .parse(await res.json());
+    expect(body.matrices.some((m) => m.title === "Listed matrix")).toBe(true);
+    expect(body.matrices[0]?.row_count).toBe(1);
+    expect(body.matrices[0]?.column_count).toBe(1);
+  });
+
   it("streams job state and closes on done", async () => {
     const privateJwk = await configureSigningKey();
     const { userId, orgId, db } = await seedOrgAndUser();
