@@ -15,7 +15,9 @@ import {
   decryptPdfBytes,
   encryptPdfBytes,
   flattenPdfBytes,
+  imageBytesToPdf,
   isConvertibleFileType,
+  isImageFileType,
   ocrPdfBytes,
   optimizePdfBytes,
   pdfToImagesZip,
@@ -484,7 +486,23 @@ app.post("/replace-original", async (c) => {
 
   let pdfStorageId: string | null = null;
   let pdfSize = bytes.byteLength;
-  if (isConvertibleFileType(parsed.data.contentType)) {
+  if (isImageFileType(parsed.data.contentType)) {
+    const pdf = await imageBytesToPdf({
+      contentType: parsed.data.contentType,
+      bytes,
+      name: doc.name,
+    });
+    pdfStorageId = `uploads/${crypto.randomUUID()}`;
+    await c.env.DOCUMENTS_BUCKET.put(pdfStorageId, pdf, {
+      httpMetadata: { contentType: "application/pdf" },
+      customMetadata: {
+        organizationId,
+        uploadedBy: user.user.id,
+        convertedFrom: originalKey,
+      },
+    });
+    pdfSize = pdf.byteLength;
+  } else if (isConvertibleFileType(parsed.data.contentType)) {
     try {
       await assertConvertEnabled(c.env, organizationId);
       const pdf = await convertBytesToPdf(c.env, {

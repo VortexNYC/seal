@@ -29,6 +29,8 @@ describe("upload-validation", () => {
         "application/vnd.openxmlformats-officedocument.presentationml.presentation":
           [".pptx"],
         "text/csv": [".csv"],
+        "image/png": [".png"],
+        "image/jpeg": [".jpg", ".jpeg"],
       });
     });
   });
@@ -66,7 +68,9 @@ describe("upload-validation", () => {
 
   describe("getSupportedFileTypesDisplay", () => {
     test("returns all supported file types", () => {
-      expect(getSupportedFileTypesDisplay()).toBe("PDF, DOCX, XLSX, PPTX, CSV");
+      expect(getSupportedFileTypesDisplay()).toBe(
+        "PDF, DOCX, XLSX, PPTX, CSV, PNG, JPG"
+      );
     });
   });
 
@@ -125,13 +129,13 @@ describe("upload-validation", () => {
     });
 
     test("rejects a file with wrong MIME type", () => {
-      const file = new File(["content"], "image.png", {
-        type: "image/png",
+      const file = new File(["content"], "notes.txt", {
+        type: "text/plain",
       });
       const result = validateFileForUpload(file);
       expect(result.valid).toBe(false);
       expect(result.errors).toContain(
-        "Only PDF, DOCX, XLSX, PPTX, and CSV files are supported"
+        "Only PDF, DOCX, XLSX, PPTX, CSV, PNG, and JPG files are supported"
       );
     });
 
@@ -143,18 +147,18 @@ describe("upload-validation", () => {
     });
 
     test("rejects a file with wrong extension", () => {
-      const file = new File(["%PDF-1.4\n" + "x".repeat(120)], "image.png", {
+      const file = new File(["%PDF-1.4\n" + "x".repeat(120)], "notes.txt", {
         type: "application/pdf",
       });
       const result = validateFileForUpload(file);
       expect(result.valid).toBe(false);
       expect(result.errors).toContain(
-        "Only PDF, DOCX, XLSX, PPTX, and CSV files are supported"
+        "Only PDF, DOCX, XLSX, PPTX, CSV, PNG, and JPG files are supported"
       );
     });
 
     test("collects multiple errors for wrong MIME and extension", () => {
-      const file = new File(["content"], "image.png", { type: "image/png" });
+      const file = new File(["content"], "notes.txt", { type: "text/plain" });
       const result = validateFileForUpload(file);
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThanOrEqual(2);
@@ -168,7 +172,7 @@ describe("upload-validation", () => {
       // The source lowercases the extension, so .PDF becomes .pdf
       expect(
         result.errors.some((e) =>
-          e.includes("Only PDF, DOCX, XLSX, PPTX, and CSV files are supported")
+          e.includes("Only PDF, DOCX, XLSX, PPTX, CSV, PNG, and JPG files are supported")
         )
       ).toBe(false);
       expect(result.valid).toBe(true);

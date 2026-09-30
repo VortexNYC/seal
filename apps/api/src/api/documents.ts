@@ -34,7 +34,9 @@ import {
 import {
   convertBytesToPdf,
   ConversionError,
+  imageBytesToPdf,
   isConvertibleFileType,
+  isImageFileType,
 } from "../platform/document-conversion.js";
 import { ensureContactsFromRecipients } from "../platform/ensure-contacts.js";
 import {
@@ -1190,7 +1192,38 @@ app.openapi(uploadRouteDef, async (c) => {
   let finalBytes: ArrayBuffer | Uint8Array = bytes;
   let finalContentType = contentType;
 
-  if (isConvertibleFileType(contentType)) {
+  if (isImageFileType(contentType)) {
+    try {
+      const pdf = await imageBytesToPdf({
+        contentType,
+        bytes,
+        name: "document",
+      });
+      finalBytes = pdf;
+      finalContentType = "application/pdf";
+    } catch (error) {
+      const status = (
+        error instanceof ConversionError ? error.statusCode : 502
+      ) as ContentfulStatusCode;
+      const detail =
+        error instanceof ConversionError ? error.detail : undefined;
+      return c.json({ error: "conversion_failed", detail }, status);
+    }
+
+    const originalKey = r2OriginalKey(organizationId, publicId);
+    await bucket.put(originalKey, bytes, {
+      httpMetadata: { contentType },
+      customMetadata: metadata,
+    });
+    await bucket.put(key, finalBytes, {
+      httpMetadata: { contentType: finalContentType },
+      customMetadata: {
+        ...metadata,
+        originalContentType: contentType,
+        originalKey,
+      },
+    });
+  } else if (isConvertibleFileType(contentType)) {
     try {
       await assertConvertEnabled(c.env, organizationId);
       const pdf = await convertBytesToPdf(c.env, {

@@ -2853,10 +2853,10 @@ paths:
       description: >
         Returns a short-lived upload URL. `POST` the file bytes to that URL with
         the matching `Content-Type`. Accepted types: `application/pdf`, DOCX,
-        XLSX, PPTX, and CSV. Non-PDF office/CSV uploads are converted to a
-        fixed-layout PDF via the convert worker before storage; the original is
-        retained under an `originals/` key. Pass the returned `storageId` to
-        `POST /documents`.
+        XLSX, PPTX, CSV, PNG, and JPEG. Office/CSV uploads convert via the
+        convert worker; PNG/JPEG pack into a one-page PDF in-worker via pdf-lib
+        (no egress). The original is retained under an `originals/` key. Pass
+        the returned `storageId` to `POST /documents`.
       responses:
         "200":
           description: Upload URL generated
@@ -2882,7 +2882,8 @@ paths:
       description: >
         Upload file bytes to the URL from `POST /uploads/generate-url` (pass the
         token as a query param). PDFs are stored as-is. DOCX/XLSX/PPTX/CSV are
-        converted to PDF via the convert worker; originals are kept. Requires a
+        converted to PDF via the convert worker; PNG/JPEG are packed into a
+        one-page PDF via pdf-lib in-worker; originals are kept. Requires a
         valid upload token (not a normal API key on this path).
       parameters:
         - name: token
@@ -2901,6 +2902,10 @@ paths:
           application/vnd.openxmlformats-officedocument.presentationml.presentation:
             schema: { type: string, format: binary }
           text/csv:
+            schema: { type: string, format: binary }
+          image/png:
+            schema: { type: string, format: binary }
+          image/jpeg:
             schema: { type: string, format: binary }
       responses:
         "200":
