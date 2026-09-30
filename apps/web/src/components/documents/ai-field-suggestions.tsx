@@ -14,8 +14,8 @@ import {
   TextT,
   X,
 } from "@phosphor-icons/react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   applyFieldSuggestions as applyFieldSuggestionsApi,
@@ -127,7 +127,7 @@ function SuggestionOverlay({
       aria-label={`${isSelected ? "Deselect" : "Select"} ${field.label} ${field.fieldType} field`}
       aria-pressed={isSelected}
       className={cn(
-        "absolute flex items-center gap-1 rounded-[3px] border-[1.5px] border-dashed transition-[color,background-color,border-color] duration-200",
+        "absolute z-30 flex items-center gap-1 rounded-[3px] border-[1.5px] border-dashed transition-[color,background-color,border-color] duration-200",
         colors.bg,
         colors.border,
         isSelected
@@ -166,8 +166,8 @@ function SuggestionOverlay({
 }
 
 /**
- * Shared hook for AI field suggestion state.
- * Used by both AIFieldOverlays (inside TransformComponent) and AIFieldReviewBar (outside it).
+ * Shared hook for OCR/AI field suggestion state (SEA-85).
+ * Overlays sit on DocumentCanvas; review bar docks above the canvas chrome.
  */
 type FieldSuggestionItem = Omit<
   ApiFieldSuggestions["fields"][number],
@@ -196,7 +196,7 @@ function toSuggestionWithFieldTypes(
 
 export function useAIFieldSuggestions(
   documentPublicId: string,
-  options: { enabled?: boolean } = {}
+  options: { enabled?: boolean; onApplied?: () => void } = {}
 ): {
   suggestions: SuggestionsWithFieldTypes | null;
   selectedIndices: Set<number>;
@@ -207,10 +207,15 @@ export function useAIFieldSuggestions(
   handleApply: () => Promise<void>;
   handleDismiss: () => Promise<void>;
 } {
+  const queryClient = useQueryClient();
+  const enabled = options.enabled ?? true;
+  const onAppliedRef = useRef(options.onApplied);
+  onAppliedRef.current = options.onApplied;
+
   const { data: apiSuggestions } = useQuery({
     queryKey: ["documents", documentPublicId, "ai", "field-suggestions"],
     queryFn: () => getFieldSuggestions(documentPublicId),
-    enabled: options.enabled,
+    enabled,
   });
 
   const applyMutation = useMutation({
@@ -246,6 +251,11 @@ export function useAIFieldSuggestions(
     setSelectedIndices(new Set(suggestions.fields.map((_, i) => i)));
   }, [suggestions?.publicId, suggestions?.fields.length]);
 
+  const invalidateSuggestions = useCallback(async () => {
+    await queryClient.invalidateQueries({
+      queryKey: ["documents", documentPublicId, "ai", "field-suggestions"],
+    });
+  }, [queryClient, documentPublicId]);
 
   const toggleField = useCallback((index: number) => {
     setSelectedIndices((prev) => {
@@ -285,22 +295,25 @@ export function useAIFieldSuggestions(
       toast.success(
         `Accepted ${result.count} field${result.count === 1 ? "" : "s"}`
       );
+      await invalidateSuggestions();
+      onAppliedRef.current?.();
     } catch {
       toast.error("Failed to apply suggestions");
     } finally {
       setIsApplying(false);
     }
-  }, [suggestions, selectedIndices, applyMutation]);
+  }, [suggestions, selectedIndices, applyMutation, invalidateSuggestions]);
 
   const handleDismiss = useCallback(async () => {
     if (!suggestions) return;
     try {
       await dismissMutation.mutateAsync();
-      toast.info("AI suggestions dismissed");
+      toast.info("Suggestions dismissed — place fields manually");
+      await invalidateSuggestions();
     } catch {
       toast.error("Failed to dismiss suggestions");
     }
-  }, [suggestions, dismissMutation]);
+  }, [suggestions, dismissMutation, invalidateSuggestions]);
 
   return {
     suggestions,
@@ -315,8 +328,7 @@ export function useAIFieldSuggestions(
 }
 
 /**
- * Renders AI suggestion overlays on the PDF page.
- * Must be placed inside the TransformComponent container (position: relative parent).
+ * Renders detected-field suggestion overlays on the DocumentCanvas page box.
  */
 export function AIFieldOverlays({
   suggestions,
