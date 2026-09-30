@@ -100,24 +100,30 @@ export function DocumentSplitsPanel({
       data-kumo-docs="document-splits"
       className={cn("flex h-full flex-col", className)}
     >
-      <div className="border-border flex items-center justify-between gap-2 border-b px-3 py-2">
-        <span className="text-sm font-medium">Page groups</span>
-        <div className="flex items-center gap-1">
-          <Button type="button" variant="ghost" size="sm" onClick={addGroup}>
-            <Plus className="size-3.5" />
-            Add
-          </Button>
-          {onApply ? (
-            <Button
-              type="button"
-              size="sm"
-              onClick={onApply}
-              disabled={applying || splits.every((s) => s.pages.length === 0)}
-            >
-              {applying ? "Splitting…" : "Apply"}
+      <div className="border-border flex flex-col gap-1 border-b px-3 py-2">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm font-medium">Split into drafts</span>
+          <div className="flex items-center gap-1">
+            <Button type="button" variant="ghost" size="sm" onClick={addGroup}>
+              <Plus className="size-3.5" />
+              Add group
             </Button>
-          ) : null}
+            {onApply ? (
+              <Button
+                type="button"
+                size="sm"
+                onClick={onApply}
+                disabled={applying || splits.every((s) => s.pages.length === 0)}
+              >
+                {applying ? "Creating…" : "Create drafts"}
+              </Button>
+            ) : null}
+          </div>
         </div>
+        <p className="text-muted-foreground text-[11px] leading-snug">
+          Assign pages to named groups — each group becomes its own draft
+          document.
+        </p>
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto p-3">

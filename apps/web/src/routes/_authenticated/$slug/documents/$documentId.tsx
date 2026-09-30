@@ -611,22 +611,32 @@ function DocumentDetailPage() {
               className="bg-background relative p-3 md:p-4"
             >
               {canEdit && viewerMode !== "fields" ? (
-                <div className="mb-3 flex items-center gap-2">
+                <div className="border-border bg-muted/40 mb-3 flex flex-col gap-2 rounded-lg border px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-foreground text-sm font-medium">
+                      {viewerMode === "annotate"
+                        ? "Mark up PDF"
+                        : viewerMode === "edit"
+                          ? "Edit Word / Excel"
+                          : "Layout & extraction"}
+                    </p>
+                    <p className="text-muted-foreground text-[11px] leading-snug">
+                      {viewerMode === "annotate"
+                        ? "Draw, highlight, or redact on the pages. This edits the PDF itself — not signature fields."
+                        : viewerMode === "edit"
+                          ? "Change the original Office file; Seal rebuilds the PDF when you save."
+                          : "Map regions and fields for agents / data extraction. Not for signing."}
+                    </p>
+                  </div>
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
+                    className="shrink-0 self-start"
                     onClick={() => setViewerMode("fields")}
                   >
-                    Back to fields
+                    Back to signature fields
                   </Button>
-                  <span className="text-muted-foreground text-sm">
-                    {viewerMode === "annotate"
-                      ? "PDF tools"
-                      : viewerMode === "edit"
-                        ? "Edit original"
-                        : "Structure"}
-                  </span>
                 </div>
               ) : null}
 
@@ -695,28 +705,50 @@ function DocumentDetailPage() {
                             type="button"
                             size="sm"
                             variant="ghost"
-                            aria-label="Document tools"
+                            aria-label="Edit document modes"
                           >
                             <MoreHorizontalIcon className="mr-1.5 h-4 w-4" />
-                            Tools
+                            Edit document
                           </Button>
                         </DropdownMenu.Trigger>
-                        <DropdownMenu.Content align="end" className="min-w-44">
+                        <DropdownMenu.Content align="end" className="min-w-60">
+                          <DropdownMenu.Label>
+                            Leave signature fields
+                          </DropdownMenu.Label>
                           <DropdownMenu.Group>
                             <DropdownMenu.Item
                               onClick={() => setViewerMode("annotate")}
                             >
-                              PDF annotate
+                              <span className="flex flex-col gap-0.5">
+                                <span>Mark up PDF</span>
+                                <span className="text-muted-foreground text-[11px] font-normal whitespace-normal">
+                                  Draw, highlight, or redact on pages
+                                </span>
+                              </span>
                             </DropdownMenu.Item>
                             <DropdownMenu.Item
                               onClick={() => setViewerMode("edit")}
                             >
-                              Edit original
+                              <span className="flex flex-col gap-0.5">
+                                <span>Edit Word / Excel</span>
+                                <span className="text-muted-foreground text-[11px] font-normal whitespace-normal">
+                                  Change the original file (DOCX, XLSX, CSV)
+                                </span>
+                              </span>
                             </DropdownMenu.Item>
+                          </DropdownMenu.Group>
+                          <DropdownMenu.Separator />
+                          <DropdownMenu.Label>Advanced</DropdownMenu.Label>
+                          <DropdownMenu.Group>
                             <DropdownMenu.Item
                               onClick={() => setViewerMode("structure")}
                             >
-                              Structure
+                              <span className="flex flex-col gap-0.5">
+                                <span>Layout &amp; extraction</span>
+                                <span className="text-muted-foreground text-[11px] font-normal whitespace-normal">
+                                  Map regions for agents — not for signing
+                                </span>
+                              </span>
                             </DropdownMenu.Item>
                           </DropdownMenu.Group>
                         </DropdownMenu.Content>

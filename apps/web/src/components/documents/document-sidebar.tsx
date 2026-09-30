@@ -1382,10 +1382,10 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
               <ScissorsIcon className="mt-0.5 h-4 w-4 shrink-0" />
               <span className="min-w-0">
                 <span className="block text-sm font-medium">
-                  Document tools
+                  Pages &amp; file
                 </span>
                 <span className="text-muted-foreground block text-[11px] font-normal">
-                  Redirect URL, rotate, combine, or split pages
+                  Rotate or combine PDFs, or split into separate drafts
                 </span>
               </span>
             </span>
