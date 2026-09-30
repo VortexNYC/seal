@@ -22,6 +22,7 @@ import { Route as AuthVerifyEmailRouteImport } from './routes/_auth/verify-email
 import { Route as AuthenticatedSlugRouteImport } from './routes/_authenticated/$slug'
 import { Route as AuthenticatedPostSignUpRouteImport } from './routes/_authenticated/post-sign-up'
 import { Route as SignTokenRouteImport } from './routes/sign.$token'
+import { Route as VerifyIndexRouteImport } from './routes/verify.index'
 import { Route as VerifyQrTokenRouteImport } from './routes/verify.$qrToken'
 import { Route as AuthenticatedSlugIndexRouteImport } from './routes/_authenticated/$slug/index'
 import { Route as AuthenticatedSlugSplatRouteImport } from './routes/_authenticated/$slug/$'
@@ -116,6 +117,11 @@ const AuthenticatedPostSignUpRoute = AuthenticatedPostSignUpRouteImport.update({
 const SignTokenRoute = SignTokenRouteImport.update({
   id: '/sign/$token',
   path: '/sign/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyIndexRoute = VerifyIndexRouteImport.update({
+  id: '/verify/',
+  path: '/verify/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VerifyQrTokenRoute = VerifyQrTokenRouteImport.update({
@@ -320,6 +326,7 @@ export interface FileRoutesByFullPath {
   '/post-sign-up': typeof AuthenticatedPostSignUpRoute
   '/sign/$token': typeof SignTokenRoute
   '/verify/$qrToken': typeof VerifyQrTokenRoute
+  '/verify/': typeof VerifyIndexRoute
   '/$slug/$': typeof AuthenticatedSlugSplatRoute
   '/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
   '/$slug/contacts': typeof AuthenticatedSlugContactsRouteWithChildren
@@ -364,6 +371,7 @@ export interface FileRoutesByTo {
   '/post-sign-up': typeof AuthenticatedPostSignUpRoute
   '/sign/$token': typeof SignTokenRoute
   '/verify/$qrToken': typeof VerifyQrTokenRoute
+  '/verify': typeof VerifyIndexRoute
   '/$slug/$': typeof AuthenticatedSlugSplatRoute
   '/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
   '/$slug/home': typeof AuthenticatedSlugHomeRoute
@@ -408,6 +416,7 @@ export interface FileRoutesById {
   '/_authenticated/post-sign-up': typeof AuthenticatedPostSignUpRoute
   '/sign/$token': typeof SignTokenRoute
   '/verify/$qrToken': typeof VerifyQrTokenRoute
+  '/verify/': typeof VerifyIndexRoute
   '/_authenticated/$slug/$': typeof AuthenticatedSlugSplatRoute
   '/_authenticated/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
   '/_authenticated/$slug/contacts': typeof AuthenticatedSlugContactsRouteWithChildren
@@ -455,6 +464,7 @@ export interface FileRouteTypes {
     | '/post-sign-up'
     | '/sign/$token'
     | '/verify/$qrToken'
+    | '/verify/'
     | '/$slug/$'
     | '/$slug/analytics'
     | '/$slug/contacts'
@@ -499,6 +509,7 @@ export interface FileRouteTypes {
     | '/post-sign-up'
     | '/sign/$token'
     | '/verify/$qrToken'
+    | '/verify'
     | '/$slug/$'
     | '/$slug/analytics'
     | '/$slug/home'
@@ -542,6 +553,7 @@ export interface FileRouteTypes {
     | '/_authenticated/post-sign-up'
     | '/sign/$token'
     | '/verify/$qrToken'
+    | '/verify/'
     | '/_authenticated/$slug/$'
     | '/_authenticated/$slug/analytics'
     | '/_authenticated/$slug/contacts'
@@ -582,6 +594,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRoute
   SignTokenRoute: typeof SignTokenRoute
   VerifyQrTokenRoute: typeof VerifyQrTokenRoute
+  VerifyIndexRoute: typeof VerifyIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -675,6 +688,13 @@ declare module '@tanstack/react-router' {
       path: '/sign/$token'
       fullPath: '/sign/$token'
       preLoaderRoute: typeof SignTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify/': {
+      id: '/verify/'
+      path: '/verify'
+      fullPath: '/verify/'
+      preLoaderRoute: typeof VerifyIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/verify/$qrToken': {
@@ -1083,6 +1103,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRoute,
   SignTokenRoute: SignTokenRoute,
   VerifyQrTokenRoute: VerifyQrTokenRoute,
+  VerifyIndexRoute: VerifyIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

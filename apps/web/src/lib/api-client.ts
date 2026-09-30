@@ -2388,7 +2388,9 @@ const documentLayoutBlocksSchema = z.object({
     })
   ),
 });
-export type ApiDocumentLayoutBlocks = z.infer<typeof documentLayoutBlocksSchema>;
+export type ApiDocumentLayoutBlocks = z.infer<
+  typeof documentLayoutBlocksSchema
+>;
 export async function getDocumentLayoutBlocks(
   organizationSlug: string,
   publicId: string
@@ -2629,9 +2631,7 @@ export async function getSigningByToken(
   );
 }
 
-export async function challengePublicSigningAuth(
-  token: string
-): Promise<{
+export async function challengePublicSigningAuth(token: string): Promise<{
   method: "email_otp";
   maskedEmail: string;
   expiresInSeconds: number;
@@ -3006,6 +3006,25 @@ export async function verifyDocumentByQrToken(
     `/api/public/verify/${encodeURIComponent(qrToken)}`,
     verifyDocumentResultSchema.nullable()
   );
+}
+
+const verifyUploadResultSchema = verifyDocumentResultSchema.extend({
+  hashMatch: z.boolean(),
+});
+export type VerifyUploadResult = z.infer<typeof verifyUploadResultSchema>;
+export async function verifyDocumentByUpload(
+  pdfBytes: ArrayBuffer
+): Promise<VerifyUploadResult> {
+  const response = await fetch("/api/public/verify-upload", {
+    method: "POST",
+    headers: { "content-type": "application/pdf" },
+    body: pdfBytes,
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || `Verification failed (${response.status})`);
+  }
+  return verifyUploadResultSchema.parse(await response.json());
 }
 
 export const apiTokenSchema = z.object({
