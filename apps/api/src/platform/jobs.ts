@@ -7,7 +7,7 @@
  * executor is unit-testable without an alarm.
  */
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import { jobs } from "../global/schema.js";
@@ -98,6 +98,23 @@ export async function createJob(
   const row = rows[0];
   if (!row) throw new JobError("job_insert_failed", 400);
   return row;
+}
+
+/** Org job list — newest first, optional status filter. */
+export async function listJobs(
+  db: Db,
+  organizationId: string,
+  opts?: { status?: string; limit?: number }
+): Promise<JobRecord[]> {
+  const limit = Math.min(100, Math.max(1, opts?.limit ?? 50));
+  const filters = [eq(jobs.organizationId, organizationId)];
+  if (opts?.status) filters.push(eq(jobs.status, opts.status));
+  return db
+    .select()
+    .from(jobs)
+    .where(and(...filters))
+    .orderBy(desc(jobs.createdAt))
+    .limit(limit);
 }
 
 export async function getJob(
