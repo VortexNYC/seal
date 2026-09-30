@@ -10,7 +10,6 @@ describe("DOCUMENT_CAPABILITIES", () => {
     expect(DOCUMENT_CAPABILITIES.map((c) => c.id)).toEqual([
       "fields",
       "markup",
-      "office",
       "pages",
       "layout",
     ]);

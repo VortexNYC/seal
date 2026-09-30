@@ -1,9 +1,10 @@
 /**
  * Document Workspace — one roof for human SPA + agent tools.
  *
- * Capabilities share a document id and chrome. Fields, Mark up, Pages, Layout,
- * and read-only view share one EmbedPDF `DocumentCanvas` mount; Office still
- * swaps a panel on the same roof. New work extends this registry — no peer “modes”.
+ * PDF-toolkit capabilities only: Fields, Mark up, Pages, Layout (+ read-only
+ * view) share one EmbedPDF `DocumentCanvas` mount. Upload converts office/CSV
+ * to PDF at intake — no in-app Word/Excel editor. New work extends this
+ * registry — no peer “modes”.
  *
  * Agent MCP tool names are listed so the SPA and MCP stay the same surface.
  */
@@ -28,12 +29,6 @@ export const DOCUMENT_CAPABILITIES = [
       "seal_annotate_document_pdf",
       "seal_replace_document_pdf",
     ] as const,
-  },
-  {
-    id: "office",
-    label: "Office",
-    description: "Edit the Word / Excel / CSV original",
-    agentTools: ["seal_replace_document_original"] as const,
   },
   {
     id: "pages",

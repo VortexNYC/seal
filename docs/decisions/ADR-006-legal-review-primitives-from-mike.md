@@ -26,7 +26,9 @@ Seal already owns a *better* ingestion layer than Mike's:
 - `anydoc-worker`: `@firecrawl/anydoc-wasm` (any format → markdown) and
   `@firecrawl/pdf-inspector-wasm` (pdfType, `pagesNeedingOcr`, layout) — versus
   Mike's LibreOffice + pdfjs pipeline with no OCR detection.
-- `convert-worker`: containerized docx/xlsx/pptx/csv conversion.
+- `convert-worker`: containerized docx/xlsx/pptx/csv conversion; ADR-009 also
+  parks deterministic PDF binaries here (`qpdf`, `ocrmypdf` + Tesseract) —
+  not Workers AI vision for OCR.
 - `documents` already carries `parsedText`, `fieldCandidates`,
   `extractionSchema`, `parentDocumentId`, `ocrRequired`.
 - `ai_field_suggestions` / `ai_document_annotations` tables exist with
