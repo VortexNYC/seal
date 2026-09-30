@@ -9,7 +9,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PDFViewer, type PDFViewerRef } from "@embedpdf/react-pdf-viewer";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
-import { CaretLeft, CaretRight } from "@phosphor-icons/react";
+import { Select } from "@cloudflare/kumo/components/select";
+import {
+  ArrowCounterClockwise,
+  CaretLeft,
+  CaretRight,
+  CornersOut,
+  Minus,
+  Plus,
+} from "@phosphor-icons/react";
 
 import { cn } from "@/lib/utils";
 
@@ -54,6 +62,16 @@ type ScrollCapability = {
   onScroll?: (listener: (event: { metrics: unknown }) => void) => () => void;
 };
 
+type ZoomCapability = {
+  requestZoom?: (level: number | string) => void;
+  zoomIn?: () => void;
+  zoomOut?: () => void;
+  getState?: () => { currentZoomLevel?: number };
+  onZoomChange?: (
+    listener: (event: { newZoom: number }) => void
+  ) => () => void;
+};
+
 type ExportCapability = {
   saveAsCopyAndGetBufferAndName?: (documentId: string) => {
     toPromise: () => Promise<{ buffer: ArrayBuffer; name: string }>;
@@ -74,12 +92,22 @@ type PageBox = {
   naturalHeight: number;
 };
 
+const ZOOM_LEVELS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
+
 function getScrollCapability(registry: unknown): ScrollCapability | null {
   if (!registry || typeof registry !== "object") return null;
   const plugin = (registry as PluginRegistryLike).getPlugin?.("scroll");
   const provided = plugin?.provides?.();
   if (!provided || typeof provided !== "object") return null;
   return provided as ScrollCapability;
+}
+
+function getZoomCapability(registry: unknown): ZoomCapability | null {
+  if (!registry || typeof registry !== "object") return null;
+  const plugin = (registry as PluginRegistryLike).getPlugin?.("zoom");
+  const provided = plugin?.provides?.();
+  if (!provided || typeof provided !== "object") return null;
+  return provided as ZoomCapability;
 }
 
 function resolvePageBox(
@@ -117,10 +145,17 @@ function resolvePageBox(
   };
 }
 
+export type DocumentCanvasInteraction = "fields" | "markup" | "view";
+
 export type DocumentCanvasProps = {
   src: string;
-  /** Shared EmbedPDF surface — fields overlays; markup enables annotate chrome. */
-  interaction: "fields" | "markup";
+  /**
+   * Shared EmbedPDF surface.
+   * - fields: Seal field overlay owns input; annotate chrome hidden
+   * - markup: EmbedPDF annotate chrome + Save to Seal
+   * - view: read-only browse; field markers visible, non-interactive
+   */
+  interaction: DocumentCanvasInteraction;
   className?: string;
   currentPage: number;
   onPageChange: (page: number) => void;
@@ -129,6 +164,8 @@ export type DocumentCanvasProps = {
     pageWidth: number;
     pageHeight: number;
   }) => void;
+  onZoomChange?: (zoom: number) => void;
+  enableKeyboardShortcuts?: boolean;
   fields?: PlacedField[];
   selectedFieldId?: string | null;
   onFieldSelect?: (fieldId: string | null) => void;
@@ -150,7 +187,7 @@ export type DocumentCanvasProps = {
 
 /**
  * One shared PDF canvas for Document Workspace.
- * Fields and Mark up keep the same EmbedPDF mount; only chrome + overlay change.
+ * Fields / Mark up / view keep the same EmbedPDF mount; only chrome + overlay change.
  */
 export function DocumentCanvas({
   src,
@@ -159,6 +196,8 @@ export function DocumentCanvas({
   currentPage,
   onPageChange,
   onDocumentMeta,
+  onZoomChange,
+  enableKeyboardShortcuts = true,
   fields = [],
   selectedFieldId = null,
   onFieldSelect,
@@ -177,27 +216,31 @@ export function DocumentCanvas({
   const [totalPages, setTotalPages] = useState(1);
   const [pageInput, setPageInput] = useState(String(currentPage));
   const [pageBox, setPageBox] = useState<PageBox | null>(null);
+  const [zoom, setZoom] = useState(1);
   const onPageChangeRef = useRef(onPageChange);
   const onDocumentMetaRef = useRef(onDocumentMeta);
+  const onZoomChangeRef = useRef(onZoomChange);
   onPageChangeRef.current = onPageChange;
   onDocumentMetaRef.current = onDocumentMeta;
+  onZoomChangeRef.current = onZoomChange;
 
-  const refreshPageBox = useCallback(
-    (pageNumber: number) => {
-      const scroll = getScrollCapability(registryRef.current);
-      if (!scroll) return;
-      const box = resolvePageBox(scroll, pageNumber);
-      setPageBox(box);
-      if (box) {
-        onDocumentMetaRef.current?.({
-          numPages: scroll.getTotalPages?.() ?? 1,
-          pageWidth: box.width,
-          pageHeight: box.height,
-        });
-      }
-    },
-    []
-  );
+  const showFieldOverlay = interaction === "fields" || interaction === "view";
+  const fieldsInteractive = interaction === "fields";
+  const hideAnnotateChrome = interaction !== "markup";
+
+  const refreshPageBox = useCallback((pageNumber: number) => {
+    const scroll = getScrollCapability(registryRef.current);
+    if (!scroll) return;
+    const box = resolvePageBox(scroll, pageNumber);
+    setPageBox(box);
+    if (box) {
+      onDocumentMetaRef.current?.({
+        numPages: scroll.getTotalPages?.() ?? 1,
+        pageWidth: box.width,
+        pageHeight: box.height,
+      });
+    }
+  }, []);
 
   const handleReady = useCallback(
     (registry: unknown) => {
@@ -210,6 +253,12 @@ export function DocumentCanvas({
       setTotalPages(total);
       onPageChangeRef.current(page);
       refreshPageBox(page);
+      const zoomCap = getZoomCapability(registry);
+      const level = zoomCap?.getState?.()?.currentZoomLevel;
+      if (typeof level === "number" && level > 0) {
+        setZoom(level);
+        onZoomChangeRef.current?.(level);
+      }
     },
     [refreshPageBox]
   );
@@ -235,6 +284,20 @@ export function DocumentCanvas({
     if (!scroll?.onScroll) return undefined;
     return scroll.onScroll(() => {
       const page = scroll.getCurrentPage?.() ?? currentPage;
+      refreshPageBox(page);
+    });
+  }, [ready, refreshPageBox, currentPage]);
+
+  useEffect(() => {
+    if (!ready) return undefined;
+    const zoomCap = getZoomCapability(registryRef.current);
+    if (!zoomCap?.onZoomChange) return undefined;
+    return zoomCap.onZoomChange((event) => {
+      setZoom(event.newZoom);
+      onZoomChangeRef.current?.(event.newZoom);
+      const page =
+        getScrollCapability(registryRef.current)?.getCurrentPage?.() ??
+        currentPage;
       refreshPageBox(page);
     });
   }, [ready, refreshPageBox, currentPage]);
@@ -279,6 +342,67 @@ export function DocumentCanvas({
     [pageInput, goToPage, currentPage]
   );
 
+  const setZoomLevel = useCallback((level: number | string) => {
+    getZoomCapability(registryRef.current)?.requestZoom?.(level);
+  }, []);
+
+  const zoomToNearestLevel = useCallback(
+    (direction: "in" | "out") => {
+      const ordered =
+        direction === "in" ? [...ZOOM_LEVELS] : [...ZOOM_LEVELS].reverse();
+      const next = ordered.find((level) =>
+        direction === "in" ? level > zoom + 0.001 : level < zoom - 0.001
+      );
+      if (next !== undefined) {
+        setZoomLevel(next);
+      } else if (direction === "in") {
+        getZoomCapability(registryRef.current)?.zoomIn?.();
+      } else {
+        getZoomCapability(registryRef.current)?.zoomOut?.();
+      }
+    },
+    [zoom, setZoomLevel]
+  );
+
+  // SEA-79: keyboard page navigation (same contract as PdfViewerControls).
+  useEffect(() => {
+    if (!enableKeyboardShortcuts) return undefined;
+
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (
+        event.target instanceof HTMLInputElement ||
+        event.target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+      switch (event.key) {
+        case "ArrowLeft":
+        case "PageUp":
+          event.preventDefault();
+          goToPage(currentPage - 1);
+          break;
+        case "ArrowRight":
+        case "PageDown":
+          event.preventDefault();
+          goToPage(currentPage + 1);
+          break;
+        case "Home":
+          event.preventDefault();
+          goToPage(1);
+          break;
+        case "End":
+          event.preventDefault();
+          goToPage(totalPages);
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [enableKeyboardShortcuts, goToPage, currentPage, totalPages]);
+
   const handleSaveMarkup = useCallback(async () => {
     if (!onSaveMarkup || !registryRef.current) return;
     const registry = registryRef.current as PluginRegistryLike;
@@ -298,16 +422,23 @@ export function DocumentCanvas({
     await onSaveMarkup(result.buffer);
   }, [onSaveMarkup]);
 
-  // Identity-stable across Fields ↔ Mark up and field-drag re-renders.
+  // Identity-stable across Fields ↔ Mark up ↔ view and field-drag re-renders.
   const viewerConfig = useMemo(
     () => ({
       src,
       theme: { preference: "system" as const },
       tabBar: "never" as const,
       fonts: { ui: null, signature: null },
+      zoom: {
+        defaultZoomLevel: 1,
+        minZoom: 0.5,
+        maxZoom: 2,
+      },
     }),
     [src]
   );
+
+  const zoomPercentage = Math.round(zoom * 100);
 
   return (
     <div
@@ -316,7 +447,7 @@ export function DocumentCanvas({
       className={cn("flex flex-col gap-2", className)}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="bg-kumo-surface/95 flex items-center gap-1 rounded-lg border p-1.5 shadow-sm">
+        <div className="bg-kumo-surface/95 flex flex-wrap items-center gap-1 rounded-lg border p-1.5 shadow-sm sm:gap-2">
           <Button
             type="button"
             variant="ghost"
@@ -338,6 +469,16 @@ export function DocumentCanvas({
               pattern="[0-9]*"
               value={pageInput}
               onChange={(event) => setPageInput(event.target.value)}
+              onBlur={() => {
+                const pageNum = Number.parseInt(pageInput, 10);
+                if (
+                  Number.isNaN(pageNum) ||
+                  pageNum < 1 ||
+                  pageNum > totalPages
+                ) {
+                  setPageInput(String(currentPage));
+                }
+              }}
               className="h-8 w-10 px-1 text-center text-sm"
               aria-label="Current page"
             />
@@ -356,6 +497,77 @@ export function DocumentCanvas({
             className="size-8"
             icon={CaretRight}
           />
+
+          <div className="bg-kumo-hairline mx-0.5 hidden h-5 w-px sm:block" />
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            shape="square"
+            aria-label="Zoom out"
+            disabled={!ready || zoom <= 0.5}
+            onClick={() => zoomToNearestLevel("out")}
+            className="size-8"
+            icon={Minus}
+          />
+          <Select
+            value={zoom.toFixed(2)}
+            onValueChange={(value) => {
+              if (value) setZoomLevel(Number.parseFloat(value));
+            }}
+            size="sm"
+            renderValue={() => `${zoomPercentage}%`}
+            className="hidden h-8 w-[4.5rem] px-2 text-xs sm:flex"
+            disabled={!ready}
+          >
+            {ZOOM_LEVELS.map((level) => (
+              <Select.Option key={level} value={level.toFixed(2)}>
+                {Math.round(level * 100)}%
+              </Select.Option>
+            ))}
+          </Select>
+          <span className="text-kumo-secondary min-w-[2.5rem] text-center text-xs sm:hidden">
+            {zoomPercentage}%
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            shape="square"
+            aria-label="Zoom in"
+            disabled={!ready || zoom >= 2}
+            onClick={() => zoomToNearestLevel("in")}
+            className="size-8"
+            icon={Plus}
+          />
+
+          <div className="bg-kumo-hairline mx-0.5 hidden h-5 w-px sm:block" />
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-label="Reset zoom and position"
+            disabled={!ready}
+            onClick={() => setZoomLevel(1)}
+            className="hidden h-8 px-2 text-xs sm:inline-flex"
+            icon={ArrowCounterClockwise}
+          >
+            Reset
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-label="Fit to width (100%)"
+            disabled={!ready}
+            onClick={() => setZoomLevel("fit-width")}
+            className="hidden h-8 px-2 text-xs sm:inline-flex"
+            icon={CornersOut}
+          >
+            Fit
+          </Button>
         </div>
         {interaction === "markup" && onSaveMarkup ? (
           <Button
@@ -379,8 +591,8 @@ export function DocumentCanvas({
           "[&_button[aria-label='Previous Page']]:hidden",
           "[&_button[aria-label='Next Page']]:hidden",
           "[&_input[aria-label='Current page']]:hidden",
-          // Fields: keep the same PDF mount; hide annotate chrome so the overlay owns input.
-          interaction === "fields" &&
+          // Fields/view: keep the same PDF mount; hide annotate chrome so overlay/browse owns input.
+          hideAnnotateChrome &&
             cn(
               "[&_[data-toolbar]]:pointer-events-none",
               "[&_[data-toolbar]]:opacity-0",
@@ -397,15 +609,18 @@ export function DocumentCanvas({
           }}
         />
 
-        {interaction === "fields" && pageBox ? (
+        {showFieldOverlay && pageBox ? (
           <div
             ref={fieldContainerRef}
             data-testid="document-canvas-field-overlay"
-            onDragOver={onFieldDragOver}
-            onDrop={onFieldDrop}
+            data-engine="pdfium"
+            data-page-number={currentPage}
+            onDragOver={fieldsInteractive ? onFieldDragOver : undefined}
+            onDrop={fieldsInteractive ? onFieldDrop : undefined}
             className={cn(
               "absolute z-20 overflow-hidden",
-              fieldDragging && "ring-primary/30 ring-2"
+              fieldsInteractive && fieldDragging && "ring-primary/30 ring-2",
+              !fieldsInteractive && "pointer-events-none"
             )}
             style={{
               left: pageBox.x,
@@ -418,10 +633,11 @@ export function DocumentCanvas({
               pageNumber={currentPage}
               pdfWidth={pageBox.width}
               pdfHeight={pageBox.height}
+              interactive={fieldsInteractive}
               fields={fields}
-              selectedFieldId={selectedFieldId}
-              onFieldSelect={onFieldSelect}
-              onFieldUpdate={onFieldUpdate}
+              selectedFieldId={fieldsInteractive ? selectedFieldId : null}
+              onFieldSelect={fieldsInteractive ? onFieldSelect : undefined}
+              onFieldUpdate={fieldsInteractive ? onFieldUpdate : undefined}
             />
             {fieldOverlayExtra}
           </div>

@@ -9,6 +9,8 @@ interface PdfCanvasLayerProps {
   pdfWidth: number;
   pdfHeight: number;
   scrollOffset?: { x: number; y: number };
+  /** When false (view mode), markers render but do not capture pointer events. */
+  interactive?: boolean;
   onCanvasReady?: (stage: Konva.Stage) => void;
   fields?: PlacedField[];
   selectedFieldId?: string | null;
@@ -31,6 +33,7 @@ export function PdfCanvasLayer({
   pdfWidth,
   pdfHeight,
   scrollOffset: _scrollOffset = { x: 0, y: 0 },
+  interactive = true,
   onCanvasReady,
   fields = [],
   selectedFieldId,
@@ -94,19 +97,23 @@ export function PdfCanvasLayer({
         ref={stageRef}
         width={dimensions.width}
         height={dimensions.height}
-        className="pointer-events-auto"
-        onClick={handleStageClick}
-        onTap={handleStageClick}
+        className={interactive ? "pointer-events-auto" : "pointer-events-none"}
+        listening={interactive}
+        onClick={interactive ? handleStageClick : undefined}
+        onTap={interactive ? handleStageClick : undefined}
       >
-        <Layer>
+        <Layer listening={interactive}>
           {/* SEA-90: Render placed fields */}
           {pageFieldsInPixels.map((field) => (
             <DraggableField
               key={field.id}
               field={field}
-              isSelected={selectedFieldId === field.id}
-              onSelect={() => onFieldSelect?.(field.id)}
+              isSelected={interactive && selectedFieldId === field.id}
+              onSelect={() => {
+                if (interactive) onFieldSelect?.(field.id);
+              }}
               onDragEnd={(xPixels, yPixels) => {
+                if (!interactive) return;
                 // Convert pixel coordinates back to percentages for database storage
                 const xPercent = (xPixels / pdfWidth) * 100;
                 const yPercent = (yPixels / pdfHeight) * 100;
@@ -121,6 +128,7 @@ export function PdfCanvasLayer({
                 );
               }}
               onTransformEnd={(xPixels, yPixels, widthPixels, heightPixels) => {
+                if (!interactive) return;
                 // Convert pixel coordinates back to percentages for database storage
                 const xPercent = (xPixels / pdfWidth) * 100;
                 const yPercent = (yPixels / pdfHeight) * 100;

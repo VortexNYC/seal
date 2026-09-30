@@ -12,7 +12,6 @@ import {
   SendIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
-import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 
 import { FIELD_TYPES } from "@/components/documents/field-toolbar";
 import { NotFoundPage } from "@/components/not-found-page";
@@ -36,7 +35,6 @@ import { isWorkflowStatus } from "@/lib/document-status";
 import { parseSelectValue } from "@/lib/select-values";
 import { countSignatureFields } from "@/lib/signature-fields";
 import { toast } from "@/lib/toast";
-import { cn } from "@/lib/utils";
 
 import { AddMyselfDialog } from "../../../../components/documents/add-myself-dialog";
 import { AddRecipientDialog } from "../../../../components/documents/add-recipient-dialog";
@@ -68,10 +66,7 @@ import {
 } from "../../../../components/kumo-docs";
 import { useSectionState } from "../../../../components/documents/hooks/use-section-state";
 import { PaymentConfigModal } from "../../../../components/documents/payment-config-modal";
-import { PdfFieldPlacementSurface } from "../../../../components/documents/pdf-field-placement-surface";
-import { PdfViewerControls } from "../../../../components/documents/pdf-viewer-controls";
-import { RecipientOptionsDialog } from "../../../../components/documents/recipient-options-dialog";
-import { RecipientSelectorDialog } from "../../../../components/documents/recipient-selector-dialog";
+import { RecipientOptionsDialog } from "../../../../components/documents/recipient-options-dialog";import { RecipientSelectorDialog } from "../../../../components/documents/recipient-selector-dialog";
 import { RemoveRecipientDialog } from "../../../../components/documents/remove-recipient-dialog";
 import { SaveAsTemplateDialog } from "../../../../components/documents/save-as-template-dialog";
 import { SendDocumentDialog } from "../../../../components/documents/send-document-dialog";
@@ -251,8 +246,6 @@ function DocumentDetailPage() {
     useState<DocumentCapabilityId>("fields");
   const [pdfReloadKey, setPdfReloadKey] = useState(0);
   const pdfViewer = usePdfViewer(slug, documentPublicId, pdfReloadKey);
-  const sharedPdfCanvas =
-    capability === "fields" || capability === "markup";
 
   const saveMarkupMutation = useMutation({
     mutationFn: async (buffer: ArrayBuffer) => {
@@ -326,6 +319,12 @@ function DocumentDetailPage() {
 
   const canEdit =
     documentData.status === "active" && isPrepStatus;
+
+  // Fields + Mark up + read-only browse share one EmbedPDF mount.
+  // Office / Pages / Layout still swap panels on the same workspace roof.
+  const sharedPdfCanvas =
+    Boolean(pdfViewer.pdfUrl) &&
+    (!canEdit || capability === "fields" || capability === "markup");
 
   const isExpired = documentData.workflowStatus === "expired";
 
@@ -643,9 +642,11 @@ function DocumentDetailPage() {
                 />
               ) : null}
 
-              {canEdit && pdfViewer.pdfUrl && sharedPdfCanvas ? (
+              {sharedPdfCanvas && pdfViewer.pdfUrl ? (
                 <>
-                  {isScannedOrImageDocument && capability === "fields" ? (
+                  {canEdit &&
+                  isScannedOrImageDocument &&
+                  capability === "fields" ? (
                     <div className="border-kumo-warning/30 bg-kumo-warning-tint/40 text-kumo-warning rounded-lg border px-3 py-2 text-xs">
                       This is a scanned or image-only PDF. Field detection is
                       not available — drag fields onto the document manually.
@@ -654,10 +655,15 @@ function DocumentDetailPage() {
                   <DocumentCanvas
                     src={pdfViewer.pdfUrl}
                     interaction={
-                      capability === "markup" ? "markup" : "fields"
+                      !canEdit
+                        ? "view"
+                        : capability === "markup"
+                          ? "markup"
+                          : "fields"
                     }
                     currentPage={pdfViewer.currentPage}
                     onPageChange={pdfViewer.handlePageChange}
+                    onZoomChange={pdfViewer.setCurrentZoom}
                     onDocumentMeta={(meta) => {
                       pdfViewer.onDocumentLoadSuccess({
                         numPages: meta.numPages,
@@ -669,11 +675,21 @@ function DocumentDetailPage() {
                       );
                     }}
                     fields={fieldPlacement.placedFields}
-                    selectedFieldId={fieldPlacement.selectedFieldId}
-                    onFieldSelect={fieldPlacement.handleFieldSelect}
-                    onFieldUpdate={fieldPlacement.handleFieldUpdate}
-                    onFieldDragOver={fieldPlacement.handleFieldDragOver}
-                    onFieldDrop={fieldPlacement.handleFieldDrop}
+                    selectedFieldId={
+                      canEdit ? fieldPlacement.selectedFieldId : null
+                    }
+                    onFieldSelect={
+                      canEdit ? fieldPlacement.handleFieldSelect : undefined
+                    }
+                    onFieldUpdate={
+                      canEdit ? fieldPlacement.handleFieldUpdate : undefined
+                    }
+                    onFieldDragOver={
+                      canEdit ? fieldPlacement.handleFieldDragOver : undefined
+                    }
+                    onFieldDrop={
+                      canEdit ? fieldPlacement.handleFieldDrop : undefined
+                    }
                     fieldContainerRef={pdfViewer.containerRef}
                     fieldDragging={Boolean(fieldPlacement.draggingFieldType)}
                     fieldOverlayExtra={
@@ -690,7 +706,7 @@ function DocumentDetailPage() {
                       ) : null
                     }
                     onSaveMarkup={
-                      capability === "markup"
+                      canEdit && capability === "markup"
                         ? async (buffer) => {
                             await saveMarkupMutation.mutateAsync(buffer);
                           }
@@ -728,59 +744,6 @@ function DocumentDetailPage() {
                   pageWidth={pdfViewer.pdfWidth}
                   pageHeight={pdfViewer.pdfHeight}
                 />
-              ) : pdfViewer.pdfUrl ? (
-                <TransformWrapper
-                  initialScale={1}
-                  minScale={0.5}
-                  maxScale={2}
-                  centerOnInit={true}
-                  limitToBounds={true}
-                  doubleClick={{ disabled: false }}
-                  wheel={{ step: 0.1 }}
-                  panning={{ disabled: true }}
-                  onTransformed={(_ref, state) => {
-                    pdfViewer.setCurrentZoom(state.scale);
-                  }}
-                >
-                  <div className="mb-3 flex flex-col gap-2 sm:mb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                    <PdfViewerControls
-                      currentZoom={pdfViewer.currentZoom}
-                      currentPage={pdfViewer.currentPage}
-                      totalPages={pdfViewer.numPages ?? 1}
-                      onPageChange={pdfViewer.handlePageChange}
-                      enableKeyboardShortcuts={true}
-                      className="w-full justify-center sm:w-auto sm:justify-start"
-                    />
-                  </div>
-                  <TransformComponent
-                    wrapperClass="w-full"
-                    contentClass="flex flex-col items-center"
-                    wrapperStyle={{ width: "100%" }}
-                  >
-                    <div
-                      ref={pdfViewer.containerRef}
-                      className="border-border bg-card relative overflow-hidden rounded-lg border shadow-sm"
-                    >
-                      <PdfFieldPlacementSurface
-                        key={`page_${pdfViewer.currentPage}`}
-                        src={pdfViewer.pdfUrl}
-                        pageNumber={pdfViewer.currentPage}
-                        width={pdfViewer.pdfWidth}
-                        fields={fieldPlacement.placedFields}
-                        selectedFieldId={null}
-                        onDocumentLoadSuccess={pdfViewer.onDocumentLoadSuccess}
-                        onPageDimensions={pdfViewer.handlePageDimensions}
-                        onPageRef={(pageNumber, element) => {
-                          if (element) {
-                            pdfViewer.pageRefs.current.set(pageNumber, element);
-                          } else {
-                            pdfViewer.pageRefs.current.delete(pageNumber);
-                          }
-                        }}
-                      />
-                    </div>
-                  </TransformComponent>
-                </TransformWrapper>
               ) : (
                 <>
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
