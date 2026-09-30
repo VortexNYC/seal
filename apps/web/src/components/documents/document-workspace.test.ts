@@ -31,4 +31,10 @@ describe("DOCUMENT_CAPABILITIES", () => {
       "seal_organize_document_pdf"
     );
   });
+
+  it("lists watermark and page numbers on Pages for agents", () => {
+    const tools = getDocumentCapability("pages").agentTools;
+    expect(tools).toContain("seal_watermark_document_pdf");
+    expect(tools).toContain("seal_number_document_pdf_pages");
+  });
 });

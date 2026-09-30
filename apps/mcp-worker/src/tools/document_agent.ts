@@ -323,4 +323,58 @@ export function registerDocumentAgentTools(
       return createToolResponse(response);
     }
   );
+
+  server.tool(
+    "seal_watermark_document_pdf",
+    "Stamp a text watermark (e.g. DRAFT, CONFIDENTIAL) onto a draft PDF. Deterministic pdf-lib — not Seal AI.",
+    {
+      id: z.string().describe("Document ID"),
+      text: z.string().min(1).max(120).describe("Watermark text"),
+      opacity: z.number().min(0.05).max(1).optional(),
+      position: z.enum(["diagonal", "center", "footer"]).optional(),
+      color: z.string().optional().describe("Hex color"),
+      size: z.number().min(6).max(120).optional(),
+      pages: z
+        .array(z.number().int().min(1))
+        .optional()
+        .describe("1-based pages; omit for all"),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/watermark",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
+    "seal_number_document_pdf_pages",
+    "Stamp footer page numbers onto a draft PDF (`n` or `n_of_m`). Deterministic pdf-lib — not Seal AI.",
+    {
+      id: z.string().describe("Document ID"),
+      format: z.enum(["n", "n_of_m"]).optional(),
+      position: z
+        .enum(["footer-center", "footer-right", "footer-left"])
+        .optional(),
+      start_at: z.number().int().min(0).optional(),
+      prefix: z.string().max(40).optional().describe('e.g. "Page "'),
+      size: z.number().min(6).max(48).optional(),
+      color: z.string().optional(),
+      pages: z.array(z.number().int().min(1)).optional(),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/number-pages",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
 }

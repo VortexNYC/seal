@@ -4,9 +4,11 @@ import { describe, expect, it } from "vitest";
 import {
   annotatePdf,
   getPdfPageCount,
+  numberPdfPages,
   organizePdfPages,
   percentToPdfRect,
   splitPdfPages,
+  watermarkPdf,
 } from "./pdf-ops.js";
 
 async function makePdf(pages = 3): Promise<Uint8Array> {
@@ -67,5 +69,32 @@ describe("pdf-ops", () => {
     await expect(organizePdfPages(src, [1, 1, 2])).rejects.toThrow(
       "duplicate_pages"
     );
+  });
+
+  it("watermarks without changing page count", async () => {
+    const src = await makePdf(2);
+    const { bytes, pageCount } = await watermarkPdf(src, {
+      text: "DRAFT",
+      position: "diagonal",
+    });
+    expect(pageCount).toBe(2);
+    expect(await getPdfPageCount(bytes)).toBe(2);
+  });
+
+  it("rejects empty watermark text", async () => {
+    const src = await makePdf(1);
+    await expect(watermarkPdf(src, { text: "   " })).rejects.toThrow(
+      "empty_watermark"
+    );
+  });
+
+  it("numbers pages without changing page count", async () => {
+    const src = await makePdf(3);
+    const { bytes, pageCount } = await numberPdfPages(src, {
+      format: "n_of_m",
+      position: "footer-center",
+    });
+    expect(pageCount).toBe(3);
+    expect(await getPdfPageCount(bytes)).toBe(3);
   });
 });

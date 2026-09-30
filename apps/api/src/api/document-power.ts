@@ -19,10 +19,12 @@ import { buildDocumentLayoutBlocks } from "../platform/document-layout-blocks.js
 import {
   annotatePdf,
   mergePdfs,
+  numberPdfPages,
   organizePdfPages,
   pdfAnnotateOpSchema,
   rotatePdfPages,
   splitPdfPages,
+  watermarkPdf,
 } from "../platform/pdf-ops.js";
 import {
   commitDocumentPdfRemap,
@@ -725,6 +727,149 @@ app.post("/organize-pdf", async (c) => {
     pageCount: organized.pageCount,
     fieldsRemoved: plan.removeIds.length,
     fieldsRemapped: plan.updates.length,
+  });
+});
+
+const watermarkBodySchema = z.object({
+  text: z.string().min(1).max(120),
+  opacity: z.number().min(0.05).max(1).optional(),
+  position: z.enum(["diagonal", "center", "footer"]).optional(),
+  color: z.string().optional(),
+  size: z.number().min(6).max(120).optional(),
+  pages: z.array(z.number().int().min(1)).optional(),
+});
+
+app.post("/watermark-pdf", async (c) => {
+  const user = c.get("user");
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+  const organizationId = c.get("organization").id;
+  const publicId = publicIdFromPath(new URL(c.req.url).pathname);
+  if (!publicId) return c.json({ error: "not_found" }, 404);
+
+  const parsed = watermarkBodySchema.safeParse(await c.req.json());
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocByPublicId(db, organizationId, publicId);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  let stamped: Awaited<ReturnType<typeof watermarkPdf>>;
+  try {
+    stamped = await watermarkPdf(await object.arrayBuffer(), parsed.data);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "watermark_failed";
+    if (
+      message === "empty_watermark" ||
+      message === "watermark_too_long" ||
+      message === "no_valid_pages"
+    ) {
+      return c.json({ error: message }, 400);
+    }
+    throw error;
+  }
+
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, stamped.bytes, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: user.user.id,
+      watermarkedFrom: doc.storageKey,
+    },
+  });
+
+  await db
+    .update(documents)
+    .set({
+      storageKey: storageId,
+      size: stamped.bytes.byteLength,
+      contentType: "application/pdf",
+      pageCount: stamped.pageCount,
+      updatedAt: new Date(),
+    })
+    .where(eq(documents.id, doc.id));
+
+  return c.json({
+    success: true,
+    storageId,
+    pageCount: stamped.pageCount,
+  });
+});
+
+const numberPagesBodySchema = z.object({
+  format: z.enum(["n", "n_of_m"]).optional(),
+  position: z.enum(["footer-center", "footer-right", "footer-left"]).optional(),
+  startAt: z.number().int().min(0).max(10_000).optional(),
+  prefix: z.string().max(40).optional(),
+  size: z.number().min(6).max(48).optional(),
+  color: z.string().optional(),
+  pages: z.array(z.number().int().min(1)).optional(),
+});
+
+app.post("/number-pdf-pages", async (c) => {
+  const user = c.get("user");
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+  const organizationId = c.get("organization").id;
+  const publicId = publicIdFromPath(new URL(c.req.url).pathname);
+  if (!publicId) return c.json({ error: "not_found" }, 404);
+
+  const parsed = numberPagesBodySchema.safeParse(await c.req.json());
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocByPublicId(db, organizationId, publicId);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  let numbered: Awaited<ReturnType<typeof numberPdfPages>>;
+  try {
+    numbered = await numberPdfPages(await object.arrayBuffer(), parsed.data);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "number_failed";
+    if (message === "no_valid_pages") {
+      return c.json({ error: message }, 400);
+    }
+    throw error;
+  }
+
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, numbered.bytes, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: user.user.id,
+      numberedFrom: doc.storageKey,
+    },
+  });
+
+  await db
+    .update(documents)
+    .set({
+      storageKey: storageId,
+      size: numbered.bytes.byteLength,
+      contentType: "application/pdf",
+      pageCount: numbered.pageCount,
+      updatedAt: new Date(),
+    })
+    .where(eq(documents.id, doc.id));
+
+  return c.json({
+    success: true,
+    storageId,
+    pageCount: numbered.pageCount,
   });
 });
 

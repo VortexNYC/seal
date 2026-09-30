@@ -12,9 +12,11 @@ import {
 import {
   getDocuments,
   mergeDocumentPdf,
+  numberDocumentPdfPages,
   organizeDocumentPdf,
   rotateDocumentPdf,
   splitDocument,
+  watermarkDocumentPdf,
 } from "@/lib/api-client";
 import { toast } from "@/lib/toast";
 
@@ -88,6 +90,40 @@ export function DocumentPagesCapabilityPanel({
     },
   });
 
+  const watermarkMutation = useMutation({
+    mutationFn: (input: {
+      text: string;
+      position: "diagonal" | "center" | "footer";
+      pages?: number[];
+    }) => watermarkDocumentPdf(organizationSlug, documentPublicId, input),
+    onSuccess: () => {
+      toast.success("Watermark applied");
+      onPdfChanged?.();
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to watermark PDF"
+      );
+    },
+  });
+
+  const numberPagesMutation = useMutation({
+    mutationFn: (input: {
+      format: "n" | "n_of_m";
+      position: "footer-center" | "footer-right" | "footer-left";
+      prefix?: string;
+    }) => numberDocumentPdfPages(organizationSlug, documentPublicId, input),
+    onSuccess: () => {
+      toast.success("Page numbers applied");
+      onPdfChanged?.();
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to number pages"
+      );
+    },
+  });
+
   const mergeMutation = useMutation({
     mutationFn: (input: { sourcePublicIds: string[]; title?: string }) =>
       mergeDocumentPdf(organizationSlug, documentPublicId, input),
@@ -144,10 +180,14 @@ export function DocumentPagesCapabilityPanel({
         currentPage={currentPage}
         rotating={rotateMutation.isPending}
         organizing={organizeMutation.isPending}
+        watermarking={watermarkMutation.isPending}
+        numbering={numberPagesMutation.isPending}
         merging={mergeMutation.isPending}
         mergeCandidates={mergeCandidates}
         onRotate={(input) => rotateMutation.mutate(input)}
         onOrganize={(input) => organizeMutation.mutate(input)}
+        onWatermark={(input) => watermarkMutation.mutate(input)}
+        onNumberPages={(input) => numberPagesMutation.mutate(input)}
         onMerge={(input) => mergeMutation.mutate(input)}
         className={docked ? "p-0" : undefined}
       />

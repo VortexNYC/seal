@@ -2041,6 +2041,67 @@ export async function organizeDocumentPdf(
   );
 }
 
+const watermarkDocumentPdfResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  pageCount: z.number().int(),
+});
+export type ApiWatermarkDocumentPdfResult = z.infer<
+  typeof watermarkDocumentPdfResultSchema
+>;
+export async function watermarkDocumentPdf(
+  organizationSlug: string,
+  publicId: string,
+  input: {
+    text: string;
+    opacity?: number;
+    position?: "diagonal" | "center" | "footer";
+    color?: string;
+    size?: number;
+    pages?: number[];
+  }
+): Promise<ApiWatermarkDocumentPdfResult> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/watermark-pdf`,
+    watermarkDocumentPdfResultSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+const numberDocumentPdfPagesResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  pageCount: z.number().int(),
+});
+export type ApiNumberDocumentPdfPagesResult = z.infer<
+  typeof numberDocumentPdfPagesResultSchema
+>;
+export async function numberDocumentPdfPages(
+  organizationSlug: string,
+  publicId: string,
+  input: {
+    format?: "n" | "n_of_m";
+    position?: "footer-center" | "footer-right" | "footer-left";
+    startAt?: number;
+    prefix?: string;
+    size?: number;
+    color?: string;
+    pages?: number[];
+  }
+): Promise<ApiNumberDocumentPdfPagesResult> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/number-pdf-pages`,
+    numberDocumentPdfPagesResultSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
 const documentLayoutBlocksSchema = z.object({
   blocks: z.array(
     z.object({
