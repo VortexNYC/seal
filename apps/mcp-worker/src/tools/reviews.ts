@@ -32,6 +32,17 @@ export function registerReviewTools(
   client: SealApiClient
 ): void {
   server.tool(
+    "seal_list_reviews",
+    "List review matrices for the org — summary rows (id, title, model, status, counts).",
+    {},
+    async (_args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.get<unknown>("/reviews", {}, authToken);
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
     "seal_create_review",
     "Create a legal review matrix over documents. Columns are extraction prompts; cells stay pending until generate.",
     createReviewMatrixSchema.shape,
