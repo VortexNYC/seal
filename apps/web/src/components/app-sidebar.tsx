@@ -6,6 +6,7 @@ import {
   Files,
   Gear,
   House,
+  Scales,
   SquaresFour,
   Users,
   type Icon,
@@ -133,6 +134,12 @@ function buildNav({
       url: buildOrganizationPath(slug, "/templates"),
       icon: SquaresFour,
       visible: canView(permissionFlags?.canCreateTemplates),
+    },
+    {
+      title: "Reviews",
+      url: buildOrganizationPath(slug, "/reviews"),
+      icon: Scales,
+      visible: canView(permissionFlags?.canCreateDocuments),
     },
     {
       title: "Contacts",
@@ -438,7 +445,10 @@ export function AppSidebar({
   }
 
   return (
-    <Sidebar {...props} className="border-sidebar-border bg-sidebar text-sidebar-foreground">
+    <Sidebar
+      {...props}
+      className="border-sidebar-border bg-sidebar text-sidebar-foreground"
+    >
       <Sidebar.Header className="border-sidebar-border gap-0 border-b px-2 py-2">
         <div
           className="text-sidebar-foreground flex min-w-0 items-center gap-2 px-2 py-1"
@@ -453,7 +463,7 @@ export function AppSidebar({
       <Sidebar.Content className="px-1 pt-2">
         <NavMain primary={primary} groups={groups} />
       </Sidebar.Content>
-      <Sidebar.Footer className="border-sidebar-border relative z-20 isolate gap-1 border-t px-1 py-2">
+      <Sidebar.Footer className="border-sidebar-border relative isolate z-20 gap-1 border-t px-1 py-2">
         {currentUser ? (
           <WorkspaceAccountMenu
             teams={teamOptions}
