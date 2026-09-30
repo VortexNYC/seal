@@ -1,5 +1,5 @@
 import { Button } from "@cloudflare/kumo/components/button";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   type ErrorComponentProps,
   createFileRoute,
@@ -27,6 +27,7 @@ import {
   getAiSettings,
   getSigningSettings,
   removeRecipient as removeRecipientApi,
+  replaceDocumentPdf,
   resendRecipientEmail as resendRecipientEmailApi,
   updateDocument as updateDocumentApi,
 } from "@/lib/api-client";
@@ -44,10 +45,10 @@ import {
   useDocumentAnnotations,
 } from "../../../../components/documents/ai-annotation-overlays";
 import { DeleteFieldDialog } from "../../../../components/documents/delete-field-dialog";
+import { DocumentCanvas } from "../../../../components/documents/document-canvas";
 import { DocumentCapabilityRail } from "../../../../components/documents/document-capability-rail";
 import { DocumentOfficeEditPanel } from "../../../../components/documents/document-office-edit-panel";
 import { DocumentPagesCapabilityPanel } from "../../../../components/documents/document-pages-capability-panel";
-import { DocumentPdfAnnotatePanel } from "../../../../components/documents/document-pdf-annotate-panel";
 import { DocumentStructurePanel } from "../../../../components/documents/document-structure-panel";
 import type { DocumentCapabilityId } from "../../../../components/documents/document-workspace";
 import { DocumentPresence } from "../../../../components/documents/document-presence";
@@ -250,6 +251,31 @@ function DocumentDetailPage() {
     useState<DocumentCapabilityId>("fields");
   const [pdfReloadKey, setPdfReloadKey] = useState(0);
   const pdfViewer = usePdfViewer(slug, documentPublicId, pdfReloadKey);
+  const sharedPdfCanvas =
+    capability === "fields" || capability === "markup";
+
+  const saveMarkupMutation = useMutation({
+    mutationFn: async (buffer: ArrayBuffer) => {
+      const bytes = new Uint8Array(buffer);
+      let binary = "";
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+      }
+      return replaceDocumentPdf(slug, documentPublicId, {
+        contentBase64: btoa(binary),
+      });
+    },
+    onSuccess: () => {
+      toast.success("PDF saved to Seal");
+      setPdfReloadKey((key) => key + 1);
+    },
+    onError: (error) => {
+      toast.error("Failed to save PDF", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    },
+  });
   const pageThumbnails = usePdfPageThumbnails(
     pdfViewer.pdfUrl,
     pdfViewer.numPages
@@ -617,15 +643,62 @@ function DocumentDetailPage() {
                 />
               ) : null}
 
-              {canEdit && capability === "markup" && pdfViewer.pdfUrl ? (
-                <DocumentPdfAnnotatePanel
-                  organizationSlug={slug}
-                  documentPublicId={documentPublicId}
-                  pdfUrl={pdfViewer.pdfUrl}
-                  onApplied={() => {
-                    setPdfReloadKey((key) => key + 1);
-                  }}
-                />
+              {canEdit && pdfViewer.pdfUrl && sharedPdfCanvas ? (
+                <>
+                  {isScannedOrImageDocument && capability === "fields" ? (
+                    <div className="border-kumo-warning/30 bg-kumo-warning-tint/40 text-kumo-warning rounded-lg border px-3 py-2 text-xs">
+                      This is a scanned or image-only PDF. Field detection is
+                      not available — drag fields onto the document manually.
+                    </div>
+                  ) : null}
+                  <DocumentCanvas
+                    src={pdfViewer.pdfUrl}
+                    interaction={
+                      capability === "markup" ? "markup" : "fields"
+                    }
+                    currentPage={pdfViewer.currentPage}
+                    onPageChange={pdfViewer.handlePageChange}
+                    onDocumentMeta={(meta) => {
+                      pdfViewer.onDocumentLoadSuccess({
+                        numPages: meta.numPages,
+                      });
+                      pdfViewer.handlePageDimensions(
+                        pdfViewer.currentPage,
+                        meta.pageWidth,
+                        meta.pageHeight
+                      );
+                    }}
+                    fields={fieldPlacement.placedFields}
+                    selectedFieldId={fieldPlacement.selectedFieldId}
+                    onFieldSelect={fieldPlacement.handleFieldSelect}
+                    onFieldUpdate={fieldPlacement.handleFieldUpdate}
+                    onFieldDragOver={fieldPlacement.handleFieldDragOver}
+                    onFieldDrop={fieldPlacement.handleFieldDrop}
+                    fieldContainerRef={pdfViewer.containerRef}
+                    fieldDragging={Boolean(fieldPlacement.draggingFieldType)}
+                    fieldOverlayExtra={
+                      showAiFeatures && documentAnnotations.annotations ? (
+                        <AIAnnotationOverlays
+                          annotations={documentAnnotations.annotations}
+                          enabledCategories={
+                            documentAnnotations.enabledCategories
+                          }
+                          currentPage={pdfViewer.currentPage}
+                          pdfPageWidth={pdfViewer.pdfWidth}
+                          pdfPageHeight={pdfViewer.pdfHeight}
+                        />
+                      ) : null
+                    }
+                    onSaveMarkup={
+                      capability === "markup"
+                        ? async (buffer) => {
+                            await saveMarkupMutation.mutateAsync(buffer);
+                          }
+                        : undefined
+                    }
+                    savingMarkup={saveMarkupMutation.isPending}
+                  />
+                </>
               ) : canEdit && capability === "office" ? (
                 <DocumentOfficeEditPanel
                   organizationSlug={slug}
@@ -664,19 +737,11 @@ function DocumentDetailPage() {
                   limitToBounds={true}
                   doubleClick={{ disabled: false }}
                   wheel={{ step: 0.1 }}
-                  panning={{
-                    disabled: fieldPlacement.selectedFieldId !== null,
-                  }}
+                  panning={{ disabled: true }}
                   onTransformed={(_ref, state) => {
                     pdfViewer.setCurrentZoom(state.scale);
                   }}
                 >
-                  {isScannedOrImageDocument && (
-                    <div className="border-kumo-warning/30 bg-kumo-warning-tint/40 text-kumo-warning mb-3 rounded-lg border px-3 py-2 text-xs sm:mb-4">
-                      This is a scanned or image-only PDF. Field detection is
-                      not available — drag fields onto the document manually.
-                    </div>
-                  )}
                   <div className="mb-3 flex flex-col gap-2 sm:mb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                     <PdfViewerControls
                       currentZoom={pdfViewer.currentZoom}
@@ -694,13 +759,7 @@ function DocumentDetailPage() {
                   >
                     <div
                       ref={pdfViewer.containerRef}
-                      onDragOver={fieldPlacement.handleFieldDragOver}
-                      onDrop={fieldPlacement.handleFieldDrop}
-                      className={cn(
-                        "border-border bg-card relative overflow-hidden rounded-lg border shadow-sm transition-[transform,box-shadow,border-color,background-color] duration-300",
-                        fieldPlacement.draggingFieldType &&
-                          "border-primary ring-primary/20 scale-[1.002] shadow-lg ring-4"
-                      )}
+                      className="border-border bg-card relative overflow-hidden rounded-lg border shadow-sm"
                     >
                       <PdfFieldPlacementSurface
                         key={`page_${pdfViewer.currentPage}`}
@@ -708,19 +767,7 @@ function DocumentDetailPage() {
                         pageNumber={pdfViewer.currentPage}
                         width={pdfViewer.pdfWidth}
                         fields={fieldPlacement.placedFields}
-                        selectedFieldId={
-                          canEdit ? fieldPlacement.selectedFieldId : null
-                        }
-                        onFieldSelect={
-                          canEdit
-                            ? fieldPlacement.handleFieldSelect
-                            : undefined
-                        }
-                        onFieldUpdate={
-                          canEdit
-                            ? fieldPlacement.handleFieldUpdate
-                            : undefined
-                        }
+                        selectedFieldId={null}
                         onDocumentLoadSuccess={pdfViewer.onDocumentLoadSuccess}
                         onPageDimensions={pdfViewer.handlePageDimensions}
                         onPageRef={(pageNumber, element) => {
@@ -731,20 +778,6 @@ function DocumentDetailPage() {
                           }
                         }}
                       />
-
-                      {canEdit &&
-                        showAiFeatures &&
-                        documentAnnotations.annotations && (
-                          <AIAnnotationOverlays
-                            annotations={documentAnnotations.annotations}
-                            enabledCategories={
-                              documentAnnotations.enabledCategories
-                            }
-                            currentPage={pdfViewer.currentPage}
-                            pdfPageWidth={pdfViewer.pdfWidth}
-                            pdfPageHeight={pdfViewer.pdfHeight}
-                          />
-                        )}
                     </div>
                   </TransformComponent>
                 </TransformWrapper>

@@ -92,13 +92,16 @@ export function usePdfViewer(
     setCurrentPage(page);
   }, []);
 
-  // Capture first-page height for percentage-based field coordinate conversion
+  // Keep logical page size aligned with the visible canvas (DocumentCanvas overlay).
   const handlePageDimensions = (
-    pageNumber: number,
-    _width: number,
+    _pageNumber: number,
+    width: number,
     height: number
   ) => {
-    if (pageNumber === 1) {
+    if (width > 0) {
+      setPdfWidth(width);
+    }
+    if (height > 0) {
       setPdfHeight(height);
     }
   };

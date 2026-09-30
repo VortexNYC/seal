@@ -1,9 +1,9 @@
 /**
  * Document Workspace — one roof for human SPA + agent tools.
  *
- * Capabilities share a document id and chrome. Engines behind them may differ
- * today (field canvas vs EmbedPDF vs Office); new work extends this registry
- * instead of inventing peer “modes” that exile the user from the workspace.
+ * Capabilities share a document id and chrome. Fields + Mark up share one
+ * EmbedPDF `DocumentCanvas` mount; Office / Pages / Layout swap panels on the
+ * same roof. New work extends this registry instead of inventing peer “modes”.
  *
  * Agent MCP tool names are listed so the SPA and MCP stay the same surface.
  */

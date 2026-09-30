@@ -36,3 +36,10 @@ new surface each time.
 - Adding OCR, compare, or redaction packs means a new registry entry + panel —
   not a new top-level product mode.
 - Drift between MCP tool names and registry `agentTools` is a bug.
+
+## Canvas convergence (2026-09-29)
+
+**Fields** and **Mark up** share one EmbedPDF mount (`DocumentCanvas`). Switching
+the rail changes interaction chrome and the Seal field overlay — it does not
+tear down the PDF. Office / Pages / Layout remain capability panels on the same
+workspace roof until they also need that canvas.
