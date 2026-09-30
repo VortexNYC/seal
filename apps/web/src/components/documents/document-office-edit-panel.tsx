@@ -162,8 +162,8 @@ export function DocumentOfficeEditPanel({
   if (format === "unsupported") {
     return (
       <p className="text-muted-foreground p-4 text-sm">
-        Edit mode is available for DOCX, XLSX, and CSV originals. Use Annotate
-        for PDF markup.
+        Edit Word / Excel is available for DOCX, XLSX, and CSV originals. Use
+        Mark up PDF to draw or redact on the PDF itself.
       </p>
     );
   }
