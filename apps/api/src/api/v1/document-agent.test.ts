@@ -205,6 +205,35 @@ describe("document agent pdf routes", () => {
     expect(json.regions_applied).toBe(1);
   });
 
+  it("protects a draft via the agent surface", async () => {
+    await seedFixture();
+    const app = createApp(writeMcp);
+    const res = await app.fetch(
+      agentPost("protect", { id: DOC_ID, user_password: "s3cret" }),
+      env
+    );
+    expect(res.status).toBe(200);
+    const json = z
+      .object({
+        success: z.boolean(),
+        storage_id: z.string(),
+        download_url: z.string().nullable(),
+      })
+      .parse(await res.json());
+    expect(json.success).toBe(true);
+  });
+
+  it("unlock rejects an unencrypted doc via the agent surface", async () => {
+    await seedFixture();
+    const app = createApp(writeMcp);
+    const res = await app.fetch(
+      agentPost("unlock", { id: DOC_ID, password: "x" }),
+      env
+    );
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ error: "not_encrypted" });
+  });
+
   it("compresses a draft via the agent surface", async () => {
     await seedFixture();
     const app = createApp(writeMcp);

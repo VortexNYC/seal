@@ -97,6 +97,122 @@ app.post("/optimize-pdf", async (c) => {
   });
 });
 
+/**
+ * Encrypt a PDF via Gotenberg pdfengines /encrypt (qpdf — AES). Forwards
+ * user/owner passwords and permission flags verbatim.
+ */
+app.post("/encrypt-pdf", async (c) => {
+  const contentType = c.req.header("content-type") ?? "";
+  if (!contentType.startsWith("multipart/form-data")) {
+    return c.text("Expected multipart/form-data", 400);
+  }
+
+  const body = await c.req.parseBody();
+  const file = body.files;
+  if (!file || typeof file === "string") {
+    return c.text("Missing files field", 400);
+  }
+  if (file.type !== "application/pdf") {
+    return c.text(`Unsupported input type: ${file.type}`, 400);
+  }
+
+  const form = new FormData();
+  form.append("files", file, "document.pdf");
+  for (const key of [
+    "userPassword",
+    "ownerPassword",
+    "allowPrinting",
+    "allowCopying",
+    "allowModifying",
+    "allowAnnotating",
+    "allowFillingForms",
+    "allowAssembling",
+  ]) {
+    const v = body[key];
+    if (typeof v === "string" && v.length > 0) form.append(key, v);
+  }
+
+  const containerRequest = new Request(
+    "http://internal/forms/pdfengines/encrypt",
+    {
+      method: "POST",
+      body: form,
+    }
+  );
+
+  const id = c.env.CONVERTER.idFromName("converter");
+  const container = c.env.CONVERTER.get(id);
+  const response = await container.fetch(containerRequest);
+
+  if (!response.ok) {
+    const text = await response.text();
+    return new Response(text, { status: response.status });
+  }
+
+  const pdf = await response.arrayBuffer();
+  return new Response(pdf, {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": 'attachment; filename="encrypted.pdf"',
+    },
+  });
+});
+
+/**
+ * Decrypt a password-protected PDF by re-exporting it through LibreOffice
+ * (Gotenberg /forms/libreoffice/convert with the `password` open field).
+ * Round-trip goes through LibreOffice Draw — mostly faithful but may shift
+ * complex layouts; callers should surface that caveat.
+ */
+app.post("/decrypt-pdf", async (c) => {
+  const contentType = c.req.header("content-type") ?? "";
+  if (!contentType.startsWith("multipart/form-data")) {
+    return c.text("Expected multipart/form-data", 400);
+  }
+
+  const body = await c.req.parseBody();
+  const file = body.files;
+  if (!file || typeof file === "string") {
+    return c.text("Missing files field", 400);
+  }
+  if (file.type !== "application/pdf") {
+    return c.text(`Unsupported input type: ${file.type}`, 400);
+  }
+  const password = body.password;
+  if (typeof password !== "string" || password.length === 0) {
+    return c.text("Missing password field", 400);
+  }
+
+  const form = new FormData();
+  form.append("files", file, "document.pdf");
+  form.append("password", password);
+
+  const containerRequest = new Request(
+    "http://internal/forms/libreoffice/convert",
+    {
+      method: "POST",
+      body: form,
+    }
+  );
+
+  const id = c.env.CONVERTER.idFromName("converter");
+  const container = c.env.CONVERTER.get(id);
+  const response = await container.fetch(containerRequest);
+
+  if (!response.ok) {
+    const text = await response.text();
+    return new Response(text, { status: response.status });
+  }
+
+  const pdf = await response.arrayBuffer();
+  return new Response(pdf, {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": 'attachment; filename="decrypted.pdf"',
+    },
+  });
+});
+
 app.post("/convert", async (c) => {
   const contentType = c.req.header("content-type") ?? "";
   if (!contentType.startsWith("multipart/form-data")) {

@@ -16,6 +16,34 @@ import { getPdfPageCount } from "../platform/pdf-ops.js";
 import type { Variables } from "../platform/types.js";
 import documentPower from "./document-power.js";
 
+/**
+ * Minimal hand-built PDF whose trailer carries an /Encrypt dict — pdf-lib's
+ * EncryptedPDFError path without needing a real encryption tool.
+ */
+function makeEncryptedFakePdf(): Uint8Array {
+  let body = "%PDF-1.4\n";
+  const offs: number[] = [0];
+  const objs = [
+    "<</Type/Catalog/Pages 2 0 R>>",
+    "<</Type/Pages/Kids[3 0 R]/Count 1>>",
+    "<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]>>",
+  ];
+  objs.forEach((s, i) => {
+    offs.push(body.length);
+    body += `${i + 1} 0 obj\n${s}\nendobj\n`;
+  });
+  const xrefPos = body.length;
+  let xref = "xref\n0 4\n0000000000 65535 f \n";
+  for (let n = 1; n <= 3; n++) {
+    xref += `${String(offs[n]).padStart(10, "0")} 00000 n \n`;
+  }
+  const trailer =
+    "trailer\n" +
+    "<</Size 4/Root 1 0 R/Encrypt<</Filter/Standard/V 2/R 3/O()/U()/P -4>>>>\n" +
+    `startxref\n${xrefPos}\n%%EOF`;
+  return new TextEncoder().encode(body + xref + trailer);
+}
+
 async function makePdf(pages = 3): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   for (let i = 0; i < pages; i++) {
@@ -358,6 +386,79 @@ describe("document power routes", () => {
 
     const object = await env.DOCUMENTS_BUCKET.get(json.storageId);
     expect(object).not.toBeNull();
+  });
+
+  it("protect-pdf creates an encrypted artifact without touching the draft", async () => {
+    const app = await seedFixture();
+    const res = await app.fetch(
+      powerPost(DOC_PUBLIC_ID, "protect-pdf", { userPassword: "s3cret" }),
+      env
+    );
+    expect(res.status).toBe(200);
+    const json = z
+      .object({
+        success: z.boolean(),
+        storageId: z.string(),
+        downloadUrl: z.string().nullable(),
+      })
+      .parse(await res.json());
+    const object = await env.DOCUMENTS_BUCKET.get(json.storageId);
+    expect(object).not.toBeNull();
+    // Working draft keeps its original storageKey.
+    const db = createD1(env.D1);
+    const docs = await db
+      .select({ storageKey: documents.storageKey })
+      .from(documents)
+      .where(eq(documents.id, DOC_ID));
+    expect(docs[0]?.storageKey).toBe(STORAGE_KEY);
+  });
+
+  it("protect-pdf rejects when no password is given", async () => {
+    const app = await seedFixture();
+    const res = await app.fetch(
+      powerPost(DOC_PUBLIC_ID, "protect-pdf", {}),
+      env
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("unlock-pdf rejects an unencrypted doc", async () => {
+    const app = await seedFixture();
+    const res = await app.fetch(
+      powerPost(DOC_PUBLIC_ID, "unlock-pdf", { password: "x" }),
+      env
+    );
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ error: "not_encrypted" });
+  });
+
+  it("unlock-pdf decrypts and claims the doc's storageKey", async () => {
+    const app = await seedFixture();
+    // Plant encrypted-looking bytes (trailer /Encrypt dict) at storageKey.
+    const encBytes = makeEncryptedFakePdf();
+    await env.DOCUMENTS_BUCKET.put(STORAGE_KEY, encBytes, {
+      httpMetadata: { contentType: "application/pdf" },
+    });
+    const res = await app.fetch(
+      powerPost(DOC_PUBLIC_ID, "unlock-pdf", { password: "s3cret" }),
+      env
+    );
+    expect(res.status).toBe(200);
+    const json = z
+      .object({
+        success: z.boolean(),
+        storageId: z.string(),
+        pageCount: z.number(),
+        warnings: z.array(z.string()),
+      })
+      .parse(await res.json());
+    expect(json.warnings).toContain("libreoffice_roundtrip");
+    const db = createD1(env.D1);
+    const docs = await db
+      .select({ storageKey: documents.storageKey })
+      .from(documents)
+      .where(eq(documents.id, DOC_ID));
+    expect(docs[0]?.storageKey).toBe(json.storageId);
   });
 
   it("compress-pdf honours the org convert egress gate", async () => {

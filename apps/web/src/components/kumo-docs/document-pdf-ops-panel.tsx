@@ -20,7 +20,10 @@ export type DocumentPdfOpsPanelProps = {
   cropping?: boolean;
   compressing?: boolean;
   redacting?: boolean;
+  protecting?: boolean;
   merging?: boolean;
+  /** Download URL for the last protected copy this session produced. */
+  protectedDownloadUrl?: string | null;
   /** Other draft docs available to merge (publicId + name). */
   mergeCandidates?: Array<{ publicId: string; name: string }>;
   onRotate: (input: { degrees: 90 | 180 | 270; pages?: number[] }) => void;
@@ -54,6 +57,7 @@ export type DocumentPdfOpsPanelProps = {
       height: number;
     }>;
   }) => void;
+  onProtect: (input: { userPassword?: string; ownerPassword?: string }) => void;
   onMerge: (input: { sourcePublicIds: string[]; title?: string }) => void;
 };
 
@@ -87,7 +91,9 @@ export function DocumentPdfOpsPanel({
   cropping = false,
   compressing = false,
   redacting = false,
+  protecting = false,
   merging = false,
+  protectedDownloadUrl = null,
   mergeCandidates = [],
   onRotate,
   onOrganize,
@@ -96,6 +102,7 @@ export function DocumentPdfOpsPanel({
   onNumberPages,
   onCompress,
   onRedact,
+  onProtect,
   onMerge,
 }: DocumentPdfOpsPanelProps): JSX.Element {
   const [scope, setScope] = useState<"all" | "current">("all");
@@ -119,6 +126,7 @@ export function DocumentPdfOpsPanel({
     width: "50",
     height: "10",
   });
+  const [protectPassword, setProtectPassword] = useState("");
   const [selectedMergeIds, setSelectedMergeIds] = useState<string[]>([]);
   const [mergeTitle, setMergeTitle] = useState("");
 
@@ -529,6 +537,46 @@ export function DocumentPdfOpsPanel({
         >
           {redacting ? "Redacting…" : `Redact on page ${currentPage}`}
         </Button>
+      </div>
+
+      <div className="border-border space-y-2 border-t pt-4">
+        <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
+          Protect with password
+        </p>
+        <p className="text-muted-foreground text-[11px]">
+          Make an encrypted copy to download — your working draft stays
+          editable here.
+        </p>
+        <Input
+          label="Open password"
+          type="password"
+          value={protectPassword}
+          onChange={(e) => setProtectPassword(e.target.value)}
+          maxLength={128}
+          autoComplete="off"
+        />
+        <Button
+          type="button"
+          size="sm"
+          disabled={
+            protecting || pageCount < 1 || protectPassword.trim().length === 0
+          }
+          onClick={() =>
+            onProtect({ userPassword: protectPassword.trim() })
+          }
+        >
+          {protecting ? "Encrypting…" : "Create protected copy"}
+        </Button>
+        {protectedDownloadUrl ? (
+          <a
+            href={protectedDownloadUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="text-foreground block text-xs underline"
+          >
+            Download protected PDF
+          </a>
+        ) : null}
       </div>
 
       <div className="border-border space-y-2 border-t pt-4">
