@@ -182,7 +182,7 @@ app.get("/:id/stream", async (c) => {
       const matrix = await getReviewMatrix(db, organizationId, id);
       return {
         changed: true,
-        terminal: matrix.status !== "generating" && matrix.status !== "draft",
+        terminal: matrix.status !== "generating",
         value: {
           id: matrix.id,
           status: matrix.status,
