@@ -13,6 +13,7 @@ import {
   compressDocumentPdf,
   cropDocumentPdf,
   getDocuments,
+  redactDocumentPdf,
   mergeDocumentPdf,
   numberDocumentPdfPages,
   organizeDocumentPdf,
@@ -172,6 +173,33 @@ export function DocumentPagesCapabilityPanel({
     },
   });
 
+  const redactMutation = useMutation({
+    mutationFn: (input: {
+      regions: Array<{
+        page: number;
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+      }>;
+    }) => redactDocumentPdf(organizationSlug, documentPublicId, input),
+    onSuccess: (result) => {
+      const fields =
+        result.fieldsRemoved > 0
+          ? ` ${result.fieldsRemoved} field${result.fieldsRemoved === 1 ? "" : "s"} removed.`
+          : "";
+      toast.success(
+        `Redacted — ${result.opsScrubbed} content op${result.opsScrubbed === 1 ? "" : "s"} scrubbed.${fields}`
+      );
+      onPdfChanged?.();
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to redact PDF"
+      );
+    },
+  });
+
   const mergeMutation = useMutation({
     mutationFn: (input: { sourcePublicIds: string[]; title?: string }) =>
       mergeDocumentPdf(organizationSlug, documentPublicId, input),
@@ -230,6 +258,7 @@ export function DocumentPagesCapabilityPanel({
         organizing={organizeMutation.isPending}
         cropping={cropMutation.isPending}
         compressing={compressMutation.isPending}
+        redacting={redactMutation.isPending}
         watermarking={watermarkMutation.isPending}
         numbering={numberPagesMutation.isPending}
         merging={mergeMutation.isPending}
@@ -240,6 +269,7 @@ export function DocumentPagesCapabilityPanel({
         onWatermark={(input) => watermarkMutation.mutate(input)}
         onNumberPages={(input) => numberPagesMutation.mutate(input)}
         onCompress={(input) => compressMutation.mutate(input)}
+        onRedact={(input) => redactMutation.mutate(input)}
         onMerge={(input) => mergeMutation.mutate(input)}
         className={docked ? "p-0" : undefined}
       />

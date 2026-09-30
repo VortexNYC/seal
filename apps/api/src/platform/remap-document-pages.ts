@@ -183,3 +183,51 @@ export async function planCropFieldRemap(
   }
   return plan;
 }
+
+export interface RedactRectInput {
+  page: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * For redact regions (percent space, same as fields): drop any field that
+ * intersects a redacted region on its page — a partially redacted field
+ * would render broken. Read-only — apply via commitDocumentPdfRemap so
+ * deletes land atomically with the document storageKey claim.
+ */
+export async function planRedactFieldRemap(
+  db: Db,
+  documentId: string,
+  regions: RedactRectInput[]
+): Promise<FieldRemapPlan> {
+  const plan: FieldRemapPlan = { removeIds: [], updates: [] };
+  if (regions.length === 0) return plan;
+
+  const fields = await db
+    .select({
+      id: signatureFields.id,
+      page: signatureFields.page,
+      x: signatureFields.x,
+      y: signatureFields.y,
+      width: signatureFields.width,
+      height: signatureFields.height,
+    })
+    .from(signatureFields)
+    .where(eq(signatureFields.documentId, documentId));
+
+  for (const field of fields) {
+    const hit = regions.some(
+      (r) =>
+        r.page === field.page &&
+        field.x < r.x + r.width &&
+        field.x + field.width > r.x &&
+        field.y < r.y + r.height &&
+        field.y + field.height > r.y
+    );
+    if (hit) plan.removeIds.push(field.id);
+  }
+  return plan;
+}

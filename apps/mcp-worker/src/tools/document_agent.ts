@@ -435,4 +435,35 @@ export function registerDocumentAgentTools(
       return createToolResponse(response);
     }
   );
+
+  server.tool(
+    "seal_redact_document_pdf",
+    "Permanently redact regions of a draft PDF — removes text/images/paths inside each percent rect from the bytes (not an overlay). Returns a receipt (scrubbed_text). Fields inside regions are removed.",
+    {
+      id: z.string().describe("Document ID"),
+      regions: z
+        .array(
+          z.object({
+            page: z.number().int().min(1),
+            x: z.number().min(0).max(100),
+            y: z.number().min(0).max(100),
+            width: z.number().min(0.5).max(100),
+            height: z.number().min(0.5).max(100),
+          })
+        )
+        .min(1)
+        .max(200)
+        .describe("Percent rects to redact (same space as fields)"),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/redact",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
 }

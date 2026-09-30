@@ -1711,6 +1711,63 @@ paths:
         "403":
           description: Org egress disallows conversion
 
+  /documents/pdf/redact:
+    post:
+      tags: [Documents]
+      operationId: redactDocumentPdf
+      summary: Permanently redact regions of a draft PDF
+      description: >
+        Removes content-stream operators inside each region — text runs,
+        images, fully-contained vector paths, and annotations are deleted
+        from the emitted bytes (not just painted over). Signature fields
+        intersecting a region are removed. Document metadata is purged.
+        Response includes a redaction receipt (`scrubbed_text`) listing the
+        literal strings that were removed. Percent rects share the same
+        0–100 space as signature fields. Deterministic in-worker engine —
+        not Seal AI.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, regions]
+              properties:
+                id: { type: string }
+                regions:
+                  type: array
+                  minItems: 1
+                  maxItems: 200
+                  items:
+                    type: object
+                    required: [page, x, y, width, height]
+                    properties:
+                      page: { type: integer, minimum: 1 }
+                      x: { type: number, minimum: 0, maximum: 100 }
+                      y: { type: number, minimum: 0, maximum: 100 }
+                      width: { type: number, minimum: 0.5, maximum: 100 }
+                      height: { type: number, minimum: 0.5, maximum: 100 }
+      responses:
+        "200":
+          description: Redacted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  storage_id: { type: string }
+                  regions_applied: { type: integer }
+                  ops_scrubbed: { type: integer }
+                  annots_scrubbed: { type: integer }
+                  fields_removed: { type: integer }
+                  scrubbed_text:
+                    type: string
+                    description: Strings removed from the bytes (receipt)
+                  warnings:
+                    type: array
+                    items: { type: string }
+
   /documents/send:
     post:
       tags: [Documents]
