@@ -1,4 +1,4 @@
 {
   "jsPlugins": ["@shadcn/lint"],
-  "ignores": ["**/.blume/**", "**/node_modules/**"]
+  "ignorePatterns": ["**/.blume/**", "**/node_modules/**"]
 }
