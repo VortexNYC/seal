@@ -13,7 +13,35 @@ import {
   reviewRows,
   user,
 } from "../../global/schema.js";
+import { registerProvider } from "../../platform/llm/index.js";
+import type { ModelProvider } from "../../platform/llm/index.js";
 import indexApp from "../../index.js";
+
+const stubProvider: ModelProvider = {
+  id: "stub-json",
+  async *stream(req) {
+    const userMessage = req.messages.find((m) => m.role === "user");
+    const docText = userMessage?.content.includes("thirty days")
+      ? "Either party may terminate this Agreement on thirty days written notice."
+      : "not_found";
+    yield {
+      type: "text",
+      text: JSON.stringify({
+        summary: docText === "not_found" ? "not found" : "Termination clause",
+        flag: docText === "not_found" ? "grey" : "amber",
+        reasoning: "Parsed per contract terms.",
+        quote: docText,
+      }),
+    };
+    yield {
+      type: "finish",
+      finishReason: { unified: "stop", raw: "end_turn" },
+      usage: { inputTokens: 120, outputTokens: 40 },
+    };
+  },
+};
+
+registerProvider(stubProvider);
 
 async function configureSigningKey() {
   const { privateKey } = await generateKeyPair("ES256", { extractable: true });
@@ -253,5 +281,136 @@ describe("POST/GET /api/v1/reviews", () => {
       }),
     }, env);
     expect(res.status).toBe(404);
+  });
+
+  it("generates structured cells with audit columns via a real provider", async () => {
+    const privateJwk = await configureSigningKey();
+    const { userId, orgId, db } = await seedOrgAndUser();
+
+    const docText =
+      "Either party may terminate this Agreement on thirty days written notice.";
+    const docPublicId = `doc_${crypto.randomUUID().slice(0, 8)}`;
+    await db.insert(documents).values({
+      id: crypto.randomUUID(),
+      publicId: docPublicId,
+      organizationId: orgId,
+      ownerId: userId,
+      name: "NDA",
+      status: "draft",
+      parsedText: docText,
+    });
+
+    const token = await signAccessToken(privateJwk, {
+      sub: userId,
+      organizationId: orgId,
+      scope: "documents:read documents:write",
+      clientId: "test-client",
+      jti: crypto.randomUUID(),
+    });
+
+    const createRes = await indexApp.request(
+      "http://localhost/api/v1/reviews",
+      {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          title: "Structured",
+          model: "stub-json/claude-stub",
+          columns: [
+            { index: 0, name: "Termination", prompt: "Find the clause." },
+          ],
+          documentIds: [docPublicId],
+        }),
+      },
+      env
+    );
+    const created = matrixSchema.parse(await createRes.json());
+
+    const generateRes = await indexApp.request(
+      `http://localhost/api/v1/reviews/${created.id}/generate`,
+      {
+        method: "POST",
+        headers: { authorization: `Bearer ${token}` },
+      },
+      env
+    );
+    expect(generateRes.status).toBe(200);
+    const generated = matrixSchema.parse(await generateRes.json());
+    const cell = generated.rows[0]?.cells[0];
+
+    expect(cell?.status).toBe("done");
+    expect(cell?.flag).toBe("amber");
+    expect(cell?.summary).toBe("Termination clause");
+    expect(cell?.reasoning).toBe("Parsed per contract terms.");
+    expect(cell?.citations[0]?.quote).toBe(docText);
+    expect(docText.includes(cell?.citations[0]?.quote ?? "___")).toBe(true);
+
+    // Audit columns persisted on the cell row.
+    const stored = await db.select().from(reviewCells);
+    expect(stored).toHaveLength(1);
+    expect(stored[0]?.modelUsed).toBe("stub-json/claude-stub");
+    expect(stored[0]?.tokensUsed).toBe(160);
+    expect(stored[0]?.processingTimeMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it("marks ungroundable cells as not_found per the citation contract", async () => {
+    const privateJwk = await configureSigningKey();
+    const { userId, orgId, db } = await seedOrgAndUser();
+
+    const docPublicId = `doc_${crypto.randomUUID().slice(0, 8)}`;
+    await db.insert(documents).values({
+      id: crypto.randomUUID(),
+      publicId: docPublicId,
+      organizationId: orgId,
+      ownerId: userId,
+      name: "Blank",
+      status: "draft",
+      parsedText: "This document has no relevant clause at all.",
+    });
+
+    const token = await signAccessToken(privateJwk, {
+      sub: userId,
+      organizationId: orgId,
+      scope: "documents:read documents:write",
+      clientId: "test-client",
+      jti: crypto.randomUUID(),
+    });
+
+    const createRes = await indexApp.request(
+      "http://localhost/api/v1/reviews",
+      {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          title: "No match",
+          model: "stub-json/claude-stub",
+          columns: [
+            { index: 0, name: "Arbitration", prompt: "Find arbitration." },
+          ],
+          documentIds: [docPublicId],
+        }),
+      },
+      env
+    );
+    const created = matrixSchema.parse(await createRes.json());
+    const generateRes = await indexApp.request(
+      `http://localhost/api/v1/reviews/${created.id}/generate`,
+      {
+        method: "POST",
+        headers: { authorization: `Bearer ${token}` },
+      },
+      env
+    );
+    const generated = matrixSchema.parse(await generateRes.json());
+    const cell = generated.rows[0]?.cells[0];
+    expect(cell?.status).toBe("done");
+    expect(cell?.citations[0]?.quote).toBe("not_found");
+    expect(cell?.summary).toBe("not found");
   });
 });

@@ -1721,6 +1721,11 @@ export const reviewCells = sqliteTable(
     flag: text("flag"),
     reasoning: text("reasoning"),
     citations: text("citations").notNull().default("[]"),
+    /** `provider/model` key used for this cell's generation. */
+    modelUsed: text("model_used"),
+    /** Total tokens billed for the cell's model call, when reported. */
+    tokensUsed: integer("tokens_used"),
+    processingTimeMs: integer("processing_time_ms"),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),

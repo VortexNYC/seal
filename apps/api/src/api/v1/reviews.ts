@@ -101,7 +101,12 @@ app.post("/:id/generate", async (c) => {
   const id = c.req.param("id");
   const db = createD1(c.env.D1);
   try {
-    const matrix = await generateReviewMatrix(db, organizationId, id);
+    const matrix = await generateReviewMatrix(
+      db,
+      c.env,
+      organizationId,
+      id
+    );
     return c.json(matrix);
   } catch (err) {
     return errorResponse(c, err);
