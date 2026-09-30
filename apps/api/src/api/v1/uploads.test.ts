@@ -216,4 +216,113 @@ describe("POST /api/v1/uploads", () => {
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     );
   });
+
+  it("converts an HTML upload to PDF via the Chromium route", async () => {
+    const privateJwk = await configureSigningKey();
+    const { userId, orgId } = await seedOrgAndUser();
+
+    const token = await signAccessToken(privateJwk, {
+      sub: userId,
+      organizationId: orgId,
+      scope: "mcp documents:write",
+      clientId: crypto.randomUUID(),
+      jti: crypto.randomUUID(),
+    });
+
+    const generateResponse = await indexApp.fetch(
+      new Request("http://localhost:8787/api/v1/uploads/generate-url", {
+        method: "POST",
+        headers: { authorization: `Bearer ${token}` },
+      }),
+      env
+    );
+    const { upload_url } = z
+      .object({ upload_url: z.string() })
+      .parse(await generateResponse.json());
+    const uploadToken = new URL(upload_url).searchParams.get("token")!;
+
+    const html = new TextEncoder().encode(
+      "<html><body><h1>Hello</h1></body></html>"
+    );
+    const uploadResponse = await indexApp.fetch(
+      new Request(
+        `http://localhost:8787/api/v1/uploads?token=${encodeURIComponent(uploadToken)}`,
+        {
+          method: "POST",
+          body: new Uint8Array(html),
+          headers: { "content-type": "text/html" },
+        }
+      ),
+      env
+    );
+
+    expect(uploadResponse.status).toBe(200);
+    const { storageId } = z
+      .object({ storageId: z.string() })
+      .parse(await uploadResponse.json());
+    const converted = await env.DOCUMENTS_BUCKET.get(storageId);
+    expect(converted?.httpMetadata?.contentType).toBe("application/pdf");
+    expect(converted?.customMetadata?.originalContentType).toBe("text/html");
+    const original = await env.DOCUMENTS_BUCKET.get(
+      converted?.customMetadata?.originalKey as string
+    );
+    expect(original?.httpMetadata?.contentType).toBe("text/html");
+  });
+
+  it("packs a PNG upload into a PDF in-worker without the convert worker", async () => {
+    const privateJwk = await configureSigningKey();
+    const { userId, orgId } = await seedOrgAndUser();
+
+    const token = await signAccessToken(privateJwk, {
+      sub: userId,
+      organizationId: orgId,
+      scope: "mcp documents:write",
+      clientId: crypto.randomUUID(),
+      jti: crypto.randomUUID(),
+    });
+
+    const generateResponse = await indexApp.fetch(
+      new Request("http://localhost:8787/api/v1/uploads/generate-url", {
+        method: "POST",
+        headers: { authorization: `Bearer ${token}` },
+      }),
+      env
+    );
+    const { upload_url } = z
+      .object({ upload_url: z.string() })
+      .parse(await generateResponse.json());
+    const uploadToken = new URL(upload_url).searchParams.get("token")!;
+
+    // 1×1 transparent PNG.
+    const png = Uint8Array.from(
+      atob(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+      ),
+      (ch) => ch.charCodeAt(0)
+    );
+    const uploadResponse = await indexApp.fetch(
+      new Request(
+        `http://localhost:8787/api/v1/uploads?token=${encodeURIComponent(uploadToken)}`,
+        {
+          method: "POST",
+          body: new Uint8Array(png),
+          headers: { "content-type": "image/png" },
+        }
+      ),
+      env
+    );
+
+    expect(uploadResponse.status).toBe(200);
+    const { storageId } = z
+      .object({ storageId: z.string() })
+      .parse(await uploadResponse.json());
+    const converted = await env.DOCUMENTS_BUCKET.get(storageId);
+    expect(converted?.httpMetadata?.contentType).toBe("application/pdf");
+    expect(converted?.customMetadata?.originalContentType).toBe("image/png");
+
+    const pdfBytes = await converted?.arrayBuffer();
+    const { PDFDocument } = await import("pdf-lib");
+    const doc = await PDFDocument.load(pdfBytes!);
+    expect(doc.getPageCount()).toBe(1);
+  });
 });

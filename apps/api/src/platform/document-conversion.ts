@@ -8,6 +8,7 @@ export const CONVERTIBLE_MIME_TYPES = new Set([
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   "text/csv",
+  "text/html",
 ]);
 
 const EXTENSIONS: Record<string, string> = {
@@ -17,6 +18,7 @@ const EXTENSIONS: Record<string, string> = {
   "application/vnd.openxmlformats-officedocument.presentationml.presentation":
     ".pptx",
   "text/csv": ".csv",
+  "text/html": ".html",
 };
 
 /** Raster formats packed straight into a PDF via pdf-lib (no container). */
