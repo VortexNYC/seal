@@ -32,7 +32,7 @@ export interface FieldOptionsConfig {
 interface FieldOptionsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  fieldType: "checkbox" | "dropdown" | "radio";
+  fieldType: "checkbox" | "dropdown" | "radio" | "multi_select";
   onConfirm: (config: FieldOptionsConfig) => void;
   initialConfig?: FieldOptionsConfig;
 }
@@ -41,7 +41,7 @@ interface FieldOptionsDialogProps {
  * Field type display configuration
  */
 const FIELD_TYPE_CONFIG: Record<
-  "checkbox" | "dropdown" | "radio",
+  "checkbox" | "dropdown" | "radio" | "multi_select",
   {
     title: string;
     description: string;
@@ -65,6 +65,12 @@ const FIELD_TYPE_CONFIG: Record<
     title: "Radio options",
     description: "Recipients will select exactly one option.",
     icon: <CircleDotIcon />,
+    emptyText: "Add the options recipients can choose from.",
+  },
+  multi_select: {
+    title: "Multi-select options",
+    description: "Recipients can select multiple options.",
+    icon: <CheckSquareIcon />,
     emptyText: "Add the options recipients can choose from.",
   },
 };
@@ -96,7 +102,8 @@ export function FieldOptionsDialog({
     initialConfig?.options || []
   );
   const [allowMultiple, setAllowMultiple] = useState(
-    initialConfig?.allowMultiple ?? fieldType === "checkbox"
+    initialConfig?.allowMultiple ??
+      (fieldType === "checkbox" || fieldType === "multi_select")
   );
   const [defaultOptionId, setDefaultOptionId] = useState<string | undefined>(
     initialConfig?.defaultOptionId
@@ -115,7 +122,8 @@ export function FieldOptionsDialog({
     if (open) {
       setOptions(initialConfig?.options || []);
       setAllowMultiple(
-        initialConfig?.allowMultiple ?? fieldType === "checkbox"
+        initialConfig?.allowMultiple ??
+          (fieldType === "checkbox" || fieldType === "multi_select")
       );
       setDefaultOptionId(initialConfig?.defaultOptionId);
     }
@@ -212,7 +220,10 @@ export function FieldOptionsDialog({
 
     onConfirm({
       options: validOptions,
-      allowMultiple: fieldType === "checkbox" ? allowMultiple : false,
+      allowMultiple:
+        fieldType === "checkbox" || fieldType === "multi_select"
+          ? allowMultiple
+          : false,
       defaultOptionId: validOptions.some((o) => o.id === defaultOptionId)
         ? defaultOptionId
         : undefined,
@@ -308,39 +319,41 @@ export function FieldOptionsDialog({
             </div>
 
             {/* Default option toggle - only for dropdown and radio */}
-            {fieldType !== "checkbox" && options.length > 0 && (
-              <div className="border-border mt-4 border-t pt-4">
-                <div className="text-muted-foreground mb-2 flex items-center gap-1.5 text-[11px] font-medium tracking-wide uppercase">
-                  Default Selection
+            {fieldType !== "checkbox" &&
+              fieldType !== "multi_select" &&
+              options.length > 0 && (
+                <div className="border-border mt-4 border-t pt-4">
+                  <div className="text-muted-foreground mb-2 flex items-center gap-1.5 text-[11px] font-medium tracking-wide uppercase">
+                    Default Selection
+                  </div>
+                  <div className="flex items-start gap-2.5">
+                    <input
+                      id={defaultOptionToggleId}
+                      type="checkbox"
+                      checked={!!defaultOptionId}
+                      onChange={(e) => {
+                        if (e.target.checked && options[0]) {
+                          setDefaultOptionId(options[0].id);
+                        } else {
+                          setDefaultOptionId(undefined);
+                        }
+                      }}
+                      className="border-border text-foreground mt-0.5 h-4 w-4 rounded focus:ring-offset-0"
+                    />
+                    <label
+                      htmlFor={defaultOptionToggleId}
+                      className="flex-1 cursor-pointer"
+                    >
+                      <div className="text-foreground text-sm font-medium">
+                        Pre-select first option
+                      </div>
+                      <div className="text-muted-foreground mt-0.5 text-xs">
+                        Recipients will see this option already selected
+                      </div>
+                    </label>
+                  </div>
                 </div>
-                <div className="flex items-start gap-2.5">
-                  <input
-                    id={defaultOptionToggleId}
-                    type="checkbox"
-                    checked={!!defaultOptionId}
-                    onChange={(e) => {
-                      if (e.target.checked && options[0]) {
-                        setDefaultOptionId(options[0].id);
-                      } else {
-                        setDefaultOptionId(undefined);
-                      }
-                    }}
-                    className="border-border text-foreground mt-0.5 h-4 w-4 rounded focus:ring-offset-0"
-                  />
-                  <label
-                    htmlFor={defaultOptionToggleId}
-                    className="flex-1 cursor-pointer"
-                  >
-                    <div className="text-foreground text-sm font-medium">
-                      Pre-select first option
-                    </div>
-                    <div className="text-muted-foreground mt-0.5 text-xs">
-                      Recipients will see this option already selected
-                    </div>
-                  </label>
-                </div>
-              </div>
-            )}
+              )}
           </div>
 
           {/* Footer */}

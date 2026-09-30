@@ -137,6 +137,25 @@ async function completeOnboardingIfPresent(
     return;
   }
 
+  // Landing directly on the compliance step (org exists, defaults never
+  // saved): the Continue button persists signing settings and navigates home.
+  if (/\/[\w-]+\/onboarding\/compliance/.test(page.url())) {
+    const complianceContinue = page.locator(
+      '[data-testid="compliance-continue"]'
+    );
+    await complianceContinue
+      .waitFor({ state: "visible", timeout: 15000 })
+      .catch(() => {});
+    if (await complianceContinue.isVisible().catch(() => false)) {
+      await complianceContinue.click();
+      await page.waitForURL(/\/[\w-]+\/home/, {
+        timeout: 30000,
+        waitUntil: "domcontentloaded",
+      });
+      return;
+    }
+  }
+
   // Wait for either create form or workspace chooser to mount.
   await page
     .getByRole("heading", {
@@ -171,10 +190,28 @@ async function completeOnboardingIfPresent(
       );
     }
     await continueBtn.click();
-    await page.waitForURL(/\/[\w-]+\/home/, {
-      timeout: 30000,
-      waitUntil: "domcontentloaded",
-    });
+    const reachedHome = await page
+      .waitForURL(/\/[\w-]+\/home/, {
+        timeout: 30000,
+        waitUntil: "domcontentloaded",
+      })
+      .then(() => true)
+      .catch(() => false);
+    if (!reachedHome) {
+      // Slug already taken — the workspace exists mid-onboarding. Land on
+      // its compliance step and finish it instead of recreating.
+      await page
+        .goto(`/${config.organizationSlug}/onboarding/compliance`, {
+          waitUntil: "domcontentloaded",
+        })
+        .catch(() => {});
+      await completeOnboardingIfPresent(page, config);
+      if (!isWorkspaceHomeUrl(page.url())) {
+        throw new Error(
+          `[E2E] Workspace ${config.organizationSlug} exists but home never loaded after compliance. url=${page.url()}`
+        );
+      }
+    }
     return;
   }
 

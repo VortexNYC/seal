@@ -1008,7 +1008,8 @@ function DocumentDetailPage() {
         {fieldPlacement.pendingFieldData &&
           (fieldPlacement.pendingFieldData.fieldType === "checkbox" ||
             fieldPlacement.pendingFieldData.fieldType === "dropdown" ||
-            fieldPlacement.pendingFieldData.fieldType === "radio") && (
+            fieldPlacement.pendingFieldData.fieldType === "radio" ||
+            fieldPlacement.pendingFieldData.fieldType === "multi_select") && (
             <FieldOptionsDialog
               open={fieldPlacement.showFieldOptions}
               onOpenChange={(open) => {
