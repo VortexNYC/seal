@@ -2335,6 +2335,24 @@ export async function compareDocumentPdf(
   );
 }
 
+const toPdfaResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  pageCount: z.number().int(),
+  format: z.string(),
+});
+export async function convertDocumentPdfToPdfa(
+  organizationSlug: string,
+  publicId: string,
+  input?: { format?: "PDF/A-1b" | "PDF/A-2b" | "PDF/A-3b" }
+): Promise<z.infer<typeof toPdfaResultSchema>> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/to-pdfa`,
+    toPdfaResultSchema,
+    { method: "POST", body: JSON.stringify(input ?? {}) }
+  );
+}
+
 const documentLayoutBlocksSchema = z.object({
   blocks: z.array(
     z.object({

@@ -269,6 +269,56 @@ app.post("/flatten-pdf", async (c) => {
 });
 
 /**
+ * Convert a PDF to PDF/A via Gotenberg pdfengines /convert.
+ * Body: multipart with files field + `pdfa` form value (e.g. PDF/A-2b).
+ */
+app.post("/to-pdfa", async (c) => {
+  const contentType = c.req.header("content-type") ?? "";
+  if (!contentType.startsWith("multipart/form-data")) {
+    return c.text("Expected multipart/form-data", 400);
+  }
+
+  const body = await c.req.parseBody();
+  const file = body.files;
+  if (!file || typeof file === "string") {
+    return c.text("Missing files field", 400);
+  }
+  if (file.type !== "application/pdf") {
+    return c.text(`Unsupported input type: ${file.type}`, 400);
+  }
+  const pdfa = typeof body.pdfa === "string" ? body.pdfa : "PDF/A-2b";
+
+  const form = new FormData();
+  form.append("files", file, "document.pdf");
+  form.append("pdfa", pdfa);
+
+  const containerRequest = new Request(
+    "http://internal/forms/pdfengines/convert",
+    {
+      method: "POST",
+      body: form,
+    }
+  );
+
+  const id = c.env.CONVERTER.idFromName("converter");
+  const container = c.env.CONVERTER.get(id);
+  const response = await container.fetch(containerRequest);
+
+  if (!response.ok) {
+    const text = await response.text();
+    return new Response(text, { status: response.status });
+  }
+
+  const pdf = await response.arrayBuffer();
+  return new Response(pdf, {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": 'attachment; filename="pdfa.pdf"',
+    },
+  });
+});
+
+/**
  * Rasterise a PDF to per-page images via the pdf-tools container.
  * Query: format=png|jpeg (default png), dpi=50..600 (default 150).
  * Returns application/zip — one image per page.
