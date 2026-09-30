@@ -16,6 +16,7 @@ import {
   putDocumentExtractionSchema,
 } from "@/lib/api-client";
 import { toast } from "@/lib/toast";
+import { cn } from "@/lib/utils";
 
 function emptySchema(): SchemaBuilderSchema {
   return { properties: [] };
@@ -49,6 +50,69 @@ function schemaFromJson(value: Record<string, unknown>): SchemaBuilderSchema {
   return { properties };
 }
 
+function useLayoutBlocks(
+  organizationSlug: string,
+  documentPublicId: string
+): LayoutBlock[] {
+  const layoutQuery = useQuery({
+    queryKey: ["documents", documentPublicId, "layout-blocks"],
+    queryFn: () => getDocumentLayoutBlocks(organizationSlug, documentPublicId),
+    staleTime: 60_000,
+  });
+  return layoutQuery.data?.blocks ?? [];
+}
+
+export type DocumentLayoutCanvasOverlayProps = {
+  organizationSlug: string;
+  documentPublicId: string;
+  currentPage: number;
+  pageWidth: number;
+  pageHeight: number;
+  activeBlockId: string | null;
+  onActiveBlockIdChange: (id: string | null) => void;
+};
+
+/**
+ * Layout blocks on the live DocumentCanvas page box (docked Layout capability).
+ */
+export function DocumentLayoutCanvasOverlay({
+  organizationSlug,
+  documentPublicId,
+  currentPage,
+  pageWidth,
+  pageHeight,
+  activeBlockId,
+  onActiveBlockIdChange,
+}: DocumentLayoutCanvasOverlayProps): JSX.Element | null {
+  const blocks = useLayoutBlocks(organizationSlug, documentPublicId);
+  if (pageWidth <= 0 || pageHeight <= 0) {
+    return null;
+  }
+  return (
+    <LayoutBlockOverlay
+      blocks={blocks}
+      page={currentPage}
+      pageWidth={pageWidth}
+      pageHeight={pageHeight}
+      activeId={activeBlockId}
+      onSelect={(block) => onActiveBlockIdChange(block.id)}
+    />
+  );
+}
+
+export type DocumentStructurePanelProps = {
+  organizationSlug: string;
+  documentPublicId: string;
+  canEdit: boolean;
+  currentPage: number;
+  pageWidth: number;
+  pageHeight: number;
+  /** When true, sits under the live DocumentCanvas; mini preview is omitted. */
+  docked?: boolean;
+  activeBlockId?: string | null;
+  onActiveBlockIdChange?: (id: string | null) => void;
+};
+
 export function DocumentStructurePanel({
   organizationSlug,
   documentPublicId,
@@ -56,22 +120,26 @@ export function DocumentStructurePanel({
   currentPage,
   pageWidth,
   pageHeight,
-}: {
-  organizationSlug: string;
-  documentPublicId: string;
-  canEdit: boolean;
-  currentPage: number;
-  pageWidth: number;
-  pageHeight: number;
-}): JSX.Element {
+  docked = false,
+  activeBlockId: controlledActiveBlockId,
+  onActiveBlockIdChange,
+}: DocumentStructurePanelProps): JSX.Element {
   const queryClient = useQueryClient();
-  const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
+  const [uncontrolledActiveBlockId, setUncontrolledActiveBlockId] = useState<
+    string | null
+  >(null);
+  const activeBlockId =
+    controlledActiveBlockId !== undefined
+      ? controlledActiveBlockId
+      : uncontrolledActiveBlockId;
+  const setActiveBlockId = (id: string | null): void => {
+    onActiveBlockIdChange?.(id);
+    if (controlledActiveBlockId === undefined) {
+      setUncontrolledActiveBlockId(id);
+    }
+  };
 
-  const layoutQuery = useQuery({
-    queryKey: ["documents", documentPublicId, "layout-blocks"],
-    queryFn: () => getDocumentLayoutBlocks(organizationSlug, documentPublicId),
-    staleTime: 60_000,
-  });
+  const blocks = useLayoutBlocks(organizationSlug, documentPublicId);
 
   const schemaQuery = useQuery({
     queryKey: ["documents", documentPublicId, "extraction-schema"],
@@ -108,17 +176,23 @@ export function DocumentStructurePanel({
     },
   });
 
-  const blocks: LayoutBlock[] = layoutQuery.data?.blocks ?? [];
-
   return (
-    <div className="space-y-4">
+    <div
+      data-testid="document-layout-capability"
+      data-docked={docked ? "true" : "false"}
+      className={cn(
+        docked
+          ? "border-border bg-card space-y-3 rounded-xl border p-3"
+          : "space-y-4"
+      )}
+    >
       <LayoutBlocksPanel
         blocks={blocks}
         activeId={activeBlockId}
         onSelect={(block) => setActiveBlockId(block.id)}
         className="border-border max-h-64 overflow-hidden rounded-xl border"
       />
-      {pageWidth > 0 && pageHeight > 0 ? (
+      {!docked && pageWidth > 0 && pageHeight > 0 ? (
         <div className="border-border relative hidden overflow-hidden rounded-xl border lg:block">
           <div
             className="bg-muted relative"

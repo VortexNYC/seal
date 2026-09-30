@@ -39,9 +39,10 @@ new surface each time.
 
 ## Canvas convergence (2026-09-29)
 
-**Fields**, **Mark up**, **Pages**, and read-only **view** share one EmbedPDF
-mount (`DocumentCanvas`). Switching the rail changes interaction chrome and the
-Seal field overlay — it does not tear down the PDF. Pages docks rotate / merge /
-split under the live canvas. Zoom / page keyboard shortcuts live on that canvas
-(SEA-78 / SEA-79). Office / Layout remain capability panels on the same
-workspace roof until they also need that canvas.
+**Fields**, **Mark up**, **Pages**, **Layout**, and read-only **view** share one
+EmbedPDF mount (`DocumentCanvas`). Switching the rail changes interaction chrome
+and overlays — it does not tear down the PDF. Pages docks rotate / merge / split
+under the live canvas; Layout maps blocks onto the same page box and docks
+schema chrome below. Zoom / page keyboard shortcuts live on that canvas
+(SEA-78 / SEA-79). Office remains the capability panel that still swaps the main
+pane (original Office binary editors).
