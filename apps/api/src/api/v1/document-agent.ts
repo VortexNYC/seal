@@ -8,10 +8,7 @@ import { PDFDocument } from "pdf-lib";
 import { z } from "zod";
 
 import { createD1 } from "../../global/db.js";
-import {
-  aiDocumentAnnotations,
-  documents,
-} from "../../global/schema.js";
+import { aiDocumentAnnotations, documents } from "../../global/schema.js";
 import {
   extractAnnotationsFromMarkdown,
   annotationItemSchema,
@@ -30,12 +27,14 @@ import {
   pdfToOfficeBytes,
   pdfToText,
 } from "../../platform/document-conversion.js";
+import { buildDocumentLayoutBlocks } from "../../platform/document-layout-blocks.js";
+import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import {
   FeatureDisabledError,
   assertConvertEnabled,
 } from "../../platform/org-settings.js";
-import { buildDocumentLayoutBlocks } from "../../platform/document-layout-blocks.js";
-import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
+import { documentChunks, MAX_CHUNKS } from "../../platform/pdf-chunks.js";
+import { diffPageTexts } from "../../platform/pdf-diff.js";
 import {
   annotatePdf,
   cropPdfPages,
@@ -48,7 +47,6 @@ import {
   splitPdfPages,
   watermarkPdf,
 } from "../../platform/pdf-ops.js";
-import { diffPageTexts } from "../../platform/pdf-diff.js";
 import { redactPdfRegions } from "../../platform/pdf-redact.js";
 import {
   commitDocumentPdfRemap,
@@ -223,7 +221,9 @@ app.post("/annotations/generate", async (c) => {
     return c.json({ error: "organization_required" }, 403);
   }
 
-  const body = z.object({ id: z.string().min(1) }).safeParse(await c.req.json());
+  const body = z
+    .object({ id: z.string().min(1) })
+    .safeParse(await c.req.json());
   if (!body.success) {
     return c.json({ error: "validation_error" }, 400);
   }
@@ -273,7 +273,9 @@ app.post("/annotations/dismiss", async (c) => {
   if (!organizationId) {
     return c.json({ error: "organization_required" }, 403);
   }
-  const body = z.object({ id: z.string().min(1) }).safeParse(await c.req.json());
+  const body = z
+    .object({ id: z.string().min(1) })
+    .safeParse(await c.req.json());
   if (!body.success) {
     return c.json({ error: "validation_error" }, 400);
   }
@@ -309,7 +311,9 @@ app.get("/preview", async (c) => {
   if (!id) {
     return c.json({ error: "missing_document_id" }, 400);
   }
-  if (!["pdf", "markdown", "original", "structured"].includes(format)) {
+  if (
+    !["pdf", "markdown", "original", "structured", "chunks"].includes(format)
+  ) {
     return c.json({ error: "invalid_format" }, 400);
   }
 
@@ -320,6 +324,32 @@ app.get("/preview", async (c) => {
   }
 
   const origin = new URL(c.req.url).origin;
+
+  if (format === "chunks") {
+    if (!doc.storageKey) return c.json({ error: "no_pdf" }, 404);
+    try {
+      await assertConvertEnabled(c.env, organizationId);
+      const chunks = await documentChunks(c.env, doc.storageKey);
+      return c.json({
+        format: "chunks",
+        title: doc.parsedTitle ?? doc.name,
+        page_count: doc.pageCount,
+        truncated: chunks.length >= MAX_CHUNKS,
+        chunks,
+      });
+    } catch (error) {
+      if (error instanceof FeatureDisabledError) {
+        return c.json({ error: error.code }, 403);
+      }
+      if (error instanceof ConversionError) {
+        return c.json(
+          { error: error.message },
+          error.statusCode === 504 ? 504 : 502
+        );
+      }
+      throw error;
+    }
+  }
 
   if (format === "markdown") {
     return c.json({
@@ -373,7 +403,10 @@ app.get("/preview", async (c) => {
       : (doc.contentType ?? "application/pdf");
 
   if (!storageKey) {
-    return c.json({ error: format === "original" ? "no_original" : "no_pdf" }, 404);
+    return c.json(
+      { error: format === "original" ? "no_original" : "no_pdf" },
+      404
+    );
   }
 
   const token = await createDownloadToken(c.env, {
@@ -613,7 +646,11 @@ app.post("/pdf/replace", async (c) => {
     })
     .where(eq(documents.id, doc.id));
 
-  return c.json({ success: true, storage_id: storageId, size: bytes.byteLength });
+  return c.json({
+    success: true,
+    storage_id: storageId,
+    size: bytes.byteLength,
+  });
 });
 
 app.get("/layout-blocks", async (c) => {
@@ -825,8 +862,7 @@ app.post("/pdf/merge", async (c) => {
   const now = new Date();
   const id = crypto.randomUUID();
   const publicId = crypto.randomUUID();
-  const title =
-    parsed.data.title ?? `Merged (${parsed.data.ids.length} docs)`;
+  const title = parsed.data.title ?? `Merged (${parsed.data.ids.length} docs)`;
 
   await db.insert(documents).values({
     id,
@@ -967,11 +1003,7 @@ app.post("/pdf/organize", async (c) => {
     },
   });
 
-  const plan = await planOrganizeFieldRemap(
-    db,
-    doc.id,
-    organized.pageMap
-  );
+  const plan = await planOrganizeFieldRemap(db, doc.id, organized.pageMap);
 
   const claimed = await commitDocumentPdfRemap(db, {
     documentId: doc.id,
@@ -1195,10 +1227,7 @@ app.post("/pdf/crop", async (c) => {
 
   let cropped: Awaited<ReturnType<typeof cropPdfPages>>;
   try {
-    cropped = await cropPdfPages(
-      await object.arrayBuffer(),
-      parsed.data.crops
-    );
+    cropped = await cropPdfPages(await object.arrayBuffer(), parsed.data.crops);
   } catch (error) {
     const message = error instanceof Error ? error.message : "crop_failed";
     if (
@@ -1683,7 +1712,11 @@ app.post("/pdf/flatten", async (c) => {
     return c.json({ error: "document_version_conflict" }, 409);
   }
 
-  return c.json({ success: true, storage_id: storageId, page_count: pageCount });
+  return c.json({
+    success: true,
+    storage_id: storageId,
+    page_count: pageCount,
+  });
 });
 
 /** Export every page of a draft PDF as images (ZIP artifact + download_url). */

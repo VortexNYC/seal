@@ -1476,7 +1476,7 @@ paths:
     get:
       tags: [Documents]
       operationId: previewDocument
-      summary: Agent preview (markdown, structured, pdf, or original office/CSV)
+      summary: Agent preview (markdown, structured, chunks, pdf, or original office/CSV)
       parameters:
         - name: id
           in: query
@@ -1486,7 +1486,10 @@ paths:
           in: query
           schema:
             type: string
-            enum: [markdown, structured, pdf, original]
+            enum: [markdown, structured, chunks, pdf, original]
+            description: >
+              `chunks` returns per-line text with {page, bbox} anchors —
+              the citation/redline targeting substrate.
       responses:
         "200": { description: Preview payload }
   /documents/split:
