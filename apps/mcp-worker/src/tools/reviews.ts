@@ -93,6 +93,32 @@ export function registerReviewTools(
   );
 
   server.tool(
+    "seal_list_jobs",
+    "List async jobs for the org — newest first. Optional status filter.",
+    {
+      status: z
+        .enum(["queued", "running", "done", "error"])
+        .optional()
+        .describe("Filter by job status"),
+      limit: z
+        .number()
+        .int()
+        .min(1)
+        .max(100)
+        .optional()
+        .describe("Max jobs to return (default 50)"),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const query: Record<string, string> = {};
+      if (args.status) query.status = args.status;
+      if (args.limit) query.limit = String(args.limit);
+      const response = await client.get<unknown>("/jobs", query, authToken);
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
     "seal_get_job",
     "Poll an async job (e.g. review generation) — returns status, error, and result payload.",
     {
