@@ -12,6 +12,7 @@ import {
 import {
   getDocuments,
   mergeDocumentPdf,
+  organizeDocumentPdf,
   rotateDocumentPdf,
   splitDocument,
 } from "@/lib/api-client";
@@ -29,8 +30,8 @@ export type DocumentPagesCapabilityPanelProps = {
 };
 
 /**
- * Pages capability — rotate / combine / split under the Document Workspace roof.
- * Prefer `docked` so ops chrome keeps the shared EmbedPDF mount visible.
+ * Pages capability — rotate / organize / combine / split under the Document
+ * Workspace roof. Prefer `docked` so ops chrome keeps the shared EmbedPDF mount.
  */
 export function DocumentPagesCapabilityPanel({
   organizationSlug,
@@ -65,6 +66,24 @@ export function DocumentPagesCapabilityPanel({
     onError: (error) => {
       toast.error(
         error instanceof Error ? error.message : "Failed to rotate PDF"
+      );
+    },
+  });
+
+  const organizeMutation = useMutation({
+    mutationFn: (input: { pages: number[] }) =>
+      organizeDocumentPdf(organizationSlug, documentPublicId, input),
+    onSuccess: (result) => {
+      const removed =
+        result.fieldsRemoved > 0
+          ? ` Removed ${result.fieldsRemoved} field${result.fieldsRemoved === 1 ? "" : "s"} on deleted pages.`
+          : "";
+      toast.success(`Pages updated (${result.pageCount} pages).${removed}`);
+      onPdfChanged?.();
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to organize pages"
       );
     },
   });
@@ -124,9 +143,11 @@ export function DocumentPagesCapabilityPanel({
         pageCount={pageCount}
         currentPage={currentPage}
         rotating={rotateMutation.isPending}
+        organizing={organizeMutation.isPending}
         merging={mergeMutation.isPending}
         mergeCandidates={mergeCandidates}
         onRotate={(input) => rotateMutation.mutate(input)}
+        onOrganize={(input) => organizeMutation.mutate(input)}
         onMerge={(input) => mergeMutation.mutate(input)}
         className={docked ? "p-0" : undefined}
       />

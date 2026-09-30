@@ -2016,6 +2016,31 @@ export async function mergeDocumentPdf(
   );
 }
 
+const organizeDocumentPdfResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  pageCount: z.number().int(),
+  fieldsRemoved: z.number().int(),
+  fieldsRemapped: z.number().int(),
+});
+export type ApiOrganizeDocumentPdfResult = z.infer<
+  typeof organizeDocumentPdfResultSchema
+>;
+export async function organizeDocumentPdf(
+  organizationSlug: string,
+  publicId: string,
+  input: { pages: number[] }
+): Promise<ApiOrganizeDocumentPdfResult> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/organize-pdf`,
+    organizeDocumentPdfResultSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
 const documentLayoutBlocksSchema = z.object({
   blocks: z.array(
     z.object({

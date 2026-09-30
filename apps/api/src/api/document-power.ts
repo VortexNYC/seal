@@ -19,10 +19,15 @@ import { buildDocumentLayoutBlocks } from "../platform/document-layout-blocks.js
 import {
   annotatePdf,
   mergePdfs,
+  organizePdfPages,
   pdfAnnotateOpSchema,
   rotatePdfPages,
   splitPdfPages,
 } from "../platform/pdf-ops.js";
+import {
+  commitDocumentPdfRemap,
+  planOrganizeFieldRemap,
+} from "../platform/remap-document-pages.js";
 import type { Variables } from "../platform/types.js";
 import { createDownloadToken } from "./v1/download-token.js";
 
@@ -643,6 +648,83 @@ app.post("/merge-pdf", async (c) => {
     publicId: newPublicId,
     storageId,
     pageCount: merged.pageCount,
+  });
+});
+
+const organizeBodySchema = z.object({
+  pages: z.array(z.number().int().min(1)).min(1).max(500),
+});
+
+/** Reorder / delete pages in-place on this draft PDF. */
+app.post("/organize-pdf", async (c) => {
+  const user = c.get("user");
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+  const organizationId = c.get("organization").id;
+  const publicId = publicIdFromPath(new URL(c.req.url).pathname);
+  if (!publicId) return c.json({ error: "not_found" }, 404);
+
+  const parsed = organizeBodySchema.safeParse(await c.req.json());
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocByPublicId(db, organizationId, publicId);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  let organized: Awaited<ReturnType<typeof organizePdfPages>>;
+  try {
+    organized = await organizePdfPages(
+      await object.arrayBuffer(),
+      parsed.data.pages
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "organize_failed";
+    if (message === "duplicate_pages" || message === "no_valid_pages") {
+      return c.json({ error: message }, 400);
+    }
+    throw error;
+  }
+
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, organized.bytes, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: user.user.id,
+      organizedFrom: doc.storageKey,
+    },
+  });
+
+  const plan = await planOrganizeFieldRemap(
+    db,
+    doc.id,
+    organized.pageMap
+  );
+
+  const claimed = await commitDocumentPdfRemap(db, {
+    documentId: doc.id,
+    expectedStorageKey: doc.storageKey,
+    storageId,
+    size: organized.bytes.byteLength,
+    pageCount: organized.pageCount,
+    plan,
+  });
+  if (!claimed) {
+    return c.json({ error: "document_version_conflict" }, 409);
+  }
+
+  return c.json({
+    success: true,
+    storageId,
+    pageCount: organized.pageCount,
+    fieldsRemoved: plan.removeIds.length,
+    fieldsRemapped: plan.updates.length,
   });
 });
 

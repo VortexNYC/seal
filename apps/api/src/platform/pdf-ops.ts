@@ -219,3 +219,47 @@ export async function rotatePdfPages(
   return { bytes, pageCount: count };
 }
 
+/**
+ * Rebuild a PDF from an ordered list of 1-based source page numbers.
+ * Omit a page to delete it; permute to reorder. No duplicates allowed.
+ * Returns bytes plus oldPage → newPage map for remapping fields.
+ */
+export async function organizePdfPages(
+  pdfBytes: ArrayBuffer | Uint8Array,
+  pageOrder: number[]
+): Promise<{
+  bytes: Uint8Array;
+  pageCount: number;
+  pageMap: Map<number, number>;
+}> {
+  const src = await PDFDocument.load(pdfBytes);
+  const srcCount = src.getPageCount();
+  if (pageOrder.length === 0) {
+    throw new Error("no_valid_pages");
+  }
+  if (pageOrder.length !== new Set(pageOrder).size) {
+    throw new Error("duplicate_pages");
+  }
+  for (const page of pageOrder) {
+    if (!Number.isInteger(page) || page < 1 || page > srcCount) {
+      throw new Error("no_valid_pages");
+    }
+  }
+
+  const pageMap = new Map<number, number>();
+  pageOrder.forEach((oldPage, index) => {
+    pageMap.set(oldPage, index + 1);
+  });
+
+  const out = await PDFDocument.create();
+  const copied = await out.copyPages(
+    src,
+    pageOrder.map((page) => page - 1)
+  );
+  for (const page of copied) {
+    out.addPage(page);
+  }
+  const bytes = await out.save();
+  return { bytes, pageCount: pageOrder.length, pageMap };
+}
+

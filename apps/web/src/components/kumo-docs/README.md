@@ -24,7 +24,7 @@ Agents and humans share the same capabilities. Seal is a document platform
 | File Thumbnail | `FileThumbnail` | Documents list/grid + Finder icons | — |
 | E-Signature | `ESignature` | Signature capture | signature tools |
 | Document Splits | `DocumentSplitsPanel` | Document sidebar **Splits** | `seal_split_document` |
-| PDF ops (rotate/merge) | `DocumentPdfOpsPanel` | Document sidebar **PDF ops** | `seal_rotate_document_pdf`, `seal_merge_documents_pdf` |
+| PDF ops (rotate/organize/merge) | `DocumentPdfOpsPanel` | Document Workspace **Pages** | `seal_rotate_document_pdf`, `seal_organize_document_pdf`, `seal_merge_documents_pdf` |
 | Document Viewer Sidebar | `ThumbnailSidebar` + shell | Document detail | — |
 
 ## Product modes (draft documents)

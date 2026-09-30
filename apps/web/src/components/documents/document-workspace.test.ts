@@ -25,4 +25,10 @@ describe("DOCUMENT_CAPABILITIES", () => {
   it("resolves known ids", () => {
     expect(getDocumentCapability("pages").label).toBe("Pages");
   });
+
+  it("lists organize on Pages for agents", () => {
+    expect(getDocumentCapability("pages").agentTools).toContain(
+      "seal_organize_document_pdf"
+    );
+  });
 });

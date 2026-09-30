@@ -1501,6 +1501,46 @@ paths:
                       color: { type: string }
       responses:
         "200": { description: Annotated }
+  /documents/pdf/organize:
+    post:
+      tags: [Documents]
+      operationId: organizeDocumentPdf
+      summary: Reorder or delete pages of a draft PDF in place
+      description: >
+        Rebuilds the draft PDF from an ordered list of 1-based source page
+        numbers. Omit a page to delete it; permute to reorder. Signature fields
+        on deleted pages are removed; survivors are remapped to the new page
+        indices. Does not create child documents (use `/documents/split` for that).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, pages]
+              properties:
+                id: { type: string }
+                pages:
+                  type: array
+                  minItems: 1
+                  maxItems: 500
+                  items: { type: integer, minimum: 1 }
+                  description: New page order using original 1-based page numbers
+      responses:
+        "200":
+          description: Organized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  storage_id: { type: string }
+                  page_count: { type: integer }
+                  fields_removed: { type: integer }
+                  fields_remapped: { type: integer }
+        "400":
+          description: Invalid page order (empty, duplicate, or out of range)
 
   /documents/send:
     post:
