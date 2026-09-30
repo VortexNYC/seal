@@ -11,6 +11,7 @@ import { documents } from "../global/schema.js";
 import {
   ConversionError,
   convertBytesToPdf,
+  convertToPdfaBytes,
   decryptPdfBytes,
   encryptPdfBytes,
   flattenPdfBytes,
@@ -1590,6 +1591,94 @@ app.post("/ocr-pdf", async (c) => {
   }
 
   return c.json({ success: true, storageId, pageCount, lang: parsed.data.lang });
+});
+
+const toPdfaBodySchema = z.object({
+  format: z.enum(["PDF/A-1b", "PDF/A-2b", "PDF/A-3b"]).default("PDF/A-2b"),
+});
+
+/**
+ * Convert a draft PDF to an archival PDF/A flavour (pdfengines /convert).
+ * The archival PDF claims the document's storageKey — it stays fully
+ * readable by pdf-lib and the rest of the pipeline.
+ */
+app.post("/to-pdfa", async (c) => {
+  const user = c.get("user");
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+  const organizationId = c.get("organization").id;
+  const publicId = publicIdFromPath(new URL(c.req.url).pathname);
+  if (!publicId) return c.json({ error: "not_found" }, 404);
+
+  const parsed = toPdfaBodySchema.safeParse(
+    await c.req.json().catch(() => ({}))
+  );
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocByPublicId(db, organizationId, publicId);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  try {
+    await assertConvertEnabled(c.env, organizationId);
+  } catch (error) {
+    if (error instanceof FeatureDisabledError) {
+      return c.json({ error: error.code }, 403);
+    }
+    throw error;
+  }
+
+  let pdfa: ArrayBuffer;
+  try {
+    pdfa = await convertToPdfaBytes(c.env, {
+      bytes: await object.arrayBuffer(),
+      format: parsed.data.format,
+    });
+  } catch (error) {
+    if (error instanceof ConversionError) {
+      return c.json(
+        { error: error.message },
+        error.statusCode === 504 ? 504 : 502
+      );
+    }
+    throw error;
+  }
+
+  const pageCount = await getPdfPageCount(pdfa);
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, pdfa, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: user.user.id,
+      pdfaFrom: doc.storageKey,
+    },
+  });
+
+  const claimed = await commitDocumentPdfRemap(db, {
+    documentId: doc.id,
+    expectedStorageKey: doc.storageKey,
+    storageId,
+    size: pdfa.byteLength,
+    pageCount,
+    plan: { removeIds: [], updates: [] },
+  });
+  if (!claimed) {
+    return c.json({ error: "document_version_conflict" }, 409);
+  }
+
+  return c.json({
+    success: true,
+    storageId,
+    pageCount,
+    format: parsed.data.format,
+  });
 });
 
 const compareBodySchema = z.object({

@@ -292,6 +292,25 @@ describe("document agent pdf routes", () => {
     expect(json.lang).toBe("eng");
   });
 
+  it("converts to PDF/A via the agent surface", async () => {
+    await seedFixture();
+    const app = createApp(writeMcp);
+    const res = await app.fetch(
+      agentPost("to-pdfa", { id: DOC_ID, format: "PDF/A-3b" }),
+      env
+    );
+    expect(res.status).toBe(200);
+    const json = z
+      .object({
+        success: z.boolean(),
+        storage_id: z.string(),
+        format: z.string(),
+      })
+      .parse(await res.json());
+    expect(json.success).toBe(true);
+    expect(json.format).toBe("PDF/A-3b");
+  });
+
   it("compares two drafts via the agent surface", async () => {
     await seedFixture();
     const otherKey = "uploads/agent-other";

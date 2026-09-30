@@ -539,6 +539,29 @@ describe("document power routes", () => {
     expect(res.status).toBe(400);
   });
 
+  it("to-pdfa claims the archival PDF onto the doc", async () => {
+    const app = await seedFixture();
+    const res = await app.fetch(
+      powerPost(DOC_PUBLIC_ID, "to-pdfa", { format: "PDF/A-2b" }),
+      env
+    );
+    expect(res.status).toBe(200);
+    const json = z
+      .object({
+        success: z.boolean(),
+        storageId: z.string(),
+        format: z.string(),
+      })
+      .parse(await res.json());
+    expect(json.format).toBe("PDF/A-2b");
+    const db = createD1(env.D1);
+    const docs = await db
+      .select({ storageKey: documents.storageKey })
+      .from(documents)
+      .where(eq(documents.id, DOC_ID));
+    expect(docs[0]?.storageKey).toBe(json.storageId);
+  });
+
   it("compare-pdf diffs against another draft (text-level)", async () => {
     const app = await seedFixture();
     // Second doc shares the org — its PDF can differ freely.

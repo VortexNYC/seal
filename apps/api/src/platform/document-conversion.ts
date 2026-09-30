@@ -259,6 +259,51 @@ export async function flattenPdfBytes(
   return response.arrayBuffer();
 }
 
+/** Convert a PDF to an archival PDF/A flavour via Gotenberg pdfengines /convert. */
+export async function convertToPdfaBytes(
+  env: CloudflareBindings,
+  input: {
+    bytes: ArrayBuffer | Uint8Array;
+    format?: "PDF/A-1b" | "PDF/A-2b" | "PDF/A-3b";
+  }
+): Promise<ArrayBuffer> {
+  if (!env.SEAL_CONVERT_WORKER) {
+    throw new ConversionError(
+      "converter_not_configured",
+      503,
+      "SEAL_CONVERT_WORKER service binding is not configured"
+    );
+  }
+
+  const file = new File([new Uint8Array(input.bytes)], "document.pdf", {
+    type: "application/pdf",
+  });
+  const form = new FormData();
+  form.append("files", file);
+  form.append("pdfa", input.format ?? "PDF/A-2b");
+
+  const response = await env.SEAL_CONVERT_WORKER.fetch(
+    new Request("http://internal/to-pdfa", {
+      method: "POST",
+      body: form,
+      headers: {
+        "x-internal-api-key": env.INTERNAL_API_KEY,
+      },
+    })
+  );
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new ConversionError(
+      "pdfa_failed",
+      response.status === 504 ? 504 : 502,
+      text
+    );
+  }
+
+  return response.arrayBuffer();
+}
+
 /** Rasterise a PDF to per-page images; returns a ZIP of page-*.{png,jpg}. */
 export async function pdfToImagesZip(
   env: CloudflareBindings,

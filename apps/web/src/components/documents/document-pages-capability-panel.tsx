@@ -12,6 +12,7 @@ import {
 import {
   compressDocumentPdf,
   compareDocumentPdf,
+  convertDocumentPdfToPdfa,
   cropDocumentPdf,
   exportDocumentPdfImages,
   flattenDocumentPdf,
@@ -285,6 +286,20 @@ export function DocumentPagesCapabilityPanel({
     },
   });
 
+  const pdfaMutation = useMutation({
+    mutationFn: (input: { format: "PDF/A-1b" | "PDF/A-2b" | "PDF/A-3b" }) =>
+      convertDocumentPdfToPdfa(organizationSlug, documentPublicId, input),
+    onSuccess: (result) => {
+      toast.success(`Converted to ${result.format}`);
+      onPdfChanged?.();
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to convert to PDF/A"
+      );
+    },
+  });
+
   const mergeMutation = useMutation({
     mutationFn: (input: { sourcePublicIds: string[]; title?: string }) =>
       mergeDocumentPdf(organizationSlug, documentPublicId, input),
@@ -350,6 +365,7 @@ export function DocumentPagesCapabilityPanel({
         ocred={ocrMutation.isPending}
         comparing={compareMutation.isPending}
         compareResult={compareResult}
+        pdfaing={pdfaMutation.isPending}
         protectedDownloadUrl={protectedDownloadUrl}
         imagesDownloadUrl={imagesDownloadUrl}
         watermarking={watermarkMutation.isPending}
@@ -368,6 +384,7 @@ export function DocumentPagesCapabilityPanel({
         onExportImages={(input) => exportImagesMutation.mutate(input)}
         onOcr={(input) => ocrMutation.mutate(input)}
         onCompare={(input) => compareMutation.mutate(input)}
+        onToPdfa={(input) => pdfaMutation.mutate(input)}
         onMerge={(input) => mergeMutation.mutate(input)}
         className={docked ? "p-0" : undefined}
       />
