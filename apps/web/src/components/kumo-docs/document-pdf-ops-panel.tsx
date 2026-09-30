@@ -17,6 +17,7 @@ export type DocumentPdfOpsPanelProps = {
   organizing?: boolean;
   watermarking?: boolean;
   numbering?: boolean;
+  cropping?: boolean;
   merging?: boolean;
   /** Other draft docs available to merge (publicId + name). */
   mergeCandidates?: Array<{ publicId: string; name: string }>;
@@ -25,6 +26,15 @@ export type DocumentPdfOpsPanelProps = {
     pages?: number[];
   }) => void;
   onOrganize: (input: { pages: number[] }) => void;
+  onCrop: (input: {
+    crops: Array<{
+      page: number;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    }>;
+  }) => void;
   onWatermark: (input: {
     text: string;
     position: "diagonal" | "center" | "footer";
@@ -38,6 +48,21 @@ export type DocumentPdfOpsPanelProps = {
   onMerge: (input: { sourcePublicIds: string[]; title?: string }) => void;
 };
 
+function marginToCropRect(marginPercent: number): {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+} {
+  const m = Math.min(45, Math.max(0, marginPercent));
+  return {
+    x: m,
+    y: m,
+    width: 100 - m * 2,
+    height: 100 - m * 2,
+  };
+}
+
 /**
  * Human PDF ops — rotate / organize / watermark / number / merge.
  * Mirrors matching seal_* agent tools.
@@ -50,10 +75,12 @@ export function DocumentPdfOpsPanel({
   organizing = false,
   watermarking = false,
   numbering = false,
+  cropping = false,
   merging = false,
   mergeCandidates = [],
   onRotate,
   onOrganize,
+  onCrop,
   onWatermark,
   onNumberPages,
   onMerge,
@@ -62,6 +89,7 @@ export function DocumentPdfOpsPanel({
   const [pageOrder, setPageOrder] = useState<number[]>(() =>
     identityPageOrder(pageCount)
   );
+  const [cropMargin, setCropMargin] = useState(5);
   const [watermarkText, setWatermarkText] = useState("DRAFT");
   const [watermarkPosition, setWatermarkPosition] = useState<
     "diagonal" | "center" | "footer"
@@ -230,6 +258,46 @@ export function DocumentPdfOpsPanel({
             </Button>
           ))}
         </div>
+      </div>
+
+      <div className="border-border space-y-2 border-t pt-4">
+        <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
+          Crop
+        </p>
+        <p className="text-muted-foreground text-[11px]">
+          Trim equal margins (scan edges / letterhead junk). Uses the same
+          Entire PDF / This page scope as rotate.
+        </p>
+        <div className="flex flex-wrap gap-1">
+          {([2.5, 5, 10] as const).map((margin) => (
+            <Button
+              key={margin}
+              type="button"
+              size="sm"
+              variant={cropMargin === margin ? "primary" : "ghost"}
+              onClick={() => setCropMargin(margin)}
+            >
+              {margin}% margins
+            </Button>
+          ))}
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          disabled={cropping || pageCount < 1 || cropMargin * 2 >= 100}
+          onClick={() => {
+            const rect = marginToCropRect(cropMargin);
+            const pages =
+              scope === "current"
+                ? [currentPage]
+                : identityPageOrder(pageCount);
+            onCrop({
+              crops: pages.map((page) => ({ page, ...rect })),
+            });
+          }}
+        >
+          {cropping ? "Cropping…" : "Apply crop"}
+        </Button>
       </div>
 
       <div className="border-border space-y-2 border-t pt-4">

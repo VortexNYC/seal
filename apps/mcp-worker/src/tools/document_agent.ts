@@ -377,4 +377,37 @@ export function registerDocumentAgentTools(
       return createToolResponse(response);
     }
   );
+
+  server.tool(
+    "seal_crop_document_pdf",
+    "Crop draft PDF pages to a top-left percent rect (0–100, same space as fields). Bakes a smaller page. Fields outside the crop are removed; survivors remapped.",
+    {
+      id: z.string().describe("Document ID"),
+      crops: z
+        .array(
+          z.object({
+            page: z.number().int().min(1),
+            x: z.number().min(0).max(100),
+            y: z.number().min(0).max(100),
+            width: z.number().min(1).max(100),
+            height: z.number().min(1).max(100),
+          })
+        )
+        .min(1)
+        .max(500)
+        .describe(
+          "Per-page crops. Example: [{ page: 1, x: 5, y: 5, width: 90, height: 90 }] trims a 5% margin"
+        ),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/crop",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
 }

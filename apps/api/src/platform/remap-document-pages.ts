@@ -3,6 +3,7 @@ import type { BatchItem } from "drizzle-orm/batch";
 
 import { createD1 } from "../global/db.js";
 import { documents, signatureFields } from "../global/schema.js";
+import type { CropPdfPageOp } from "./pdf-ops.js";
 
 type Db = ReturnType<typeof createD1>;
 
@@ -122,4 +123,63 @@ export async function commitDocumentPdfRemap(
   const results = await db.batch([head, ...rest]);
   const claimRows = results[0] as Array<{ id: string }>;
   return claimRows.length > 0;
+}
+
+function fieldFullyInsideCrop(
+  field: { x: number; y: number; width: number; height: number },
+  crop: CropPdfPageOp
+): boolean {
+  const eps = 0.05;
+  return (
+    field.x + eps >= crop.x &&
+    field.y + eps >= crop.y &&
+    field.x + field.width <= crop.x + crop.width + eps &&
+    field.y + field.height <= crop.y + crop.height + eps
+  );
+}
+
+/**
+ * After cropPdfPages: drop fields that fall outside the crop; remap survivors
+ * into the new page percent space (0–100). Read-only — apply the plan via
+ * commitDocumentPdfRemap so field writes land atomically with the document
+ * storageKey claim.
+ */
+export async function planCropFieldRemap(
+  db: Db,
+  documentId: string,
+  applied: Map<number, CropPdfPageOp>
+): Promise<FieldRemapPlan> {
+  const plan: FieldRemapPlan = { removeIds: [], updates: [] };
+  if (applied.size === 0) {
+    return plan;
+  }
+
+  const fields = await db
+    .select({
+      id: signatureFields.id,
+      page: signatureFields.page,
+      x: signatureFields.x,
+      y: signatureFields.y,
+      width: signatureFields.width,
+      height: signatureFields.height,
+    })
+    .from(signatureFields)
+    .where(eq(signatureFields.documentId, documentId));
+
+  for (const field of fields) {
+    const crop = applied.get(field.page);
+    if (!crop) continue;
+    if (!fieldFullyInsideCrop(field, crop)) {
+      plan.removeIds.push(field.id);
+      continue;
+    }
+    plan.updates.push({
+      id: field.id,
+      x: ((field.x - crop.x) / crop.width) * 100,
+      y: ((field.y - crop.y) / crop.height) * 100,
+      width: (field.width / crop.width) * 100,
+      height: (field.height / crop.height) * 100,
+    });
+  }
+  return plan;
 }

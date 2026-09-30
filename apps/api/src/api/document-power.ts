@@ -18,6 +18,7 @@ import {
 import { buildDocumentLayoutBlocks } from "../platform/document-layout-blocks.js";
 import {
   annotatePdf,
+  cropPdfPages,
   mergePdfs,
   numberPdfPages,
   organizePdfPages,
@@ -28,6 +29,7 @@ import {
 } from "../platform/pdf-ops.js";
 import {
   commitDocumentPdfRemap,
+  planCropFieldRemap,
   planOrganizeFieldRemap,
 } from "../platform/remap-document-pages.js";
 import type { Variables } from "../platform/types.js";
@@ -870,6 +872,93 @@ app.post("/number-pdf-pages", async (c) => {
     success: true,
     storageId,
     pageCount: numbered.pageCount,
+  });
+});
+
+const cropBodySchema = z.object({
+  crops: z
+    .array(
+      z.object({
+        page: z.number().int().min(1),
+        x: z.number().min(0).max(100),
+        y: z.number().min(0).max(100),
+        width: z.number().min(1).max(100),
+        height: z.number().min(1).max(100),
+      })
+    )
+    .min(1)
+    .max(500),
+});
+
+app.post("/crop-pdf", async (c) => {
+  const user = c.get("user");
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+  const organizationId = c.get("organization").id;
+  const publicId = publicIdFromPath(new URL(c.req.url).pathname);
+  if (!publicId) return c.json({ error: "not_found" }, 404);
+
+  const parsed = cropBodySchema.safeParse(await c.req.json());
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocByPublicId(db, organizationId, publicId);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  let cropped: Awaited<ReturnType<typeof cropPdfPages>>;
+  try {
+    cropped = await cropPdfPages(
+      await object.arrayBuffer(),
+      parsed.data.crops
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "crop_failed";
+    if (
+      message === "no_crops" ||
+      message === "no_valid_pages" ||
+      message === "invalid_crop"
+    ) {
+      return c.json({ error: message }, 400);
+    }
+    throw error;
+  }
+
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, cropped.bytes, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: user.user.id,
+      croppedFrom: doc.storageKey,
+    },
+  });
+
+  const plan = await planCropFieldRemap(db, doc.id, cropped.applied);
+
+  const claimed = await commitDocumentPdfRemap(db, {
+    documentId: doc.id,
+    expectedStorageKey: doc.storageKey,
+    storageId,
+    size: cropped.bytes.byteLength,
+    pageCount: cropped.pageCount,
+    plan,
+  });
+  if (!claimed) {
+    return c.json({ error: "document_version_conflict" }, 409);
+  }
+
+  return c.json({
+    success: true,
+    storageId,
+    pageCount: cropped.pageCount,
+    fieldsRemoved: plan.removeIds.length,
+    fieldsRemapped: plan.updates.length,
   });
 });
 

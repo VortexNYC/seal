@@ -6,6 +6,7 @@ import { createD1 } from "../global/db.js";
 import { documents, organization, signatureFields } from "../global/schema.js";
 import {
   commitDocumentPdfRemap,
+  planCropFieldRemap,
   planOrganizeFieldRemap,
 } from "./remap-document-pages.js";
 
@@ -31,7 +32,11 @@ async function seedDoc(storageKey = "uploads/original") {
   });
 }
 
-async function seedField(id: string, page: number) {
+async function seedField(
+  id: string,
+  page: number,
+  rect = { x: 10, y: 10, width: 20, height: 10 }
+) {
   const db = createD1(env.D1);
   await db.insert(signatureFields).values({
     id,
@@ -41,10 +46,10 @@ async function seedField(id: string, page: number) {
     label: "Sign here",
     isRequired: true,
     isMainSignature: false,
-    x: 10,
-    y: 10,
-    width: 20,
-    height: 10,
+    x: rect.x,
+    y: rect.y,
+    width: rect.width,
+    height: rect.height,
     page,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -140,5 +145,52 @@ describe("commitDocumentPdfRemap", () => {
 
     const fields = await listFields();
     expect(fields).toHaveLength(2);
+  });
+
+  it("remaps fields inside a crop into the new percent space", async () => {
+    const db = createD1(env.D1);
+    await seedDoc();
+    await seedField("field_inside", 1, {
+      x: 10,
+      y: 10,
+      width: 20,
+      height: 10,
+    });
+    await seedField("field_outside", 1, {
+      x: 80,
+      y: 80,
+      width: 10,
+      height: 10,
+    });
+    await seedField("field_other_page", 2);
+
+    const applied = new Map([
+      [1, { page: 1, x: 10, y: 10, width: 50, height: 50 }],
+    ]);
+    const plan = await planCropFieldRemap(db, "doc_remap", applied);
+    expect(plan.removeIds).toEqual(["field_outside"]);
+    expect(plan.updates).toEqual([
+      { id: "field_inside", x: 0, y: 0, width: 40, height: 20 },
+    ]);
+
+    const won = await commitDocumentPdfRemap(db, {
+      documentId: "doc_remap",
+      expectedStorageKey: "uploads/original",
+      storageId: "uploads/cropped",
+      size: 999,
+      pageCount: 3,
+      plan,
+    });
+    expect(won).toBe(true);
+
+    const fields = await db
+      .select()
+      .from(signatureFields)
+      .where(eq(signatureFields.documentId, "doc_remap"));
+    const inside = fields.find((f) => f.id === "field_inside");
+    expect(inside?.x).toBe(0);
+    expect(inside?.width).toBe(40);
+    expect(fields.some((f) => f.id === "field_outside")).toBe(false);
+    expect(fields.some((f) => f.id === "field_other_page")).toBe(true);
   });
 });
