@@ -1962,6 +1962,63 @@ paths:
                   page_count: { type: integer }
                   lang: { type: string }
 
+  /documents/pdf/compare:
+    post:
+      tags: [Documents]
+      operationId: compareDocumentPdfs
+      summary: Text-level compare of two draft PDFs
+      description: >
+        Extracts text from both documents (pdftotext -layout in the
+        pdf-tools container) and returns a per-page line diff
+        (added/removed). Read-only — no storage mutation. Honours the org
+        `egress.allow_convert` gate.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, other_id]
+              properties:
+                id: { type: string }
+                other_id: { type: string }
+      responses:
+        "200":
+          description: Diff result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  document_a:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      public_id: { type: string }
+                      name: { type: string }
+                  document_b:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      public_id: { type: string }
+                      name: { type: string }
+                  pages_different: { type: integer }
+                  lines_added: { type: integer }
+                  lines_removed: { type: integer }
+                  pages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        page: { type: integer }
+                        added:
+                          type: array
+                          items: { type: string }
+                        removed:
+                          type: array
+                          items: { type: string }
+
   /documents/send:
     post:
       tags: [Documents]

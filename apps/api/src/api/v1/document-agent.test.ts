@@ -292,6 +292,47 @@ describe("document agent pdf routes", () => {
     expect(json.lang).toBe("eng");
   });
 
+  it("compares two drafts via the agent surface", async () => {
+    await seedFixture();
+    const otherKey = "uploads/agent-other";
+    await env.DOCUMENTS_BUCKET.put(otherKey, await makePdf(2), {
+      httpMetadata: { contentType: "application/pdf" },
+    });
+    const db = createD1(env.D1);
+    await db.insert(documents).values({
+      id: "doc_agent_other",
+      publicId: "doc_agent_other_pub",
+      organizationId: "org_agent",
+      ownerId: "user_1",
+      name: "Other Doc",
+      status: "draft",
+      documentStatus: "active",
+      sharingMode: "private",
+      storageKey: otherKey,
+      contentType: "application/pdf",
+      pageCount: 2,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const app = createApp(readMcp);
+    const res = await app.fetch(
+      agentPost("compare", { id: DOC_ID, other_id: "doc_agent_other" }),
+      env
+    );
+    expect(res.status).toBe(200);
+    const json = z
+      .object({
+        success: z.boolean(),
+        pages_different: z.number(),
+        lines_added: z.number(),
+        lines_removed: z.number(),
+      })
+      .parse(await res.json());
+    expect(json.success).toBe(true);
+    expect(json.pages_different).toBe(0);
+  });
+
   it("compresses a draft via the agent surface", async () => {
     await seedFixture();
     const app = createApp(writeMcp);

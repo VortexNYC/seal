@@ -2307,6 +2307,34 @@ export async function ocrDocumentPdf(
   );
 }
 
+const comparePdfResultSchema = z.object({
+  success: z.boolean(),
+  documentA: z.object({ publicId: z.string(), name: z.string() }),
+  documentB: z.object({ publicId: z.string(), name: z.string() }),
+  pagesDifferent: z.number().int(),
+  linesAdded: z.number().int(),
+  linesRemoved: z.number().int(),
+  pages: z.array(
+    z.object({
+      page: z.number().int(),
+      added: z.array(z.string()),
+      removed: z.array(z.string()),
+    })
+  ),
+});
+export type ApiComparePdfResult = z.infer<typeof comparePdfResultSchema>;
+export async function compareDocumentPdf(
+  organizationSlug: string,
+  publicId: string,
+  input: { withPublicId: string }
+): Promise<ApiComparePdfResult> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/compare-pdf`,
+    comparePdfResultSchema,
+    { method: "POST", body: JSON.stringify(input) }
+  );
+}
+
 const documentLayoutBlocksSchema = z.object({
   blocks: z.array(
     z.object({
