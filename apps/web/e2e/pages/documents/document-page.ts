@@ -1,6 +1,19 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
+import type { FieldType } from "@/lib/field-types";
+
 import { waitForApiResponse } from "../../fixtures/api-helpers";
+
+const PRIMARY_FIELD_TYPES = new Set<FieldType>([
+  "signature",
+  "initials",
+  "name",
+  "email",
+  "date",
+  "text",
+  "checkbox",
+  "date_signed",
+]);
 
 export class DocumentPage {
   readonly page: Page;
@@ -23,7 +36,7 @@ export class DocumentPage {
   readonly addMyselfAsSignerButton: Locator;
   readonly recipientSelectorDialog: Locator;
   readonly placeFieldButton: Locator;
-  selectedFieldType: "signature" | "text" | "date" | "checkbox";
+  selectedFieldType: FieldType;
 
   constructor(page: Page) {
     this.page = page;
@@ -73,11 +86,11 @@ export class DocumentPage {
   }
 
   async addSignatureField(x: number, y: number): Promise<void> {
-    await this.ensureSignerAvailable();
+    await this.selectFieldType(this.selectedFieldType);
 
-    const fieldButton = this.page.getByRole("button", {
-      name: new RegExp(`^${this.selectedFieldLabel}$`, "i"),
-    });
+    const fieldButton = this.page.getByTestId(
+      `field-toolbar-${this.selectedFieldType}`
+    );
     await fieldButton.waitFor({ state: "visible", timeout: 5000 });
     await expect(fieldButton).toBeEnabled();
     const dropTargetBox = await this.documentDropTarget.boundingBox();
@@ -118,15 +131,18 @@ export class DocumentPage {
       .catch(() => {});
   }
 
-  async selectFieldType(
-    fieldType: "signature" | "text" | "date" | "checkbox"
-  ): Promise<void> {
+  async selectFieldType(fieldType: FieldType): Promise<void> {
     this.selectedFieldType = fieldType;
     await this.ensureSignerAvailable();
 
-    const fieldButton = this.page.getByRole("button", {
-      name: new RegExp(`^${this.selectedFieldLabel}$`, "i"),
-    });
+    if (!PRIMARY_FIELD_TYPES.has(fieldType)) {
+      const more = this.page.getByRole("button", { name: /More fields/i });
+      if (await more.isVisible().catch(() => false)) {
+        await more.click();
+      }
+    }
+
+    const fieldButton = this.page.getByTestId(`field-toolbar-${fieldType}`);
     await fieldButton.waitFor({ state: "visible", timeout: 5000 });
     await expect(fieldButton).toBeEnabled();
   }
@@ -181,19 +197,6 @@ export class DocumentPage {
         /* canvas may not exist for non-PDF docs; continue */
       });
     await this.page.waitForLoadState("domcontentloaded");
-  }
-
-  private get selectedFieldLabel(): string {
-    switch (this.selectedFieldType) {
-      case "checkbox":
-        return "Checkbox";
-      case "date":
-        return "Date";
-      case "text":
-        return "Text";
-      default:
-        return "Signature";
-    }
   }
 
   private async ensureSignerAvailable(): Promise<void> {
