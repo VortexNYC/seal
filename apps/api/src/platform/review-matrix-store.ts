@@ -15,12 +15,8 @@ import {
   reviewMatrices,
   reviewRows,
 } from "../global/schema.js";
-import {
-  createEchoProvider,
-  getProvider,
-  registerProvider,
-  streamKeyedModel,
-} from "./llm/index.js";
+import { getProvider, streamKeyedModel } from "./llm/index.js";
+import { ensureProvidersRegistered } from "./llm/providers.js";
 import {
   assertCellCitations,
   ZReviewColumn,
@@ -63,12 +59,6 @@ export type ApiReviewMatrix = {
   created_at: string;
   updated_at: string;
 };
-
-function ensureEchoRegistered(): void {
-  if (!getProvider("echo")) {
-    registerProvider(createEchoProvider());
-  }
-}
 
 function newPublicId(prefix: string): string {
   return `${prefix}_${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`;
@@ -123,6 +113,8 @@ function toApiCell(row: {
 
 /**
  * Pick a grounded quote from document text, or the literal not_found.
+ * A model's explicit "not_found" or a quote absent from the text must NOT
+ * be silently grounded — the citation contract forbids invented anchors.
  */
 export function groundCitation(
   documentPublicId: string,
@@ -130,29 +122,102 @@ export function groundCitation(
   candidate: string | null | undefined
 ): ReviewCitation {
   const text = (parsedText ?? "").trim();
-  if (!text) {
+  const needle = (candidate ?? "").trim();
+  if (!text || needle === NOT_FOUND_QUOTE) {
     return { documentId: documentPublicId, quote: NOT_FOUND_QUOTE };
   }
-  const needle = (candidate ?? "").trim();
-  if (needle && needle !== NOT_FOUND_QUOTE && text.includes(needle)) {
+  if (needle && text.includes(needle)) {
     return {
       documentId: documentPublicId,
       quote: needle.slice(0, MAX_ECHO_QUOTE),
     };
   }
-  // Fallback: first contiguous chunk of the document (always grounded).
+  if (needle) {
+    // Candidate quote not present in the document — reject as ungrounded.
+    return { documentId: documentPublicId, quote: NOT_FOUND_QUOTE };
+  }
+  // No candidate supplied: fall back to the first contiguous chunk (echo).
   const chunk = text.slice(0, MAX_ECHO_QUOTE);
   return { documentId: documentPublicId, quote: chunk || NOT_FOUND_QUOTE };
 }
 
-async function collectStreamText(keyedModel: string, prompt: string): Promise<string> {
+const REVIEW_FLAGS: readonly ReviewFlag[] = [
+  "green",
+  "amber",
+  "red",
+  "grey",
+];
+
+function parseFlag(value: unknown): ReviewFlag | null {
+  return REVIEW_FLAGS.includes(value as ReviewFlag)
+    ? (value as ReviewFlag)
+    : null;
+}
+
+/**
+ * Pull the first JSON object out of a model reply (code-fence tolerant).
+ * Providers that ignore the schema still surface raw text as the summary.
+ */
+function extractJsonObject(
+  raw: string
+): Record<string, unknown> | null {
+  const trimmed = raw.trim();
+  const start = trimmed.indexOf("{");
+  if (start === -1) return null;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < trimmed.length; i++) {
+    const ch = trimmed[i];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (ch === "\\") {
+      escaped = true;
+      continue;
+    }
+    if (ch === '"') inString = !inString;
+    if (inString) continue;
+    if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0) {
+        try {
+          const parsed: unknown = JSON.parse(trimmed.slice(start, i + 1));
+          if (
+            parsed !== null &&
+            typeof parsed === "object" &&
+            !Array.isArray(parsed)
+          ) {
+            return parsed as Record<string, unknown>;
+          }
+          return null;
+        } catch {
+          return null;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+async function collectStreamResult(
+  keyedModel: string,
+  prompt: string
+): Promise<{
+  text: string;
+  usage: { inputTokens?: number; outputTokens?: number } | undefined;
+}> {
   let out = "";
+  let usage: { inputTokens?: number; outputTokens?: number } | undefined;
   for await (const part of streamKeyedModel(keyedModel, {
     messages: [{ role: "user", content: prompt }],
   })) {
     if (part.type === "text") out += part.text;
+    if (part.type === "finish" && part.usage) usage = part.usage;
   }
-  return out;
+  return { text: out, usage };
 }
 
 export async function createReviewMatrix(
@@ -341,10 +406,11 @@ export async function getReviewMatrix(
 
 export async function generateReviewMatrix(
   db: Db,
+  env: CloudflareBindings,
   organizationId: string,
   matrixPublicId: string
 ): Promise<ApiReviewMatrix> {
-  ensureEchoRegistered();
+  ensureProvidersRegistered(env);
 
   const matrixRows = await db
     .select()
@@ -423,6 +489,7 @@ export async function generateReviewMatrix(
       .set({ status: "generating", updatedAt: new Date() })
       .where(eq(reviewCells.id, cell.id));
 
+    const startedAt = Date.now();
     try {
       const prompt = [
         `Column: ${column.name}`,
@@ -431,32 +498,50 @@ export async function generateReviewMatrix(
         "Document text:",
         row.parsedText?.trim() || "(empty)",
         "",
-        "Reply with a short summary. Quote a contiguous excerpt from the document when possible.",
+        "Respond with a single JSON object and nothing else:",
+        '{ "summary": string, "flag": "green"|"amber"|"red"|"grey", "reasoning": string, "quote": string }',
+        '"quote" must be a verbatim contiguous excerpt from the document text,',
+        `or the literal ${NOT_FOUND_QUOTE} when the column's question is not answered.`,
       ].join("\n");
 
-      const raw = await collectStreamText(matrix.model, prompt);
+      const result = await collectStreamResult(matrix.model, prompt);
+      const tokensUsed =
+        result.usage?.inputTokens !== undefined ||
+        result.usage?.outputTokens !== undefined
+          ? (result.usage.inputTokens ?? 0) +
+            (result.usage.outputTokens ?? 0)
+          : null;
+
+      const parsed = extractJsonObject(result.text);
+      const rawSummary =
+        typeof parsed?.summary === "string" && parsed.summary.trim()
+          ? parsed.summary.trim().slice(0, 500)
+          : result.text.trim().slice(0, 500) || column.name;
+      const reasoning =
+        typeof parsed?.reasoning === "string" && parsed.reasoning.trim()
+          ? parsed.reasoning.trim().slice(0, 1000)
+          : null;
+      const candidateQuote =
+        typeof parsed?.quote === "string" && parsed.quote.trim()
+          ? parsed.quote.trim()
+          : extractLikelyQuote(result.text, row.parsedText);
       const citation = groundCitation(
         row.documentPublicId,
         row.parsedText,
-        // Prefer an excerpt that appears in the document; echo returns the prompt,
-        // so fall back to the grounded document chunk.
-        extractLikelyQuote(raw, row.parsedText)
+        candidateQuote
       );
-      const summary =
-        citation.quote === NOT_FOUND_QUOTE
-          ? "not found"
-          : (raw.trim().slice(0, 500) || column.name);
+      const grounded = citation.quote !== NOT_FOUND_QUOTE;
       const flag: ReviewFlag =
-        citation.quote === NOT_FOUND_QUOTE ? "grey" : "green";
+        parseFlag(parsed?.flag) ?? (grounded ? "green" : "grey");
 
       const done: ReviewCell = {
         id: cell.publicId,
         rowId: row.rowPublicId,
         columnIndex: cell.columnIndex,
         status: "done",
-        summary,
+        summary: grounded ? rawSummary : "not found",
         flag,
-        reasoning: null,
+        reasoning,
         citations: [citation],
       };
       assertCellCitations(done);
@@ -469,6 +554,9 @@ export async function generateReviewMatrix(
           flag: done.flag,
           reasoning: done.reasoning,
           citations: JSON.stringify(done.citations),
+          modelUsed: matrix.model,
+          tokensUsed,
+          processingTimeMs: Date.now() - startedAt,
           updatedAt: new Date(),
         })
         .where(eq(reviewCells.id, cell.id));

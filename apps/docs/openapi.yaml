@@ -3257,9 +3257,13 @@ paths:
       operationId: generateReviewMatrix
       summary: Generate pending review cells
       description: >
-        Runs the matrix model against each pending/error cell. Echo/provider
-        stubs complete synchronously; production Anthropic/Workers AI runs will
-        move to a Durable Object / Workflow. Poll `GET /reviews/{id}` for status.
+        Runs the matrix model against each pending/error cell. `model` is a
+        `provider/model` key — `echo/*` is always registered for dev/tests;
+        `anthropic/*` registers when `ANTHROPIC_API_KEY` is bound. Each cell
+        parses the model's JSON `{summary, flag, reasoning, quote}` reply and
+        re-validates the quote against `parsedText`; ungroundable cells come
+        back as the literal `not_found`, never invented. Long runs move to a
+        Durable Object / Workflow — poll `GET /reviews/{id}` for status.
       parameters:
         - name: id
           in: path
