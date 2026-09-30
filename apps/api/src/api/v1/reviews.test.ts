@@ -6,6 +6,7 @@ import { z } from "zod";
 import { createD1 } from "../../global/db.js";
 import {
   documents,
+  jobs as jobsTable,
   member,
   organization,
   reviewCells,
@@ -491,5 +492,97 @@ describe("POST/GET /api/v1/reviews", () => {
     expect(cell?.status).toBe("done");
     expect(cell?.citations[0]?.quote).toBe("not_found");
     expect(cell?.summary).toBe("not found");
+  });
+});
+
+describe("GET /api/v1/jobs/:id/stream", () => {
+  beforeEach(async () => {
+    env.MCP_SIGNING_KEY = undefined;
+    env.MCP_SIGNING_KEY_ID = undefined;
+    const db = createD1(env.D1);
+    await db.delete(reviewCells);
+    await db.delete(reviewRows);
+    await db.delete(reviewMatrices);
+    await db.delete(jobsTable);
+    await db.delete(documents);
+    await db.delete(member);
+    await db.delete(organization);
+    await db.delete(user);
+  });
+
+  it("streams job state and closes on done", async () => {
+    const privateJwk = await configureSigningKey();
+    const { userId, orgId, db } = await seedOrgAndUser();
+    const token = await signAccessToken(privateJwk, {
+      sub: userId,
+      organizationId: orgId,
+      scope: "documents:read documents:write",
+      clientId: "test-client",
+      jti: crypto.randomUUID(),
+    });
+
+    // Minimal pending cell so the job has something to drain.
+    const docPublicId = `doc_${crypto.randomUUID().slice(0, 8)}`;
+    const storageKey = `uploads/${crypto.randomUUID()}`;
+    await env.DOCUMENTS_BUCKET.put(storageKey, "%PDF-1.4 fake");
+    await db.insert(documents).values({
+      id: crypto.randomUUID(),
+      publicId: docPublicId,
+      organizationId: orgId,
+      ownerId: userId,
+      name: "Contract",
+      status: "draft",
+      storageKey,
+      parsedText:
+        "Either party may terminate this Agreement on thirty days written notice.",
+    });
+    const createRes = await indexApp.request(
+      "http://localhost/api/v1/reviews",
+      {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          title: "Stream matrix",
+          model: "echo/test",
+          columns: [{ index: 0, name: "Term", prompt: "Termination?" }],
+          documentIds: [docPublicId],
+        }),
+      },
+      env
+    );
+    const matrix = matrixSchema.parse(await createRes.json());
+    const genRes = await indexApp.request(
+      `http://localhost/api/v1/reviews/${matrix.id}/generate`,
+      {
+        method: "POST",
+        headers: { authorization: `Bearer ${token}` },
+      },
+      env
+    );
+    const { job_id } = (await genRes.json()) as { job_id: string };
+    await drainJobs(orgId);
+
+    const streamRes = await indexApp.request(
+      `http://localhost/api/v1/jobs/${job_id}/stream`,
+      { headers: { authorization: `Bearer ${token}` } },
+      env
+    );
+    expect(streamRes.status).toBe(200);
+    expect(streamRes.headers.get("content-type")).toBe("text/event-stream");
+    const body = await streamRes.text();
+    expect(body).toContain("event: state");
+    expect(body).toContain('"status":"done"');
+
+    // access_token query param works for EventSource-style clients.
+    const viaQuery = await indexApp.request(
+      `http://localhost/api/v1/jobs/${job_id}/stream?access_token=${token}`,
+      {},
+      env
+    );
+    expect(viaQuery.status).toBe(200);
+    viaQuery.body?.cancel();
   });
 });

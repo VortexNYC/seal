@@ -10,6 +10,7 @@ import {
 } from "../../platform/review-matrix-store.js";
 import { ZReviewMatrixCreate } from "../../platform/review-matrix.js";
 import { getReviewPack } from "../../platform/review-packs.js";
+import { sseResponse } from "../../platform/sse.js";
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
@@ -142,6 +143,47 @@ app.post("/:id/generate", async (c) => {
   } catch (err) {
     return errorResponse(c, err);
   }
+});
+
+/**
+ * SSE stream of matrix state — `state` events carry compact cell updates
+ * ({id, status, flag, summary?}) on every change; closes when the matrix
+ * leaves the `generating` state. `?access_token=` supported.
+ */
+app.get("/:id/stream", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:read")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+  const id = c.req.param("id");
+  const db = createD1(c.env.D1);
+  return sseResponse({
+    poll: async () => {
+      const matrix = await getReviewMatrix(db, organizationId, id);
+      return {
+        changed: true,
+        terminal: matrix.status !== "generating" && matrix.status !== "draft",
+        value: {
+          id: matrix.id,
+          status: matrix.status,
+          cells: matrix.rows.flatMap((row) =>
+            row.cells.map((cell) => ({
+              id: cell.id,
+              row_id: cell.row_id,
+              column_index: cell.column_index,
+              status: cell.status,
+              flag: cell.flag,
+              summary: cell.summary,
+            }))
+          ),
+        },
+      };
+    },
+  });
 });
 
 export default app;

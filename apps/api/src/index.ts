@@ -787,11 +787,31 @@ app.use("/api/v1/*", async (c, next) => {
     return next();
   }
 
-  if (!header?.startsWith("Bearer ")) {
+  // SSE clients (EventSource) can't set Authorization — accept
+  // `?access_token=` on stream endpoints only (MCP or api-token).
+  const isStreamEndpoint =
+    (c.req.path.startsWith("/api/v1/jobs/") ||
+      c.req.path.startsWith("/api/v1/reviews/")) &&
+    c.req.path.endsWith("/stream");
+  const queryToken = isStreamEndpoint
+    ? (c.req.query("access_token") ?? null)
+    : null;
+  const rawToken = header?.startsWith("Bearer ")
+    ? header.slice("Bearer ".length).trim()
+    : queryToken;
+  if (queryToken && isApiTokenFormat(queryToken)) {
+    await loadApiTokenContext(c, queryToken);
+  }
+
+  if (c.get("mcp")?.kind === "api") {
+    return next();
+  }
+
+  if (!rawToken) {
     return c.json({ error: "unauthorized" }, 401);
   }
 
-  const token = header.slice("Bearer ".length).trim();
+  const token = rawToken;
   const payload = await verifyMcpAccessToken(c.env, token);
   if (!payload) {
     return c.json({ error: "unauthorized" }, 401);
