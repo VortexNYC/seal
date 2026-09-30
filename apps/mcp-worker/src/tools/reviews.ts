@@ -2,6 +2,7 @@
  * @fileoverview Review matrix tools (ADR-006 / SEA-80).
  */
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
 
 import {
   type ApiReviewMatrix,
@@ -65,14 +66,31 @@ export function registerReviewTools(
 
   server.tool(
     "seal_generate_review",
-    "Generate pending/error cells for a review matrix via the matrix provider/model. Poll with seal_get_review.",
+    "Enqueue generation for pending/error cells — returns {job_id}; poll with seal_get_job or seal_get_review.",
     generateReviewMatrixSchema.shape,
     async (args, extra) => {
       const { id } = args as GenerateReviewMatrixInput;
       const authToken = getAuthToken(extra);
-      const response = await client.post<ApiReviewMatrix>(
+      const response = await client.post<{ job_id: string; status: string }>(
         `/reviews/${encodeURIComponent(id)}/generate`,
         {},
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
+    "seal_get_job",
+    "Poll an async job (e.g. review generation) — returns status, error, and result payload.",
+    {
+      id: z.string().describe("Job public ID (job_…)"),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.get<unknown>(
+        `/jobs/${encodeURIComponent(args.id)}`,
         undefined,
         authToken
       );

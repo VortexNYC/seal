@@ -1,9 +1,9 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { createD1 } from "../../global/db.js";
+import { createJob, JobError, wakeJobRunner } from "../../platform/jobs.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import {
-  generateReviewMatrix,
   getReviewMatrix,
   createReviewMatrix,
   ReviewMatrixError,
@@ -17,18 +17,17 @@ const app = new OpenAPIHono<{
 
 function errorResponse(
   c: {
-    json: (
-      body: Record<string, unknown>,
-      status: 400 | 403 | 404
-    ) => Response;
+    json: (body: Record<string, unknown>, status: 400 | 403 | 404) => Response;
   },
   err: unknown
 ): Response {
-  if (err instanceof ReviewMatrixError) {
+  if (err instanceof ReviewMatrixError || err instanceof JobError) {
     return c.json(
       {
         error: err.code,
-        ...(err.details ? { details: err.details } : {}),
+        ...(err instanceof ReviewMatrixError && err.details
+          ? { details: err.details }
+          : {}),
       },
       err.status
     );
@@ -88,6 +87,11 @@ app.get("/:id", async (c) => {
   }
 });
 
+/**
+ * Enqueue a generation job. Generation can be minutes-long across rows ×
+ * columns — the JobRunner DO drains it asynchronously; poll the job (or
+ * the matrix) for status.
+ */
 app.post("/:id/generate", async (c) => {
   const mcp = c.get("mcp");
   if (!mcpHasScope(mcp, "documents:write")) {
@@ -101,13 +105,15 @@ app.post("/:id/generate", async (c) => {
   const id = c.req.param("id");
   const db = createD1(c.env.D1);
   try {
-    const matrix = await generateReviewMatrix(
-      db,
-      c.env,
+    // Guard: matrix must exist + belong to this org before we queue work.
+    await getReviewMatrix(db, organizationId, id);
+    const job = await createJob(db, {
       organizationId,
-      id
-    );
-    return c.json(matrix);
+      type: "review-generate",
+      payload: { matrixId: id },
+    });
+    await wakeJobRunner(c.env, organizationId);
+    return c.json({ job_id: job.publicId, status: job.status }, 202);
   } catch (err) {
     return errorResponse(c, err);
   }

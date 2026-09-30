@@ -30,7 +30,9 @@ import contactsV1 from "./api/v1/contacts.js";
 import documentsV1 from "./api/v1/documents.js";
 import foldersV1 from "./api/v1/folders.js";
 import importsV1 from "./api/v1/imports.js";
+import jobsV1 from "./api/v1/jobs.js";
 import membersV1 from "./api/v1/members.js";
+import orgWebhooksV1 from "./api/v1/org-webhooks.js";
 import recipientsV1 from "./api/v1/recipients.js";
 import reviewsV1 from "./api/v1/reviews.js";
 import searchV1 from "./api/v1/search.js";
@@ -38,7 +40,6 @@ import settingsV1 from "./api/v1/settings.js";
 import signaturesV1 from "./api/v1/signatures.js";
 import templatesV1 from "./api/v1/templates.js";
 import tokensV1 from "./api/v1/tokens.js";
-import orgWebhooksV1 from "./api/v1/org-webhooks.js";
 import uploadsV1 from "./api/v1/uploads.js";
 import webhooksV1 from "./api/v1/webhooks.js";
 import { createD1 } from "./global/db.js";
@@ -52,10 +53,8 @@ import {
   isApiTokenFormat,
   loadApiTokenContext,
 } from "./platform/api-token-auth.js";
-import {
-  getAuditRequestMeta,
-  writeAuditLog,
-} from "./platform/audit-log.js";
+import { getAuditRequestMeta, writeAuditLog } from "./platform/audit-log.js";
+import { flushAuditSiemStream } from "./platform/audit-siem.js";
 import { createAuth } from "./platform/auth.js";
 import { sendEmail } from "./platform/email.js";
 import { verifyMcpAccessToken } from "./platform/mcp-auth.js";
@@ -65,7 +64,6 @@ import { getSessionUser } from "./platform/session.js";
 import type { Variables } from "./platform/types.js";
 import { projectPayableObjectUpdated } from "./platform/vortex_billing.js";
 import { processWebhookDeliveries } from "./platform/webhook-events.js";
-import { flushAuditSiemStream } from "./platform/audit-siem.js";
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
@@ -810,6 +808,7 @@ app.route("/api/v1/imports", importsV1);
 app.route("/api/v1/members", membersV1);
 app.route("/api/v1/recipients", recipientsV1);
 app.route("/api/v1/reviews", reviewsV1);
+app.route("/api/v1/jobs", jobsV1);
 app.route("/api/v1/search", searchV1);
 app.route("/api/v1/settings", settingsV1);
 app.route("/api/v1/signatures", signaturesV1);
@@ -843,16 +842,14 @@ const breakGlassReadBody = z.object({
 app.post("/internal/break-glass/document-read", async (c) => {
   const parsed = breakGlassReadBody.safeParse(await c.req.json());
   if (!parsed.success) {
-    return c.json({ error: "validation_error", details: parsed.error.flatten() }, 400);
+    return c.json(
+      { error: "validation_error", details: parsed.error.flatten() },
+      400
+    );
   }
 
-  const {
-    organizationId,
-    documentId,
-    reason,
-    operatorEmail,
-    ticketRef,
-  } = parsed.data;
+  const { organizationId, documentId, reason, operatorEmail, ticketRef } =
+    parsed.data;
 
   const db = createD1(c.env.D1);
   const [doc] = await db
@@ -914,6 +911,9 @@ app.post("/internal/break-glass/document-read", async (c) => {
 });
 
 export default app;
+
+/** Per-org async job pump — D1 jobs table is the source of truth. */
+export { JobRunner } from "./platform/job-runner.js";
 
 /**
  * Service-binding-only entrypoint for `/internal/*`.

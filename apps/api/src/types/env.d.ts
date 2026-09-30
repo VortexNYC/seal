@@ -29,6 +29,8 @@ declare interface CloudflareBindings {
   SEAL_SEALING_P12_PASSPHRASE?: string;
   /** Optional — registers the Anthropic review-model provider when present. */
   ANTHROPIC_API_KEY?: string;
+  /** Job runner DO — absent in self-hosts that skip background work. */
+  JOB_RUNNER?: DurableObjectNamespace;
   ALLOWED_ORIGINS: string;
   EMAIL_FROM: string;
   APP_URL: string;
