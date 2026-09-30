@@ -10,6 +10,7 @@ import {
   ChangeEmailForm,
   ConnectedAccounts,
   DeleteAccountForm,
+  SettingsStack,
   UserProfileForm,
 } from "@vortex-api/better-auth-ui";
 
@@ -48,8 +49,7 @@ function ProfileSettings() {
   return (
     <AuthProvider client={client}>
       <SettingsBody narrow className="items-stretch">
-        {/* Cap: one stacked account surface — not four postcard LayerCards */}
-        <div className="seal-account-stack w-full max-w-lg">
+        <SettingsStack className="w-full">
           <UserProfileForm
             className="w-full"
             title="Profile"
@@ -79,7 +79,7 @@ function ProfileSettings() {
               window.location.assign("/");
             }}
           />
-        </div>
+        </SettingsStack>
       </SettingsBody>
     </AuthProvider>
   );

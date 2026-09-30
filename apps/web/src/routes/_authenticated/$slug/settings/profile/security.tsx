@@ -13,6 +13,7 @@ import {
   GenerateBackupCodesForm,
   SessionList,
   SetPasswordForm,
+  SettingsStack,
 } from "@vortex-api/better-auth-ui";
 
 import { FormSkeleton } from "@/components/skeletons";
@@ -36,47 +37,47 @@ function SecuritySettings() {
 
   return (
     <AuthProvider client={client}>
-      <SettingsBody className="items-stretch">
-        <div className="flex w-full flex-col gap-5">
+      <SettingsBody narrow className="items-stretch">
+        <SettingsStack className="w-full">
           <SessionList
-            className="w-full max-w-none"
+            className="w-full"
             showRevokeOthersAction
             onRevoke={() => {
               toast.success("Session revoked");
             }}
           />
           <EnableTwoFactorForm
-            className="w-full max-w-none"
+            className="w-full"
             issuer="Seal"
             onSuccess={() => {
               toast.success("Two-factor authentication enabled");
             }}
           />
           <GenerateBackupCodesForm
-            className="w-full max-w-none"
+            className="w-full"
             onSuccess={() => {
               toast.success("Backup codes regenerated");
             }}
           />
           <DisableTwoFactorForm
-            className="w-full max-w-none"
+            className="w-full"
             onSuccess={() => {
               toast.success("Two-factor authentication disabled");
             }}
           />
           <ChangePasswordForm
-            className="w-full max-w-none"
+            className="w-full"
             onSuccess={() => {
               toast.success("Password changed");
             }}
           />
           <SetPasswordForm
-            className="w-full max-w-none"
+            className="w-full"
             onSuccess={() => {
               toast.success("Password set");
             }}
           />
-        </div>
+        </SettingsStack>
       </SettingsBody>
     </AuthProvider>
   );
