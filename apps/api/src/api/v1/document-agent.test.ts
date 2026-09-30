@@ -180,6 +180,23 @@ describe("document agent pdf routes", () => {
     );
   });
 
+  it("compresses a draft via the agent surface", async () => {
+    await seedFixture();
+    const app = createApp(writeMcp);
+    const res = await app.fetch(agentPost("compress", { id: DOC_ID }), env);
+    expect(res.status).toBe(200);
+    const json = z
+      .object({
+        success: z.boolean(),
+        storage_id: z.string(),
+        size_before: z.number(),
+        size_after: z.number(),
+      })
+      .parse(await res.json());
+    expect(json.success).toBe(true);
+    expect(json.size_before).toBeGreaterThan(0);
+  });
+
   it("crops a draft via the agent surface", async () => {
     await seedFixture();
     const app = createApp(writeMcp);

@@ -1670,6 +1670,47 @@ paths:
         "400":
           description: Invalid crop rect or page
 
+  /documents/pdf/compress:
+    post:
+      tags: [Documents]
+      operationId: compressDocumentPdf
+      summary: Compress a draft PDF in place
+      description: >
+        Re-encodes embedded images to JPEG via the convert-worker PDF engines
+        (qpdf/pdfcpu — not Seal AI). Text, vectors, fonts, and structure are
+        untouched; the engine never enlarges the file. Fields are unaffected.
+        Honours the org `egress.allow_convert` gate since bytes leave the API
+        worker for the conversion container.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string }
+                image_quality:
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+                  description: JPEG quality for re-encoded images (default 80)
+      responses:
+        "200":
+          description: Compressed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  storage_id: { type: string }
+                  page_count: { type: integer }
+                  size_before: { type: integer }
+                  size_after: { type: integer }
+        "403":
+          description: Org egress disallows conversion
+
   /documents/send:
     post:
       tags: [Documents]

@@ -8,8 +8,10 @@ import { and, eq, ne } from "drizzle-orm";
 import { createD1 } from "../global/db.js";
 import { documents } from "../global/schema.js";
 import {
+  ConversionError,
   convertBytesToPdf,
   isConvertibleFileType,
+  optimizePdfBytes,
 } from "../platform/document-conversion.js";
 import {
   FeatureDisabledError,
@@ -19,6 +21,7 @@ import { buildDocumentLayoutBlocks } from "../platform/document-layout-blocks.js
 import {
   annotatePdf,
   cropPdfPages,
+  getPdfPageCount,
   mergePdfs,
   numberPdfPages,
   organizePdfPages,
@@ -959,6 +962,92 @@ app.post("/crop-pdf", async (c) => {
     pageCount: cropped.pageCount,
     fieldsRemoved: plan.removeIds.length,
     fieldsRemapped: plan.updates.length,
+  });
+});
+
+const compressBodySchema = z.object({
+  imageQuality: z.number().int().min(1).max(100).optional(),
+});
+
+/** Compress a draft PDF in place via convert-worker pdfengines optimize. */
+app.post("/compress-pdf", async (c) => {
+  const user = c.get("user");
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+  const organizationId = c.get("organization").id;
+  const publicId = publicIdFromPath(new URL(c.req.url).pathname);
+  if (!publicId) return c.json({ error: "not_found" }, 404);
+
+  const parsed = compressBodySchema.safeParse(
+    await c.req.json().catch(() => ({}))
+  );
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocByPublicId(db, organizationId, publicId);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  try {
+    await assertConvertEnabled(c.env, organizationId);
+  } catch (error) {
+    if (error instanceof FeatureDisabledError) {
+      return c.json({ error: error.code }, 403);
+    }
+    throw error;
+  }
+
+  const srcBytes = await object.arrayBuffer();
+  let compressed: ArrayBuffer;
+  try {
+    compressed = await optimizePdfBytes(c.env, {
+      bytes: srcBytes,
+      imageQuality: parsed.data.imageQuality,
+    });
+  } catch (error) {
+    if (error instanceof ConversionError) {
+      return c.json(
+        { error: error.message },
+        error.statusCode === 504 ? 504 : 502
+      );
+    }
+    throw error;
+  }
+
+  const pageCount = await getPdfPageCount(compressed);
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, compressed, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: user.user.id,
+      compressedFrom: doc.storageKey,
+    },
+  });
+
+  const claimed = await commitDocumentPdfRemap(db, {
+    documentId: doc.id,
+    expectedStorageKey: doc.storageKey,
+    storageId,
+    size: compressed.byteLength,
+    pageCount,
+    plan: { removeIds: [], updates: [] },
+  });
+  if (!claimed) {
+    return c.json({ error: "document_version_conflict" }, 409);
+  }
+
+  return c.json({
+    success: true,
+    storageId,
+    pageCount,
+    sizeBefore: srcBytes.byteLength,
+    sizeAfter: compressed.byteLength,
   });
 });
 

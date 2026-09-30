@@ -150,6 +150,14 @@ const stampResponseSchema = z.object({
   pageCount: z.number(),
 });
 
+const compressResponseSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  pageCount: z.number(),
+  sizeBefore: z.number(),
+  sizeAfter: z.number(),
+});
+
 const errorSchema = z.object({ error: z.string() });
 
 describe("document power routes", () => {
@@ -275,6 +283,61 @@ describe("document power routes", () => {
 
     const object = await env.DOCUMENTS_BUCKET.get(json.storageId);
     expect(object).not.toBeNull();
+  });
+
+  it("compress-pdf swaps the draft bytes and reports sizes", async () => {
+    const app = await seedFixture();
+    const db = createD1(env.D1);
+    await seedField("field_p1", 1);
+
+    const res = await app.fetch(
+      powerPost(DOC_PUBLIC_ID, "compress-pdf", { imageQuality: 70 }),
+      env
+    );
+    expect(res.status).toBe(200);
+    const json = compressResponseSchema.parse(await res.json());
+    expect(json.success).toBe(true);
+    // Convert-worker mock returns its fixture PDF (1 page).
+    expect(json.pageCount).toBe(1);
+    expect(json.sizeBefore).toBeGreaterThan(0);
+    expect(json.sizeAfter).toBeGreaterThan(0);
+
+    const docs = await db
+      .select({ storageKey: documents.storageKey, size: documents.size })
+      .from(documents)
+      .where(eq(documents.id, DOC_ID));
+    expect(docs[0]?.storageKey).toBe(json.storageId);
+    expect(docs[0]?.size).toBe(json.sizeAfter);
+
+    const object = await env.DOCUMENTS_BUCKET.get(json.storageId);
+    expect(object).not.toBeNull();
+
+    // Compression does not touch field geometry.
+    const fields = await db
+      .select({ id: signatureFields.id, page: signatureFields.page })
+      .from(signatureFields)
+      .where(eq(signatureFields.documentId, DOC_ID));
+    expect(fields).toHaveLength(1);
+  });
+
+  it("compress-pdf honours the org convert egress gate", async () => {
+    const app = await seedFixture();
+    const db = createD1(env.D1);
+    await db
+      .update(organization)
+      .set({
+        metadata: JSON.stringify({
+          seal_settings: { egress: { allow_convert: false } },
+        }),
+      })
+      .where(eq(organization.id, "org_power"));
+
+    const res = await app.fetch(
+      powerPost(DOC_PUBLIC_ID, "compress-pdf", {}),
+      env
+    );
+    expect(res.status).toBe(403);
+    expect(errorSchema.parse(await res.json()).error).toBe("convert_disabled");
   });
 
   it("rejects mutations on a non-draft document", async () => {
