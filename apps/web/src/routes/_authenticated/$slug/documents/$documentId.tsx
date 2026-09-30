@@ -42,6 +42,11 @@ import {
   AIAnnotationOverlays,
   useDocumentAnnotations,
 } from "../../../../components/documents/ai-annotation-overlays";
+import {
+  AIFieldOverlays,
+  AIFieldReviewBar,
+  useAIFieldSuggestions,
+} from "../../../../components/documents/ai-field-suggestions";
 import { DeleteFieldDialog } from "../../../../components/documents/delete-field-dialog";
 import { DocumentCanvas } from "../../../../components/documents/document-canvas";
 import { DocumentCapabilityRail } from "../../../../components/documents/document-capability-rail";
@@ -325,6 +330,14 @@ function DocumentDetailPage() {
 
   const canEdit =
     documentData.status === "active" && isPrepStatus;
+
+  // SEA-85: OCR/detect field_candidates → one-tap Accept on Fields canvas.
+  const fieldSuggestions = useAIFieldSuggestions(documentPublicId, {
+    enabled: canEdit && showAiFeatures && capability === "fields",
+    onApplied: () => {
+      void refetchFields();
+    },
+  });
 
   // Fields / Mark up / Pages / Layout / read-only view share one EmbedPDF mount.
   // Office still swaps a panel on the same workspace roof.
@@ -662,6 +675,26 @@ function DocumentDetailPage() {
                       not available — drag fields onto the document manually.
                     </div>
                   ) : null}
+                  {canEdit &&
+                  capability === "fields" &&
+                  fieldSuggestions.suggestions &&
+                  fieldSuggestions.suggestions.fields.length > 0 ? (
+                    <AIFieldReviewBar
+                      suggestions={fieldSuggestions.suggestions}
+                      selectedIndices={fieldSuggestions.selectedIndices}
+                      isApplying={fieldSuggestions.isApplying}
+                      selectAll={fieldSuggestions.selectAll}
+                      selectHighConfidence={
+                        fieldSuggestions.selectHighConfidence
+                      }
+                      handleApply={() => {
+                        void fieldSuggestions.handleApply();
+                      }}
+                      handleDismiss={() => {
+                        void fieldSuggestions.handleDismiss();
+                      }}
+                    />
+                  ) : null}
                   <DocumentCanvas
                     src={pdfViewer.pdfUrl}
                     interaction={
@@ -716,6 +749,19 @@ function DocumentDetailPage() {
                     fieldDragging={Boolean(fieldPlacement.draggingFieldType)}
                     fieldOverlayExtra={
                       <>
+                        {canEdit &&
+                        capability === "fields" &&
+                        fieldSuggestions.suggestions &&
+                        fieldSuggestions.suggestions.fields.length > 0 ? (
+                          <AIFieldOverlays
+                            suggestions={fieldSuggestions.suggestions}
+                            selectedIndices={fieldSuggestions.selectedIndices}
+                            toggleField={fieldSuggestions.toggleField}
+                            currentPage={pdfViewer.currentPage}
+                            pdfPageWidth={pdfViewer.pdfWidth}
+                            pdfPageHeight={pdfViewer.pdfHeight}
+                          />
+                        ) : null}
                         {canEdit && capability === "layout" ? (
                           <DocumentLayoutCanvasOverlay
                             organizationSlug={slug}
