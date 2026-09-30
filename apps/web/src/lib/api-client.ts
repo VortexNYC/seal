@@ -3404,6 +3404,32 @@ export async function getReviewPacks(slug: string): Promise<ApiReviewPack[]> {
   return data.packs;
 }
 
+export async function createReviewPack(
+  slug: string,
+  input: {
+    title: string;
+    description?: string;
+    model?: string;
+    columns: { index: number; name: string; prompt: string }[];
+  }
+): Promise<ApiReviewPack> {
+  return apiFetch(`${reviewsBase(slug)}/packs`, reviewPackSchema, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteReviewPack(
+  slug: string,
+  id: string
+): Promise<void> {
+  await apiFetch(
+    `${reviewsBase(slug)}/packs/${encodeURIComponent(id)}`,
+    z.object({ deleted: z.literal(true) }),
+    { method: "DELETE" }
+  );
+}
+
 export async function listRevisions(
   slug: string,
   options: { documentId?: string; status?: string } = {}
