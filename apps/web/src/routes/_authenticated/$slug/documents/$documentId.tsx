@@ -320,11 +320,14 @@ function DocumentDetailPage() {
   const canEdit =
     documentData.status === "active" && isPrepStatus;
 
-  // Fields + Mark up + read-only browse share one EmbedPDF mount.
-  // Office / Pages / Layout still swap panels on the same workspace roof.
+  // Fields / Mark up / Pages / read-only view share one EmbedPDF mount.
+  // Office / Layout still swap panels on the same workspace roof.
   const sharedPdfCanvas =
     Boolean(pdfViewer.pdfUrl) &&
-    (!canEdit || capability === "fields" || capability === "markup");
+    (!canEdit ||
+      capability === "fields" ||
+      capability === "markup" ||
+      capability === "pages");
 
   const isExpired = documentData.workflowStatus === "expired";
 
@@ -655,7 +658,7 @@ function DocumentDetailPage() {
                   <DocumentCanvas
                     src={pdfViewer.pdfUrl}
                     interaction={
-                      !canEdit
+                      !canEdit || capability === "pages"
                         ? "view"
                         : capability === "markup"
                           ? "markup"
@@ -676,19 +679,29 @@ function DocumentDetailPage() {
                     }}
                     fields={fieldPlacement.placedFields}
                     selectedFieldId={
-                      canEdit ? fieldPlacement.selectedFieldId : null
+                      canEdit && capability === "fields"
+                        ? fieldPlacement.selectedFieldId
+                        : null
                     }
                     onFieldSelect={
-                      canEdit ? fieldPlacement.handleFieldSelect : undefined
+                      canEdit && capability === "fields"
+                        ? fieldPlacement.handleFieldSelect
+                        : undefined
                     }
                     onFieldUpdate={
-                      canEdit ? fieldPlacement.handleFieldUpdate : undefined
+                      canEdit && capability === "fields"
+                        ? fieldPlacement.handleFieldUpdate
+                        : undefined
                     }
                     onFieldDragOver={
-                      canEdit ? fieldPlacement.handleFieldDragOver : undefined
+                      canEdit && capability === "fields"
+                        ? fieldPlacement.handleFieldDragOver
+                        : undefined
                     }
                     onFieldDrop={
-                      canEdit ? fieldPlacement.handleFieldDrop : undefined
+                      canEdit && capability === "fields"
+                        ? fieldPlacement.handleFieldDrop
+                        : undefined
                     }
                     fieldContainerRef={pdfViewer.containerRef}
                     fieldDragging={Boolean(fieldPlacement.draggingFieldType)}
@@ -714,6 +727,19 @@ function DocumentDetailPage() {
                     }
                     savingMarkup={saveMarkupMutation.isPending}
                   />
+                  {canEdit && capability === "pages" ? (
+                    <DocumentPagesCapabilityPanel
+                      organizationSlug={slug}
+                      documentPublicId={documentPublicId}
+                      pageCount={pdfViewer.numPages ?? 0}
+                      currentPage={pdfViewer.currentPage}
+                      docked
+                      onPdfChanged={() => {
+                        setPdfReloadKey((key) => key + 1);
+                      }}
+                      onPageJump={pdfViewer.handlePageChange}
+                    />
+                  ) : null}
                 </>
               ) : canEdit && capability === "office" ? (
                 <DocumentOfficeEditPanel
@@ -723,17 +749,6 @@ function DocumentDetailPage() {
                   onSaved={() => {
                     setPdfReloadKey((key) => key + 1);
                   }}
-                />
-              ) : canEdit && capability === "pages" ? (
-                <DocumentPagesCapabilityPanel
-                  organizationSlug={slug}
-                  documentPublicId={documentPublicId}
-                  pageCount={pdfViewer.numPages ?? 0}
-                  currentPage={pdfViewer.currentPage}
-                  onPdfChanged={() => {
-                    setPdfReloadKey((key) => key + 1);
-                  }}
-                  onPageJump={pdfViewer.handlePageChange}
                 />
               ) : canEdit && capability === "layout" ? (
                 <DocumentStructurePanel
