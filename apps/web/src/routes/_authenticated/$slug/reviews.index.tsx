@@ -13,12 +13,14 @@ import { Select } from "@cloudflare/kumo/components/select";
 import { Table } from "@cloudflare/kumo/components/table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { PlusIcon, ScaleIcon, TrashIcon } from "lucide-react";
+import { PackageIcon, PlusIcon, ScaleIcon, TrashIcon } from "lucide-react";
 import { useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import {
   createReviewMatrix,
+  createReviewPack,
+  deleteReviewPack,
   getDocuments,
   getReviewMatrices,
   getReviewPacks,
@@ -50,6 +52,7 @@ function ReviewsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [packsOpen, setPacksOpen] = useState(false);
 
   const matricesQuery = useQuery({
     queryKey: ["reviews", slug],
@@ -61,11 +64,19 @@ function ReviewsPage() {
     <PageWrapper
       title="Reviews"
       description="Structured legal review — each document, each question, one cell with grounded citations."
-      action={{
-        label: "New review",
-        icon: PlusIcon,
-        onClick: () => setDialogOpen(true),
-      }}
+      actions={[
+        {
+          label: "Packs",
+          icon: PackageIcon,
+          variant: "outline",
+          onClick: () => setPacksOpen(true),
+        },
+        {
+          label: "New review",
+          icon: PlusIcon,
+          onClick: () => setDialogOpen(true),
+        },
+      ]}
     >
       {matrices.length === 0 && !matricesQuery.isLoading ? (
         <Empty
@@ -120,6 +131,12 @@ function ReviewsPage() {
           </Table.Body>
         </Table>
       )}
+
+      <PacksDialog
+        slug={slug}
+        open={packsOpen}
+        onClose={() => setPacksOpen(false)}
+      />
 
       <NewReviewDialog
         slug={slug}
@@ -334,6 +351,185 @@ function NewReviewDialog({
           >
             {createMutation.isPending ? "Creating…" : "Create review"}
           </Button>
+        </div>
+      </Dialog>
+    </Dialog.Root>
+  );
+}
+
+function PacksDialog({
+  slug,
+  open,
+  onClose,
+}: {
+  slug: string;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const packsQuery = useQuery({
+    queryKey: ["review-packs", slug],
+    queryFn: () => getReviewPacks(slug),
+    enabled: open,
+  });
+  const packs = packsQuery.data ?? [];
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [model, setModel] = useState("");
+  const [columns, setColumns] = useState<ColumnDraft[]>([
+    { name: "", prompt: "" },
+  ]);
+
+  const createMutation = useMutation({
+    mutationFn: () =>
+      createReviewPack(slug, {
+        title: title.trim(),
+        description: description.trim() || undefined,
+        model: model.trim() || undefined,
+        columns: columns
+          .filter((c) => c.name.trim() && c.prompt.trim())
+          .map((c, i) => ({ index: i, name: c.name, prompt: c.prompt })),
+      }),
+    onSuccess: () => {
+      toast.success("Pack created");
+      void queryClient.invalidateQueries({ queryKey: ["review-packs", slug] });
+      setTitle("");
+      setDescription("");
+      setModel("");
+      setColumns([{ name: "", prompt: "" }]);
+    },
+    onError: (e) => toast.error(getErrorMessage(e)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteReviewPack(slug, id),
+    onSuccess: () => {
+      toast.success("Pack deleted");
+      void queryClient.invalidateQueries({ queryKey: ["review-packs", slug] });
+    },
+    onError: (e) => toast.error(getErrorMessage(e)),
+  });
+
+  const valid =
+    title.trim().length > 0 &&
+    columns.some((c) => c.name.trim() && c.prompt.trim());
+
+  return (
+    <Dialog.Root open={open} onOpenChange={(v) => !v && onClose()}>
+      <Dialog size="lg" className="p-6">
+        <Dialog.Title>Review packs</Dialog.Title>
+        <Dialog.Description>
+          Packs bundle the columns + model a review matrix uses. Built-in packs
+          are read-only; org packs are yours.
+        </Dialog.Description>
+
+        <ul className="mt-3 flex flex-col gap-2">
+          {packs.map((p) => (
+            <li
+              key={p.id}
+              className="border-border flex items-center justify-between rounded-md border px-3 py-2"
+            >
+              <div>
+                <div className="text-sm font-medium">
+                  {p.title}
+                  {p.builtin ? (
+                    <Badge variant="outline" className="ml-2">
+                      built-in
+                    </Badge>
+                  ) : null}
+                </div>
+                <div className="text-muted-foreground text-xs">
+                  {p.columns.length} columns{p.model ? ` · ${p.model}` : ""}
+                  {p.description ? ` — ${p.description}` : ""}
+                </div>
+              </div>
+              {!p.builtin ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={deleteMutation.isPending}
+                  onClick={() => deleteMutation.mutate(p.id)}
+                >
+                  <TrashIcon className="size-4" />
+                </Button>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+
+        <div className="border-border mt-4 flex flex-col gap-3 border-t pt-4">
+          <div className="text-sm font-medium">New pack</div>
+          <Input
+            label="Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Vendor security review"
+          />
+          <Input
+            label="Description (optional)"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+          <Input
+            label="Model (optional — falls back to matrix default)"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            placeholder="anthropic/claude-haiku-4-5-20251001"
+          />
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium">Columns</span>
+            {columns.map((col, i) => (
+              <div key={i} className="flex gap-2">
+                <Input
+                  value={col.name}
+                  onChange={(e) => {
+                    const next = [...columns];
+                    next[i] = { ...col, name: e.target.value };
+                    setColumns(next);
+                  }}
+                  placeholder="Column name"
+                />
+                <Textarea
+                  value={col.prompt}
+                  onChange={(e) => {
+                    const next = [...columns];
+                    next[i] = { ...col, prompt: e.target.value };
+                    setColumns(next);
+                  }}
+                  placeholder="Extraction prompt"
+                  rows={1}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setColumns(columns.filter((_, j) => j !== i))}
+                >
+                  <TrashIcon className="size-4" />
+                </Button>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setColumns([...columns, { name: "", prompt: "" }])}
+            >
+              Add column
+            </Button>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={onClose}>
+              Close
+            </Button>
+            <Button
+              disabled={!valid || createMutation.isPending}
+              onClick={() => createMutation.mutate()}
+            >
+              {createMutation.isPending ? "Creating…" : "Create pack"}
+            </Button>
+          </div>
         </div>
       </Dialog>
     </Dialog.Root>

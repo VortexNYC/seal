@@ -28,6 +28,7 @@ import {
   ZReviewPackCreate,
 } from "../platform/review-packs.js";
 import {
+  acceptAllPendingForDocument,
   acceptRevision,
   createRevision,
   listRevisions,
@@ -175,6 +176,29 @@ app.post("/:slug/revisions", async (c) => {
       createdById: userId(c),
     });
     return c.json(revision, 201);
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+app.post("/:slug/revisions/accept-all", async (c) => {
+  const parsed = z
+    .object({
+      document_id: z.string().min(1),
+      output: z.enum(["pdf", "docx"]).optional(),
+    })
+    .safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+  const db = createD1(c.env.D1);
+  try {
+    const result = await acceptAllPendingForDocument(
+      c.env,
+      db,
+      orgId(c),
+      parsed.data.document_id,
+      { output: parsed.data.output === "docx" ? "docx" : "pdf" }
+    );
+    return c.json(result);
   } catch (err) {
     return errorResponse(c, err);
   }

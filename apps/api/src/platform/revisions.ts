@@ -188,6 +188,55 @@ export function applyRevisionText(
   return before + s.anchorQuote + "\n\n" + (s.proposedText ?? "") + after;
 }
 
+/**
+ * Apply many edits against the ORIGINAL text positionally — anchors must
+ * not overlap (overlapping edits are skipped). Edits that anchor inside
+ * earlier proposals are impossible by construction: anchor offsets are
+ * resolved on the untouched source.
+ */
+export function applyAllRevisionsText(
+  source: string,
+  edits: {
+    kind: RevisionKind;
+    anchorQuote: string;
+    proposedText: string | null;
+  }[]
+): { text: string; applied: number; skipped: number } {
+  type Span = { start: number; end: number; edit: (typeof edits)[number] };
+  const spans: Span[] = [];
+  let skipped = 0;
+  for (const e of edits) {
+    const idx = source.indexOf(e.anchorQuote);
+    if (idx === -1) {
+      skipped++;
+      continue;
+    }
+    const end = idx + e.anchorQuote.length;
+    if (spans.some((s) => idx < s.end && end > s.start)) {
+      skipped++;
+      continue;
+    }
+    spans.push({ start: idx, end, edit: e });
+  }
+  spans.sort((a, b) => a.start - b.start);
+  let out = "";
+  let cursor = 0;
+  for (const span of spans) {
+    out += source.slice(cursor, span.start);
+    const e = span.edit;
+    if (e.kind === "delete") {
+      // drop the anchor text
+    } else if (e.kind === "replace") {
+      out += e.proposedText ?? "";
+    } else {
+      out += e.anchorQuote + "\n\n" + (e.proposedText ?? "");
+    }
+    cursor = span.end;
+  }
+  out += source.slice(cursor);
+  return { text: out, applied: spans.length, skipped };
+}
+
 /** Escape + paragraph-wrap revised markdown into print-ready HTML. */
 function revisedTextToHtml(title: string, text: string): string {
   const paras = text
@@ -353,6 +402,153 @@ export async function acceptRevision(
   if (!row) throw new RevisionError("resolve_failed", 409);
   const api = toApiRevision(row, doc.publicId);
   return { ...api, derived_document_id: derivedPublicId };
+}
+
+/**
+ * Accept every pending revision on a document in one shot — the derived
+ * doc carries all edits (one redline docx for output=docx, one revised
+ * PDF otherwise). All accepted revisions point at the same derived doc.
+ */
+export async function acceptAllPendingForDocument(
+  env: CloudflareBindings,
+  db: Db,
+  organizationId: string,
+  documentPublicId: string,
+  opts?: { output?: "pdf" | "docx" }
+): Promise<{ derived_document_id: string; accepted: number }> {
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, documentPublicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+  const doc = docRows[0];
+  if (!doc) throw new RevisionError("not_found", 404);
+  if (doc.status !== "draft") {
+    throw new RevisionError("document_not_editable", 400);
+  }
+
+  const pending = await db
+    .select()
+    .from(revisionSuggestions)
+    .where(
+      and(
+        eq(revisionSuggestions.documentId, doc.id),
+        eq(revisionSuggestions.organizationId, organizationId),
+        eq(revisionSuggestions.status, "pending")
+      )
+    );
+  if (pending.length === 0) {
+    throw new RevisionError("nothing_pending", 409);
+  }
+
+  const sourceText = doc.parsedText ?? "";
+  const edits = pending.map((s) => ({
+    kind: s.kind as RevisionKind,
+    anchorQuote: s.anchorQuote,
+    proposedText: s.proposedText,
+  }));
+
+  let pdfBytes: ArrayBuffer;
+  let originalKey: string | null = null;
+  let originalContentType: string | null = null;
+  if (opts?.output === "docx") {
+    const docx = await trackedDocxBytes(env, {
+      title: `${doc.name} — redline`,
+      text: sourceText,
+      edits: edits.map((e) => ({
+        kind: e.kind,
+        anchor_quote: e.anchorQuote,
+        proposed_text: e.proposedText,
+      })),
+      author: "Seal revision",
+    });
+    const docxKey = `uploads/${crypto.randomUUID()}`;
+    await env.DOCUMENTS_BUCKET.put(docxKey, new Uint8Array(docx.bytes), {
+      httpMetadata: {
+        contentType:
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      },
+      customMetadata: {
+        organizationId,
+        derivedFrom: doc.id,
+        tracked: "true",
+        bulk: "true",
+      },
+    });
+    pdfBytes = await convertBytesToPdf(env, {
+      bytes: docx.bytes,
+      contentType:
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      name: `${doc.name} — revised`,
+    });
+    originalKey = docxKey;
+    originalContentType =
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  } else {
+    const { text: revised } = applyAllRevisionsText(sourceText, edits);
+    const html = revisedTextToHtml(doc.name, revised);
+    pdfBytes = await convertBytesToPdf(env, {
+      bytes: new TextEncoder().encode(html),
+      contentType: "text/html",
+      name: `${doc.name} — revised`,
+    });
+  }
+
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await env.DOCUMENTS_BUCKET.put(storageId, pdfBytes, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: { organizationId, derivedFrom: doc.id, bulk: "true" },
+  });
+
+  const parsed = await parseDocumentFromStorage(env, storageId, {
+    organizationId,
+  });
+
+  const derivedId = crypto.randomUUID();
+  const derivedPublicId = crypto.randomUUID();
+  await db.insert(documents).values({
+    id: derivedId,
+    publicId: derivedPublicId,
+    organizationId,
+    ownerId: doc.ownerId,
+    name: `${doc.name} — revised`,
+    status: "draft",
+    documentStatus: "active",
+    sharingMode: "private",
+    storageKey: storageId,
+    contentType: "application/pdf",
+    size: pdfBytes.byteLength,
+    pageCount: parsed?.pageCount ?? null,
+    parsedText: parsed?.markdown ?? sourceText,
+    parsedTitle: parsed?.title ?? doc.name,
+    parsedFormat: parsed?.format ?? "pdf",
+    pdfType: parsed?.pdfType ?? null,
+    parentDocumentId: doc.id,
+    originalStorageKey: originalKey,
+    originalContentType,
+    fieldCandidates: parsed?.fieldCandidates.length
+      ? JSON.stringify(parsed.fieldCandidates)
+      : null,
+  });
+
+  const now = new Date();
+  await db
+    .update(revisionSuggestions)
+    .set({ status: "accepted", derivedDocumentId: derivedId, resolvedAt: now })
+    .where(
+      and(
+        eq(revisionSuggestions.documentId, doc.id),
+        eq(revisionSuggestions.organizationId, organizationId),
+        eq(revisionSuggestions.status, "pending")
+      )
+    );
+
+  return { derived_document_id: derivedPublicId, accepted: pending.length };
 }
 
 export async function rejectRevision(

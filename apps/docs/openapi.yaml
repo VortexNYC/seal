@@ -3931,6 +3931,40 @@ paths:
                     type: array
                     items: { $ref: "#/components/schemas/Revision" }
 
+  /revisions/accept-all:
+    post:
+      tags: [Revisions]
+      operationId: acceptAllRevisions
+      summary: Accept every pending revision on a document
+      description: >
+        One derived draft carries all pending edits — a single tracked-
+        changes .docx when `output=docx`. All accepted revisions point at
+        the same `derived_document_id`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [document_id]
+              properties:
+                document_id: { type: string }
+                output: { type: string, enum: [pdf, docx] }
+      responses:
+        "200":
+          description: Derived document + accept count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  derived_document_id: { type: string }
+                  accepted: { type: integer }
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Nothing pending
+
   /revisions/{id}/accept:
     post:
       tags: [Revisions]

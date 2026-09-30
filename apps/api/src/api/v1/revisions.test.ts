@@ -299,6 +299,74 @@ describe("revisions API", () => {
     expect(src[0]?.parsedText).toContain("thirty days written notice");
   });
 
+  it("accept-all folds every pending revision into one derived doc", async () => {
+    const { docPublicId, token } = await seed();
+    for (const [kind, anchor, proposed] of [
+      ["replace", "thirty days written notice", "sixty days written notice"],
+      ["insert", "thirty days written notice", " Venue: SDNY."],
+    ] as const) {
+      const res = await indexApp.request(
+        "/api/v1/revisions",
+        {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${token}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            document_id: docPublicId,
+            kind,
+            anchor_quote: anchor,
+            proposed_text: proposed,
+          }),
+        },
+        env
+      );
+      expect(res.status).toBe(201);
+    }
+
+    const bulk = await indexApp.request(
+      "/api/v1/revisions/accept-all",
+      {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ document_id: docPublicId }),
+      },
+      env
+    );
+    expect(bulk.status).toBe(200);
+    const body = z
+      .object({ derived_document_id: z.string(), accepted: z.number() })
+      .parse(await bulk.json());
+    expect(body.accepted).toBe(2);
+
+    const db = createD1(env.D1);
+    const derived = await db
+      .select()
+      .from(documents)
+      .where(eq(documents.publicId, body.derived_document_id));
+    expect(derived[0]?.status).toBe("draft");
+    expect(derived[0]?.parentDocumentId).toBeTruthy();
+
+    // second accept-all → 409 nothing pending
+    const again = await indexApp.request(
+      "/api/v1/revisions/accept-all",
+      {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ document_id: docPublicId }),
+      },
+      env
+    );
+    expect(again.status).toBe(409);
+  });
+
   it("reject closes the suggestion without a derived doc", async () => {
     const { docPublicId, token } = await seed();
     const createRes = await indexApp.request(
