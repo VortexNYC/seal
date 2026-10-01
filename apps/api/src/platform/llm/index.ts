@@ -21,7 +21,3 @@ export {
   ensureProvidersRegistered,
   resolveAvailableModel,
 } from "./providers.js";
-export {
-  createWorkersAiProvider,
-  WORKERS_AI_DEFAULT_MODEL,
-} from "./workers-ai.js";
