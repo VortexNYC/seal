@@ -2,11 +2,26 @@ openapi: 3.1.0
 info:
   title: Seal API
   description: >
-    Agent-native Seal REST API. Everything the product can do for signing
-    workflows is reachable here — documents, recipients, templates, signatures,
-    contacts, webhooks, members, settings, search, analytics, audit, and API
-    tokens. MCP, CLI, and the SDK are thin clients over this surface. Authenticate
-    with a `seal_…` API key (Bearer) from Settings → Developer → API Keys.
+    Seal is an agent-native document platform. Agents do the work; humans
+    sign. Three capabilities:
+
+    **Send & sign** — upload a PDF, place fields, add recipients, send. Track
+    status, remind, void, and download the completed document with its
+    certificate of completion. Audit trail on every action.
+
+    **Document tools** — deterministic PDF operations: preview text, split,
+    merge, compress, redact, watermark, OCR, convert, compare. No model
+    calls — pure document manipulation, safe to call from agents.
+
+    **Review** — build a matrix (documents × questions), let your own agent
+    read each document via `preview` and write answers via `cells`. Every
+    answer must carry a verbatim quote from the document — fabricated
+    citations collapse to `not_found`. Seal stores and grounds; the agent
+    does the reasoning on its own infrastructure.
+
+    MCP, CLI, and the SDK are thin clients over this same contract.
+    Authenticate with a `seal_…` API key (Bearer) from
+    Settings → Developer → API Keys.
   version: 1.0.0
   contact:
     name: Seal Support
@@ -946,41 +961,53 @@ components:
 
 tags:
   - name: Documents
-    description: Create, manage, and send documents for signing
+    description: >
+      Upload a PDF, place fields, send for signature, track status. Deterministic
+      PDF tools live here too — preview, split, merge, redact, watermark, OCR,
+      compare, convert. All document operations are pure document manipulation;
+      no model inference.
   - name: Recipients
-    description: Manage the people who sign or review a document
+    description: Add and manage the people who sign, approve, or view a document
   - name: Templates
-    description: Reusable document layouts that speed up your workflow
+    description: Reusable document layouts — fields and pages saved for repeated sends
   - name: Signatures
-    description: Access signature data and verify document integrity
+    description: Read signature records and verify completed documents
   - name: Uploads
-    description: Upload PDF files for use with the Documents API
+    description: Get a signed URL to upload a PDF directly to storage
   - name: Contacts
-    description: Workspace contact directory for recipients
+    description: Workspace directory — saved signers you can reuse
   - name: Folders
     description: Organize documents and templates into folders
   - name: Reviews
     description: >
-      Legal review matrices (ADR-006) — tabular extraction over documents with
-      citation-grounded cells. Agent/MCP first; no fat review UI.
+      Build a matrix — documents × questions — and let your agent fill each
+      cell via `PATCH /reviews/{id}/cells`. Every answer must carry a verbatim
+      quote from that document; fabricated quotes collapse to `not_found`.
+      Seal stores and grounds; your agent does the reasoning.
+  - name: Revisions
+    description: >
+      Track-change suggestions on a draft document. Agents propose redlines;
+      humans accept or reject. Nothing ships until a human approves.
+  - name: Jobs
+    description: Poll long-running operations (imports, bulk sends)
   - name: Imports
-    description: Import jobs from PDF batches or external e-sign providers
+    description: Bring documents in from PDF batches or external e-sign providers
   - name: Webhooks
-    description: Receive real-time events when document state changes
+    description: Get notified when documents are viewed, signed, completed, or voided
   - name: Members
-    description: Organization membership roster
+    description: Who is in this organization
   - name: Settings
-    description: Organization signing and notification settings
+    description: Signing defaults, notifications, security policy, AI enrichment kill switches
   - name: Account
-    description: Organization account summary
+    description: Organization summary
   - name: Analytics
     description: Signing funnel metrics for a time period
   - name: Audit
-    description: Workspace activity / audit log
+    description: Tamper-evident activity log — every action, hashed and chained
   - name: Search
-    description: Cross-resource search across documents, contacts, and templates
+    description: Search across documents, contacts, and templates
   - name: Tokens
-    description: Workspace-scoped API tokens (create / list / revoke)
+    description: Create, list, and revoke workspace API keys
 
 paths:
   # ──────────────────────────────────────────────────────────────────────────
@@ -3817,9 +3844,9 @@ paths:
 
   /review-packs:
     get:
-      tags: [Revisions]
+      tags: [Reviews]
       operationId: listReviewPacks
-      summary: List review packs (builtin + org-authored)
+      summary: List saved question sets (builtin + org-authored)
       responses:
         "200":
           description: Packs
@@ -3832,9 +3859,9 @@ paths:
                     type: array
                     items: { $ref: "#/components/schemas/ReviewPack" }
     post:
-      tags: [Revisions]
+      tags: [Reviews]
       operationId: createReviewPack
-      summary: Create an org-authored review pack
+      summary: Save a reusable set of review questions
       requestBody:
         required: true
         content:
@@ -3859,9 +3886,9 @@ paths:
 
   /review-packs/{id}:
     get:
-      tags: [Revisions]
+      tags: [Reviews]
       operationId: getReviewPack
-      summary: Get a review pack
+      summary: Get a saved question set
       parameters:
         - name: id
           in: path
@@ -3876,9 +3903,9 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
     delete:
-      tags: [Revisions]
+      tags: [Reviews]
       operationId: deleteReviewPack
-      summary: Delete an org-authored review pack
+      summary: Delete a saved question set
       parameters:
         - name: id
           in: path
@@ -3936,7 +3963,7 @@ paths:
     get:
       tags: [Revisions]
       operationId: listRevisions
-      summary: List revision suggestions
+      summary: List tracked-change suggestions
       parameters:
         - name: document_id
           in: query

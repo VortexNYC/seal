@@ -38,7 +38,7 @@ See \`seal://docs/agent-roles\` and docs \`/getting-started/agents\`.
 
 ## Key Capabilities
 
-- **AI field detection**: Automatically detect where signature fields belong on uploaded PDFs.
+- **Field detection**: deterministic layout analysis marks where signature fields belong on uploaded PDFs — no model call.
 - **Agent field placement**: seal_create_document_field, seal_place_field_candidates, seal_get_field_suggestions / seal_apply_field_suggestions, and seal_apply_document_bindings let agents place and fill fields without the web UI.
 - **Human handoff**: seal_get_interaction / seal_wait_interaction — InteractionSession (URL + poll) so humans sign without agents forging intent.
 - **Agent document power**: seal_get_document_annotations / generate, seal_preview_document (markdown|structured|chunks|pdf|original), seal_split_document, seal_organize_document_pdf, seal_crop_document_pdf, seal_watermark_document_pdf, seal_number_document_pdf_pages, seal_compress_document_pdf, seal_redact_document_pdf (true content scrub), seal_protect_document_pdf / seal_unlock_document_pdf, seal_flatten_document_pdf, seal_convert_document_pdf_to_pdfa, seal_export_document_pdf_images, seal_convert_document_pdf_to_office (docx/xlsx/pptx artifact), seal_ocr_document_pdf, seal_compare_document_pdfs (text diff), seal_annotate_document_pdf (highlight/text/rect/redact).
@@ -193,9 +193,9 @@ Optional:
 - \`default_value\`: Pre-filled value
 - \`options\`: Array of options for checkbox, dropdown, and radio fields
 
-## AI Field Detection
+## Field Detection
 
-Seal's AI can automatically detect where fields should go based on document content. Common patterns it recognizes: signature lines, "Date:", "Print Name:", "Initial here", checkbox lists.`,
+Seal's deterministic layout pass marks where fields should go — signature lines, "Date:", "Print Name:", "Initial here", checkbox lists. No model call involved.`,
   },
 
   "sequential-signing": {
