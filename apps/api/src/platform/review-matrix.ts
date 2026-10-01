@@ -42,11 +42,9 @@ export type ReviewColumn = z.infer<typeof ZReviewColumn>;
 
 export const ZReviewMatrixCreate = z.object({
   title: z.string().min(1).max(200),
-  /** Provenance label — which agent/model filled cells. Never executed by Seal. */
-  model: z.string().min(1).max(120).optional(),
   /** Optional when pack_id supplies columns. Explicit values win. */
   columns: z.array(ZReviewColumn).min(1).max(32).optional(),
-  /** Review pack to expand into columns/model (builtin/* or pack_*). */
+  /** Review pack to expand into columns (builtin/* or pack_*). */
   pack_id: z.string().min(1).max(64).optional(),
   documentIds: z.array(z.string().min(1)).min(1).max(100),
 });

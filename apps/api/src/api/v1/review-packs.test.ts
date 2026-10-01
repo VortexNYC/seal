@@ -210,11 +210,9 @@ describe("review packs API", () => {
     const matrix = z
       .object({
         id: z.string(),
-        model: z.string(),
         columns: z.array(z.object({ name: z.string() })),
       })
       .parse(await res.json());
-    expect(matrix.model).toBe("agent");
     expect(matrix.columns.map((c) => c.name)).toContain("Term & survival");
   });
 
@@ -231,7 +229,6 @@ describe("review packs API", () => {
         body: JSON.stringify({
           title: "Override matrix",
           pack_id: "builtin/nda",
-          model: "agent/test",
           columns: [{ index: 0, name: "Custom", prompt: "Custom prompt" }],
           documentIds: [docPublicId],
         }),
@@ -241,11 +238,9 @@ describe("review packs API", () => {
     expect(res.status).toBe(201);
     const matrix = z
       .object({
-        model: z.string(),
         columns: z.array(z.object({ name: z.string() })),
       })
       .parse(await res.json());
-    expect(matrix.model).toBe("agent/test");
     expect(matrix.columns).toHaveLength(1);
     expect(matrix.columns[0]?.name).toBe("Custom");
   });

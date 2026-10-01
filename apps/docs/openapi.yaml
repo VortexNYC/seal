@@ -503,7 +503,6 @@ components:
         id: { type: string }
         title: { type: string }
         description: { type: string, nullable: true }
-        model: { type: string, nullable: true }
         columns:
           type: array
           items: { $ref: "#/components/schemas/ReviewColumn" }
@@ -580,14 +579,10 @@ components:
 
     ReviewMatrix:
       type: object
-      required:
-        [id, title, model, status, columns, rows, created_at, updated_at]
+      required: [id, title, status, columns, rows, created_at, updated_at]
       properties:
         id: { type: string }
         title: { type: string }
-        model:
-          type: string
-          description: Provenance label of the agent/model that filled cells — recorded, never executed by Seal
         status: { type: string }
         columns:
           type: array
@@ -3596,7 +3591,6 @@ paths:
                       properties:
                         id: { type: string }
                         title: { type: string }
-                        model: { type: string }
                         status: { type: string }
                         row_count: { type: integer }
                         column_count: { type: integer }
@@ -3621,10 +3615,6 @@ paths:
               required: [title, documentIds]
               properties:
                 title: { type: string, maxLength: 200 }
-                model:
-                  type: string
-                  description: Provenance label — which agent/model fills the cells (e.g. `agent/claude-opus-4-6`). Never executed by Seal. Defaults to `agent`.
-                  maxLength: 120
                 pack_id:
                   type: string
                   description: >
@@ -3855,10 +3845,6 @@ paths:
               properties:
                 title: { type: string, maxLength: 200 }
                 description: { type: string, maxLength: 2000 }
-                model:
-                  type: string
-                  maxLength: 120
-                  description: Default provenance label for matrices using this pack
                 columns:
                   type: array
                   minItems: 1

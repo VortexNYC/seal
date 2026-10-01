@@ -3248,7 +3248,6 @@ export type ApiReviewCell = z.infer<typeof reviewCellSchema>;
 const reviewMatrixSchema = z.object({
   id: z.string(),
   title: z.string(),
-  model: z.string(),
   status: z.string(),
   columns: z.array(reviewColumnSchema),
   rows: z.array(
@@ -3266,7 +3265,6 @@ export type ApiReviewMatrix = z.infer<typeof reviewMatrixSchema>;
 const reviewMatrixListItemSchema = z.object({
   id: z.string(),
   title: z.string(),
-  model: z.string(),
   status: z.string(),
   row_count: z.number(),
   column_count: z.number(),
@@ -3281,7 +3279,6 @@ const reviewPackSchema = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string().nullable(),
-  model: z.string().nullable(),
   columns: z.array(reviewColumnSchema),
   builtin: z.boolean(),
   created_at: z.string(),
@@ -3342,7 +3339,6 @@ export async function createReviewMatrix(
     title: string;
     documentIds: string[];
     pack_id?: string;
-    model?: string;
     columns?: { index: number; name: string; prompt: string }[];
   }
 ): Promise<ApiReviewMatrix> {
@@ -3398,7 +3394,6 @@ export async function createReviewPack(
   input: {
     title: string;
     description?: string;
-    model?: string;
     columns: { index: number; name: string; prompt: string }[];
   }
 ): Promise<ApiReviewPack> {

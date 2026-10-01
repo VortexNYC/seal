@@ -1669,7 +1669,6 @@ export const reviewMatrices = sqliteTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
-    model: text("model").notNull(),
     status: text("status").notNull().default("draft"),
     columnsConfig: text("columns_config").notNull(),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
@@ -1826,8 +1825,6 @@ export const reviewPacks = sqliteTable(
       .references(() => organization.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     description: text("description"),
-    /** Default model key (provider/model) the pack suggests. */
-    model: text("model"),
     /** JSON array of {index, name, prompt} columns. */
     columns: text("columns").notNull(),
     createdAt: integer("created_at", { mode: "timestamp_ms" })

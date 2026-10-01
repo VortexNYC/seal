@@ -151,7 +151,6 @@ describe("org reviews API (session)", () => {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           title: "m",
-          model: "agent",
           columns: [{ index: 0, name: "Q", prompt: "P" }],
           documentIds: [docId],
         }),
@@ -208,7 +207,6 @@ describe("org reviews API (session)", () => {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           title: "s",
-          model: "agent/test",
           columns: [{ index: 0, name: "Q", prompt: "P" }],
           documentIds: [docId],
         }),

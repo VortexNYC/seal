@@ -11,7 +11,7 @@ import { pollUntil } from "../fixtures/poll";
  *   create (via API) → agent writes cells (PATCH) → list row → grid cell →
  *   cell panel → propose redline → pending rail → accept → derived doc.
  *
- * Agent-write flow — `PATCH .../cells` fills results; wiring, not model quality.
+ * Agent-write flow — `PATCH .../cells` fills results.
  */
 
 test.describe("reviews", () => {
@@ -36,7 +36,6 @@ test.describe("reviews", () => {
       const create = await request.post(`/api/reviews/${organizationSlug}`, {
         data: {
           title: "E2E review",
-          model: "agent/e2e",
           columns: [
             { index: 0, name: "Termination", prompt: "termination clause" },
           ],

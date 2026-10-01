@@ -18,7 +18,6 @@ type Db = ReturnType<typeof createD1>;
 export const ZReviewPackCreate = z.object({
   title: z.string().min(1).max(200),
   description: z.string().max(2000).optional(),
-  model: z.string().max(120).optional(),
   columns: z.array(ZReviewColumn).min(1).max(32),
 });
 export type ReviewPackCreate = z.infer<typeof ZReviewPackCreate>;
@@ -27,7 +26,6 @@ export type ApiReviewPack = {
   id: string;
   title: string;
   description: string | null;
-  model: string | null;
   columns: ReviewColumn[];
   builtin: boolean;
   created_at: string;
@@ -40,7 +38,6 @@ export const BUILTIN_PACKS: ApiReviewPack[] = [
     title: "NDA review",
     description:
       "Standard non-disclosure review: term, definition scope, exclusions, return/destruction, governing law.",
-    model: null,
     columns: [
       {
         index: 0,
@@ -75,7 +72,6 @@ export const BUILTIN_PACKS: ApiReviewPack[] = [
     title: "MSA review",
     description:
       "Master services agreement: liability caps, indemnities, IP, termination.",
-    model: null,
     columns: [
       {
         index: 0,
@@ -110,7 +106,6 @@ export const BUILTIN_PACKS: ApiReviewPack[] = [
     title: "Employment agreement review",
     description:
       "Employment/contractor: compensation, IP assignment, non-compete/non-solicit, termination & severance.",
-    model: null,
     columns: [
       {
         index: 0,
@@ -166,7 +161,6 @@ function toApiPack(row: typeof reviewPacks.$inferSelect): ApiReviewPack {
     id: row.publicId,
     title: row.title,
     description: row.description,
-    model: row.model,
     columns,
     builtin: false,
     created_at: row.createdAt.toISOString(),
@@ -220,7 +214,6 @@ export async function createReviewPack(
       organizationId,
       title: input.title,
       description: input.description ?? null,
-      model: input.model ?? null,
       columns: JSON.stringify(input.columns),
       createdAt: new Date(),
     })

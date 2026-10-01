@@ -65,14 +65,12 @@ app.post("/", async (c) => {
   try {
     // Pack expansion — explicit columns/model override the pack's defaults.
     let columns = parsed.data.columns;
-    let model = parsed.data.model;
     if (parsed.data.pack_id) {
       const pack = await getReviewPack(db, organizationId, parsed.data.pack_id);
       if (!pack) {
         return c.json({ error: "pack_not_found" }, 404);
       }
       columns = columns ?? pack.columns;
-      model = model ?? pack.model ?? undefined;
     }
     if (!columns || columns.length === 0) {
       return c.json(
@@ -84,7 +82,7 @@ app.post("/", async (c) => {
     const matrix = await createReviewMatrix(db, {
       organizationId,
       ownerId: mcp.sub,
-      input: { ...parsed.data, columns, model: model ?? "agent" },
+      input: { ...parsed.data, columns },
     });
     return c.json(matrix, 201);
   } catch (err) {
