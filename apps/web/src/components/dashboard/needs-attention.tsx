@@ -51,7 +51,7 @@ export function NeedsAttention({
           Open the document and take the action — resend, fix email, or nudge.
         </p>
       </LayerCard.Secondary>
-      <LayerCard.Primary className="flex flex-col gap-0.5 px-3 pb-3">
+      <LayerCard.Primary className="mx-1.5 mb-1.5 flex flex-col gap-0.5 px-3 pb-3">
         {attention.staleRecipients.map((item) => (
           <AttentionRow
             key={`stale-${item.documentId}-${item.recipientEmail}`}

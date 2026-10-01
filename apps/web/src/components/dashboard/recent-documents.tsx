@@ -50,7 +50,7 @@ export function RecentDocuments({
           </Button>
         </div>
       </LayerCard.Secondary>
-      <LayerCard.Primary className="px-3 pb-3">
+      <LayerCard.Primary className="mx-1.5 mb-1.5 px-3 pb-3">
         {recentDocs.length === 0 ? (
           <div className="text-muted-foreground flex flex-col items-center justify-center gap-3 px-4 py-10 text-sm">
             <FileTextIcon className="text-muted-foreground/50 size-8" />

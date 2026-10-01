@@ -51,7 +51,7 @@ export function QuickActions({ slug }: QuickActionsProps): React.ReactElement {
       <LayerCard.Secondary className="px-4 pt-4 pb-2">
         <h3 className="text-sm font-semibold">Start</h3>
       </LayerCard.Secondary>
-      <LayerCard.Primary className="flex flex-col gap-0.5 px-3 pb-3">
+      <LayerCard.Primary className="mx-1.5 mb-1.5 flex flex-col gap-0.5 px-3 pb-3">
         {actions.map((action) => {
           const Icon = action.icon;
           return (
