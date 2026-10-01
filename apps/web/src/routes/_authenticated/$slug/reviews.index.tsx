@@ -180,7 +180,9 @@ function NewReviewDialog({
   });
 
   const packs = packsQuery.data ?? [];
-  const docs = (docsQuery.data ?? []).filter((d) => d.status === "draft");
+  const docs = (docsQuery.data ?? []).filter(
+    (d) => (d.workflowStatus ?? "draft") === "draft"
+  );
   const selectedPack = packs.find((p) => p.id === packId);
   const isCustom = packId === "custom";
 

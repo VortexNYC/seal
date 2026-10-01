@@ -156,15 +156,20 @@ function ReviewMatrixPage() {
                         <button
                           type="button"
                           data-testid={`cell-${row.id}-${col.index}`}
-                          className="border-border hover:border-primary flex h-8 w-8 items-center justify-center rounded-md border transition-colors"
+                          className="hover:bg-muted/60 flex min-h-8 w-full min-w-40 items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors"
                           onClick={() =>
                             setSelectedCell({ rowId: row.id, cell })
                           }
                           title={cell.summary ?? cell.status}
                         >
                           <span
-                            className={`inline-block size-2.5 rounded-full ${dot ?? ""}`}
+                            className={`inline-block size-2.5 shrink-0 rounded-full ${dot ?? ""}`}
                           />
+                          {cell.summary ? (
+                            <span className="text-foreground line-clamp-2 text-xs leading-snug">
+                              {cell.summary}
+                            </span>
+                          ) : null}
                         </button>
                       </Table.Cell>
                     );
