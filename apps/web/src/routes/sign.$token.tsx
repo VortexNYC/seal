@@ -39,6 +39,7 @@ import { EsignConsentDialog } from "@/components/documents/esign-consent-dialog"
 import { FieldInputManager } from "@/components/documents/field-input-manager";
 import { FillableFieldOverlay } from "@/components/documents/fillable-field-overlay";
 import { PdfSigningDocumentSurface } from "@/components/documents/pdf-signing-document-surface";
+import { warmPdfiumWasm } from "@/lib/pdf-utils";
 import { PrivacyNoticeDialog } from "@/components/documents/privacy-notice-dialog";
 import { SignatureCapture } from "@/components/documents/signature-capture";
 import { DictateNextSignerDialog } from "@/components/signing/dictate-next-signer-dialog";
@@ -282,6 +283,12 @@ function SigningPage() {
     recipient.authVerified ??
       (!recipient.authMethod || recipient.authMethod === "none")
   );
+
+  // Prefetch the pdfium wasm while the signer works through gates — the PDF
+  // surface needs it immediately after, and the network is idle here.
+  useEffect(() => {
+    warmPdfiumWasm();
+  }, []);
   const [accountReady, setAccountReady] = useState(false);
   const markAccountReady = useCallback(() => {
     setAccountReady(true);

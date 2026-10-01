@@ -18,6 +18,15 @@ function getEngine(): Promise<PdfEngine<Blob>> {
   return engineSingleton;
 }
 
+/**
+ * Warm the pdfium wasm in the HTTP cache while the signer is still on the
+ * invite/consent gates — the engine downloads it at surface mount otherwise,
+ * and it is the heaviest byte payload on the signing path (~4.6MB).
+ */
+export function warmPdfiumWasm(): void {
+  void fetch(pdfiumWasmUrl, { credentials: "same-origin" }).catch(() => {});
+}
+
 async function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

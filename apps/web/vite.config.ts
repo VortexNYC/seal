@@ -251,6 +251,8 @@ export default defineConfig(() => {
             "/charts-",
             "/pdf-export-",
             "/date-utils-",
+            // posthog boots on idle (lib/posthog-client) — never preload.
+            "/vendor-analytics-",
           ];
           return deps.filter(
             (dep) => !blocked.some((needle) => dep.includes(needle))
