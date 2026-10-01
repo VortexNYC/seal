@@ -26,7 +26,9 @@
           "bg-fade-muted",
           "*:bg-fade-muted",
           "border-field",
-          "*:border-field"
+          "*:border-field",
+          "bg-noise",
+          "*:bg-noise"
         ]
       }
     ],
@@ -36,7 +38,54 @@
         "message": "Off-token value \u2014 use the spacing scale, a --text-*/--radius-*/--tracking-* token, or a named @utility in styles.css."
       }
     ],
-    "shadcn/no-inline-styles": "warn",
+    "shadcn/no-inline-styles": [
+      "error",
+      {
+        "allow": [
+          "left",
+          "top",
+          "right",
+          "bottom",
+          "width",
+          "height",
+          "minWidth",
+          "maxWidth",
+          "minHeight",
+          "maxHeight",
+          "transform",
+          "zIndex",
+          "paddingLeft",
+          "paddingRight",
+          "paddingTop",
+          "paddingBottom",
+          "marginLeft",
+          "marginRight",
+          "marginTop",
+          "marginBottom",
+          "fontFamily",
+          "fontSize",
+          "lineHeight",
+          "letterSpacing",
+          "background",
+          "backgroundColor",
+          "backgroundImage",
+          "color",
+          "opacity",
+          "animationDelay",
+          "transitionDelay",
+          "gridTemplate*",
+          "flex",
+          "gap",
+          "order",
+          "padding",
+          "borderRadius",
+          "borderColor",
+          "boxShadow",
+          "inset"
+        ],
+        "message": "Inline style \u2014 move static values to classes/tokens; the allow list covers runtime-computed props only."
+      }
+    ],
     "shadcn/require-static-classes": "warn",
     "shadcn/no-restyle": [
       "warn",
