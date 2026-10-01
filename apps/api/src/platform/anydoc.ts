@@ -93,8 +93,9 @@ export async function parseDocumentFromStorage(
     );
 
     if (!response.ok) {
+      const detail = await response.text().catch(() => "");
       console.error(
-        `anydoc parse failed: ${response.status} for ${storageKey}`
+        `anydoc parse failed: ${response.status} ${detail.slice(0, 200)} for ${storageKey}`
       );
       return null;
     }
