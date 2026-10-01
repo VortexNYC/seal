@@ -154,17 +154,16 @@ export function WorkspaceAccountMenu({
                   </DropdownMenu.Item>
                 );
               })}
+              {onCreateOrganization ? (
+                <DropdownMenu.Item
+                  icon={Plus}
+                  onClick={onCreateOrganization}
+                  className="text-muted-foreground"
+                >
+                  New workspace
+                </DropdownMenu.Item>
+              ) : null}
             </DropdownMenu.Group>
-            {onCreateOrganization ? (
-              <>
-                <DropdownMenu.Separator />
-                <DropdownMenu.Group>
-                  <DropdownMenu.Item icon={Plus} onClick={onCreateOrganization}>
-                    Create workspace
-                  </DropdownMenu.Item>
-                </DropdownMenu.Group>
-              </>
-            ) : null}
             <DropdownMenu.Separator />
             <DropdownMenu.Group>
               <DropdownMenu.Label>Account</DropdownMenu.Label>

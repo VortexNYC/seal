@@ -98,6 +98,7 @@ function ReviewsPage() {
               <Table.Row
                 key={m.id}
                 data-testid={`matrix-row-${m.id}`}
+                className="hover:bg-muted/50 cursor-pointer"
                 onClick={() =>
                   void navigate({
                     to: "/$slug/reviews/$matrixId",

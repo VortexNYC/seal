@@ -449,7 +449,7 @@ export function AppSidebar({
       {...props}
       className="border-sidebar-border bg-sidebar text-sidebar-foreground"
     >
-      <Sidebar.Header className="border-sidebar-border gap-0 border-b px-2 py-2">
+      <Sidebar.Header className="border-sidebar-border h-16 gap-0 border-b px-2 py-2">
         <div
           className="text-sidebar-foreground flex min-w-0 items-center gap-2 px-2 py-1"
           aria-label="Seal"

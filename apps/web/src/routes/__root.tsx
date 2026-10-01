@@ -50,7 +50,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     <Toasty toastManager={toastManager}>
       <HeadContent />
       <div className="h-svh">{children}</div>
-      <TanStackRouterDevtools position="bottom-right" />
+      <TanStackRouterDevtools position="bottom-left" />
     </Toasty>
   );
 }
