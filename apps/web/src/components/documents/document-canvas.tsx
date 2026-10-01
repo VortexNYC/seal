@@ -596,7 +596,7 @@ export function DocumentCanvas({
       >
         <PDFViewer
           ref={viewerRef}
-          style={{ width: "100%", height: "36rem" }}
+          className="h-144 w-full"
           config={viewerConfig}
           onReady={(registry) => {
             handleReady(registry);
