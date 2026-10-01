@@ -1,9 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import {
-  extractLikelyQuote,
-  groundCitation,
-} from "./review-matrix-store.js";
+import { groundCitation } from "./review-matrix-store.js";
 
 describe("review-matrix-store grounding", () => {
   test("empty document yields not_found", () => {
@@ -19,20 +16,10 @@ describe("review-matrix-store grounding", () => {
       documentId: "doc_1",
       quote: "terminate on thirty",
     });
+    // An absent quote must never be silently anchored — agents can't
+    // invent citations; the contract collapses to the literal not_found.
     expect(groundCitation("doc_1", text, "hallucinated clause").quote).toBe(
-      text.slice(0, 240)
+      "not_found"
     );
-  });
-
-  test("extractLikelyQuote finds overlapping chunk", () => {
-    const text = "Alpha beta gamma delta epsilon zeta.";
-    const quote = extractLikelyQuote(
-      "noise Alpha beta gamma delta more",
-      text
-    );
-    expect(quote).toBeTruthy();
-    expect(text.includes(quote!)).toBe(true);
-    expect("noise Alpha beta gamma delta more".includes(quote!)).toBe(true);
-    expect(extractLikelyQuote("totally unrelated", text)).toBeNull();
   });
 });

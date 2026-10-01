@@ -99,21 +99,18 @@ app.post("/:slug", async (c) => {
   const organizationId = orgId(c);
   try {
     let columns = parsed.data.columns;
-    let model = parsed.data.model;
     if (parsed.data.pack_id) {
       const pack = await getReviewPack(db, organizationId, parsed.data.pack_id);
       if (!pack) return c.json({ error: "pack_not_found" }, 404);
       columns = columns ?? pack.columns;
-      model = model ?? pack.model ?? undefined;
     }
     if (!columns?.length) {
       return c.json({ error: "validation_error" }, 400);
     }
-    model = model ?? "agent";
     const matrix = await createReviewMatrix(db, {
       organizationId,
       ownerId: userId(c),
-      input: { ...parsed.data, columns, model },
+      input: { ...parsed.data, columns },
     });
     return c.json(matrix, 201);
   } catch (err) {

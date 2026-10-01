@@ -97,7 +97,6 @@ async function seedOrgAndUser() {
 const matrixSchema = z.object({
   id: z.string(),
   title: z.string(),
-  model: z.string(),
   status: z.string(),
   columns: z.array(
     z.object({
@@ -178,7 +177,6 @@ describe("POST/GET /api/v1/reviews", () => {
         },
         body: JSON.stringify({
           title: "Missing",
-          model: "agent/test",
           columns: [{ index: 0, name: "X", prompt: "Y" }],
           documentIds: ["doc_missing"],
         }),
@@ -217,7 +215,6 @@ describe("POST/GET /api/v1/reviews", () => {
         },
         body: JSON.stringify({
           title: "Listed matrix",
-          model: "agent/test",
           columns: [{ index: 0, name: "Q", prompt: "P" }],
           documentIds: [docPublicId],
         }),
@@ -333,7 +330,6 @@ describe("POST/GET /api/v1/reviews", () => {
         },
         body: JSON.stringify({
           title: "Agent pass",
-          model: "agent",
           columns: [
             { index: 0, name: "Termination", prompt: "Find the clause." },
           ],
@@ -435,7 +431,6 @@ describe("POST/GET /api/v1/reviews", () => {
         },
         body: JSON.stringify({
           title: "Agent pass",
-          model: "agent",
           columns: [{ index: 0, name: "Governing law", prompt: "Find it." }],
           documentIds: [docPublicId],
         }),

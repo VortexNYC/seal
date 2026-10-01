@@ -52,7 +52,6 @@ export type ApiReviewRow = {
 export type ApiReviewMatrix = {
   id: string;
   title: string;
-  model: string;
   status: string;
   columns: ReviewColumn[];
   rows: ApiReviewRow[];
@@ -153,47 +152,6 @@ function parseFlag(value: unknown): ReviewFlag | null {
  * Pull the first JSON object out of a model reply (code-fence tolerant).
  * Providers that ignore the schema still surface raw text as the summary.
  */
-function extractJsonObject(raw: string): Record<string, unknown> | null {
-  const trimmed = raw.trim();
-  const start = trimmed.indexOf("{");
-  if (start === -1) return null;
-  let depth = 0;
-  let inString = false;
-  let escaped = false;
-  for (let i = start; i < trimmed.length; i++) {
-    const ch = trimmed[i];
-    if (escaped) {
-      escaped = false;
-      continue;
-    }
-    if (ch === "\\") {
-      escaped = true;
-      continue;
-    }
-    if (ch === '"') inString = !inString;
-    if (inString) continue;
-    if (ch === "{") depth++;
-    else if (ch === "}") {
-      depth--;
-      if (depth === 0) {
-        try {
-          const parsed: unknown = JSON.parse(trimmed.slice(start, i + 1));
-          if (
-            parsed !== null &&
-            typeof parsed === "object" &&
-            !Array.isArray(parsed)
-          ) {
-            return parsed as Record<string, unknown>;
-          }
-          return null;
-        } catch {
-          return null;
-        }
-      }
-    }
-  }
-  return null;
-}
 
 export async function createReviewMatrix(
   db: Db,
@@ -232,14 +190,11 @@ export async function createReviewMatrix(
   // pack_id expansion happens at the route layer; by the time the store is
   // called, columns + model must be resolved values.
   const columns = input.columns;
-  const model = input.model ?? "agent";
   if (!columns || columns.length === 0) {
     throw new ReviewMatrixError("invalid_input", 400, {
       columns: "required",
     });
   }
-  // `model` is a provenance label (which agent filled the cells) — never
-  // executed by Seal. Optional; defaults to "agent".
 
   const matrixId = crypto.randomUUID();
   const matrixPublicId = newPublicId("rm");
@@ -252,7 +207,6 @@ export async function createReviewMatrix(
     organizationId,
     ownerId,
     title: input.title,
-    model,
     status: "draft",
     columnsConfig: columnsJson,
     createdAt: now,
@@ -379,7 +333,7 @@ export async function getReviewMatrix(
   return {
     id: matrix.publicId,
     title: matrix.title,
-    model: matrix.model,
+
     status: matrix.status,
     columns: parseColumns(matrix.columnsConfig),
     rows: rows.map((row) => ({
@@ -402,7 +356,6 @@ export async function listReviewMatrices(
   {
     id: string;
     title: string;
-    model: string;
     status: string;
     row_count: number;
     column_count: number;
@@ -441,7 +394,7 @@ export async function listReviewMatrices(
     return {
       id: m.publicId,
       title: m.title,
-      model: m.model,
+
       status: m.status,
       row_count: rowCounts.get(m.id) ?? 0,
       column_count: columnCount,
@@ -455,30 +408,6 @@ export async function listReviewMatrices(
  * Find the longest substring of `raw` (≤ MAX_ECHO_QUOTE) that appears in
  * `parsedText`. Used so echo/provider noise can still ground a citation.
  */
-export function extractLikelyQuote(
-  raw: string,
-  parsedText: string | null | undefined
-): string | null {
-  const text = (parsedText ?? "").trim();
-  if (!text) return null;
-  const cleaned = raw.trim();
-  if (!cleaned) return null;
-  if (text.includes(cleaned.slice(0, MAX_ECHO_QUOTE))) {
-    return cleaned.slice(0, MAX_ECHO_QUOTE);
-  }
-  const minLen = Math.min(12, text.length);
-  for (
-    let len = Math.min(MAX_ECHO_QUOTE, text.length);
-    len >= minLen;
-    len -= 8
-  ) {
-    for (let i = 0; i + len <= text.length; i += 8) {
-      const chunk = text.slice(i, i + len);
-      if (cleaned.includes(chunk)) return chunk;
-    }
-  }
-  return null;
-}
 
 export class ReviewMatrixError extends Error {
   readonly code: string;

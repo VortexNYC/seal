@@ -970,14 +970,6 @@ export interface ApiFolder {
 
 export const createReviewMatrixSchema = z.object({
   title: z.string().min(1).max(200).describe("Matrix title"),
-  model: z
-    .string()
-    .min(1)
-    .max(120)
-    .optional()
-    .describe(
-      "Provenance label — which agent/model fills cells (e.g. agent/claude-opus-4-6); never executed by Seal. Defaults to agent."
-    ),
   columns: z
     .array(
       z.object({
@@ -1012,7 +1004,6 @@ export type GetReviewMatrixInput = z.infer<typeof getReviewMatrixSchema>;
 export interface ApiReviewMatrix {
   id: string;
   title: string;
-  model: string;
   status: string;
   columns: { index: number; name: string; prompt: string }[];
   rows: {

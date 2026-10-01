@@ -31,7 +31,7 @@ export function registerReviewTools(
 ): void {
   server.tool(
     "seal_list_reviews",
-    "List review matrices for the org — summary rows (id, title, model, status, counts).",
+    "List review matrices for the org — summary rows (id, title, status, counts).",
     {},
     async (_args, extra) => {
       const authToken = getAuthToken(extra);
@@ -182,11 +182,10 @@ export function registerReviewPackTools(
 
   server.tool(
     "seal_create_review_pack",
-    "Create an org-authored review pack — a named bundle of extraction columns (and optional default model) reusable across matrices.",
+    "Create an org-authored review pack — a named bundle of extraction columns reusable across matrices.",
     {
       title: z.string().min(1).max(200),
       description: z.string().max(2000).optional(),
-      model: z.string().max(120).optional(),
       columns: z
         .array(
           z.object({

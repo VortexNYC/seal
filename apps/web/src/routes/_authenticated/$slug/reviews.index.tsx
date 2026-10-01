@@ -90,7 +90,6 @@ function ReviewsPage() {
             <Table.Row>
               <Table.Head>Title</Table.Head>
               <Table.Head>Status</Table.Head>
-              <Table.Head>Filled by</Table.Head>
               <Table.Head>Size</Table.Head>
               <Table.Head>Updated</Table.Head>
             </Table.Row>
@@ -117,9 +116,6 @@ function ReviewsPage() {
                   >
                     {m.status}
                   </Badge>
-                </Table.Cell>
-                <Table.Cell className="text-muted-foreground">
-                  {m.model.split("/").pop()}
                 </Table.Cell>
                 <Table.Cell>
                   {m.row_count} docs × {m.column_count} cols
@@ -172,7 +168,6 @@ function NewReviewDialog({
   const [columns, setColumns] = useState<ColumnDraft[]>([
     { name: "", prompt: "" },
   ]);
-  const [model, setModel] = useState("");
 
   const packsQuery = useQuery({
     queryKey: ["review-packs", slug],
@@ -196,7 +191,6 @@ function NewReviewDialog({
         title: title.trim(),
         documentIds: [...docIds],
         pack_id: isCustom ? undefined : packId,
-        model: isCustom ? model.trim() || undefined : undefined,
         columns: isCustom
           ? columns
               .filter((c) => c.name.trim() && c.prompt.trim())
@@ -215,7 +209,7 @@ function NewReviewDialog({
     docIds.size > 0 &&
     (isCustom
       ? columns.some((c) => c.name.trim() && c.prompt.trim()) &&
-        model.trim().length > 0
+        columns.length > 0
       : packId.length > 0);
 
   return (
@@ -255,13 +249,6 @@ function NewReviewDialog({
 
           {isCustom ? (
             <>
-              <Input
-                label="Reviewed by (optional)"
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                placeholder="agent/claude-opus-4-6"
-                description="Provenance label — records which agent or model fills the cells. Seal never runs it."
-              />
               <div className="flex flex-col gap-2">
                 <span className="text-sm font-medium">Columns</span>
                 {columns.map((col, i) => (
@@ -378,7 +365,6 @@ function PacksDialog({
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [model, setModel] = useState("");
   const [columns, setColumns] = useState<ColumnDraft[]>([
     { name: "", prompt: "" },
   ]);
@@ -388,7 +374,6 @@ function PacksDialog({
       createReviewPack(slug, {
         title: title.trim(),
         description: description.trim() || undefined,
-        model: model.trim() || undefined,
         columns: columns
           .filter((c) => c.name.trim() && c.prompt.trim())
           .map((c, i) => ({ index: i, name: c.name, prompt: c.prompt })),
@@ -398,7 +383,6 @@ function PacksDialog({
       void queryClient.invalidateQueries({ queryKey: ["review-packs", slug] });
       setTitle("");
       setDescription("");
-      setModel("");
       setColumns([{ name: "", prompt: "" }]);
     },
     onError: (e) => toast.error(getErrorMessage(e)),
@@ -422,8 +406,8 @@ function PacksDialog({
       <Dialog size="lg" className="p-6">
         <Dialog.Title>Review packs</Dialog.Title>
         <Dialog.Description>
-          Packs bundle the columns a review matrix uses (plus an optional provenance label). Built-in packs
-          are read-only; org packs are yours.
+          Packs bundle the columns a review matrix uses. Built-in packs are
+          read-only; org packs are yours.
         </Dialog.Description>
 
         <ul className="mt-3 flex flex-col gap-2">
@@ -442,7 +426,7 @@ function PacksDialog({
                   ) : null}
                 </div>
                 <div className="text-muted-foreground text-xs">
-                  {p.columns.length} columns{p.model ? ` · ${p.model}` : ""}
+                  {p.columns.length} columns
                   {p.description ? ` — ${p.description}` : ""}
                 </div>
               </div>
@@ -472,12 +456,6 @@ function PacksDialog({
             label="Description (optional)"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-          />
-          <Input
-            label="Reviewed by (optional)"
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-            placeholder="agent/claude-opus-4-6"
           />
           <div className="flex flex-col gap-2">
             <span className="text-sm font-medium">Columns</span>
