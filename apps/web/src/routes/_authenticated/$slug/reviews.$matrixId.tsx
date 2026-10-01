@@ -16,7 +16,7 @@ import {
   CheckIcon,
   FileTextIcon,
   FilePenLineIcon,
-  PlusIcon,
+  ArrowLeftIcon,
   XIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
