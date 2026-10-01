@@ -372,7 +372,7 @@ export function AIFieldOverlays({
 }
 
 /**
- * Review bar for AI suggestions — apply, dismiss, select.
+ * Review bar for field suggestions — apply, dismiss, select.
  * Must be placed OUTSIDE TransformComponent so it doesn't zoom with the PDF.
  */
 export function AIFieldReviewBar({
@@ -402,7 +402,7 @@ export function AIFieldReviewBar({
   return (
     <div
       role="toolbar"
-      aria-label="AI suggestion actions"
+      aria-label="Field suggestion actions"
       className="bg-kumo-elevated/95 border-kumo-hairline flex items-center justify-between gap-3 rounded-xl border px-4 py-3 shadow-lg backdrop-blur-sm"
     >
       <div className="flex items-center gap-2">
@@ -455,7 +455,7 @@ export function AIFieldReviewBar({
             Dismiss
           </Button>
           <Dialog size="sm" className="p-6">
-            <Dialog.Title>Dismiss AI suggestions?</Dialog.Title>
+            <Dialog.Title>Dismiss field suggestions?</Dialog.Title>
             <Dialog.Description>
               This will remove all {suggestions.fields.length} field
               suggestions. You can re-analyze the document later if needed.

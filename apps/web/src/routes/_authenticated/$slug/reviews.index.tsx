@@ -90,7 +90,7 @@ function ReviewsPage() {
             <Table.Row>
               <Table.Head>Title</Table.Head>
               <Table.Head>Status</Table.Head>
-              <Table.Head>Model</Table.Head>
+              <Table.Head>Filled by</Table.Head>
               <Table.Head>Size</Table.Head>
               <Table.Head>Updated</Table.Head>
             </Table.Row>
@@ -256,10 +256,11 @@ function NewReviewDialog({
           {isCustom ? (
             <>
               <Input
-                label="Model"
+                label="Reviewed by (optional)"
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
-                placeholder="anthropic/claude-haiku-4-5-20251001"
+                placeholder="agent/claude-opus-4-6"
+                description="Provenance label — records which agent or model fills the cells. Seal never runs it."
               />
               <div className="flex flex-col gap-2">
                 <span className="text-sm font-medium">Columns</span>
@@ -421,7 +422,7 @@ function PacksDialog({
       <Dialog size="lg" className="p-6">
         <Dialog.Title>Review packs</Dialog.Title>
         <Dialog.Description>
-          Packs bundle the columns + model a review matrix uses. Built-in packs
+          Packs bundle the columns a review matrix uses (plus an optional provenance label). Built-in packs
           are read-only; org packs are yours.
         </Dialog.Description>
 
@@ -473,10 +474,10 @@ function PacksDialog({
             onChange={(e) => setDescription(e.target.value)}
           />
           <Input
-            label="Model (optional — falls back to matrix default)"
+            label="Reviewed by (optional)"
             value={model}
             onChange={(e) => setModel(e.target.value)}
-            placeholder="anthropic/claude-haiku-4-5-20251001"
+            placeholder="agent/claude-opus-4-6"
           />
           <div className="flex flex-col gap-2">
             <span className="text-sm font-medium">Columns</span>

@@ -757,9 +757,10 @@ components:
             enabled:
               type: boolean
               description: >
-                Org kill switch for AI / anydoc (field suggestions, document
-                parse). When false, AI routes return 403 `ai_disabled` and
-                anydoc parse is skipped (SEA-70).
+                Org kill switch for document-processing features (field
+                suggestions, text extraction via anydoc). Deterministic
+                enrichment only — Seal runs no hosted model. When false,
+                those routes return 403 `ai_disabled` (SEA-70).
             auto_analyze: { type: boolean }
         egress:
           type: object

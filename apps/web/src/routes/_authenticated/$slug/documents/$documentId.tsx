@@ -462,11 +462,11 @@ function DocumentDetailPage() {
     prevAiStatus.current = current;
 
     if (prev === "processing" && current === "completed") {
-      toast.success("AI analysis complete", {
+      toast.success("Analysis complete", {
         description: "Field suggestions and insights are ready to review.",
       });
     } else if (prev === "processing" && current === "failed") {
-      toast.error("AI analysis failed", {
+      toast.error("Analysis failed", {
         description: "The document could not be analyzed. You can retry later.",
       });
     }
