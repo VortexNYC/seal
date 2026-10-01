@@ -1,7 +1,7 @@
+import { Button } from "@cloudflare/kumo/components/button";
+import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import type { JSX } from "react";
 import { useState } from "react";
-import { CaretLeft, CaretRight } from "@phosphor-icons/react";
-import { Button } from "@cloudflare/kumo/components/button";
 
 import { cn } from "@/lib/utils";
 

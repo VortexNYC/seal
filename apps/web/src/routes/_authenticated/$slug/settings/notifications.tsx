@@ -15,9 +15,9 @@ import { Bell, Save, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
-import { UserNotificationPreferences } from "@/components/settings/user-notification-preferences";
 import { SettingsBody } from "@/components/settings-body";
 import { SettingsSection } from "@/components/settings-section";
+import { UserNotificationPreferences } from "@/components/settings/user-notification-preferences";
 import { FormSkeleton } from "@/components/skeletons";
 import {
   getNotificationSettings,
@@ -204,7 +204,11 @@ function NotificationSettings() {
                   }}
                 />
               </div>
-              <Button type="button" variant="secondary" onClick={addReminderDay}>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={addReminderDay}
+              >
                 Add
               </Button>
             </div>

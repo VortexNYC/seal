@@ -186,158 +186,162 @@ function ContactDetailContent() {
   return (
     <PageWrapper title={contact.fullName}>
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
-      <div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground hover:text-foreground gap-1"
-          onClick={() =>
-            router.navigate({ to: "/$slug/contacts", params: { slug } })
-          }
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Contacts
-        </Button>
-      </div>
+        <div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-foreground gap-1"
+            onClick={() =>
+              router.navigate({ to: "/$slug/contacts", params: { slug } })
+            }
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Contacts
+          </Button>
+        </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        {/* Left column: Contact info */}
-        <div className="lg:col-span-2">
-          <LayerCard>
-            <LayerCard.Secondary className="flex flex-row items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Text as="h2" variant="heading">
-                  {contact.fullName}
-                </Text>
-                <ContactStatusBadge status={contact.status} />
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setEditOpen(true)}
-              >
-                <PencilSimple className="mr-2 h-4 w-4" />
-                Edit
-              </Button>
-            </LayerCard.Secondary>
+        <div className="grid gap-4 lg:grid-cols-3">
+          {/* Left column: Contact info */}
+          <div className="lg:col-span-2">
+            <LayerCard>
+              <LayerCard.Secondary className="flex flex-row items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Text as="h2" variant="heading">
+                    {contact.fullName}
+                  </Text>
+                  <ContactStatusBadge status={contact.status} />
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditOpen(true)}
+                >
+                  <PencilSimple className="mr-2 h-4 w-4" />
+                  Edit
+                </Button>
+              </LayerCard.Secondary>
 
-            <LayerCard.Primary>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <InfoRow icon={Envelope} label="Email" value={contact.email} />
-                <InfoRow icon={Phone} label="Phone" value={contact.phone} />
-                <InfoRow
-                  icon={Building}
-                  label="Company"
-                  value={contact.company}
-                />
-                <InfoRow icon={User} label="Title" value={contact.title} />
-              </div>
+              <LayerCard.Primary>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <InfoRow
+                    icon={Envelope}
+                    label="Email"
+                    value={contact.email}
+                  />
+                  <InfoRow icon={Phone} label="Phone" value={contact.phone} />
+                  <InfoRow
+                    icon={Building}
+                    label="Company"
+                    value={contact.company}
+                  />
+                  <InfoRow icon={User} label="Title" value={contact.title} />
+                </div>
 
-              {contact.notes && (
+                {contact.notes && (
+                  <div className="mt-6 border-t pt-4">
+                    <div className="flex items-start gap-3">
+                      <PencilSimple className="text-kumo-secondary mt-0.5 h-4 w-4 shrink-0" />
+                      <div>
+                        <Text as="p" variant="secondary" size="xs">
+                          Notes
+                        </Text>
+                        <p className="text-kumo-default text-sm whitespace-pre-wrap">
+                          {contact.notes}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {contact.tags && contact.tags.length > 0 && (
+                  <div className="mt-4 border-t pt-4">
+                    <div className="mb-2">
+                      <Text as="p" variant="secondary" size="xs">
+                        Tags
+                      </Text>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {contact.tags.map((tag) => (
+                        <Badge key={tag} variant="secondary">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="mt-6 border-t pt-4">
-                  <div className="flex items-start gap-3">
-                    <PencilSimple className="text-kumo-secondary mt-0.5 h-4 w-4 shrink-0" />
-                    <div>
-                      <Text as="p" variant="secondary" size="xs">
-                        Notes
-                      </Text>
-                      <p className="text-kumo-default text-sm whitespace-pre-wrap">
-                        {contact.notes}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {contact.tags && contact.tags.length > 0 && (
-                <div className="mt-4 border-t pt-4">
-                  <div className="mb-2">
-                    <Text as="p" variant="secondary" size="xs">
-                      Tags
-                    </Text>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {contact.tags.map((tag) => (
-                      <Badge key={tag} variant="secondary">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="mt-6 border-t pt-4">
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <div className="flex items-start gap-3">
-                    <Calendar className="text-kumo-secondary mt-0.5 h-4 w-4 shrink-0" />
-                    <div>
-                      <Text as="p" variant="secondary" size="xs">
-                        Created
-                      </Text>
-                      <Text as="p" size="sm">
-                        {formatDate(contact.createdAt)}
-                      </Text>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Calendar className="text-kumo-secondary mt-0.5 h-4 w-4 shrink-0" />
-                    <div>
-                      <Text as="p" variant="secondary" size="xs">
-                        Updated
-                      </Text>
-                      <Text as="p" size="sm">
-                        {formatDate(contact.updatedAt)}
-                      </Text>
-                    </div>
-                  </div>
-                  {contact.lastContactedAt && (
+                  <div className="grid gap-4 sm:grid-cols-3">
                     <div className="flex items-start gap-3">
                       <Calendar className="text-kumo-secondary mt-0.5 h-4 w-4 shrink-0" />
                       <div>
                         <Text as="p" variant="secondary" size="xs">
-                          Last Contacted
+                          Created
                         </Text>
                         <Text as="p" size="sm">
-                          {formatDate(contact.lastContactedAt)}
+                          {formatDate(contact.createdAt)}
                         </Text>
                       </div>
                     </div>
-                  )}
+                    <div className="flex items-start gap-3">
+                      <Calendar className="text-kumo-secondary mt-0.5 h-4 w-4 shrink-0" />
+                      <div>
+                        <Text as="p" variant="secondary" size="xs">
+                          Updated
+                        </Text>
+                        <Text as="p" size="sm">
+                          {formatDate(contact.updatedAt)}
+                        </Text>
+                      </div>
+                    </div>
+                    {contact.lastContactedAt && (
+                      <div className="flex items-start gap-3">
+                        <Calendar className="text-kumo-secondary mt-0.5 h-4 w-4 shrink-0" />
+                        <div>
+                          <Text as="p" variant="secondary" size="xs">
+                            Last Contacted
+                          </Text>
+                          <Text as="p" size="sm">
+                            {formatDate(contact.lastContactedAt)}
+                          </Text>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              {/* Delete button */}
-              <div className="mt-6 border-t pt-4">
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setDeleteOpen(true)}
-                >
-                  <Trash className="mr-2 h-4 w-4" />
-                  Delete Contact
-                </Button>
-              </div>
-            </LayerCard.Primary>
-          </LayerCard>
-        </div>
+                {/* Delete button */}
+                <div className="mt-6 border-t pt-4">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setDeleteOpen(true)}
+                  >
+                    <Trash className="mr-2 h-4 w-4" />
+                    Delete Contact
+                  </Button>
+                </div>
+              </LayerCard.Primary>
+            </LayerCard>
+          </div>
 
-        {/* Right column: Related documents */}
-        <div className="lg:col-span-1">
-          <LayerCard>
-            <LayerCard.Secondary>
-              <h3 className="flex items-center gap-2 text-base font-medium">
-                <FileText className="h-4 w-4" />
-                Related Documents
-              </h3>
-            </LayerCard.Secondary>
-            <LayerCard.Primary>
-              <Suspense fallback={<RelatedDocumentsSkeleton />}>
-                <RelatedDocumentsContent email={contact.email} slug={slug} />
-              </Suspense>
-            </LayerCard.Primary>
-          </LayerCard>
+          {/* Right column: Related documents */}
+          <div className="lg:col-span-1">
+            <LayerCard>
+              <LayerCard.Secondary>
+                <h3 className="flex items-center gap-2 text-base font-medium">
+                  <FileText className="h-4 w-4" />
+                  Related Documents
+                </h3>
+              </LayerCard.Secondary>
+              <LayerCard.Primary>
+                <Suspense fallback={<RelatedDocumentsSkeleton />}>
+                  <RelatedDocumentsContent email={contact.email} slug={slug} />
+                </Suspense>
+              </LayerCard.Primary>
+            </LayerCard>
+          </div>
         </div>
-      </div>
       </div>
 
       {/* Edit dialog */}

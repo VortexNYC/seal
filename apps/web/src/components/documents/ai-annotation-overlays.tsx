@@ -178,7 +178,7 @@ function HighlightOverlay({
             <config.icon className={cn("h-3 w-3", config.textColor)} />
             <span
               className={cn(
-                "text-[10px] font-semibold tracking-wide uppercase",
+                "text-3xs font-semibold tracking-wide uppercase",
                 config.textColor
               )}
             >
@@ -284,7 +284,7 @@ export function AIInsightsPanel({
               aria-pressed={isActive}
               aria-label={`${config.label} annotations (${count})`}
               className={cn(
-                "flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors",
+                "text-2xs flex items-center gap-1 rounded-full px-2 py-0.5 font-medium transition-colors",
                 isActive
                   ? cn(config.bgColor, config.textColor)
                   : "bg-kumo-elevated text-kumo-secondary/60"
@@ -327,7 +327,7 @@ export function AIInsightsPanel({
                   {annotation.summary}
                 </p>
               </div>
-              <span className="text-kumo-secondary bg-kumo-elevated shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium">
+              <span className="text-kumo-secondary bg-kumo-elevated text-3xs shrink-0 rounded px-1.5 py-0.5 font-medium">
                 p.{annotation.page}
               </span>
             </button>
@@ -345,7 +345,7 @@ export function AIInsightsPanel({
           type="button"
           variant="ghost"
           size="xs"
-          className="text-kumo-secondary/60 hover:text-kumo-secondary text-[11px]"
+          className="text-kumo-secondary/60 hover:text-kumo-secondary text-2xs"
           onClick={() => setDismissOpen(true)}
         >
           Dismiss all insights

@@ -39,7 +39,7 @@ function WorkspaceMark({
   return (
     <span
       className={cn(
-        "grid size-full place-items-center rounded-md text-[0.7rem] font-semibold uppercase",
+        "text-2xs grid size-full place-items-center rounded-md font-semibold uppercase",
         className
       )}
       aria-hidden
@@ -133,10 +133,7 @@ export function TeamSwitcher({
               <>
                 <DropdownMenu.Separator />
                 <DropdownMenu.Group>
-                  <DropdownMenu.Item
-                    icon={Plus}
-                    onClick={onCreateOrganization}
-                  >
+                  <DropdownMenu.Item icon={Plus} onClick={onCreateOrganization}>
                     Create workspace
                   </DropdownMenu.Item>
                 </DropdownMenu.Group>

@@ -1,6 +1,5 @@
-import { cn } from "@/lib/utils";
-
 import { SealLogo } from "@/components/seal-logo";
+import { cn } from "@/lib/utils";
 
 interface SealLogoBadgeFixedProps {
   className?: string;

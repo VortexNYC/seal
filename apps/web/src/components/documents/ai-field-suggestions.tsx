@@ -127,7 +127,7 @@ function SuggestionOverlay({
       aria-label={`${isSelected ? "Deselect" : "Select"} ${field.label} ${field.fieldType} field`}
       aria-pressed={isSelected}
       className={cn(
-        "absolute z-30 flex items-center gap-1 rounded-[3px] border-[1.5px] border-dashed transition-[color,background-color,border-color] duration-200",
+        "rounded-mini border-field absolute z-30 flex items-center gap-1 border-dashed transition-colors duration-200",
         colors.bg,
         colors.border,
         isSelected
@@ -143,7 +143,7 @@ function SuggestionOverlay({
     >
       <div
         className={cn(
-          "absolute -top-5 left-0 flex items-center gap-1 rounded-t-sm px-1.5 py-0.5 font-sans text-[11px] font-medium whitespace-nowrap",
+          "text-2xs absolute -top-5 left-0 flex items-center gap-1 rounded-t-sm px-1.5 py-0.5 font-sans font-medium whitespace-nowrap",
           colors.badge
         )}
       >

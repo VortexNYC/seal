@@ -125,9 +125,7 @@ describe("AddRecipientDialog", () => {
     test("renders description when open", () => {
       renderDialog();
       expect(
-        screen.getByText(
-          "Who needs to sign, approve, or view this document?"
-        )
+        screen.getByText("Who needs to sign, approve, or view this document?")
       ).toBeInTheDocument();
     });
   });

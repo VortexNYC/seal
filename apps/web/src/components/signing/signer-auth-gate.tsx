@@ -72,17 +72,15 @@ export function SignerAuthGate({
   }, [method, token]);
 
   const title =
-    method === "email_otp"
-      ? "Confirm your email"
-      : "Enter the access code";
+    method === "email_otp" ? "Confirm your email" : "Enter the access code";
   const description =
     method === "email_otp"
       ? `We sent a one-time code to ${maskedEmail ?? "your email"}. Enter it to continue signing.`
       : "This envelope requires an access code from the sender before you can sign.";
 
   return (
-    <div className="flex min-h-dvh w-full items-center justify-center px-[max(1rem,env(safe-area-inset-left))] py-8 pr-[max(1rem,env(safe-area-inset-right))]">
-      <LayerCard className="w-full max-w-lg p-[clamp(1rem,4vw,2rem)]">
+    <div className="px-safe flex min-h-dvh w-full items-center justify-center py-8">
+      <LayerCard className="p-fluid w-full max-w-lg">
         <div className="mb-4 flex items-center gap-2">
           <ShieldCheck className="size-6 shrink-0" weight="duotone" />
           <h1 className="text-xl font-semibold tracking-tight text-balance">

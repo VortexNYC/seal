@@ -117,7 +117,9 @@ async function uploadSourceMapsToPosthog(directory: string): Promise<void> {
       stdio: "inherit",
     });
     child.on("error", (error: Error) => {
-      console.warn(`[seal] posthog-cli sourcemap upload failed: ${error.message}`);
+      console.warn(
+        `[seal] posthog-cli sourcemap upload failed: ${error.message}`
+      );
       resolve();
     });
     child.on("close", (code) => {

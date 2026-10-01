@@ -34,8 +34,11 @@ export function PrivacyNoticeDialog({
 
   if (accepted) {
     return (
-      <div data-seal-enter className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8">
-        <div className="w-full max-w-lg flex flex-col gap-6">
+      <div
+        data-seal-enter
+        className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8"
+      >
+        <div className="flex w-full max-w-lg flex-col gap-6">
           <div className="flex justify-center">
             <SealLogo size={48} variant="color" />
           </div>
@@ -63,8 +66,11 @@ export function PrivacyNoticeDialog({
   }
 
   return (
-    <div data-seal-enter className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8">
-      <div className="w-full max-w-lg flex flex-col gap-6">
+    <div
+      data-seal-enter
+      className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8"
+    >
+      <div className="flex w-full max-w-lg flex-col gap-6">
         <div className="flex justify-center">
           <SealLogo size={48} variant="color" />
         </div>
@@ -80,7 +86,7 @@ export function PrivacyNoticeDialog({
         </div>
 
         <LayerCard>
-          <LayerCard.Primary className="max-h-[50vh] flex flex-col gap-3 overflow-y-auto p-5">
+          <LayerCard.Primary className="max-h-vh-50 flex flex-col gap-3 overflow-y-auto p-5">
             {noticeText.split("\n").map((line, index) =>
               line.trim().length === 0 ? (
                 <div key={`blank-${index}`} className="h-2" />

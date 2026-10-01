@@ -25,7 +25,13 @@ import {
 } from "@phosphor-icons/react";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { Suspense, useCallback, useEffect, useState, type ReactElement } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useState,
+  type ReactElement,
+} from "react";
 
 import { ContactStatusBadge } from "@/components/contacts/contact-status-badge";
 import { CreateContactDialog } from "@/components/contacts/create-contact-dialog";
@@ -74,7 +80,7 @@ function ContactsTableSkeleton() {
       role="status"
       aria-label="Loading contacts"
     >
-      <Table className="min-w-[600px]">
+      <Table className="min-w-150">
         <Table.Header>
           <Table.Row>
             <Table.Head className="w-10" />
@@ -280,7 +286,7 @@ function ContactsTableContent({
       )}
 
       <div className="overflow-x-auto rounded-lg border">
-        <Table className="min-w-[600px]">
+        <Table className="min-w-150">
           <Table.Header>
             <Table.Row>
               <Table.Head className="w-10">
@@ -624,34 +630,34 @@ function ContactsPage() {
             <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
               Status
             </span>
-          <Button
-            size="sm"
-            variant={statusFilter === "all" ? "primary" : "outline"}
-            onClick={() => setStatusFilter("all")}
-          >
-            All
-          </Button>
-          <Button
-            size="sm"
-            variant={statusFilter === "active" ? "primary" : "outline"}
-            onClick={() => setStatusFilter("active")}
-          >
-            Active
-          </Button>
-          <Button
-            size="sm"
-            variant={statusFilter === "inactive" ? "primary" : "outline"}
-            onClick={() => setStatusFilter("inactive")}
-          >
-            Inactive
-          </Button>
-          <Button
-            size="sm"
-            variant={statusFilter === "lead" ? "primary" : "outline"}
-            onClick={() => setStatusFilter("lead")}
-          >
-            Lead
-          </Button>
+            <Button
+              size="sm"
+              variant={statusFilter === "all" ? "primary" : "outline"}
+              onClick={() => setStatusFilter("all")}
+            >
+              All
+            </Button>
+            <Button
+              size="sm"
+              variant={statusFilter === "active" ? "primary" : "outline"}
+              onClick={() => setStatusFilter("active")}
+            >
+              Active
+            </Button>
+            <Button
+              size="sm"
+              variant={statusFilter === "inactive" ? "primary" : "outline"}
+              onClick={() => setStatusFilter("inactive")}
+            >
+              Inactive
+            </Button>
+            <Button
+              size="sm"
+              variant={statusFilter === "lead" ? "primary" : "outline"}
+              onClick={() => setStatusFilter("lead")}
+            >
+              Lead
+            </Button>
           </div>
         </div>
 

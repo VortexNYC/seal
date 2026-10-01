@@ -13,14 +13,13 @@ import { Table } from "@cloudflare/kumo/components/table";
 import { Text } from "@cloudflare/kumo/components/text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { isOrganizationAdminRole } from "@vortex-api/better-auth-ui";
 import { useState } from "react";
 
-import { isOrganizationAdminRole } from "@vortex-api/better-auth-ui";
-
 import { PageWrapper } from "@/components/page-wrapper";
-import { DeveloperNav } from "@/components/settings/developer-nav";
 import { SettingsBody } from "@/components/settings-body";
 import { SettingsSection } from "@/components/settings-section";
+import { DeveloperNav } from "@/components/settings/developer-nav";
 import { FormSkeleton } from "@/components/skeletons";
 import { useOrganization } from "@/hooks/use-organization";
 import {
@@ -175,7 +174,7 @@ function WebhooksPage() {
                       </Text>
                     </Table.Cell>
                     <Table.Cell>
-                      <span className="max-w-[14rem] truncate text-sm">
+                      <span className="max-w-56 truncate text-sm">
                         {endpoint.url}
                       </span>
                     </Table.Cell>
@@ -268,9 +267,7 @@ function WebhooksPage() {
               <Button
                 type="submit"
                 variant="primary"
-                disabled={
-                  !name.trim() || !url.trim() || events.length === 0
-                }
+                disabled={!name.trim() || !url.trim() || events.length === 0}
               >
                 Create
               </Button>
@@ -299,7 +296,11 @@ function WebhooksPage() {
               }}
             />
             <div className="flex justify-end">
-              <Button type="button" variant="ghost" onClick={() => setCreated(null)}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setCreated(null)}
+              >
                 Close
               </Button>
             </div>

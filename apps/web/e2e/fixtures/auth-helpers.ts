@@ -110,9 +110,18 @@ async function signUpWithPassword(
   await page
     .goto("/sign-up", { waitUntil: "domcontentloaded" })
     .catch(() => {});
-  await page.getByLabel(/^name$/i).fill(config.name).catch(() => {});
-  await page.getByLabel(/^email$/i).fill(config.email).catch(() => {});
-  await page.getByLabel(/^password$/i).fill(config.password).catch(() => {});
+  await page
+    .getByLabel(/^name$/i)
+    .fill(config.name)
+    .catch(() => {});
+  await page
+    .getByLabel(/^email$/i)
+    .fill(config.email)
+    .catch(() => {});
+  await page
+    .getByLabel(/^password$/i)
+    .fill(config.password)
+    .catch(() => {});
   await page
     .getByLabel(/confirm password/i)
     .fill(config.password)

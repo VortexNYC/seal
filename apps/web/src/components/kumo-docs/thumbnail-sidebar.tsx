@@ -1,6 +1,6 @@
-import type { JSX } from "react";
 import { Button } from "@cloudflare/kumo/components/button";
 import { SkeletonLine } from "@cloudflare/kumo/components/loader";
+import type { JSX } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -29,7 +29,10 @@ export function ThumbnailSidebar({
   return (
     <aside
       data-kumo-docs="thumbnail-sidebar"
-      className={cn("flex h-full flex-col gap-2 overflow-y-auto p-3", className)}
+      className={cn(
+        "flex h-full flex-col gap-2 overflow-y-auto p-3",
+        className
+      )}
       aria-label="Page thumbnails"
     >
       {loading
@@ -66,7 +69,7 @@ export function ThumbnailSidebar({
                     </div>
                   )}
                 </div>
-                <span className="text-muted-foreground text-[11px] tabular-nums">
+                <span className="text-muted-foreground text-2xs tabular-nums">
                   {page.label ?? page.page}
                 </span>
               </Button>

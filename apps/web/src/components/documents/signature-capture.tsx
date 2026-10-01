@@ -82,8 +82,9 @@ export function SignatureCapture({
   const [activeTab, setActiveTab] = useState<TabType>(
     allowedTabs[0] ?? "drawn"
   );
-  const [pendingCapture, setPendingCapture] =
-    useState<ESignatureResult | null>(null);
+  const [pendingCapture, setPendingCapture] = useState<ESignatureResult | null>(
+    null
+  );
 
   const [selectedSavedSignature, setSelectedSavedSignature] = useState<
     string | null
@@ -125,7 +126,9 @@ export function SignatureCapture({
       setSaveAsDefault(true);
       if (!saveSignatureName.trim()) {
         setSaveSignatureName(
-          recipientName?.trim() ? `${recipientName.trim()}'s signature` : "My signature"
+          recipientName?.trim()
+            ? `${recipientName.trim()}'s signature`
+            : "My signature"
         );
       }
     }
@@ -305,7 +308,7 @@ export function SignatureCapture({
           {
             value: "saved",
             label: (
-              <span className="flex min-h-[44px] items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3">
+              <span className="flex min-h-11 items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3">
                 <Bookmark className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">Saved</span>
               </span>
@@ -318,7 +321,7 @@ export function SignatureCapture({
           {
             value: "drawn",
             label: (
-              <span className="flex min-h-[44px] items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3">
+              <span className="flex min-h-11 items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3">
                 <Pencil className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">Draw</span>
               </span>
@@ -331,7 +334,7 @@ export function SignatureCapture({
           {
             value: "typed",
             label: (
-              <span className="flex min-h-[44px] items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3">
+              <span className="flex min-h-11 items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3">
                 <TextT className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">Type</span>
               </span>
@@ -344,7 +347,7 @@ export function SignatureCapture({
           {
             value: "uploaded",
             label: (
-              <span className="flex min-h-[44px] items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3">
+              <span className="flex min-h-11 items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3">
                 <Image className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">Upload</span>
               </span>
@@ -491,13 +494,13 @@ export function SignatureCapture({
           <Button
             variant="outline"
             onClick={onCancel}
-            className="h-12 min-h-[44px] flex-1 sm:h-11"
+            className="h-12 min-h-11 flex-1 sm:h-11"
           >
             Cancel
           </Button>
           <Button
             onClick={handleAccept}
-            className="h-12 min-h-[44px] flex-1 sm:h-11"
+            className="h-12 min-h-11 flex-1 sm:h-11"
           >
             <Check className="mr-2 h-4 w-4" />
             Accept & Sign
@@ -513,7 +516,9 @@ export function SignatureCapture({
       <Dialog.Root open={showSaveDialog} onOpenChange={setShowSaveDialog}>
         <Dialog>
           <Dialog.Title>
-            {isFirstAdopt ? "Adopt your signature" : "Save to Signature Library?"}
+            {isFirstAdopt
+              ? "Adopt your signature"
+              : "Save to Signature Library?"}
           </Dialog.Title>
           <Dialog.Description>
             {isFirstAdopt
@@ -529,7 +534,7 @@ export function SignatureCapture({
                 <img
                   src={pendingSignatureData.data}
                   alt="Signature preview"
-                  className="mx-auto max-h-[100px]"
+                  className="mx-auto max-h-25"
                 />
               </div>
             ) : null}

@@ -72,8 +72,11 @@ export function EsignConsentDialog({
   // Declined state
   if (consentState === "declined") {
     return (
-      <div data-seal-enter className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8">
-        <div className="w-full max-w-lg flex flex-col gap-6">
+      <div
+        data-seal-enter
+        className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8"
+      >
+        <div className="flex w-full max-w-lg flex-col gap-6">
           <div className="flex justify-center">
             <SealLogo size={48} variant="color" />
           </div>
@@ -179,8 +182,11 @@ export function EsignConsentDialog({
   // Accepted state (brief flash before proceeding)
   if (consentState === "accepted") {
     return (
-      <div data-seal-enter className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8">
-        <div className="w-full max-w-lg flex flex-col gap-6">
+      <div
+        data-seal-enter
+        className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8"
+      >
+        <div className="flex w-full max-w-lg flex-col gap-6">
           <div className="flex justify-center">
             <SealLogo size={48} variant="color" />
           </div>
@@ -219,8 +225,11 @@ export function EsignConsentDialog({
 
   // Initial consent form
   return (
-    <div data-seal-enter className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8">
-      <div className="w-full max-w-lg flex flex-col gap-6">
+    <div
+      data-seal-enter
+      className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8"
+    >
+      <div className="flex w-full max-w-lg flex-col gap-6">
         <div className="flex justify-center">
           <SealLogo size={48} variant="color" />
         </div>

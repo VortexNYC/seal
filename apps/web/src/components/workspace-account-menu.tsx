@@ -46,7 +46,7 @@ function Mark({
   return (
     <span
       className={cn(
-        "grid size-full place-items-center rounded-md text-[0.7rem] font-semibold uppercase",
+        "text-2xs grid size-full place-items-center rounded-md font-semibold uppercase",
         className
       )}
       aria-hidden
@@ -104,7 +104,7 @@ export function WorkspaceAccountMenu({
                 data-workspace-copy
                 className="grid min-w-0 flex-1 text-left text-sm leading-tight"
               >
-                <span className="text-muted-foreground truncate text-[10px] font-medium tracking-wide uppercase">
+                <span className="text-muted-foreground text-3xs truncate font-medium tracking-wide uppercase">
                   Workspace
                 </span>
                 <span className="text-sidebar-foreground truncate font-medium">
@@ -159,10 +159,7 @@ export function WorkspaceAccountMenu({
               <>
                 <DropdownMenu.Separator />
                 <DropdownMenu.Group>
-                  <DropdownMenu.Item
-                    icon={Plus}
-                    onClick={onCreateOrganization}
-                  >
+                  <DropdownMenu.Item icon={Plus} onClick={onCreateOrganization}>
                     Create workspace
                   </DropdownMenu.Item>
                 </DropdownMenu.Group>

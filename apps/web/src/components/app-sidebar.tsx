@@ -455,7 +455,7 @@ export function AppSidebar({
           aria-label="Seal"
         >
           <SealLogo size={22} variant="color" />
-          <span className="seal-wordmark font-serif text-[1.05rem] leading-none tracking-tight">
+          <span className="seal-wordmark text-lead font-serif leading-none tracking-tight">
             Seal
           </span>
         </div>

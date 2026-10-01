@@ -1,6 +1,11 @@
 "use client";
 
-import { createContext, useContext, type ReactElement, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 
 type WorkspaceShellValue = {
   slug: string;
@@ -25,7 +30,9 @@ export function WorkspaceShellProvider({
 export function useWorkspaceShell(): WorkspaceShellValue {
   const value = useContext(WorkspaceShellContext);
   if (value === null) {
-    throw new Error("useWorkspaceShell must be used within WorkspaceShellProvider");
+    throw new Error(
+      "useWorkspaceShell must be used within WorkspaceShellProvider"
+    );
   }
   return value;
 }

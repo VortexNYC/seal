@@ -39,33 +39,33 @@ function TeamSettings() {
     <AuthProvider client={client}>
       <PageWrapper title="Team">
         <SettingsBody wide>
-        <div className="flex flex-col gap-5">
-          {!isPro && (
-            <p className="text-muted-foreground text-sm">
-              Inviting teammates requires Pro. You can still view members on
-              Free.
-            </p>
-          )}
+          <div className="flex flex-col gap-5">
+            {!isPro && (
+              <p className="text-muted-foreground text-sm">
+                Inviting teammates requires Pro. You can still view members on
+                Free.
+              </p>
+            )}
 
-          {isPro && canManage && (
-            <InviteMemberForm
+            {isPro && canManage && (
+              <InviteMemberForm
+                className="w-full max-w-none"
+                title="Invite member"
+                description="Add a teammate to this workspace."
+              />
+            )}
+
+            <OrganizationMembers
               className="w-full max-w-none"
-              title="Invite member"
-              description="Add a teammate to this workspace."
+              canManageMembers={canManage}
+              onMemberRemoved={() => {
+                // better-auth-ui reloads internally; no external refetch needed
+              }}
+              onInvitationCancelled={() => {
+                // better-auth-ui reloads internally
+              }}
             />
-          )}
-
-          <OrganizationMembers
-            className="w-full max-w-none"
-            canManageMembers={canManage}
-            onMemberRemoved={() => {
-              // better-auth-ui reloads internally; no external refetch needed
-            }}
-            onInvitationCancelled={() => {
-              // better-auth-ui reloads internally
-            }}
-          />
-        </div>
+          </div>
         </SettingsBody>
       </PageWrapper>
     </AuthProvider>

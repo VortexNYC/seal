@@ -127,7 +127,7 @@ export function UploadDialog({
   return (
     <>
       <Dialog.Root open={open} onOpenChange={onOpenChange}>
-        <Dialog className="flex max-h-[80vh] flex-col sm:max-w-[625px]">
+        <Dialog className="max-h-vh-80 flex flex-col sm:max-w-156.25">
           <UploadDialogHeader />
           <form
             onSubmit={controller.handleSubmit}
@@ -397,7 +397,7 @@ function SelectedFileList({
   return (
     <div className="space-y-2">
       <Label>Selected File</Label>
-      <div className="max-h-[300px] space-y-2 overflow-y-auto rounded-md border p-2">
+      <div className="max-h-75 space-y-2 overflow-y-auto rounded-md border p-2">
         {controller.files.map((fileWithStatus, index) => (
           <SelectedFileRow
             key={`${fileWithStatus.file.name}-${index}`}

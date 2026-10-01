@@ -7,8 +7,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Activity, Clock, Link2, Unplug } from "lucide-react";
 
-import { FormSkeleton } from "@/components/skeletons";
 import { SettingsBody } from "@/components/settings-body";
+import { FormSkeleton } from "@/components/skeletons";
 import {
   disconnectConnectedApp,
   getConnectedApps,
@@ -90,10 +90,10 @@ function IntegrationsSettings() {
 
   return (
     <SettingsBody>
-    <div className="flex flex-col gap-5">
-      <ConnectedAppsSection apps={connectedApps ?? []} />
-      <ActivityLogsSection logs={activityLogs ?? []} />
-    </div>
+      <div className="flex flex-col gap-5">
+        <ConnectedAppsSection apps={connectedApps ?? []} />
+        <ActivityLogsSection logs={activityLogs ?? []} />
+      </div>
     </SettingsBody>
   );
 }

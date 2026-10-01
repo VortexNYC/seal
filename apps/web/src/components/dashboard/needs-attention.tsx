@@ -38,7 +38,10 @@ export function NeedsAttention({
     >
       <LayerCard.Secondary className="px-4 pt-3 pb-1">
         <div className="flex items-center gap-2">
-          <WarningCircle className="text-warning size-4 shrink-0" weight="fill" />
+          <WarningCircle
+            className="text-warning size-4 shrink-0"
+            weight="fill"
+          />
           <h3 className="text-sm font-semibold">Needs you</h3>
           <span className="bg-warning/10 text-warning rounded-md px-1.5 py-0.5 text-xs font-medium tabular-nums">
             {attention.totalIssues}

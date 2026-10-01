@@ -11,10 +11,7 @@ export type CsvViewerProps = {
   maxRows?: number;
 };
 
-function parseDelimited(
-  content: string,
-  delimiter: string
-): string[][] {
+function parseDelimited(content: string, delimiter: string): string[][] {
   return content
     .split(/\r?\n/)
     .filter((line) => line.length > 0)
@@ -46,10 +43,7 @@ export function CsvViewer({
   const [header, ...body] = rows;
 
   return (
-    <div
-      data-kumo-docs="csv-viewer"
-      className={cn("overflow-auto", className)}
-    >
+    <div data-kumo-docs="csv-viewer" className={cn("overflow-auto", className)}>
       <table className="w-full border-collapse text-left text-xs">
         <thead className="bg-muted sticky top-0">
           <tr className="border-border border-b">
@@ -67,7 +61,10 @@ export function CsvViewer({
           {body.map((row, ri) => (
             <tr key={ri} className="border-border/60 border-b">
               {header.map((_, ci) => (
-                <td key={ci} className="px-2 py-1 whitespace-nowrap tabular-nums">
+                <td
+                  key={ci}
+                  className="px-2 py-1 whitespace-nowrap tabular-nums"
+                >
                   {row[ci] ?? ""}
                 </td>
               ))}

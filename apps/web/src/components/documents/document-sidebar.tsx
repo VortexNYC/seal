@@ -45,10 +45,7 @@ import {
   type DocumentNextActionModel,
 } from "./document-next-action";
 import { DocumentProgressRing } from "./document-progress-ring";
-import {
-  DocumentSendSteps,
-  resolveSendStep,
-} from "./document-send-steps";
+import { DocumentSendSteps, resolveSendStep } from "./document-send-steps";
 import { FieldList } from "./field-list";
 import { FieldToolbar } from "./field-toolbar";
 import { InAppSigningSection } from "./in-app-signing-section";
@@ -235,13 +232,13 @@ function EmptySection({
 }) {
   return (
     <div className="px-4 py-8 text-center sm:px-3 sm:py-6">
-      <div className="bg-muted text-muted-foreground mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl sm:h-10 sm:w-10 sm:rounded-[10px]">
+      <div className="bg-muted text-muted-foreground sm:rounded-card mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl sm:h-10 sm:w-10">
         {icon}
       </div>
-      <div className="text-foreground mb-1 font-sans text-sm font-semibold sm:text-[0.8125rem]">
+      <div className="text-foreground sm:text-label mb-1 font-sans text-sm font-semibold">
         {title}
       </div>
-      <div className="text-muted-foreground font-sans text-xs leading-relaxed sm:text-[0.6875rem]">
+      <div className="text-muted-foreground sm:text-2xs font-sans text-xs leading-relaxed">
         {description}
       </div>
     </div>
@@ -272,25 +269,25 @@ function RecipientRow({
     <div className="bg-muted hover:border-border hover:bg-muted flex items-center gap-3.5 rounded-xl border border-transparent p-3.5 transition-colors sm:flex-wrap sm:gap-2.5 sm:p-3">
       <div
         className={cn(
-          "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-sans text-sm font-semibold sm:h-9 sm:w-9 sm:text-[0.8125rem]",
+          "sm:text-label flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-sans text-sm font-semibold sm:h-9 sm:w-9",
           statusColorClass
         )}
       >
         {getInitials(recipient.name ?? undefined, recipient.email)}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-foreground truncate font-sans text-sm font-semibold sm:text-[0.8125rem]">
+        <div className="text-foreground sm:text-label truncate font-sans text-sm font-semibold">
           {recipient.name || recipient.email}
         </div>
         {recipient.name && (
-          <div className="text-muted-foreground truncate font-sans text-xs sm:text-[0.6875rem]">
+          <div className="text-muted-foreground sm:text-2xs truncate font-sans text-xs">
             {recipient.email}
           </div>
         )}
       </div>
       <span
         className={cn(
-          "rounded-full px-2.5 py-1 font-sans text-[0.6875rem] font-semibold whitespace-nowrap sm:px-2 sm:py-0.5 sm:text-[0.625rem]",
+          "text-2xs sm:text-3xs rounded-full px-2.5 py-1 font-sans font-semibold whitespace-nowrap sm:px-2 sm:py-0.5",
           statusColorClass
         )}
       >
@@ -348,14 +345,14 @@ function RecipientsSection({
     >
       <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
         <div className="flex items-center gap-3">
-          <div className="bg-info-surface text-info flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
-            <UsersIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
+          <div className="bg-info-surface text-info rounded-card flex h-9 w-9 items-center justify-center sm:h-8 sm:w-8 sm:rounded-lg">
+            <UsersIcon className="h-4.5 w-4.5 sm:h-4 sm:w-4" />
           </div>
-          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
+          <span className="text-foreground text-lede font-sans font-semibold sm:text-sm">
             Recipients
           </span>
           {recipients.length > 0 && (
-            <span className="bg-muted text-muted-foreground ml-2 rounded-xl px-2 py-0.5 font-sans text-[0.6875rem] font-semibold">
+            <span className="bg-muted text-muted-foreground text-2xs ml-2 rounded-xl px-2 py-0.5 font-sans font-semibold">
               {recipients.length}
             </span>
           )}
@@ -400,7 +397,7 @@ function RecipientsSection({
           <Button
             variant="outline"
             size="sm"
-            className="border-border text-muted-foreground hover:border-primary hover:bg-primary/5 hover:text-primary mt-3 flex w-full items-center justify-center gap-2 rounded-[10px] border-2 border-dashed bg-transparent p-3 font-sans text-[0.8125rem] font-semibold transition-[color,border-color,background-color] sm:rounded-lg sm:p-2.5 sm:text-xs"
+            className="border-border text-muted-foreground hover:border-primary hover:bg-primary/5 hover:text-primary rounded-card text-label mt-3 flex w-full items-center justify-center gap-2 border-2 border-dashed bg-transparent p-3 font-sans font-semibold transition-colors sm:rounded-lg sm:p-2.5 sm:text-xs"
             onClick={onAddRecipient}
           >
             <PlusIcon className="h-4 w-4" />
@@ -437,10 +434,10 @@ function DocumentSettingsSection({
     >
       <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
         <div className="flex items-center gap-3">
-          <div className="bg-muted text-muted-foreground flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
-            <SettingsIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
+          <div className="bg-muted text-muted-foreground rounded-card flex h-9 w-9 items-center justify-center sm:h-8 sm:w-8 sm:rounded-lg">
+            <SettingsIcon className="h-4.5 w-4.5 sm:h-4 sm:w-4" />
           </div>
-          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
+          <span className="text-foreground text-lede font-sans font-semibold sm:text-sm">
             Document Settings
           </span>
         </div>
@@ -534,13 +531,13 @@ function AIInsightsSection({
     >
       <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
         <div className="flex items-center gap-3">
-          <div className="bg-ai-accent-surface text-ai-accent flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
-            <ScanSearchIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
+          <div className="bg-ai-accent-surface text-ai-accent rounded-card flex h-9 w-9 items-center justify-center sm:h-8 sm:w-8 sm:rounded-lg">
+            <ScanSearchIcon className="h-4.5 w-4.5 sm:h-4 sm:w-4" />
           </div>
-          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
+          <span className="text-foreground text-lede font-sans font-semibold sm:text-sm">
             Insights
           </span>
-          <span className="bg-muted text-muted-foreground ml-2 rounded-xl px-2 py-0.5 font-sans text-[0.6875rem] font-semibold">
+          <span className="bg-muted text-muted-foreground text-2xs ml-2 rounded-xl px-2 py-0.5 font-sans font-semibold">
             {documentAnnotations.annotations.annotations.length}
           </span>
         </div>
@@ -592,7 +589,6 @@ function AIInsightsSection({
   );
 }
 
-
 function SignatureFieldsSection({
   documentId,
   recipients,
@@ -634,14 +630,14 @@ function SignatureFieldsSection({
     >
       <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
         <div className="flex items-center gap-3">
-          <div className="bg-ai-accent-surface text-ai-accent flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
-            <FileSignatureIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
+          <div className="bg-ai-accent-surface text-ai-accent rounded-card flex h-9 w-9 items-center justify-center sm:h-8 sm:w-8 sm:rounded-lg">
+            <FileSignatureIcon className="h-4.5 w-4.5 sm:h-4 sm:w-4" />
           </div>
-          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
+          <span className="text-foreground text-lede font-sans font-semibold sm:text-sm">
             Fields
           </span>
           {signatureFields.length > 0 && (
-            <span className="bg-muted text-muted-foreground ml-2 rounded-xl px-2 py-0.5 font-sans text-[0.6875rem] font-semibold">
+            <span className="bg-muted text-muted-foreground text-2xs ml-2 rounded-xl px-2 py-0.5 font-sans font-semibold">
               {signatureFields.length}
             </span>
           )}
@@ -689,18 +685,16 @@ function SignatureFieldsSection({
 
 function DetailMetric({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="bg-muted rounded-[10px] p-3.5 sm:rounded-lg sm:p-3">
-      <div className="text-muted-foreground mb-1 font-sans text-[0.625rem] font-semibold tracking-wide uppercase sm:text-[0.5625rem]">
+    <div className="bg-muted rounded-card p-3.5 sm:rounded-lg sm:p-3">
+      <div className="text-muted-foreground text-3xs sm:text-4xs mb-1 font-sans font-semibold tracking-wide uppercase">
         {label}
       </div>
-      <div className="text-foreground font-sans text-sm font-medium sm:text-[0.8125rem]">
+      <div className="text-foreground sm:text-label font-sans text-sm font-medium">
         {value}
       </div>
     </div>
   );
 }
-
-
 
 function FieldBindingsSection({
   slug,
@@ -769,13 +763,13 @@ function FieldBindingsSection({
     >
       <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
         <div className="flex items-center gap-3">
-          <div className="bg-muted text-foreground flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
-            <LinkIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
+          <div className="bg-muted text-foreground rounded-card flex h-9 w-9 items-center justify-center sm:h-8 sm:w-8 sm:rounded-lg">
+            <LinkIcon className="h-4.5 w-4.5 sm:h-4 sm:w-4" />
           </div>
-          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
+          <span className="text-foreground text-lede font-sans font-semibold sm:text-sm">
             Bindings
           </span>
-          <span className="bg-muted text-muted-foreground ml-2 rounded-xl px-2 py-0.5 font-sans text-[0.6875rem] font-semibold">
+          <span className="bg-muted text-muted-foreground text-2xs ml-2 rounded-xl px-2 py-0.5 font-sans font-semibold">
             {fields.length}
           </span>
         </div>
@@ -826,10 +820,10 @@ function DocumentDetailsSection({
     >
       <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
         <div className="flex items-center gap-3">
-          <div className="bg-info-surface text-info flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
-            <InfoIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
+          <div className="bg-info-surface text-info rounded-card flex h-9 w-9 items-center justify-center sm:h-8 sm:w-8 sm:rounded-lg">
+            <InfoIcon className="h-4.5 w-4.5 sm:h-4 sm:w-4" />
           </div>
-          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
+          <span className="text-foreground text-lede font-sans font-semibold sm:text-sm">
             Details
           </span>
         </div>
@@ -848,11 +842,11 @@ function DocumentDetailsSection({
           <DetailMetric label="Fields" value={signatureFields.length} />
         </div>
         {description && (
-          <div className="bg-muted col-span-2 mt-4 rounded-[10px] p-3.5 sm:rounded-lg sm:p-3">
-            <div className="text-muted-foreground mb-1 font-sans text-[0.625rem] font-semibold tracking-wide uppercase sm:text-[0.5625rem]">
+          <div className="bg-muted rounded-card col-span-2 mt-4 p-3.5 sm:rounded-lg sm:p-3">
+            <div className="text-muted-foreground text-3xs sm:text-4xs mb-1 font-sans font-semibold tracking-wide uppercase">
               Description
             </div>
-            <div className="text-foreground font-sans text-sm font-medium sm:text-[0.8125rem]">
+            <div className="text-foreground sm:text-label font-sans text-sm font-medium">
               {description}
             </div>
           </div>
@@ -881,10 +875,10 @@ function ActivityEventRow({
         {getActivityIcon(event.type)}
       </div>
       <div className="min-w-0 flex-1 pt-1">
-        <div className="text-foreground font-sans text-[0.8125rem] leading-snug sm:text-xs">
+        <div className="text-foreground text-label font-sans leading-snug sm:text-xs">
           {event.description}
         </div>
-        <div className="text-muted-foreground mt-1 font-sans text-[0.6875rem] sm:text-[0.625rem]">
+        <div className="text-muted-foreground text-2xs sm:text-3xs mt-1 font-sans">
           {formatRelativeTime(event.timestamp)}
         </div>
       </div>
@@ -909,14 +903,14 @@ function ActivitySection({
     >
       <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
         <div className="flex items-center gap-3">
-          <div className="bg-warning-surface text-warning flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
-            <ActivityIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
+          <div className="bg-warning-surface text-warning rounded-card flex h-9 w-9 items-center justify-center sm:h-8 sm:w-8 sm:rounded-lg">
+            <ActivityIcon className="h-4.5 w-4.5 sm:h-4 sm:w-4" />
           </div>
-          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
+          <span className="text-foreground text-lede font-sans font-semibold sm:text-sm">
             Activity
           </span>
           {activityEvents.length > 0 && (
-            <span className="bg-muted text-muted-foreground ml-2 rounded-xl px-2 py-0.5 font-sans text-[0.6875rem] font-semibold">
+            <span className="bg-muted text-muted-foreground text-2xs ml-2 rounded-xl px-2 py-0.5 font-sans font-semibold">
               {activityEvents.length}
             </span>
           )}
@@ -930,7 +924,7 @@ function ActivitySection({
       </Collapsible.Trigger>
       <Collapsible.Panel className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
         {activityEvents.length > 0 ? (
-          <div className="before:bg-border relative mt-4 before:absolute before:top-2 before:bottom-2 before:left-[15px] before:w-0.5 before:rounded-sm before:content-[''] sm:before:left-[13px]">
+          <div className="before:bg-border before:content-empty relative mt-4 before:absolute before:top-2 before:bottom-2 before:left-3.75 before:w-0.5 before:rounded-sm sm:before:left-3.25">
             {activityEvents.slice(0, 10).map((event, index) => (
               <ActivityEventRow
                 key={`${event.type}-${event.timestamp}`}
@@ -1170,7 +1164,7 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
                 <span className="block text-sm font-medium">
                   Signing extras
                 </span>
-                <span className="text-muted-foreground block text-[11px] font-normal">
+                <span className="text-muted-foreground text-2xs block font-normal">
                   Redirect URL and field bindings — use Pages on the workspace
                   rail for rotate / split
                 </span>

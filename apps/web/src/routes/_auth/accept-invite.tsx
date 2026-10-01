@@ -1,8 +1,5 @@
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
-import {
-  AcceptInviteScreen,
-  AuthProvider,
-} from "@vortex-api/better-auth-ui";
+import { AcceptInviteScreen, AuthProvider } from "@vortex-api/better-auth-ui";
 
 import { AUTH_FORM_CARD_CLASS } from "@/lib/auth-form";
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";

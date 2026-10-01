@@ -1,5 +1,5 @@
-import type { JSX } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { JSX } from "react";
 import { useMemo, useState } from "react";
 
 import {
@@ -31,11 +31,8 @@ function schemaFromJson(value: Record<string, unknown>): SchemaBuilderSchema {
     propertiesNode as Record<string, unknown>
   ).map(([key, node]) => {
     const typed =
-      node && typeof node === "object"
-        ? (node as Record<string, unknown>)
-        : {};
-    const type =
-      typeof typed.type === "string" ? typed.type : "string";
+      node && typeof node === "object" ? (node as Record<string, unknown>) : {};
+    const type = typeof typed.type === "string" ? typed.type : "string";
     return {
       id: crypto.randomUUID(),
       key,

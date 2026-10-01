@@ -1,11 +1,11 @@
-import type { JSX } from "react";
-import { useEffect, useRef, useState } from "react";
-import SignatureCanvas from "react-signature-canvas";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Label } from "@cloudflare/kumo/components/label";
 import { Select } from "@cloudflare/kumo/components/select";
 import { Tabs } from "@cloudflare/kumo/components/tabs";
+import type { JSX } from "react";
+import { useEffect, useRef, useState } from "react";
+import SignatureCanvas from "react-signature-canvas";
 
 import {
   cropTransparentCanvas,
@@ -109,9 +109,7 @@ export function ESignature({
   }, []);
 
   const enabled = METHOD_ORDER.filter((method) => methods.includes(method));
-  const [method, setMethod] = useState<ESignatureMethod>(
-    enabled[0] ?? "drawn"
-  );
+  const [method, setMethod] = useState<ESignatureMethod>(enabled[0] ?? "drawn");
   const [typedName, setTypedName] = useState(defaultTypedName);
   const [selectedFont, setSelectedFont] = useState(fonts[0]?.value ?? "");
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -310,7 +308,7 @@ export function ESignature({
               }}
               canvasProps={{
                 className:
-                  "h-[200px] w-full cursor-crosshair touch-none select-none",
+                  "h-50 w-full cursor-crosshair touch-none select-none",
                 width: canvasWidth,
                 height: 200,
                 style: { touchAction: "none" },
@@ -428,7 +426,7 @@ export function ESignature({
               <img
                 src={uploadedImage}
                 alt="Uploaded signature"
-                className="mx-auto max-h-[200px]"
+                className="mx-auto max-h-50"
               />
             </div>
           ) : null}

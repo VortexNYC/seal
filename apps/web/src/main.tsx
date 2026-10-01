@@ -36,11 +36,7 @@ const AppLink = forwardRef<HTMLAnchorElement, LinkComponentProps>(
       if (isExternal) {
         return { pathname: "/", search: {} as Record<string, string> };
       }
-      const resolved = href
-        ? href.startsWith("/")
-          ? href
-          : `/${href}`
-        : "/";
+      const resolved = href ? (href.startsWith("/") ? href : `/${href}`) : "/";
       const url = new URL(resolved, "http://localhost");
       const searchRecord: Record<string, string> = {};
       url.searchParams.forEach((value, key) => {

@@ -1,15 +1,7 @@
-import type {
-  DragEvent,
-  FormEvent,
-  JSX,
-  ReactNode,
-  RefObject,
-} from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { PDFViewer, type PDFViewerRef } from "@embedpdf/react-pdf-viewer";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Select } from "@cloudflare/kumo/components/select";
+import { PDFViewer, type PDFViewerRef } from "@embedpdf/react-pdf-viewer";
 import {
   ArrowCounterClockwise,
   CaretLeft,
@@ -18,11 +10,13 @@ import {
   Minus,
   Plus,
 } from "@phosphor-icons/react";
+import type { DragEvent, FormEvent, JSX, ReactNode, RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
-import { PdfCanvasLayer } from "./pdf-canvas-layer";
 import type { PlacedField } from "./draggable-field";
+import { PdfCanvasLayer } from "./pdf-canvas-layer";
 
 type PluginRegistryLike = {
   getPlugin?: (id: string) => { provides?: () => unknown } | undefined;
@@ -67,9 +61,7 @@ type ZoomCapability = {
   zoomIn?: () => void;
   zoomOut?: () => void;
   getState?: () => { currentZoomLevel?: number };
-  onZoomChange?: (
-    listener: (event: { newZoom: number }) => void
-  ) => () => void;
+  onZoomChange?: (listener: (event: { newZoom: number }) => void) => () => void;
 };
 
 type ExportCapability = {
@@ -408,7 +400,9 @@ export function DocumentCanvas({
     const registry = registryRef.current as PluginRegistryLike;
     const exportPlugin = registry.getPlugin?.("export");
     const documentManager = registry.getPlugin?.("document-manager");
-    const exportCap = exportPlugin?.provides?.() as ExportCapability | undefined;
+    const exportCap = exportPlugin?.provides?.() as
+      | ExportCapability
+      | undefined;
     const docsCap = documentManager?.provides?.() as
       | DocumentManagerCapability
       | undefined;
@@ -518,7 +512,7 @@ export function DocumentCanvas({
             }}
             size="sm"
             renderValue={() => `${zoomPercentage}%`}
-            className="hidden h-8 w-[4.5rem] px-2 text-xs sm:flex"
+            className="hidden h-8 w-18 px-2 text-xs sm:flex"
             disabled={!ready}
           >
             {ZOOM_LEVELS.map((level) => (
@@ -527,7 +521,7 @@ export function DocumentCanvas({
               </Select.Option>
             ))}
           </Select>
-          <span className="text-kumo-secondary min-w-[2.5rem] text-center text-xs sm:hidden">
+          <span className="text-kumo-secondary min-w-10 text-center text-xs sm:hidden">
             {zoomPercentage}%
           </span>
           <Button
@@ -587,7 +581,7 @@ export function DocumentCanvas({
 
       <div
         className={cn(
-          "border-border bg-card relative min-h-[36rem] overflow-hidden rounded-xl border",
+          "border-border bg-card relative min-h-144 overflow-hidden rounded-xl border",
           "[&_button[aria-label='Previous Page']]:hidden",
           "[&_button[aria-label='Next Page']]:hidden",
           "[&_input[aria-label='Current page']]:hidden",

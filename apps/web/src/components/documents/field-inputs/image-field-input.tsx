@@ -11,9 +11,7 @@ interface ImageFieldInputProps {
 }
 
 /** Image upload field (DocuSeal image). */
-export function ImageFieldInput(
-  props: ImageFieldInputProps
-) {
+export function ImageFieldInput(props: ImageFieldInputProps) {
   return (
     <AttachmentFieldInput
       {...props}

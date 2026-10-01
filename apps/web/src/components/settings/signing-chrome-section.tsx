@@ -16,11 +16,7 @@ import { FormSkeleton } from "@/components/skeletons";
 import { getBrandingSettings, updateBrandingSettings } from "@/lib/api-client";
 import { toast } from "@/lib/toast";
 
-export function SigningChromeSection({
-  slug,
-}: {
-  slug: string;
-}): ReactElement {
+export function SigningChromeSection({ slug }: { slug: string }): ReactElement {
   const { data: brandingSettings, isPending } = useQuery({
     queryKey: ["branding", slug],
     queryFn: () => getBrandingSettings(slug),

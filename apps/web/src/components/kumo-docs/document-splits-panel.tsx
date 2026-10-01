@@ -1,7 +1,7 @@
-import type { JSX } from "react";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Plus, Trash } from "@phosphor-icons/react";
+import type { JSX } from "react";
 import { useMemo } from "react";
 
 import { cn } from "@/lib/utils";
@@ -27,11 +27,7 @@ export function createInitialSplits(pageCount: number): DocumentSplitGroup[] {
     return {
       id: createId(),
       title:
-        index === 0
-          ? "Part 1"
-          : index === 1
-            ? "Part 2"
-            : `Part ${index + 1}`,
+        index === 0 ? "Part 1" : index === 1 ? "Part 2" : `Part ${index + 1}`,
       pages: slice,
     };
   });
@@ -58,7 +54,10 @@ export function DocumentSplitsPanel({
   applying?: boolean;
   className?: string;
 }): JSX.Element {
-  const assigned = useMemo(() => new Set(splits.flatMap((s) => s.pages)), [splits]);
+  const assigned = useMemo(
+    () => new Set(splits.flatMap((s) => s.pages)),
+    [splits]
+  );
   const unassigned = useMemo(
     () =>
       Array.from({ length: pageCount }, (_, i) => i + 1).filter(
@@ -120,7 +119,7 @@ export function DocumentSplitsPanel({
             ) : null}
           </div>
         </div>
-        <p className="text-muted-foreground text-[11px] leading-snug">
+        <p className="text-muted-foreground text-2xs leading-snug">
           Assign pages to named groups — each group becomes its own draft
           document.
         </p>
@@ -129,7 +128,7 @@ export function DocumentSplitsPanel({
       <div className="flex-1 space-y-3 overflow-y-auto p-3">
         {unassigned.length > 0 ? (
           <div className="border-border rounded-lg border border-dashed p-2">
-            <p className="text-muted-foreground mb-2 text-[11px] uppercase tracking-wide">
+            <p className="text-muted-foreground text-2xs mb-2 tracking-wide uppercase">
               Unassigned
             </p>
             <div className="flex flex-wrap gap-1">
@@ -168,7 +167,7 @@ export function DocumentSplitsPanel({
                 <Trash className="size-3.5" />
               </Button>
             </div>
-            <p className="text-muted-foreground text-[11px] tabular-nums">
+            <p className="text-muted-foreground text-2xs tabular-nums">
               {group.pages.length === 0
                 ? "No pages"
                 : `Pages ${group.pages[0]}–${group.pages[group.pages.length - 1]} · ${group.pages.length}`}
@@ -205,15 +204,11 @@ function PageChip({
 }): JSX.Element {
   return (
     <div className="border-border bg-muted inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5">
-      <button
-        type="button"
-        onClick={onSelect}
-        className="text-xs tabular-nums"
-      >
+      <button type="button" onClick={onSelect} className="text-xs tabular-nums">
         {page}
       </button>
       <select
-        className="bg-transparent text-[10px] outline-none"
+        className="text-3xs bg-transparent outline-none"
         defaultValue=""
         aria-label={`Assign page ${page}`}
         onChange={(e) => {

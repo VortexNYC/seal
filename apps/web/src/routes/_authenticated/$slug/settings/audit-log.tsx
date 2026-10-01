@@ -12,9 +12,8 @@ import { Table } from "@cloudflare/kumo/components/table";
 import { Text } from "@cloudflare/kumo/components/text";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-
 import { isOrganizationAdminRole } from "@vortex-api/better-auth-ui";
+import { useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { SettingsBody } from "@/components/settings-body";
@@ -140,136 +139,136 @@ function AuditLogPage() {
       title="Audit Log"
     >
       <SettingsBody wide>
-      <LayerCard>
-        <LayerCard.Secondary>
-          <Text as="h2" variant="heading">
-            Audit events
-          </Text>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="grid gap-2">
-              <Input
-                id="audit-action"
-                label="Action"
-                placeholder="e.g. document.sent"
-                value={action}
-                onChange={(e) => setAction(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Input
-                id="audit-resource-type"
-                label="Resource type"
-                placeholder="e.g. document"
-                value={resourceType}
-                onChange={(e) => setResourceType(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Input
-                id="audit-actor"
-                label="Actor"
-                placeholder="Actor ID"
-                value={actor}
-                onChange={(e) => setActor(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Input
-                id="audit-from"
-                label="From"
-                type="datetime-local"
-                value={from}
-                onChange={(e) => setFrom(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Input
-                id="audit-to"
-                label="To"
-                type="datetime-local"
-                value={to}
-                onChange={(e) => setTo(e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={applyFilters}>Apply filters</Button>
-            <Button variant="secondary" onClick={clearFilters}>
-              Clear
-            </Button>
-          </div>
-        </LayerCard.Secondary>
-        <LayerCard.Primary>
-          {isPending ? (
-            <Text variant="secondary">Loading audit events…</Text>
-          ) : isError ? (
-            <Text as="p" variant="error">
-              {error instanceof Error
-                ? error.message
-                : "Failed to load audit log"}
+        <LayerCard>
+          <LayerCard.Secondary>
+            <Text as="h2" variant="heading">
+              Audit events
             </Text>
-          ) : data?.entries.length ? (
-            <Table>
-              <Table.Header>
-                <Table.Row>
-                  <Table.Head>Time</Table.Head>
-                  <Table.Head>Actor</Table.Head>
-                  <Table.Head>Action</Table.Head>
-                  <Table.Head>Resource</Table.Head>
-                </Table.Row>
-              </Table.Header>
-              <Table.Body>
-                {data.entries.map((entry) => (
-                  <Table.Row key={entry.id}>
-                    <Table.Cell>{formatDate(entry.createdAt)}</Table.Cell>
-                    <Table.Cell>
-                      <Text as="span" variant="mono-secondary">
-                        {entry.actorType}:{entry.actorId.slice(0, 8)}
-                      </Text>
-                    </Table.Cell>
-                    <Table.Cell>{entry.action}</Table.Cell>
-                    <Table.Cell>
-                      {entry.resourceType}
-                      {entry.resourceId ? (
-                        <>
-                          {" "}
-                          <Text as="span" variant="mono-secondary">
-                            {entry.resourceId.slice(0, 8)}
-                          </Text>
-                        </>
-                      ) : null}
-                    </Table.Cell>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-2">
+                <Input
+                  id="audit-action"
+                  label="Action"
+                  placeholder="e.g. document.sent"
+                  value={action}
+                  onChange={(e) => setAction(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Input
+                  id="audit-resource-type"
+                  label="Resource type"
+                  placeholder="e.g. document"
+                  value={resourceType}
+                  onChange={(e) => setResourceType(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Input
+                  id="audit-actor"
+                  label="Actor"
+                  placeholder="Actor ID"
+                  value={actor}
+                  onChange={(e) => setActor(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Input
+                  id="audit-from"
+                  label="From"
+                  type="datetime-local"
+                  value={from}
+                  onChange={(e) => setFrom(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Input
+                  id="audit-to"
+                  label="To"
+                  type="datetime-local"
+                  value={to}
+                  onChange={(e) => setTo(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={applyFilters}>Apply filters</Button>
+              <Button variant="secondary" onClick={clearFilters}>
+                Clear
+              </Button>
+            </div>
+          </LayerCard.Secondary>
+          <LayerCard.Primary>
+            {isPending ? (
+              <Text variant="secondary">Loading audit events…</Text>
+            ) : isError ? (
+              <Text as="p" variant="error">
+                {error instanceof Error
+                  ? error.message
+                  : "Failed to load audit log"}
+              </Text>
+            ) : data?.entries.length ? (
+              <Table>
+                <Table.Header>
+                  <Table.Row>
+                    <Table.Head>Time</Table.Head>
+                    <Table.Head>Actor</Table.Head>
+                    <Table.Head>Action</Table.Head>
+                    <Table.Head>Resource</Table.Head>
                   </Table.Row>
-                ))}
-              </Table.Body>
-            </Table>
-          ) : (
-            <Empty
-              title="No events"
-              description="No audit events match your filters."
-            />
-          )}
-          <div className="mt-4 flex items-center justify-between">
-            <Button
-              variant="secondary"
-              onClick={goPrevious}
-              disabled={pageIndex === 0 || isPending}
-            >
-              Previous
-            </Button>
-            <Text variant="secondary">
-              {data ? `Page ${pageIndex + 1}` : ""}
-            </Text>
-            <Button
-              variant="secondary"
-              onClick={goNext}
-              disabled={!data?.has_more || isPending}
-            >
-              Next
-            </Button>
-          </div>
-        </LayerCard.Primary>
-      </LayerCard>
+                </Table.Header>
+                <Table.Body>
+                  {data.entries.map((entry) => (
+                    <Table.Row key={entry.id}>
+                      <Table.Cell>{formatDate(entry.createdAt)}</Table.Cell>
+                      <Table.Cell>
+                        <Text as="span" variant="mono-secondary">
+                          {entry.actorType}:{entry.actorId.slice(0, 8)}
+                        </Text>
+                      </Table.Cell>
+                      <Table.Cell>{entry.action}</Table.Cell>
+                      <Table.Cell>
+                        {entry.resourceType}
+                        {entry.resourceId ? (
+                          <>
+                            {" "}
+                            <Text as="span" variant="mono-secondary">
+                              {entry.resourceId.slice(0, 8)}
+                            </Text>
+                          </>
+                        ) : null}
+                      </Table.Cell>
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table>
+            ) : (
+              <Empty
+                title="No events"
+                description="No audit events match your filters."
+              />
+            )}
+            <div className="mt-4 flex items-center justify-between">
+              <Button
+                variant="secondary"
+                onClick={goPrevious}
+                disabled={pageIndex === 0 || isPending}
+              >
+                Previous
+              </Button>
+              <Text variant="secondary">
+                {data ? `Page ${pageIndex + 1}` : ""}
+              </Text>
+              <Button
+                variant="secondary"
+                onClick={goNext}
+                disabled={!data?.has_more || isPending}
+              >
+                Next
+              </Button>
+            </div>
+          </LayerCard.Primary>
+        </LayerCard>
       </SettingsBody>
     </PageWrapper>
   );

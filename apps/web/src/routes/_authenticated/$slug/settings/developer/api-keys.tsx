@@ -14,14 +14,13 @@ import { Table } from "@cloudflare/kumo/components/table";
 import { Text } from "@cloudflare/kumo/components/text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { isOrganizationAdminRole } from "@vortex-api/better-auth-ui";
 import { useState } from "react";
 
-import { isOrganizationAdminRole } from "@vortex-api/better-auth-ui";
-
 import { PageWrapper } from "@/components/page-wrapper";
-import { DeveloperNav } from "@/components/settings/developer-nav";
 import { SettingsBody } from "@/components/settings-body";
 import { SettingsSection } from "@/components/settings-section";
+import { DeveloperNav } from "@/components/settings/developer-nav";
 import { FormSkeleton } from "@/components/skeletons";
 import { useOrganization } from "@/hooks/use-organization";
 import {
@@ -250,7 +249,11 @@ function ApiKeysPage() {
             <ClipboardText
               size="base"
               text={createdToken?.token ?? ""}
-              tooltip={{ text: "Copy token", copiedText: "Copied!", side: "top" }}
+              tooltip={{
+                text: "Copy token",
+                copiedText: "Copied!",
+                side: "top",
+              }}
             />
             <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
               <Button onClick={() => setCreatedToken(null)} variant="ghost">

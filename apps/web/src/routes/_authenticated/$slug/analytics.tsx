@@ -9,7 +9,6 @@ import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
 import { DatePicker } from "@cloudflare/kumo/components/date-picker";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
-import { Meter } from "@cloudflare/kumo/components/meter";
 import { Popover } from "@cloudflare/kumo/components/popover";
 import { Select } from "@cloudflare/kumo/components/select";
 import { Tabs } from "@cloudflare/kumo/components/tabs";
@@ -567,7 +566,7 @@ function TrendChart({
             </AreaChart>
           </ResponsiveContainer>
         ) : (
-          <div className="text-muted-foreground flex h-[300px] items-center justify-center text-sm">
+          <div className="text-muted-foreground flex h-75 items-center justify-center text-sm">
             No document activity yet. Create your first document to see trends.
           </div>
         )}
@@ -629,7 +628,7 @@ function StatusPieChart({ scope }: { scope: "personal" | "team" }) {
           <h3 className="text-base">Status Distribution</h3>
         </LayerCard.Primary>
         <div>
-          <div className="text-muted-foreground flex h-[250px] items-center justify-center text-sm">
+          <div className="text-muted-foreground flex h-62.5 items-center justify-center text-sm">
             No documents yet
           </div>
         </div>
@@ -901,7 +900,7 @@ function RecentActivityFeed() {
                     </span>
                     <Badge
                       variant={actionInfo?.variant ?? "secondary"}
-                      className="shrink-0 text-[10px]"
+                      className="text-3xs shrink-0"
                     >
                       {actionLabel}
                     </Badge>
@@ -1228,7 +1227,7 @@ function ExportPanel() {
           <div className="space-y-1.5">
             <Select
               label="Status"
-              className="w-[160px]"
+              className="w-40"
               value={statusFilter}
               onValueChange={(v) =>
                 setStatusFilter(
@@ -1250,7 +1249,7 @@ function ExportPanel() {
           <div className="space-y-1.5">
             <Select
               label="Period"
-              className="w-[160px]"
+              className="w-40"
               value={periodFilter}
               onValueChange={(v) =>
                 setPeriodFilter(
@@ -1317,7 +1316,7 @@ function EmailEngagementTab() {
   if (engagement.total === 0) {
     return (
       <LayerCard>
-        <div className="flex h-[200px] items-center justify-center">
+        <div className="flex h-50 items-center justify-center">
           <p className="text-muted-foreground text-sm">
             No email data available yet
           </p>
@@ -1460,7 +1459,7 @@ function RecipientTimingTab() {
   if (timing.sampleSize === 0) {
     return (
       <LayerCard>
-        <div className="flex h-[200px] items-center justify-center">
+        <div className="flex h-50 items-center justify-center">
           <p className="text-muted-foreground text-sm">
             No signed documents in the last 30 days
           </p>
@@ -1579,7 +1578,7 @@ function TemplatePerformanceTab() {
   if (!isPro) {
     return (
       <LayerCard>
-        <div className="flex h-[200px] flex-col items-center justify-center gap-2">
+        <div className="flex h-50 flex-col items-center justify-center gap-2">
           <TrendingUpIcon className="text-muted-foreground h-8 w-8" />
           <p className="text-muted-foreground text-sm">
             Template Performance is available on the Professional plan
@@ -1592,7 +1591,7 @@ function TemplatePerformanceTab() {
   if (templates.length === 0) {
     return (
       <LayerCard>
-        <div className="flex h-[200px] items-center justify-center">
+        <div className="flex h-50 items-center justify-center">
           <p className="text-muted-foreground text-sm">
             No template-based documents in the last 90 days
           </p>

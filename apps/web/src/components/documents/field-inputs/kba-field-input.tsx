@@ -51,7 +51,9 @@ export function KbaFieldInput({
         {helpText ?? "Answer the knowledge-based authentication question."}
       </p>
       {submitted ? (
-        <p className="text-sm font-medium text-kumo-success">Answers recorded</p>
+        <p className="text-kumo-success text-sm font-medium">
+          Answers recorded
+        </p>
       ) : (
         <>
           <Input

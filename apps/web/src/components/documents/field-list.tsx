@@ -326,7 +326,7 @@ function VirtualizedFieldList({
   });
 
   return (
-    <div ref={parentRef} className="max-h-[60vh] overflow-y-auto">
+    <div ref={parentRef} className="max-h-vh-60 overflow-y-auto">
       <div
         className="relative w-full"
         style={{ height: `${virtualizer.getTotalSize()}px` }}

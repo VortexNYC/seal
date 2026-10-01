@@ -12,8 +12,8 @@ import {
 } from "lucide-react";
 import { forwardRef } from "react";
 
-import { formatMoney, money } from "@/lib/money";
 import { FIELD_TYPE_LABELS, isFieldType } from "@/lib/field-types";
+import { formatMoney, money } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 interface SignatureDetails {
@@ -226,26 +226,24 @@ export const FillableFieldOverlay = forwardRef<
             <div className="flex flex-col gap-0.5">
               {/* Field type */}
               <div className="flex items-baseline gap-1">
-                <span className="text-muted-foreground text-[9px]">
+                <span className="text-muted-foreground text-4xs">
                   {getFieldTypeLabel(fieldType)}
                 </span>
               </div>
               {/* Signer name */}
               <div className="flex items-baseline gap-1">
-                <span className="text-muted-foreground text-[9px]">
+                <span className="text-muted-foreground text-4xs">
                   Signed by:
                 </span>
-                <span className="text-foreground truncate text-[10px] font-semibold">
+                <span className="text-foreground text-3xs truncate font-semibold">
                   {signatureDetails.signerName || signatureDetails.signerEmail}
                 </span>
               </div>
               {/* Date and time */}
               {formattedDate && (
                 <div className="flex items-baseline gap-1">
-                  <span className="text-muted-foreground text-[9px]">
-                    Date:
-                  </span>
-                  <span className="text-foreground/70 text-[9px]">
+                  <span className="text-muted-foreground text-4xs">Date:</span>
+                  <span className="text-foreground/70 text-4xs">
                     {formattedDate.date} at {formattedDate.time}
                   </span>
                 </div>
@@ -260,15 +258,15 @@ export const FillableFieldOverlay = forwardRef<
             className="flex h-full flex-col justify-center bg-white/90 py-0.5 pr-1"
             style={{ paddingLeft: sealIconSize + 10 }}
           >
-            <div className="text-muted-foreground text-[8px]">
+            <div className="text-muted-foreground text-5xs">
               <div className="truncate font-medium">
                 {getFieldTypeLabel(fieldType)}
               </div>
-              <div className="mt-0.5 truncate text-[7px]">
+              <div className="text-6xs mt-0.5 truncate">
                 {signatureDetails.signerName || signatureDetails.signerEmail}
               </div>
               {formattedDate && (
-                <div className="mt-0.5 truncate text-[7px]">
+                <div className="text-6xs mt-0.5 truncate">
                   {formattedDate.date} at {formattedDate.time}
                 </div>
               )}
@@ -284,9 +282,7 @@ export const FillableFieldOverlay = forwardRef<
       ref={ref}
       type="button"
       onClick={() => onClick(fieldId)}
-      aria-label={`${label} ${isRequired ? "required " : ""}field, ${getFieldTypeLabel(fieldType)}${
-        isMainSignature ? ", main signature" : ""
-      }`}
+      aria-label={`${label} ${isRequired ? "required " : ""}field, ${getFieldTypeLabel(fieldType)}${isMainSignature ? ", main signature" : ""}`}
       data-seal-field-active={isActive ? "true" : undefined}
       className={cn(
         "group absolute cursor-pointer rounded-sm border-2 transition-colors",
@@ -319,31 +315,29 @@ export const FillableFieldOverlay = forwardRef<
           {isMainSignature && <StarIcon className="text-warning h-3 w-3" />}
           {getFieldIcon(fieldType)}
           {absoluteWidth > 80 && (
-            <span className="max-w-[60px] truncate text-[10px] font-medium">
+            <span className="text-3xs max-w-15 truncate font-medium">
               {getFieldTypeLabel(fieldType)}
             </span>
           )}
         </div>
         {isFilled && absoluteHeight > 25 && (
-          <div className="text-success text-[9px] font-medium">
+          <div className="text-success text-4xs font-medium">
             {fieldType === "payment" && paymentInfo
               ? `✓ ${paymentInfo.paymentStatus === "paid" ? "Paid" : "Pending"}`
               : "✓ Filled"}
           </div>
         )}
         {!isFilled && isRequired && absoluteHeight > 25 && (
-          <div className="text-destructive text-[9px] font-medium">
-            Required
-          </div>
+          <div className="text-destructive text-4xs font-medium">Required</div>
         )}
         {fieldType === "payment" && paymentInfo && absoluteHeight > 25 && (
-          <div className="text-field-payment text-[9px] font-semibold">
+          <div className="text-field-payment text-4xs font-semibold">
             {paymentInfo.paymentStatus === "paid" ? "✓ " : ""}
             {formatCurrency(paymentInfo.totalAmountCents, paymentInfo.currency)}
           </div>
         )}
         {isMainSignature && absoluteHeight > 30 && (
-          <div className="text-warning text-[8px] font-medium">
+          <div className="text-warning text-5xs font-medium">
             Document Signature
           </div>
         )}
@@ -352,7 +346,7 @@ export const FillableFieldOverlay = forwardRef<
       {/* Tooltip for smaller fields — visible on hover and focus */}
       <div className="bg-popover text-popover-foreground absolute top-full left-0 z-10 mt-1 hidden rounded-md border p-2 text-xs whitespace-nowrap shadow-md group-hover:block group-focus:block">
         <div className="font-medium">{label}</div>
-        <div className="text-muted-foreground text-[10px]">
+        <div className="text-muted-foreground text-3xs">
           {getFieldTypeLabel(fieldType)}
           {isRequired && " • Required"}
           {fieldType === "payment" && paymentInfo && (
@@ -367,7 +361,7 @@ export const FillableFieldOverlay = forwardRef<
         </div>
 
         {validationError && (
-          <div className="text-destructive mt-1 max-w-[200px] text-[10px]">
+          <div className="text-destructive text-3xs mt-1 max-w-50">
             ⚠ {validationError}
           </div>
         )}

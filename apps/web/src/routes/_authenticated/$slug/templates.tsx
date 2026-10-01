@@ -249,7 +249,7 @@ function TemplatesList({
               <Table>
                 <Table.Header>
                   <Table.Row>
-                    <Table.Head className="w-[100px]">Preview</Table.Head>
+                    <Table.Head className="w-25">Preview</Table.Head>
                     <Table.Head>
                       <SortHeader field="name" label="Name" />
                     </Table.Head>
@@ -276,8 +276,11 @@ function TemplatesList({
                             <FolderIcon className="text-kumo-secondary h-5 w-5" />
                           </div>
                         </Table.Cell>
-                        <Table.Cell className="max-w-[min(28rem,40vw)]">
-                          <p className="truncate font-medium" title={folder.name}>
+                        <Table.Cell className="max-w-sheet">
+                          <p
+                            className="truncate font-medium"
+                            title={folder.name}
+                          >
                             {folder.name}
                           </p>
                           <p className="text-kumo-secondary text-xs">Folder</p>
@@ -488,7 +491,7 @@ function TemplatesList({
                       {" · "}
                       Used {template.useCount}
                       {template.pageCount != null
-                        ? ` · ${template.pageCount} pages`
+                        ? `· ${template.pageCount} pages`
                         : null}
                     </p>
                     <Button

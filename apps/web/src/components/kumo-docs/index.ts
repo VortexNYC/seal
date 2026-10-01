@@ -59,11 +59,12 @@ export {
   type PdfEditorProps,
 } from "./pdf-editor";
 export { PdfViewer, type PdfViewerProps } from "./pdf-viewer";
+export { PreviewPane, type PreviewFormat } from "./preview-pane";
 export {
-  PreviewPane,
-  type PreviewFormat,
-} from "./preview-pane";
-export { PptxViewer, type PptxSlide, type PptxViewerProps } from "./pptx-viewer";
+  PptxViewer,
+  type PptxSlide,
+  type PptxViewerProps,
+} from "./pptx-viewer";
 export {
   SchemaBuilderPanel,
   serializeSchema,
@@ -73,14 +74,8 @@ export {
   type SchemaBuilderScalarType,
   type SchemaBuilderSchema,
 } from "./schema-builder";
-export {
-  ThumbnailSidebar,
-  type ThumbnailPage,
-} from "./thumbnail-sidebar";
-export {
-  XlsxEditor,
-  type XlsxEditorProps,
-} from "./xlsx-editor";
+export { ThumbnailSidebar, type ThumbnailPage } from "./thumbnail-sidebar";
+export { XlsxEditor, type XlsxEditorProps } from "./xlsx-editor";
 export {
   XlsxViewer,
   type XlsxSheet,

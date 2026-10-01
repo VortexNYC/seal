@@ -50,7 +50,7 @@ export function DocumentStatusHero({
       aria-live="polite"
     >
       {!compact && (
-        <div className="text-muted-foreground mb-2 text-xs font-semibold tracking-[0.16em] uppercase">
+        <div className="text-muted-foreground tracking-caps mb-2 text-xs font-semibold uppercase">
           Document Status
         </div>
       )}

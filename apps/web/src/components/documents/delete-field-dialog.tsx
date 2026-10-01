@@ -39,7 +39,7 @@ export function DeleteFieldDialog({
         {/* vortex-allow-color: modal/dialog scrim needs fixed black opacity for backdrop contrast. */}
         <AlertDialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/40 duration-150" />
 
-        <AlertDialogPrimitive.Content className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-1/2 left-1/2 z-50 w-[calc(100%-32px)] max-w-[400px] -translate-x-1/2 -translate-y-1/2 duration-200">
+        <AlertDialogPrimitive.Content className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 w-edge fixed top-1/2 left-1/2 z-50 max-w-100 -translate-x-1/2 -translate-y-1/2 duration-200">
           <div className="bg-card rounded-lg border shadow-sm">
             <div className="p-6">
               <div className="mb-4 flex items-center gap-3">

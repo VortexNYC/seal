@@ -32,7 +32,7 @@ export function SignerAccountGate({
 
   if (!isLoaded) {
     return (
-      <div className="flex min-h-dvh w-full items-center justify-center px-[max(1rem,env(safe-area-inset-left))] py-[max(1rem,env(safe-area-inset-bottom))]">
+      <div className="px-safe py-safe flex min-h-dvh w-full items-center justify-center">
         <p className="text-muted-foreground text-sm">Checking your account…</p>
       </div>
     );
@@ -47,13 +47,11 @@ export function SignerAccountGate({
   }
 
   const wrongAccount =
-    isSignedIn &&
-    !!user?.primaryEmailAddress?.emailAddress &&
-    !emailMatches;
+    isSignedIn && !!user?.primaryEmailAddress?.emailAddress && !emailMatches;
 
   return (
-    <div className="flex min-h-dvh w-full items-center justify-center px-[max(1rem,env(safe-area-inset-left))] py-8 pr-[max(1rem,env(safe-area-inset-right))]">
-      <LayerCard className="w-full max-w-lg p-[clamp(1rem,4vw,2rem)]">
+    <div className="px-safe flex min-h-dvh w-full items-center justify-center py-8">
+      <LayerCard className="p-fluid w-full max-w-lg">
         <div className="mb-4 flex items-center gap-2">
           <IdentificationCard className="size-6 shrink-0" weight="duotone" />
           <h1 className="text-xl font-semibold tracking-tight text-balance">

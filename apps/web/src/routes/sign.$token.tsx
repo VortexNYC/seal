@@ -1310,7 +1310,7 @@ function SigningPage() {
     <div className="flex flex-col gap-4">
       {!isOnline && (
         <div
-          className="border-warning-surface bg-kumo-warning-tint motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-2 motion-safe:duration-200 rounded-lg border px-3 py-2"
+          className="border-warning-surface bg-kumo-warning-tint motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-2 rounded-lg border px-3 py-2 motion-safe:duration-200"
           role="status"
         >
           <div className="text-kumo-warning flex items-center gap-2 text-sm">
@@ -1504,7 +1504,7 @@ function SigningPage() {
             <img
               src={branding.logoUrl}
               alt=""
-              className="h-8 max-w-[140px] object-contain"
+              className="h-8 max-w-35 object-contain"
             />
           ) : undefined
         }

@@ -173,7 +173,9 @@ export function DocumentPdfOpsPanel({
   const [exportDpi, setExportDpi] = useState(150);
   const [ocrLang, setOcrLang] = useState("eng");
   const [compareTarget, setCompareTarget] = useState("");
-  const [pdfaFormat, setPdfaFormat] = useState<"PDF/A-1b" | "PDF/A-2b" | "PDF/A-3b">("PDF/A-2b");
+  const [pdfaFormat, setPdfaFormat] = useState<
+    "PDF/A-1b" | "PDF/A-2b" | "PDF/A-3b"
+  >("PDF/A-2b");
   const [selectedMergeIds, setSelectedMergeIds] = useState<string[]>([]);
   const [mergeTitle, setMergeTitle] = useState("");
 
@@ -217,7 +219,7 @@ export function DocumentPdfOpsPanel({
         <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
           Organize pages
         </p>
-        <p className="text-muted-foreground text-[11px]">
+        <p className="text-muted-foreground text-2xs">
           Reorder or delete pages in this draft. Fields on removed pages are
           dropped.
         </p>
@@ -292,7 +294,7 @@ export function DocumentPdfOpsPanel({
         <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
           Rotate pages
         </p>
-        <p className="text-muted-foreground text-[11px]">
+        <p className="text-muted-foreground text-2xs">
           Turn the PDF before sending — whole document or the page you&apos;re
           on.
         </p>
@@ -339,7 +341,7 @@ export function DocumentPdfOpsPanel({
         <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
           Crop
         </p>
-        <p className="text-muted-foreground text-[11px]">
+        <p className="text-muted-foreground text-2xs">
           Trim equal margins (scan edges / letterhead junk). Uses the same
           Entire PDF / This page scope as rotate.
         </p>
@@ -379,7 +381,7 @@ export function DocumentPdfOpsPanel({
         <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
           Watermark
         </p>
-        <p className="text-muted-foreground text-[11px]">
+        <p className="text-muted-foreground text-2xs">
           Stamp text across the PDF before send (DRAFT, CONFIDENTIAL, …).
         </p>
         <Input
@@ -429,7 +431,7 @@ export function DocumentPdfOpsPanel({
         <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
           Page numbers
         </p>
-        <p className="text-muted-foreground text-[11px]">
+        <p className="text-muted-foreground text-2xs">
           Footer stamps for assembled packs.
         </p>
         <div className="flex flex-wrap gap-1">
@@ -496,7 +498,7 @@ export function DocumentPdfOpsPanel({
         <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
           Compress
         </p>
-        <p className="text-muted-foreground text-[11px]">
+        <p className="text-muted-foreground text-2xs">
           Shrink images for email-size packs. Text and layout stay intact.
         </p>
         <div className="flex flex-wrap gap-1">
@@ -532,9 +534,9 @@ export function DocumentPdfOpsPanel({
         <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
           Redact region
         </p>
-        <p className="text-muted-foreground text-[11px]">
-          Permanently remove content inside a box on this page — text under
-          it is deleted, not just hidden. Values are % of page.
+        <p className="text-muted-foreground text-2xs">
+          Permanently remove content inside a box on this page — text under it
+          is deleted, not just hidden. Values are % of page.
         </p>
         <div className="grid grid-cols-2 gap-2">
           {(
@@ -590,9 +592,9 @@ export function DocumentPdfOpsPanel({
         <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
           Protect with password
         </p>
-        <p className="text-muted-foreground text-[11px]">
-          Make an encrypted copy to download — your working draft stays
-          editable here.
+        <p className="text-muted-foreground text-2xs">
+          Make an encrypted copy to download — your working draft stays editable
+          here.
         </p>
         <Input
           label="Open password"
@@ -608,9 +610,7 @@ export function DocumentPdfOpsPanel({
           disabled={
             protecting || pageCount < 1 || protectPassword.trim().length === 0
           }
-          onClick={() =>
-            onProtect({ userPassword: protectPassword.trim() })
-          }
+          onClick={() => onProtect({ userPassword: protectPassword.trim() })}
         >
           {protecting ? "Encrypting…" : "Create protected copy"}
         </Button>
@@ -630,10 +630,10 @@ export function DocumentPdfOpsPanel({
         <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
           Flatten annotations &amp; forms
         </p>
-        <p className="text-muted-foreground text-[11px]">
+        <p className="text-muted-foreground text-2xs">
           Bake annotation and form appearances into the page — interactive
-          overlays become static content. Signature fields you placed here
-          are unaffected.
+          overlays become static content. Signature fields you placed here are
+          unaffected.
         </p>
         <Button
           type="button"
@@ -699,9 +699,9 @@ export function DocumentPdfOpsPanel({
         <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
           Convert to Office
         </p>
-        <p className="text-muted-foreground text-[11px]">
-          Export as Word, Excel, or PowerPoint. Layout-locked — text boxes,
-          not flowing prose.
+        <p className="text-muted-foreground text-2xs">
+          Export as Word, Excel, or PowerPoint. Layout-locked — text boxes, not
+          flowing prose.
         </p>
         <div className="flex gap-2">
           {(["docx", "xlsx", "pptx"] as const).map((f) => (
@@ -722,7 +722,9 @@ export function DocumentPdfOpsPanel({
           disabled={officing || pageCount < 1}
           onClick={() => onToOffice({ format: officeFormat })}
         >
-          {officing ? "Converting…" : `Convert to ${officeFormat.toUpperCase()}`}
+          {officing
+            ? "Converting…"
+            : `Convert to ${officeFormat.toUpperCase()}`}
         </Button>
         {officeDownloadUrl ? (
           <a
@@ -740,7 +742,7 @@ export function DocumentPdfOpsPanel({
         <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
           Make searchable (OCR)
         </p>
-        <p className="text-muted-foreground text-[11px]">
+        <p className="text-muted-foreground text-2xs">
           Add a text layer to scanned pages — existing text is preserved.
         </p>
         <Input
@@ -768,7 +770,7 @@ export function DocumentPdfOpsPanel({
         <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
           Compare with another draft
         </p>
-        <p className="text-muted-foreground text-[11px]">
+        <p className="text-muted-foreground text-2xs">
           Text-level diff — lists lines added and removed per page.
         </p>
         <Select
@@ -823,9 +825,9 @@ export function DocumentPdfOpsPanel({
         <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
           Archival format (PDF/A)
         </p>
-        <p className="text-muted-foreground text-[11px]">
-          Convert to a long-term-archival PDF/A flavour — replaces the
-          stored PDF.
+        <p className="text-muted-foreground text-2xs">
+          Convert to a long-term-archival PDF/A flavour — replaces the stored
+          PDF.
         </p>
         <Select
           value={pdfaFormat}
@@ -855,7 +857,7 @@ export function DocumentPdfOpsPanel({
         <p className="text-foreground text-xs font-semibold tracking-wide uppercase">
           Combine with another draft
         </p>
-        <p className="text-muted-foreground text-[11px]">
+        <p className="text-muted-foreground text-2xs">
           Append other draft PDFs after this one into a new draft.
         </p>
         {mergeCandidates.length === 0 ? (

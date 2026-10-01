@@ -70,7 +70,7 @@ export function PdfEditor({
       <div
         data-kumo-docs="pdf-editor"
         className={cn(
-          "text-muted-foreground flex min-h-[32rem] items-center justify-center rounded-xl border border-dashed text-sm",
+          "text-muted-foreground flex min-h-128 items-center justify-center rounded-xl border border-dashed text-sm",
           className
         )}
       >

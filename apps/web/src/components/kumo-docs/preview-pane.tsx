@@ -50,7 +50,7 @@ export function PreviewPane({
     >
       <div className="border-border flex items-center justify-between border-b px-3 py-2">
         <span className="text-sm font-medium">{title ?? "Preview"}</span>
-        <span className="text-muted-foreground font-mono text-[10px] uppercase">
+        <span className="text-muted-foreground text-3xs font-mono uppercase">
           {format}
         </span>
       </div>
@@ -96,7 +96,7 @@ function PreviewBody({
   }
   if (format === "text" && content) {
     return (
-      <pre className="font-mono text-xs whitespace-pre-wrap text-pretty">
+      <pre className="font-mono text-xs text-pretty whitespace-pre-wrap">
         {content}
       </pre>
     );
@@ -104,11 +104,7 @@ function PreviewBody({
   if ((format === "docx" || format === "xlsx") && downloadUrl) {
     return <BinaryOfficePreview format={format} downloadUrl={downloadUrl} />;
   }
-  if (
-    format === "pptx" &&
-    organizationSlug &&
-    documentPublicId
-  ) {
+  if (format === "pptx" && organizationSlug && documentPublicId) {
     return (
       <PptxSlidePreview
         organizationSlug={organizationSlug}
@@ -263,7 +259,9 @@ function BinaryOfficePreview({
     return <p className="text-destructive text-sm">{error}</p>;
   }
   if (!buffer) {
-    return <p className="text-muted-foreground text-sm">No preview available.</p>;
+    return (
+      <p className="text-muted-foreground text-sm">No preview available.</p>
+    );
   }
   if (format === "docx") {
     return <DocxViewer file={buffer} className="max-h-full p-0" />;

@@ -2,9 +2,10 @@
  * Draft send path — three steps, one current. Click jumps to the right section.
  */
 
+import type { ReactElement } from "react";
+
 import { MOTION_PRESS } from "@/lib/motion";
 import { cn } from "@/lib/utils";
-import type { ReactElement } from "react";
 
 export type SendStepId = 1 | 2 | 3;
 
@@ -49,7 +50,7 @@ export function DocumentSendSteps({
           >
             <span
               className={cn(
-                "flex size-5 items-center justify-center rounded-full text-[0.65rem] font-semibold tabular-nums",
+                "text-3xs flex size-5 items-center justify-center rounded-full font-semibold tabular-nums",
                 active && "bg-primary text-primary-foreground",
                 done && !active && "bg-success/20 text-success",
                 !done && !active && "bg-muted text-muted-foreground"

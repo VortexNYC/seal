@@ -1,5 +1,5 @@
-import type { ReactElement } from "react";
 import { Link } from "@tanstack/react-router";
+import type { ReactElement } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -44,7 +44,9 @@ function DeveloperNavLink({
   active,
   children,
 }: {
-  to: "/$slug/settings/developer/api-keys" | "/$slug/settings/developer/webhooks";
+  to:
+    | "/$slug/settings/developer/api-keys"
+    | "/$slug/settings/developer/webhooks";
   slug: string;
   active: boolean;
   children: string;

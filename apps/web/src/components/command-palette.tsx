@@ -39,14 +39,14 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
-        <div className="max-h-[400px] min-h-[80px] overflow-y-auto">
+        <div className="max-h-100 min-h-20 overflow-y-auto">
           {query.length >= 2 && (
             <Text as="p" size="sm" variant="secondary">
               No documents found.
             </Text>
           )}
         </div>
-        <div className="text-kumo-secondary border-kumo-hairline border-t px-3 py-2 text-[10px]">
+        <div className="text-kumo-secondary border-kumo-hairline text-3xs border-t px-3 py-2">
           <kbd className="bg-kumo-elevated border-kumo-hairline rounded border px-1">
             &uarr;&darr;
           </kbd>{" "}

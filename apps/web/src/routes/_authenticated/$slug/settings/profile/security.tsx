@@ -16,8 +16,8 @@ import {
   SettingsStack,
 } from "@vortex-api/better-auth-ui";
 
-import { FormSkeleton } from "@/components/skeletons";
 import { SettingsBody } from "@/components/settings-body";
+import { FormSkeleton } from "@/components/skeletons";
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { toast } from "@/lib/toast";
 

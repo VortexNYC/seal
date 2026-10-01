@@ -238,7 +238,7 @@ export function FieldOptionsDialog({
       <DialogPrimitive.Portal>
         {/* vortex-allow-color: modal/dialog scrim needs fixed black opacity for backdrop contrast. */}
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" />
-        <DialogPrimitive.Content className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] bg-card border-border fixed top-1/2 left-1/2 z-50 w-[calc(100%-32px)] max-w-[420px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl border shadow-sm duration-200">
+        <DialogPrimitive.Content className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-50 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-50 bg-card border-border w-edge fixed top-1/2 left-1/2 z-50 max-w-105 -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl border shadow-sm duration-200">
           {/* Header */}
           <div className="relative px-5 pt-5 pb-4">
             <DialogPrimitive.Title className="text-foreground mb-1 text-base font-semibold tracking-tight">
@@ -253,15 +253,15 @@ export function FieldOptionsDialog({
           </div>
 
           {/* Body */}
-          <div className="max-h-[50vh] overflow-y-auto px-5 pb-5">
+          <div className="max-h-vh-50 overflow-y-auto px-5 pb-5">
             <div>
-              <div className="text-muted-foreground mb-2 flex items-center gap-1.5 text-[11px] font-medium tracking-wide uppercase">
+              <div className="text-muted-foreground text-2xs mb-2 flex items-center gap-1.5 font-medium tracking-wide uppercase">
                 Options
               </div>
 
               {options.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <p className="text-muted-foreground max-w-[220px] text-sm">
+                  <p className="text-muted-foreground max-w-55 text-sm">
                     {config.emptyText}
                   </p>
                 </div>
@@ -323,7 +323,7 @@ export function FieldOptionsDialog({
               fieldType !== "multi_select" &&
               options.length > 0 && (
                 <div className="border-border mt-4 border-t pt-4">
-                  <div className="text-muted-foreground mb-2 flex items-center gap-1.5 text-[11px] font-medium tracking-wide uppercase">
+                  <div className="text-muted-foreground text-2xs mb-2 flex items-center gap-1.5 font-medium tracking-wide uppercase">
                     Default Selection
                   </div>
                   <div className="flex items-start gap-2.5">

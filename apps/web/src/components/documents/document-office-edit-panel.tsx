@@ -1,18 +1,12 @@
-import type { JSX } from "react";
 import { useMutation } from "@tanstack/react-query";
+import type { JSX } from "react";
 import { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 
 import { DocxEditor } from "@/components/kumo-docs/docx-editor";
 import { XlsxEditor, type XlsxSheet } from "@/components/kumo-docs/xlsx-editor";
-import {
-  getDocumentPreview,
-  replaceDocumentOriginal,
-} from "@/lib/api-client";
-import {
-  DOCX_CONTENT_TYPE,
-  htmlToDocxBase64,
-} from "@/lib/html-to-docx";
+import { getDocumentPreview, replaceDocumentOriginal } from "@/lib/api-client";
+import { DOCX_CONTENT_TYPE, htmlToDocxBase64 } from "@/lib/html-to-docx";
 import { toast } from "@/lib/toast";
 
 const XLSX_CONTENT_TYPE =
