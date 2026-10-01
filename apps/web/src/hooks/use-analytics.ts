@@ -1,4 +1,4 @@
-import { usePostHog } from "posthog-js/react";
+import { usePostHog } from "@/lib/posthog-client";
 import { useCallback, useRef } from "react";
 
 /**

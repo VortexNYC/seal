@@ -1,4 +1,4 @@
-import posthog from "posthog-js";
+import { getPosthog, withPosthog } from "@/lib/posthog-client";
 import { useEffect } from "react";
 
 import { isGuestAnalyticsSurface } from "@/lib/posthog-proxy";
@@ -23,28 +23,36 @@ type GuestAnalyticsClient = {
  * with `person_profiles: identified_only` and no identify() call — properties
  * must be IDs only (never email/name/title/free-text reasons).
  */
-export function muteGuestAnalytics(
-  client: GuestAnalyticsClient = posthog
-): void {
-  client.set_config?.({
+export function muteGuestAnalytics(client?: GuestAnalyticsClient): void {
+  const target = client ?? getPosthog();
+  if (!target) {
+    withPosthog((posthog) => muteGuestAnalytics(posthog));
+    return;
+  }
+  target.set_config?.({
     disable_session_recording: true,
     disable_surveys: true,
     enable_heatmaps: false,
   });
-  client.stopSessionRecording?.();
+  target.stopSessionRecording?.();
 }
 
 /** Re-enable recording after an authenticated identity is established. */
 export function unmuteAuthenticatedAnalytics(
-  client: GuestAnalyticsClient = posthog
+  client?: GuestAnalyticsClient
 ): void {
-  client.opt_in_capturing?.();
-  client.set_config?.({
+  const target = client ?? getPosthog();
+  if (!target) {
+    withPosthog((posthog) => unmuteAuthenticatedAnalytics(posthog));
+    return;
+  }
+  target.opt_in_capturing?.();
+  target.set_config?.({
     disable_session_recording: false,
     disable_surveys: false,
     enable_heatmaps: true,
   });
-  client.startSessionRecording?.();
+  target.startSessionRecording?.();
 }
 
 export function useGuestAnalyticsMute(): void {
