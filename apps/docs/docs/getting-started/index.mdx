@@ -1,76 +1,78 @@
 ---
 title: Getting Started
-description: Learn how to integrate with the Seal API for document signing workflows
+description: What Seal is, what it does, and how to integrate
 ---
 
 # Getting Started
 
-Welcome to the Seal API! This guide will help you get started with integrating document signing capabilities into your application.
-
 ## What is Seal?
 
-Seal is a document signing platform that provides a comprehensive API for managing electronic signatures, document workflows, and audit trails. Our API enables you to:
+Seal is a document platform built for agents. The model — Claude, Devin, Codex,
+whatever you run — drives the work through a typed API; humans provide the
+signing intent. Three capabilities:
 
-- **Upload and manage documents** - Send PDFs for signing, track status, and download completed documents
-- **Manage recipients** - Add signers, approvers, and viewers with role-based access control
-- **Create reusable templates** - Build document templates with custom fields for faster workflows
-- **Verify signatures** - Access cryptographic signature verification and complete audit trails
-- **Receive real-time notifications** - Configure webhooks for 17+ document lifecycle events
-- **Integrate with AI workflows** - Use our MCP server for AI-powered document automation
+**Send & sign** — upload a PDF, place fields, add recipients, send. Humans
+open a link, sign, done. You get the completed document, a certificate of
+completion, and a tamper-evident audit trail. This is the DocuSign-class
+workflow: contracts, NDAs, approval flows.
+
+**Document tools** — deterministic PDF operations you can call like functions:
+extract text and layout, split, merge, compress, redact, watermark, OCR,
+convert to Office formats, compare two versions. No model calls — pure
+document manipulation, safe to run unattended.
+
+**Review** — give your agent a spreadsheet to fill out. Create a matrix with
+documents as rows and questions as columns; the agent reads each document
+through `preview`, reasons on its own infrastructure, and posts answers to
+`cells`. Every answer must anchor to a verbatim quote — fabricated citations
+collapse to `not_found`. Use it for clause extraction, due-diligence sweeps,
+and contract comparison across a batch.
+
+Seal never runs inference. There is no hosted model, no chat, no AI output
+generated on our side — agents bring their own reasoning; Seal provides the
+tools and the evidence.
+
+## When to use what
+
+| You want to…                                        | Reach for                          |
+| --------------------------------------------------- | ---------------------------------- |
+| Get a contract signed                                | `documents` → `recipients` → `send` |
+| Inspect or transform a PDF without signing           | `documents/preview`, `pdf/*`       |
+| Extract structured answers from many documents       | `reviews` (matrix + cells)          |
+| Propose redlines a human must approve                | `revisions`                         |
+| Be notified on views, signatures, completions        | `webhooks`                          |
+| Audit who did what                                   | `audit-log`, `signatures/verify`    |
 
 ## Quick Links
 
 <CardGroup cols={2}>
+  <Card title="Quick Start" href="/docs/getting-started/quick-start">
+    Send your first document for signing in 4 steps
+  </Card>
   <Card title="Agents & who signs" href="/docs/getting-started/agents">
     OpenAPI contract, MCP/CLI, agents operate — humans sign
   </Card>
   <Card title="Authentication" href="/docs/getting-started/authentication">
-    Learn how to create API keys and authenticate your requests
+    API keys and Bearer auth
   </Card>
-  <Card title="Quick Start" href="/docs/getting-started/quick-start">
-    Send your first document for signing in 4 simple steps
-  </Card>
-  <Card title="Self-host" href="/docs/getting-started/self-host">
-    Deploy Seal on your Cloudflare account (D1 + R2 + workers.dev)
-  </Card>
-  <Card title="Production checklist" href="/docs/getting-started/production">
-    Keys, webhooks, audit, email, and smoke gates for real traffic
-  </Card>
-  <Card title="Trust & evidence" href="/docs/getting-started/trust-and-evidence">
-    Audit lifecycle, clocks vs TSA, signer accessibility posture
-  </Card>
-  <Card title="eIDAS levels" href="/docs/getting-started/eidas">
-    SES today; AES/QES roadmap for EU deals
-  </Card>
-  <Card title="HIPAA scoping" href="/docs/getting-started/hipaa">
-    PHI / BAA gate — healthcare declined until expand path
-  </Card>
-  <Card title="Privacy & incidents" href="/docs/getting-started/privacy">
-    Subprocessors, DPA posture, breach runbook
-  </Card>
-  <Card title="Sensitive egress" href="/docs/getting-started/egress">
-    Webhook minimal payloads + AI/convert kill switches
-  </Card>
-  <Card title="Enterprise SSO" href="/docs/getting-started/sso">
-    SAML / OIDC company login + enforce-SSO
-  </Card>
-  <Card title="SCIM provisioning" href="/docs/getting-started/scim">
-    Okta / Entra directory sync for org membership
-  </Card>
-  <Card title="Vulnerability disclosure" href="/docs/getting-started/security">
-    How to report security issues (VDP)
-  </Card>
-  <Card title="Error Handling" href="/docs/getting-started/error-handling">
-    Understand error responses and implement proper error handling
+  <Card title="MCP server" href="/docs/mcp">
+    Give Claude/Devin/Codex Seal's tools directly
   </Card>
   <Card title="API Reference" href="/docs/api-reference">
-    Explore all available endpoints and their parameters
+    Every endpoint, fully specified
+  </Card>
+  <Card title="Self-host" href="/docs/getting-started/self-host">
+    Deploy on your own Cloudflare account
+  </Card>
+  <Card title="Trust & evidence" href="/docs/getting-started/trust-and-evidence">
+    Audit lifecycle, timestamps, accessibility posture
+  </Card>
+  <Card title="Production checklist" href="/docs/getting-started/production">
+    Keys, webhooks, and smoke gates for real traffic
   </Card>
 </CardGroup>
 
 ## Base URL
-
-All API requests should be made to:
 
 ```
 https://api.seal.nyc/api/v1
@@ -78,4 +80,5 @@ https://api.seal.nyc/api/v1
 
 ## Support
 
-Need help? Check out our [API Reference](/docs/api-reference) for detailed endpoint documentation, or explore our [Webhooks](/docs/webhooks) and [MCP Integration](/docs/mcp) guides for advanced features.
+Need help? Browse the [API Reference](/docs/api-reference), or see the
+[MCP integration](/docs/mcp) guide for agent-first setup.
