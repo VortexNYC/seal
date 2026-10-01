@@ -67,6 +67,11 @@ EMAIL_FROM = "notifications@seal.nyc"
 APP_URL = "https://app.seal.nyc"
 MCP_SIGNING_KEY_ID = "mcp-key-1"
 
+# Smart Placement — colocates the worker beside single-region D1 so hot
+# paths skip the public-internet hop to the DB.
+[env.production.placement]
+mode = "smart"
+
 [env.production.observability]
 enabled = true
 logs = { enabled = true }
@@ -93,6 +98,9 @@ service = "seal-anydoc-worker"
 [[env.production.services]]
 binding = "SEAL_CONVERT_WORKER"
 service = "seal-convert-worker"
+
+[env.production.ai]
+binding = "AI"
 
 [[env.production.durable_objects.bindings]]
 name = "JOB_RUNNER"
