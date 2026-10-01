@@ -72,6 +72,7 @@ type ExportCapability = {
 
 type DocumentManagerCapability = {
   getActiveDocumentId?: () => string | null;
+  onDocumentOpened?: (listener: () => void) => () => void;
 };
 
 type PageBox = {
@@ -234,13 +235,9 @@ export function DocumentCanvas({
     }
   }, []);
 
-  // Pages don't paint until the first zoom/layout event — request fit-width
-  // once the viewer is ready, and retry once on the first page event in case
-  // the ready call raced document load.
-  const fitRetriedRef = useRef(false);
-  useEffect(() => {
-    fitRetriedRef.current = false;
-  }, [src]);
+  // Pages don't paint until a zoom/layout event — request fit-width when the
+  // document actually opens (ready alone races document load and no-ops).
+  const docOpenedSubRef = useRef<(() => void) | null>(null);
 
   const handleReady = useCallback(
     (registry: unknown) => {
@@ -259,7 +256,19 @@ export function DocumentCanvas({
         setZoom(level);
         onZoomChangeRef.current?.(level);
       }
-      getZoomCapability(registry)?.requestZoom?.("fit-width");
+      docOpenedSubRef.current?.();
+      const docManager = (
+        (registry as PluginRegistryLike).getPlugin?.("document-manager")
+          ?.provides?.() as DocumentManagerCapability | undefined
+      );
+      docOpenedSubRef.current =
+        docManager?.onDocumentOpened?.(() => {
+          // Scroll viewport mounts after document-opened — defer the zoom
+          // request so it lands on a live viewport and forces first paint.
+          window.setTimeout(() => {
+            getZoomCapability(registry)?.requestZoom?.("fit-width");
+          }, 150);
+        }) ?? null;
     },
     [refreshPageBox]
   );
@@ -276,10 +285,6 @@ export function DocumentCanvas({
       setTotalPages(Math.max(1, event.totalPages));
       onPageChangeRef.current(event.pageNumber);
       refreshPageBox(event.pageNumber);
-      if (!fitRetriedRef.current) {
-        fitRetriedRef.current = true;
-        getZoomCapability(registryRef.current)?.requestZoom?.("fit-width");
-      }
     });
   }, [ready, refreshPageBox]);
 
