@@ -11,53 +11,26 @@ import { defineConfig, type Plugin } from "vite";
 
 const require = createRequire(import.meta.url);
 
-function manualChunks(moduleId: string): string | undefined {
-  if (moduleId.includes("@embedpdf") || moduleId.includes("pdfium")) {
-    return "pdf-viewer";
-  }
-
-  if (
-    moduleId.includes("konva") ||
-    moduleId.includes("react-konva") ||
-    moduleId.includes("react-zoom-pan-pinch")
-  ) {
-    return "canvas";
-  }
-
-  if (moduleId.includes("recharts") || moduleId.includes("d3-")) {
-    return "charts";
-  }
-
-  if (moduleId.includes("jspdf") || moduleId.includes("html2canvas")) {
-    return "pdf-export";
-  }
-
-  if (moduleId.includes("date-fns")) {
-    return "date-utils";
-  }
-
-  if (
-    moduleId.includes("@radix-ui") ||
-    moduleId.includes("cmdk") ||
-    moduleId.includes("sonner") ||
-    moduleId.includes("react-day-picker")
-  ) {
-    return "ui";
-  }
-
-  if (moduleId.includes("posthog")) {
-    return "vendor-analytics";
-  }
-
-  if (
-    moduleId.includes("@tanstack/react-query") ||
-    moduleId.includes("@tanstack/query")
-  ) {
-    return "vendor-query";
-  }
-
-  return undefined;
-}
+/**
+ * CodeSplitting groups — replaces manualChunks (ignored when both set).
+ * Tiny shared modules (icons) intentionally stay auto-split: grouping them
+ * would defeat tree-shaking and force the whole set onto every page.
+ */
+const codeSplitting = {
+  groups: [
+    { name: "pdf-viewer", test: /@embedpdf|pdfium/ },
+    { name: "canvas", test: /konva|react-zoom-pan-pinch/ },
+    { name: "charts", test: /recharts|d3-/ },
+    { name: "pdf-export", test: /jspdf|html2canvas/ },
+    { name: "date-utils", test: /date-fns/ },
+    {
+      name: "ui",
+      test: /@radix-ui|cmdk|sonner|react-day-picker/,
+    },
+    { name: "vendor-analytics", test: /posthog/ },
+    { name: "vendor-query", test: /@tanstack\/(react-)?query/ },
+  ],
+};
 
 function resolvePosthogCliEntry(): string | null {
   try {
@@ -261,7 +234,7 @@ export default defineConfig(() => {
       },
       rollupOptions: {
         output: {
-          manualChunks,
+          codeSplitting,
         },
       },
     },

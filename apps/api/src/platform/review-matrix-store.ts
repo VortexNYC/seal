@@ -15,7 +15,11 @@ import {
   reviewMatrices,
   reviewRows,
 } from "../global/schema.js";
-import { getProvider, streamKeyedModel } from "./llm/index.js";
+import {
+  getProvider,
+  resolveAvailableModel,
+  streamKeyedModel,
+} from "./llm/index.js";
 import { ensureProvidersRegistered } from "./llm/providers.js";
 import { anchorQuote, type PdfWord } from "./quote-anchor.js";
 import {
@@ -437,7 +441,8 @@ export async function generateReviewMatrix(
     throw new ReviewMatrixError("not_found", 404);
   }
 
-  const parsedModel = matrix.model.includes("/") ? matrix.model : null;
+  const effectiveModel = resolveAvailableModel(matrix.model);
+  const parsedModel = effectiveModel.includes("/") ? effectiveModel : null;
   if (!parsedModel) {
     throw new ReviewMatrixError("invalid_model", 400, {
       model: matrix.model,
@@ -516,7 +521,7 @@ export async function generateReviewMatrix(
         `or the literal ${NOT_FOUND_QUOTE} when the column's question is not answered.`,
       ].join("\n");
 
-      const result = await collectStreamResult(matrix.model, prompt);
+      const result = await collectStreamResult(effectiveModel, prompt);
       const tokensUsed =
         result.usage?.inputTokens !== undefined ||
         result.usage?.outputTokens !== undefined
@@ -582,7 +587,7 @@ export async function generateReviewMatrix(
           flag: done.flag,
           reasoning: done.reasoning,
           citations: JSON.stringify(done.citations),
-          modelUsed: matrix.model,
+          modelUsed: effectiveModel,
           tokensUsed,
           processingTimeMs: Date.now() - startedAt,
           updatedAt: new Date(),

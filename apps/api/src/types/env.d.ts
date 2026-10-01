@@ -15,6 +15,8 @@ declare interface CloudflareBindings {
   SEAL_CONVERT_WORKER?: Fetcher;
   /** Optional — PDF upload/sign works without anydoc enrichment. */
   ANYDOC?: Fetcher;
+  /** Optional — registers the Workers AI review-model provider (hosted default). */
+  AI?: Ai;
   BETTER_AUTH_SECRET: string;
   BETTER_AUTH_URL: string;
   TOKEN_HASH_SECRET: string;

@@ -17,4 +17,11 @@ export {
   createAnthropicProvider,
   type AnthropicProviderOptions,
 } from "./anthropic.js";
-export { ensureProvidersRegistered } from "./providers.js";
+export {
+  ensureProvidersRegistered,
+  resolveAvailableModel,
+} from "./providers.js";
+export {
+  createWorkersAiProvider,
+  WORKERS_AI_DEFAULT_MODEL,
+} from "./workers-ai.js";
