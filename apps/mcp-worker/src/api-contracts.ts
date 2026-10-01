@@ -976,7 +976,7 @@ export const createReviewMatrixSchema = z.object({
     .max(120)
     .optional()
     .describe(
-      "Provider/model key, e.g. echo/test (optional when pack_id supplies one)"
+      "Provenance label — which agent/model fills cells (e.g. agent/claude-opus-4-6); never executed by Seal. Defaults to agent."
     ),
   columns: z
     .array(
@@ -994,7 +994,7 @@ export const createReviewMatrixSchema = z.object({
     .string()
     .optional()
     .describe(
-      "Review pack to expand into columns/model — builtin/nda, builtin/msa, builtin/employment, or pack_*"
+      "Review pack to expand into columns — builtin/nda, builtin/msa, builtin/employment, or pack_*"
     ),
   documentIds: z
     .array(z.string().min(1))
@@ -1008,13 +1008,6 @@ export const getReviewMatrixSchema = z.object({
   id: z.string().describe("Review matrix public ID"),
 });
 export type GetReviewMatrixInput = z.infer<typeof getReviewMatrixSchema>;
-
-export const generateReviewMatrixSchema = z.object({
-  id: z.string().describe("Review matrix public ID"),
-});
-export type GenerateReviewMatrixInput = z.infer<
-  typeof generateReviewMatrixSchema
->;
 
 export interface ApiReviewMatrix {
   id: string;

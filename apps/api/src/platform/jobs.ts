@@ -11,7 +11,6 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 
 import { createD1 } from "../global/db.js";
 import { jobs } from "../global/schema.js";
-import { generateReviewMatrix } from "./review-matrix-store.js";
 
 type Db = ReturnType<typeof createD1>;
 
@@ -68,7 +67,9 @@ export function toApiJob(row: JobRecord): ApiJob {
 }
 
 /** Registered job types. Dispatch is explicit — no free-form payloads run. */
-const JOB_TYPES = new Set(["review-generate"]);
+// No Seal-hosted job types today — agents drive review cells via
+// PATCH /reviews/{id}/cells; add long-op types here when needed.
+const JOB_TYPES = new Set<string>();
 
 export async function createJob(
   db: Db,
@@ -153,21 +154,7 @@ export async function runJob(
   let error: string | null = null;
 
   try {
-    const payload = JSON.parse(job.payload) as Record<string, unknown>;
-    if (job.type === "review-generate") {
-      const matrixId = payload.matrixId;
-      if (typeof matrixId !== "string" || !matrixId) {
-        throw new JobError("invalid_payload", 400);
-      }
-      result = await generateReviewMatrix(
-        db,
-        env,
-        job.organizationId,
-        matrixId
-      );
-    } else {
-      throw new JobError("unknown_job_type", 400);
-    }
+    throw new JobError("unknown_job_type", 400);
   } catch (err) {
     error = err instanceof Error ? err.message.slice(0, 500) : "job_failed";
   }

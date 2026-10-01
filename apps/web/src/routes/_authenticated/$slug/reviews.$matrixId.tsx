@@ -11,12 +11,12 @@ import { Textarea } from "@cloudflare/kumo/components/input";
 import { Select } from "@cloudflare/kumo/components/select";
 import { Table } from "@cloudflare/kumo/components/table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   CheckIcon,
   FileTextIcon,
   FilePenLineIcon,
-  PlayIcon,
+  PlusIcon,
   XIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -27,7 +27,6 @@ import {
   acceptRevision,
   getDocuments,
   getReviewMatrix,
-  generateReviewMatrix,
   listRevisions,
   openReviewStream,
   proposeRevision,
@@ -76,13 +75,17 @@ function ReviewMatrixPage() {
   const matrixQuery = useQuery({
     queryKey: ["review", slug, matrixId],
     queryFn: () => getReviewMatrix(slug, matrixId),
+    // Poll while draft/generating — an agent may be writing cells via PATCH.
     refetchInterval: (q) =>
-      q.state.data?.status === "generating" ? 4000 : false,
+      q.state.data?.status === "generating" || q.state.data?.status === "draft"
+        ? 4000
+        : false,
   });
   const docsQuery = useQuery({
     queryKey: ["api", "documents", "all", "all", undefined, slug],
     queryFn: () => getDocuments(slug, { filter: "all" }),
   });
+  const navigate = useNavigate();
   const matrix = matrixQuery.data;
   const docName = useMemo(() => {
     const map = new Map<string, string>();
@@ -90,20 +93,9 @@ function ReviewMatrixPage() {
     return (id: string) => map.get(id) ?? id;
   }, [docsQuery.data]);
 
-  const generateMutation = useMutation({
-    mutationFn: () => generateReviewMatrix(slug, matrixId),
-    onSuccess: () => {
-      toast.success("Generation started");
-      void queryClient.invalidateQueries({
-        queryKey: ["review", slug, matrixId],
-      });
-    },
-    onError: (e) => toast.error(getErrorMessage(e)),
-  });
-
-  // Live cell updates while generating — SSE carries the snapshots.
+  // Live cell updates while an agent writes — SSE carries the snapshots.
   useEffect(() => {
-    if (matrix?.status !== "generating") return;
+    if (matrix?.status !== "generating" && matrix?.status !== "draft") return;
     if (streamRef.current) return;
     streamRef.current = openReviewStream(slug, matrixId, () => {
       void queryClient.invalidateQueries({
@@ -132,15 +124,9 @@ function ReviewMatrixPage() {
       title={matrix.title}
       description={`${matrix.rows.length} documents × ${matrix.columns.length} questions — ${doneCells} done, ${pendingCells} pending`}
       action={{
-        label:
-          matrix.status === "generating"
-            ? "Generating…"
-            : pendingCells > 0
-              ? "Generate"
-              : "Regenerate",
-        icon: PlayIcon,
-        disabled: matrix.status === "generating" || generateMutation.isPending,
-        onClick: () => generateMutation.mutate(),
+        label: "New matrix",
+        icon: PlusIcon,
+        onClick: () => void navigate({ to: `/${slug}/reviews/new` }),
       }}
     >
       <div className="flex gap-6">

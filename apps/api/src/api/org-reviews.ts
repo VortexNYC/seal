@@ -10,15 +10,19 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { z } from "zod";
 
 import { createD1 } from "../global/db.js";
-import { createJob, JobError, wakeJobRunner } from "../platform/jobs.js";
+import { JobError } from "../platform/jobs.js";
 import { organizationMiddleware } from "../platform/organization-middleware.js";
 import {
   createReviewMatrix,
   getReviewMatrix,
+  writeReviewCells,
   listReviewMatrices,
   ReviewMatrixError,
 } from "../platform/review-matrix-store.js";
-import { ZReviewMatrixCreate } from "../platform/review-matrix.js";
+import {
+  ZReviewCellsWrite,
+  ZReviewMatrixCreate,
+} from "../platform/review-matrix.js";
 import {
   createReviewPack,
   deleteReviewPack,
@@ -102,9 +106,10 @@ app.post("/:slug", async (c) => {
       columns = columns ?? pack.columns;
       model = model ?? pack.model ?? undefined;
     }
-    if (!columns?.length || !model) {
+    if (!columns?.length) {
       return c.json({ error: "validation_error" }, 400);
     }
+    model = model ?? "agent";
     const matrix = await createReviewMatrix(db, {
       organizationId,
       ownerId: userId(c),
@@ -241,18 +246,27 @@ app.get("/:slug/:id", async (c) => {
   }
 });
 
-app.post("/:slug/:id/generate", async (c) => {
+/** Agent-authored cell writes — session surface, same contract as v1. */
+app.patch("/:slug/:id/cells", async (c) => {
   const db = createD1(c.env.D1);
   const organizationId = orgId(c);
+  const body = await c.req.json();
+  const parsed = ZReviewCellsWrite.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      { error: "validation_error", details: parsed.error.flatten() },
+      400
+    );
+  }
   try {
-    await getReviewMatrix(db, organizationId, c.req.param("id"));
-    const job = await createJob(db, {
+    const result = await writeReviewCells(
+      c.env,
       organizationId,
-      type: "review-generate",
-      payload: { matrixId: c.req.param("id") },
-    });
-    await wakeJobRunner(c.env, organizationId);
-    return c.json({ job_id: job.publicId, status: job.status }, 202);
+      c.req.param("id"),
+      parsed.data.cells,
+      parsed.data.model_used
+    );
+    return c.json(result);
   } catch (err) {
     return errorResponse(c, err);
   }

@@ -15,7 +15,6 @@ import {
   revisionSuggestions,
   user,
 } from "../global/schema.js";
-import { drainJobs } from "../platform/jobs.js";
 import type { Variables } from "../platform/types.js";
 import orgReviews from "./org-reviews.js";
 
@@ -140,7 +139,7 @@ describe("org reviews API (session)", () => {
     expect(detailBody.rows[0]?.cells.length).toBe(matrix.columns.length);
   });
 
-  it("generate returns 202 with a job_id; drain completes cells", async () => {
+  it("PATCH cells writes agent-authored results and flips ready", async () => {
     const app = createApp();
     const db = createD1(env.D1);
     const docId = await seedDoc(db);
@@ -152,39 +151,50 @@ describe("org reviews API (session)", () => {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           title: "m",
-          model: "echo/test",
+          model: "agent",
           columns: [{ index: 0, name: "Q", prompt: "P" }],
           documentIds: [docId],
         }),
       },
       env
     );
-    const { id } = z.object({ id: z.string() }).parse(await create.json());
+    const created = z
+      .object({
+        id: z.string(),
+        rows: z.array(
+          z.object({
+            id: z.string(),
+            cells: z.array(z.object({ id: z.string() })),
+          })
+        ),
+      })
+      .parse(await create.json());
 
-    const gen = await app.request(
-      `/api/reviews/test-org/${id}/generate`,
+    const write = await app.request(
+      `/api/reviews/test-org/${created.id}/cells`,
       {
-        method: "POST",
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          model_used: "agent/test",
+          cells: [
+            {
+              row_id: created.rows[0]?.id,
+              column_index: 0,
+              summary: "Termination on thirty days notice.",
+              flag: "green",
+              quote: "thirty days written notice",
+            },
+          ],
+        }),
       },
       env
     );
-    expect(gen.status).toBe(202);
-    const { job_id } = z.object({ job_id: z.string() }).parse(await gen.json());
-    expect(job_id).toMatch(/^job_/);
-
-    await drainJobs(env, ORG);
-
-    const detail = await app.request(`/api/reviews/test-org/${id}`, {}, env);
-    const body = z
-      .object({
-        status: z.string(),
-        rows: z.array(
-          z.object({ cells: z.array(z.object({ status: z.string() })) })
-        ),
-      })
-      .parse(await detail.json());
-    expect(body.status).toBe("ready");
-    expect(body.rows[0]?.cells[0]?.status).toBe("done");
+    expect(write.status).toBe(200);
+    const result = z
+      .object({ updated: z.number(), matrixStatus: z.string() })
+      .parse(await write.json());
+    expect(result).toEqual({ updated: 1, matrixStatus: "ready" });
   });
 
   it("stream endpoint emits SSE state", async () => {
@@ -198,7 +208,7 @@ describe("org reviews API (session)", () => {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           title: "s",
-          model: "echo/test",
+          model: "agent/test",
           columns: [{ index: 0, name: "Q", prompt: "P" }],
           documentIds: [docId],
         }),

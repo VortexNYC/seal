@@ -8,8 +8,6 @@ import {
   type ApiReviewMatrix,
   type CreateReviewMatrixInput,
   createReviewMatrixSchema,
-  type GenerateReviewMatrixInput,
-  generateReviewMatrixSchema,
   type GetReviewMatrixInput,
   getReviewMatrixSchema,
 } from "../api-contracts";
@@ -44,7 +42,7 @@ export function registerReviewTools(
 
   server.tool(
     "seal_create_review",
-    "Create a legal review matrix over documents. Columns are extraction prompts; cells stay pending until generate.",
+    "Create a legal review matrix over documents. Columns are extraction prompts; the calling agent fills cells via seal_write_review_cells — Seal runs no model.",
     createReviewMatrixSchema.shape,
     async (args, extra) => {
       const body = args as CreateReviewMatrixInput;
@@ -68,23 +66,6 @@ export function registerReviewTools(
       const authToken = getAuthToken(extra);
       const response = await client.get<ApiReviewMatrix>(
         `/reviews/${encodeURIComponent(id)}`,
-        undefined,
-        authToken
-      );
-      return createToolResponse(response);
-    }
-  );
-
-  server.tool(
-    "seal_generate_review",
-    "Enqueue generation for pending/error cells — returns {job_id}; poll with seal_get_job or seal_get_review.",
-    generateReviewMatrixSchema.shape,
-    async (args, extra) => {
-      const { id } = args as GenerateReviewMatrixInput;
-      const authToken = getAuthToken(extra);
-      const response = await client.post<{ job_id: string; status: string }>(
-        `/reviews/${encodeURIComponent(id)}/generate`,
-        {},
         undefined,
         authToken
       );

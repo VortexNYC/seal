@@ -1,7 +1,7 @@
 /**
  * ADR-006 Phase 2 — review matrix contract (tabular legal extraction).
  *
- * Persistence + generate: `review-matrix-store.ts` + `POST/GET /api/v1/reviews`.
+ * Persistence + agent cell writes: `review-matrix-store.ts` + `POST/GET/PATCH /api/v1/reviews`.
  */
 
 import { z } from "zod";
@@ -42,7 +42,7 @@ export type ReviewColumn = z.infer<typeof ZReviewColumn>;
 
 export const ZReviewMatrixCreate = z.object({
   title: z.string().min(1).max(200),
-  /** Optional when pack_id supplies a default model. */
+  /** Provenance label — which agent/model filled cells. Never executed by Seal. */
   model: z.string().min(1).max(120).optional(),
   /** Optional when pack_id supplies columns. Explicit values win. */
   columns: z.array(ZReviewColumn).min(1).max(32).optional(),

@@ -33,8 +33,6 @@ export type ApiReviewPack = {
   created_at: string;
 };
 
-const ANTHROPIC_DEFAULT = "anthropic/claude-haiku-4-5-20251001";
-
 /** Vortex-authored packs — shipped with the build, no data migration. */
 export const BUILTIN_PACKS: ApiReviewPack[] = [
   {
@@ -42,7 +40,7 @@ export const BUILTIN_PACKS: ApiReviewPack[] = [
     title: "NDA review",
     description:
       "Standard non-disclosure review: term, definition scope, exclusions, return/destruction, governing law.",
-    model: ANTHROPIC_DEFAULT,
+    model: null,
     columns: [
       {
         index: 0,
@@ -77,7 +75,7 @@ export const BUILTIN_PACKS: ApiReviewPack[] = [
     title: "MSA review",
     description:
       "Master services agreement: liability caps, indemnities, IP, termination.",
-    model: ANTHROPIC_DEFAULT,
+    model: null,
     columns: [
       {
         index: 0,
@@ -112,7 +110,7 @@ export const BUILTIN_PACKS: ApiReviewPack[] = [
     title: "Employment agreement review",
     description:
       "Employment/contractor: compensation, IP assignment, non-compete/non-solicit, termination & severance.",
-    model: ANTHROPIC_DEFAULT,
+    model: null,
     columns: [
       {
         index: 0,
