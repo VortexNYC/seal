@@ -33,7 +33,7 @@ export interface ModelProvider {
   stream(req: ChatRequest): AsyncIterable<StreamPart>;
 }
 
-export type ProviderId = "anthropic" | "workers-ai" | "devin";
+export type ProviderId = "anthropic" | "devin";
 
 export function parseProviderModel(
   keyed: string
