@@ -1,6 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json",
-  "jsPlugins": ["@shadcn/lint"],
+  "jsPlugins": [
+    "@shadcn/lint"
+  ],
   "ignorePatterns": [
     "**/.blume/**",
     "**/node_modules/**",
@@ -90,9 +92,16 @@
     "shadcn/no-restyle": [
       "warn",
       {
-        "componentImports": ["@cloudflare/kumo/components/*"],
-        "allow": ["layout"],
-        "message": "Kumo primitives own their look \u2014 prefer size/variant props over visual restyling. ADR-002."
+        "componentImports": [
+          "@cloudflare/kumo/components/*"
+        ],
+        "allow": [
+          "layout",
+          "spacing",
+          "typography",
+          "shape"
+        ],
+        "message": "Kumo primitives own their color/effects \u2014 prefer variant/size props; surface overrides are review-worthy, not blocked."
       }
     ]
   }
