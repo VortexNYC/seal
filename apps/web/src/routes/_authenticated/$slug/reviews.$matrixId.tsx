@@ -58,7 +58,6 @@ const FLAG_STYLES: Record<string, { label: string; cls: string }> = {
 
 const CELL_STATUS_DOT: Record<string, string> = {
   pending: "bg-muted-foreground/20",
-  generating: "bg-blue-400 animate-pulse",
   done: "",
   error: "bg-red-300",
 };
@@ -75,11 +74,8 @@ function ReviewMatrixPage() {
   const matrixQuery = useQuery({
     queryKey: ["review", slug, matrixId],
     queryFn: () => getReviewMatrix(slug, matrixId),
-    // Poll while draft/generating — an agent may be writing cells via PATCH.
-    refetchInterval: (q) =>
-      q.state.data?.status === "generating" || q.state.data?.status === "draft"
-        ? 4000
-        : false,
+    // Poll while draft — an agent may be writing cells via PATCH.
+    refetchInterval: (q) => (q.state.data?.status === "draft" ? 4000 : false),
   });
   const docsQuery = useQuery({
     queryKey: ["api", "documents", "all", "all", undefined, slug],
@@ -95,7 +91,7 @@ function ReviewMatrixPage() {
 
   // Live cell updates while an agent writes — SSE carries the snapshots.
   useEffect(() => {
-    if (matrix?.status !== "generating" && matrix?.status !== "draft") return;
+    if (matrix?.status !== "draft") return;
     if (streamRef.current) return;
     streamRef.current = openReviewStream(slug, matrixId, () => {
       void queryClient.invalidateQueries({

@@ -42,7 +42,6 @@ type ColumnDraft = { name: string; prompt: string };
 
 const STATUS_VARIANT = {
   draft: "outline",
-  generating: "info",
   ready: "success",
   error: "destructive",
 } as const;
