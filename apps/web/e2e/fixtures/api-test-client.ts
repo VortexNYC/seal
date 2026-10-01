@@ -16,9 +16,7 @@ export function getApiBaseUrl(): string {
 }
 
 function organizationSlug(): string {
-  return (
-    readCachedWorkspaceSlug() ?? getTestWorkspaceConfig().organizationSlug
-  );
+  return readCachedWorkspaceSlug() ?? getTestWorkspaceConfig().organizationSlug;
 }
 
 function documentsBasePath(): string {
@@ -301,11 +299,7 @@ export async function listDocuments(
   request: APIRequestContext,
   filter: "all" | "owned" | "shared" = "all"
 ): Promise<Array<{ publicId: string; name: string }>> {
-  return apiRequest(
-    request,
-    "get",
-    `${documentsBasePath()}?filter=${filter}`
-  );
+  return apiRequest(request, "get", `${documentsBasePath()}?filter=${filter}`);
 }
 
 export async function assertApiReachability(

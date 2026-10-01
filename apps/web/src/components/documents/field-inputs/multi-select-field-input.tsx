@@ -11,9 +11,7 @@ interface MultiSelectFieldInputProps {
 }
 
 /** Multi-select (DocuSeal `multiple`) — stores selected options as JSON array string. */
-export function MultiSelectFieldInput(
-  props: MultiSelectFieldInputProps
-) {
+export function MultiSelectFieldInput(props: MultiSelectFieldInputProps) {
   return (
     <CheckboxFieldInput
       {...props}

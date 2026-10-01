@@ -24,8 +24,8 @@ import {
   TrendingUp,
 } from "lucide-react";
 
-import { FormSkeleton } from "@/components/skeletons";
 import { SettingsBody } from "@/components/settings-body";
+import { FormSkeleton } from "@/components/skeletons";
 import { getUserUsageStatistics } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
@@ -84,263 +84,269 @@ function UsageSettings() {
 
   return (
     <SettingsBody>
-    <div className="flex flex-col gap-5">
-      {/* Upgrade prompt */}
-      {showUpgradePrompt && (
-        <LayerCard className="border-warning/30 bg-warning-surface">
-          <LayerCard.Primary>
-            <div className="flex items-center justify-between py-4">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="text-warning h-5 w-5" />
-                <div>
-                  <p className="text-warning font-medium">
-                    Approaching usage limits
-                  </p>
-                  <p className="text-warning text-sm">
-                    Upgrade to Professional for higher limits and more features
-                  </p>
+      <div className="flex flex-col gap-5">
+        {/* Upgrade prompt */}
+        {showUpgradePrompt && (
+          <LayerCard className="border-warning/30 bg-warning-surface">
+            <LayerCard.Primary>
+              <div className="flex items-center justify-between py-4">
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className="text-warning h-5 w-5" />
+                  <div>
+                    <p className="text-warning font-medium">
+                      Approaching usage limits
+                    </p>
+                    <p className="text-warning text-sm">
+                      Upgrade to Professional for higher limits and more
+                      features
+                    </p>
+                  </div>
                 </div>
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    navigate({ to: "/$slug/settings", params: { slug } })
+                  }
+                >
+                  Upgrade <ArrowUpRight className="ml-1 h-4 w-4" />
+                </Button>
               </div>
-              <Button
-                size="sm"
-                onClick={() =>
-                  navigate({ to: "/$slug/settings", params: { slug } })
-                }
-              >
-                Upgrade <ArrowUpRight className="ml-1 h-4 w-4" />
-              </Button>
+            </LayerCard.Primary>
+          </LayerCard>
+        )}
+
+        {/* Plan Overview */}
+        <LayerCard>
+          <LayerCard.Secondary>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                <Text as="h2" variant="heading">
+                  Plan Overview
+                </Text>
+              </div>
+              <Badge variant={stats.plan === "pro" ? "primary" : "secondary"}>
+                {stats.plan === "pro" ? "Pro Plan" : "Free Plan"}
+              </Badge>
+            </div>
+            <Text variant="secondary">
+              Your current subscription and usage limits
+            </Text>
+          </LayerCard.Secondary>
+          <LayerCard.Primary>
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-2">
+                <Meter
+                  label="Documents this month"
+                  value={stats.documentsPercentUsed}
+                  customValue={`${stats.documentsThisMonth} / ${stats.documentsLimit}`}
+                  indicatorClassName={
+                    isApproachingDocumentLimit ? "bg-kumo-warning" : undefined
+                  }
+                />
+                {isApproachingDocumentLimit && (
+                  <p className="text-kumo-warning text-xs">
+                    {Math.round(stats.documentsPercentUsed)}% of monthly limit
+                    used
+                  </p>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Meter
+                  label="Storage used"
+                  value={stats.storagePercentUsed}
+                  customValue={`${formatBytes(stats.storageUsedBytes)} / ${formatBytes(stats.storageLimitBytes)}`}
+                  indicatorClassName={
+                    isApproachingStorageLimit ? "bg-kumo-warning" : undefined
+                  }
+                />
+                {isApproachingStorageLimit && (
+                  <p className="text-kumo-warning text-xs">
+                    {Math.round(stats.storagePercentUsed)}% of storage limit
+                    used
+                  </p>
+                )}
+              </div>
             </div>
           </LayerCard.Primary>
         </LayerCard>
-      )}
 
-      {/* Plan Overview */}
-      <LayerCard>
-        <LayerCard.Secondary>
-          <div className="flex items-center justify-between">
+        {/* Document Statistics */}
+        <LayerCard>
+          <LayerCard.Secondary>
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
+              <FileText className="h-5 w-5" />
               <Text as="h2" variant="heading">
-                Plan Overview
+                Document Statistics
               </Text>
             </div>
-            <Badge variant={stats.plan === "pro" ? "primary" : "secondary"}>
-              {stats.plan === "pro" ? "Pro Plan" : "Free Plan"}
-            </Badge>
-          </div>
-          <Text variant="secondary">
-            Your current subscription and usage limits
-          </Text>
-        </LayerCard.Secondary>
-        <LayerCard.Primary>
-          <div className="flex flex-col gap-6">
-            <div className="flex flex-col gap-2">
-              <Meter
-                label="Documents this month"
-                value={stats.documentsPercentUsed}
-                customValue={`${stats.documentsThisMonth} / ${stats.documentsLimit}`}
-                indicatorClassName={
-                  isApproachingDocumentLimit ? "bg-kumo-warning" : undefined
-                }
+            <Text variant="secondary">Overview of your document activity</Text>
+          </LayerCard.Secondary>
+          <LayerCard.Primary>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <StatCard
+                icon={FileText}
+                label="Total Documents"
+                value={stats.totalDocuments}
               />
-              {isApproachingDocumentLimit && (
-                <p className="text-kumo-warning text-xs">
-                  {Math.round(stats.documentsPercentUsed)}% of monthly limit
-                  used
-                </p>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Meter
-                label="Storage used"
-                value={stats.storagePercentUsed}
-                customValue={`${formatBytes(stats.storageUsedBytes)} / ${formatBytes(stats.storageLimitBytes)}`}
-                indicatorClassName={
-                  isApproachingStorageLimit ? "bg-kumo-warning" : undefined
-                }
+              <StatCard
+                icon={Send}
+                label="Sent This Month"
+                value={stats.sentThisMonth}
               />
-              {isApproachingStorageLimit && (
-                <p className="text-kumo-warning text-xs">
-                  {Math.round(stats.storagePercentUsed)}% of storage limit used
-                </p>
-              )}
+              <StatCard
+                icon={CheckCircle}
+                label="Completed"
+                value={stats.completedThisMonth}
+                className="text-success"
+              />
+              <StatCard
+                icon={Clock}
+                label="Pending"
+                value={
+                  stats.workflowCounts.sent + stats.workflowCounts.in_progress
+                }
+                className="text-warning"
+              />
             </div>
-          </div>
-        </LayerCard.Primary>
-      </LayerCard>
+          </LayerCard.Primary>
+        </LayerCard>
 
-      {/* Document Statistics */}
-      <LayerCard>
-        <LayerCard.Secondary>
-          <div className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
+        {/* Workflow Breakdown */}
+        <LayerCard>
+          <LayerCard.Secondary>
             <Text as="h2" variant="heading">
-              Document Statistics
+              Document Status Breakdown
             </Text>
-          </div>
-          <Text variant="secondary">Overview of your document activity</Text>
-        </LayerCard.Secondary>
-        <LayerCard.Primary>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard
-              icon={FileText}
-              label="Total Documents"
-              value={stats.totalDocuments}
-            />
-            <StatCard
-              icon={Send}
-              label="Sent This Month"
-              value={stats.sentThisMonth}
-            />
-            <StatCard
-              icon={CheckCircle}
-              label="Completed"
-              value={stats.completedThisMonth}
-              className="text-success"
-            />
-            <StatCard
-              icon={Clock}
-              label="Pending"
-              value={
-                stats.workflowCounts.sent + stats.workflowCounts.in_progress
-              }
-              className="text-warning"
-            />
-          </div>
-        </LayerCard.Primary>
-      </LayerCard>
-
-      {/* Workflow Breakdown */}
-      <LayerCard>
-        <LayerCard.Secondary>
-          <Text as="h2" variant="heading">
-            Document Status Breakdown
-          </Text>
-          <Text variant="secondary">
-            Documents grouped by their current workflow status
-          </Text>
-        </LayerCard.Secondary>
-        <LayerCard.Primary>
-          <div className="space-y-3">
-            <StatusRow
-              label="Draft"
-              count={stats.workflowCounts.draft}
-              total={stats.totalDocuments}
-              color="bg-muted-foreground"
-            />
-            <StatusRow
-              label="Sent"
-              count={stats.workflowCounts.sent}
-              total={stats.totalDocuments}
-              color="bg-info"
-            />
-            <StatusRow
-              label="In Progress"
-              count={stats.workflowCounts.in_progress}
-              total={stats.totalDocuments}
-              color="bg-warning"
-            />
-            <StatusRow
-              label="Completed"
-              count={stats.workflowCounts.completed}
-              total={stats.totalDocuments}
-              color="bg-success"
-            />
-            <StatusRow
-              label="Cancelled"
-              count={stats.workflowCounts.cancelled}
-              total={stats.totalDocuments}
-              color="bg-muted-foreground"
-            />
-            <StatusRow
-              label="Declined"
-              count={stats.workflowCounts.declined}
-              total={stats.totalDocuments}
-              color="bg-destructive"
-            />
-          </div>
-        </LayerCard.Primary>
-      </LayerCard>
-
-      {/* Completion Rate */}
-      <LayerCard>
-        <LayerCard.Secondary>
-          <Text as="h2" variant="heading">
-            Completion Rate
-          </Text>
-          <Text variant="secondary">
-            Percentage of sent documents that were completed this month
-          </Text>
-        </LayerCard.Secondary>
-        <LayerCard.Primary>
-          <div className="flex items-center gap-4">
-            <div className="bg-muted flex h-20 w-20 items-center justify-center rounded-full">
-              <span className="text-2xl font-bold">
-                {stats.completionRate}%
-              </span>
+            <Text variant="secondary">
+              Documents grouped by their current workflow status
+            </Text>
+          </LayerCard.Secondary>
+          <LayerCard.Primary>
+            <div className="space-y-3">
+              <StatusRow
+                label="Draft"
+                count={stats.workflowCounts.draft}
+                total={stats.totalDocuments}
+                color="bg-muted-foreground"
+              />
+              <StatusRow
+                label="Sent"
+                count={stats.workflowCounts.sent}
+                total={stats.totalDocuments}
+                color="bg-info"
+              />
+              <StatusRow
+                label="In Progress"
+                count={stats.workflowCounts.in_progress}
+                total={stats.totalDocuments}
+                color="bg-warning"
+              />
+              <StatusRow
+                label="Completed"
+                count={stats.workflowCounts.completed}
+                total={stats.totalDocuments}
+                color="bg-success"
+              />
+              <StatusRow
+                label="Cancelled"
+                count={stats.workflowCounts.cancelled}
+                total={stats.totalDocuments}
+                color="bg-muted-foreground"
+              />
+              <StatusRow
+                label="Declined"
+                count={stats.workflowCounts.declined}
+                total={stats.totalDocuments}
+                color="bg-destructive"
+              />
             </div>
-            <div className="space-y-1">
-              <p className="text-muted-foreground text-sm">
-                {stats.completedThisMonth} of {stats.sentThisMonth} documents
-                completed
-              </p>
-              {stats.sentThisMonth > 0 && stats.completionRate >= 80 && (
-                <p className="text-success text-sm">Great completion rate!</p>
-              )}
-              {stats.sentThisMonth > 0 && stats.completionRate < 50 && (
-                <p className="text-warning text-sm">
-                  Consider sending reminders to improve completion
-                </p>
-              )}
-            </div>
-          </div>
-        </LayerCard.Primary>
-      </LayerCard>
+          </LayerCard.Primary>
+        </LayerCard>
 
-      {/* Storage Details */}
-      <LayerCard>
-        <LayerCard.Secondary>
-          <div className="flex items-center gap-2">
-            <HardDrive className="h-5 w-5" />
+        {/* Completion Rate */}
+        <LayerCard>
+          <LayerCard.Secondary>
             <Text as="h2" variant="heading">
-              Storage Details
+              Completion Rate
             </Text>
-          </div>
-          <Text variant="secondary">
-            Breakdown of your document storage usage
-          </Text>
-        </LayerCard.Secondary>
-        <LayerCard.Primary>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground text-sm">
-                Used Storage
-              </span>
-              <span className="font-medium">
-                {formatBytes(stats.storageUsedBytes)}
-              </span>
+            <Text variant="secondary">
+              Percentage of sent documents that were completed this month
+            </Text>
+          </LayerCard.Secondary>
+          <LayerCard.Primary>
+            <div className="flex items-center gap-4">
+              <div className="bg-muted flex h-20 w-20 items-center justify-center rounded-full">
+                <span className="text-2xl font-bold">
+                  {stats.completionRate}%
+                </span>
+              </div>
+              <div className="space-y-1">
+                <p className="text-muted-foreground text-sm">
+                  {stats.completedThisMonth} of {stats.sentThisMonth} documents
+                  completed
+                </p>
+                {stats.sentThisMonth > 0 && stats.completionRate >= 80 && (
+                  <p className="text-success text-sm">Great completion rate!</p>
+                )}
+                {stats.sentThisMonth > 0 && stats.completionRate < 50 && (
+                  <p className="text-warning text-sm">
+                    Consider sending reminders to improve completion
+                  </p>
+                )}
+              </div>
             </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground text-sm">
-                Available Storage
-              </span>
-              <span className="font-medium">
-                {formatBytes(stats.storageLimitBytes - stats.storageUsedBytes)}
-              </span>
+          </LayerCard.Primary>
+        </LayerCard>
+
+        {/* Storage Details */}
+        <LayerCard>
+          <LayerCard.Secondary>
+            <div className="flex items-center gap-2">
+              <HardDrive className="h-5 w-5" />
+              <Text as="h2" variant="heading">
+                Storage Details
+              </Text>
             </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground text-sm">Total Limit</span>
-              <span className="font-medium">
-                {formatBytes(stats.storageLimitBytes)}
-              </span>
+            <Text variant="secondary">
+              Breakdown of your document storage usage
+            </Text>
+          </LayerCard.Secondary>
+          <LayerCard.Primary>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground text-sm">
+                  Used Storage
+                </span>
+                <span className="font-medium">
+                  {formatBytes(stats.storageUsedBytes)}
+                </span>
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground text-sm">
+                  Available Storage
+                </span>
+                <span className="font-medium">
+                  {formatBytes(
+                    stats.storageLimitBytes - stats.storageUsedBytes
+                  )}
+                </span>
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground text-sm">
+                  Total Limit
+                </span>
+                <span className="font-medium">
+                  {formatBytes(stats.storageLimitBytes)}
+                </span>
+              </div>
             </div>
-          </div>
-        </LayerCard.Primary>
-      </LayerCard>
-    </div>
+          </LayerCard.Primary>
+        </LayerCard>
+      </div>
     </SettingsBody>
   );
 }

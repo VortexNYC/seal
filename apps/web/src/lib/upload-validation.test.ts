@@ -173,7 +173,9 @@ describe("upload-validation", () => {
       // The source lowercases the extension, so .PDF becomes .pdf
       expect(
         result.errors.some((e) =>
-          e.includes("Only PDF, DOCX, XLSX, PPTX, CSV, HTML, PNG, and JPG files are supported")
+          e.includes(
+            "Only PDF, DOCX, XLSX, PPTX, CSV, HTML, PNG, and JPG files are supported"
+          )
         )
       ).toBe(false);
       expect(result.valid).toBe(true);

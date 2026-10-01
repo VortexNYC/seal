@@ -1,5 +1,5 @@
-import type { JSX } from "react";
 import { FileIcon, FolderIcon } from "lucide-react";
+import type { JSX } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -78,7 +78,12 @@ export function FileSystem({
           {items.map((item) => {
             const selected = item.id === selectedId;
             return (
-              <li key={item.id} className={view === "columns" ? "break-inside-avoid" : undefined}>
+              <li
+                key={item.id}
+                className={
+                  view === "columns" ? "break-inside-avoid" : undefined
+                }
+              >
                 <button
                   type="button"
                   role="listitem"
@@ -96,7 +101,7 @@ export function FileSystem({
                   )}
                   <span className="truncate">{item.name}</span>
                   {item.kind === "file" && item.size != null ? (
-                    <span className="text-muted-foreground ml-auto text-[10px] tabular-nums">
+                    <span className="text-muted-foreground text-3xs ml-auto tabular-nums">
                       {(item.size / 1024).toFixed(0)} KB
                     </span>
                   ) : null}
@@ -133,7 +138,9 @@ export function FileSystem({
                     className="w-full border-0 shadow-none"
                   />
                 )}
-                <span className="line-clamp-2 w-full text-[11px]">{item.name}</span>
+                <span className="text-2xs line-clamp-2 w-full">
+                  {item.name}
+                </span>
               </button>
             );
           })}

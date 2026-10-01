@@ -3,7 +3,10 @@ import { useNavigate } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
-import { DocumentPdfOpsPanel, type DocumentPdfOpsPanelProps } from "@/components/kumo-docs/document-pdf-ops-panel";
+import {
+  DocumentPdfOpsPanel,
+  type DocumentPdfOpsPanelProps,
+} from "@/components/kumo-docs/document-pdf-ops-panel";
 import {
   DocumentSplitsPanel,
   createInitialSplits,
@@ -88,7 +91,7 @@ export function DocumentPagesCapabilityPanel({
     onSuccess: (result) => {
       const removed =
         result.fieldsRemoved > 0
-          ? ` Removed ${result.fieldsRemoved} field${result.fieldsRemoved === 1 ? "" : "s"} on deleted pages.`
+          ? `Removed ${result.fieldsRemoved} field${result.fieldsRemoved === 1 ? "" : "s"} on deleted pages.`
           : "";
       toast.success(`Pages updated (${result.pageCount} pages).${removed}`);
       onPdfChanged?.();
@@ -113,7 +116,7 @@ export function DocumentPagesCapabilityPanel({
     onSuccess: (result) => {
       const removed =
         result.fieldsRemoved > 0
-          ? ` Removed ${result.fieldsRemoved} field${result.fieldsRemoved === 1 ? "" : "s"} outside the crop.`
+          ? `Removed ${result.fieldsRemoved} field${result.fieldsRemoved === 1 ? "" : "s"} outside the crop.`
           : "";
       toast.success(`Crop applied.${removed}`);
       onPdfChanged?.();
@@ -193,7 +196,7 @@ export function DocumentPagesCapabilityPanel({
     onSuccess: (result) => {
       const fields =
         result.fieldsRemoved > 0
-          ? ` ${result.fieldsRemoved} field${result.fieldsRemoved === 1 ? "" : "s"} removed.`
+          ? `${result.fieldsRemoved} field${result.fieldsRemoved === 1 ? "" : "s"} removed.`
           : "";
       toast.success(
         `Redacted — ${result.opsScrubbed} content op${result.opsScrubbed === 1 ? "" : "s"} scrubbed.${fields}`
@@ -279,13 +282,12 @@ export function DocumentPagesCapabilityPanel({
       onPdfChanged?.();
     },
     onError: (error) => {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to OCR PDF"
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to OCR PDF");
     },
   });
 
-  const [compareResult, setCompareResult] = useState<DocumentPdfOpsPanelProps["compareResult"]>(null);
+  const [compareResult, setCompareResult] =
+    useState<DocumentPdfOpsPanelProps["compareResult"]>(null);
   const compareMutation = useMutation({
     mutationFn: (input: { withPublicId: string }) =>
       compareDocumentPdf(organizationSlug, documentPublicId, input),
@@ -412,7 +414,7 @@ export function DocumentPagesCapabilityPanel({
       {pageCount >= 2 ? (
         <div className="border-border overflow-hidden rounded-xl border">
           <DocumentSplitsPanel
-            className={docked ? "max-h-[16rem]" : "max-h-[28rem]"}
+            className={docked ? "max-h-64" : "max-h-112"}
             splits={splits}
             pageCount={pageCount}
             onChange={setSplits}

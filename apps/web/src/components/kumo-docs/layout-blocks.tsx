@@ -125,7 +125,7 @@ export function LayoutBlockOverlay({
             key={block.id}
             type="button"
             className={cn(
-              "pointer-events-auto absolute border border-info/60 bg-info/10",
+              "border-info/60 bg-info/10 pointer-events-auto absolute border",
               active && "border-primary bg-primary/15 ring-primary/40 ring-2"
             )}
             style={{

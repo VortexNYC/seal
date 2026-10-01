@@ -1,7 +1,7 @@
-import type { JSX } from "react";
-import { Button } from "@cloudflare/kumo/components/button";
 import { Badge } from "@cloudflare/kumo/components/badge";
+import { Button } from "@cloudflare/kumo/components/button";
 import { Crosshair, MapPin } from "@phosphor-icons/react";
+import type { JSX } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -79,7 +79,7 @@ export function CitationReviewPanel({
                   </span>
                   <div className="flex items-center gap-1">
                     {field.category ? (
-                      <Badge variant="secondary" className="text-[10px]">
+                      <Badge variant="secondary" className="text-3xs">
                         {field.category}
                       </Badge>
                     ) : null}
@@ -96,7 +96,7 @@ export function CitationReviewPanel({
                         aria-label={`Jump to page ${field.bbox.page}`}
                       >
                         <MapPin className="size-3.5" />
-                        <span className="text-muted-foreground text-[10px] tabular-nums">
+                        <span className="text-muted-foreground text-3xs tabular-nums">
                           p.{field.bbox.page}
                         </span>
                       </Button>

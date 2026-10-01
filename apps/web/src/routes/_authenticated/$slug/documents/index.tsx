@@ -5,8 +5,8 @@ import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { DropdownMenu } from "@cloudflare/kumo/components/dropdown";
 import { Empty } from "@cloudflare/kumo/components/empty";
 import { Input } from "@cloudflare/kumo/components/input";
-import { Popover } from "@cloudflare/kumo/components/popover";
 import { SkeletonLine } from "@cloudflare/kumo/components/loader";
+import { Popover } from "@cloudflare/kumo/components/popover";
 import { Table } from "@cloudflare/kumo/components/table";
 import { Tooltip } from "@cloudflare/kumo/components/tooltip";
 import {
@@ -46,7 +46,14 @@ import {
   UploadIcon,
   XIcon,
 } from "lucide-react";
-import { Suspense, useCallback, useEffect, useMemo, useState, type JSX } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type JSX,
+} from "react";
 import type { DateRange } from "react-day-picker";
 
 import { DocumentThumbnail } from "@/components/documents/document-thumbnail";
@@ -448,11 +455,11 @@ function FolderTableRow({
       onClick={() => onFolderNavigate(folder._id)}
     >
       <Table.Cell>
-        <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-md sm:h-12 sm:w-[60px]">
+        <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-md sm:h-12 sm:w-15">
           <FolderIcon className="text-muted-foreground h-5 w-5" />
         </div>
       </Table.Cell>
-      <Table.Cell className="max-w-[min(28rem,40vw)]">
+      <Table.Cell className="max-w-sheet">
         <p className="truncate font-medium" title={folder.name}>
           {folder.name}
         </p>
@@ -498,7 +505,7 @@ function DocumentTableRow({
           className="absolute inset-0 z-0"
           aria-label={`Open ${doc.name}`}
         />
-        <div className="pointer-events-none relative z-[1]">
+        <div className="pointer-events-none relative z-1">
           <DocumentThumbnail
             organizationSlug={slug}
             publicId={doc._id}
@@ -515,7 +522,7 @@ function DocumentTableRow({
           tabIndex={-1}
           aria-hidden
         />
-        <div className="pointer-events-none relative z-[1]">
+        <div className="pointer-events-none relative z-1">
           <DocumentSummary doc={doc} matches={matches} />
         </div>
       </Table.Cell>
@@ -527,7 +534,7 @@ function DocumentTableRow({
           tabIndex={-1}
           aria-hidden
         />
-        <div className="pointer-events-none relative z-[1] text-sm">
+        <div className="pointer-events-none relative z-1 text-sm">
           <p>{formatDate(doc.createdAt)}</p>
           <p className="text-muted-foreground">{formatBytes(doc.fileSize)}</p>
         </div>
@@ -540,12 +547,12 @@ function DocumentTableRow({
           tabIndex={-1}
           aria-hidden
         />
-        <div className="pointer-events-none relative z-[1] flex items-center gap-2">
+        <div className="pointer-events-none relative z-1 flex items-center gap-2">
           <WorkflowStatusBadge status={doc.workflowStatus} />
           <DocumentAiStatus status={doc.aiProcessingStatus} tooltip />
         </div>
       </Table.Cell>
-      <Table.Cell className="relative z-[1] text-right">
+      <Table.Cell className="relative z-1 text-right">
         <DocumentActionsMenu
           actions={actions}
           delegateOwnership={delegateOwnership}
@@ -606,7 +613,10 @@ function FolderGridCard({
         <FolderIcon className="text-muted-foreground h-10 w-10" />
       </div>
       <div className="flex flex-col gap-0.5 p-3">
-        <h3 className="line-clamp-2 text-sm font-medium break-all" title={folder.name}>
+        <h3
+          className="line-clamp-2 text-sm font-medium break-all"
+          title={folder.name}
+        >
           {folder.name}
         </h3>
         <p className="text-muted-foreground text-xs">Folder</p>
@@ -636,7 +646,7 @@ function DocumentGridCard({
         className="absolute inset-0 z-0"
         aria-label={`Open ${doc.name}`}
       />
-      <div className="bg-muted pointer-events-none relative z-[1] h-36 w-full overflow-hidden border-b">
+      <div className="bg-muted pointer-events-none relative z-1 h-36 w-full overflow-hidden border-b">
         <DocumentThumbnail
           organizationSlug={slug}
           publicId={doc._id}
@@ -645,7 +655,7 @@ function DocumentGridCard({
           className="h-full w-full rounded-none border-0"
         />
       </div>
-      <div className="relative z-[1] flex flex-col gap-2 p-3">
+      <div className="relative z-1 flex flex-col gap-2 p-3">
         <GridCardHeader actions={actions} doc={doc} matches={matches} />
         {doc.description ? (
           <p className="text-muted-foreground pointer-events-none line-clamp-2 text-xs">
@@ -679,7 +689,7 @@ function GridCardHeader({
           <HighlightedText text={doc.name} matches={matches} fieldKey="name" />
         </h3>
       </div>
-      <div className="relative z-[2]">
+      <div className="relative z-2">
         <DocumentActionsMenu actions={actions} doc={doc} />
       </div>
     </div>
@@ -1100,10 +1110,10 @@ function DocumentsTable({
 }) {
   return (
     <div className="overflow-x-auto rounded-lg border">
-      <Table className="min-w-[600px]">
+      <Table className="min-w-150">
         <Table.Header>
           <Table.Row>
-            <Table.Head className="w-[80px] sm:w-[100px]">Thumbnail</Table.Head>
+            <Table.Head className="w-20 sm:w-25">Thumbnail</Table.Head>
             <Table.Head>
               <SortHeader
                 field="name"
@@ -1255,7 +1265,7 @@ function DocumentsPagination({ data }: { readonly data: DocumentsListData }) {
           size="sm"
           onClick={() => data.setCurrentPage((prev) => Math.max(1, prev - 1))}
           disabled={data.currentPage === 1}
-          className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
+          className="min-h-11 min-w-11 sm:min-h-0 sm:min-w-0"
         >
           <ChevronLeftIcon className="h-4 w-4" />
           <span className="hidden sm:inline">Previous</span>
@@ -1268,7 +1278,7 @@ function DocumentsPagination({ data }: { readonly data: DocumentsListData }) {
                 variant={page === data.currentPage ? "primary" : "outline"}
                 size="sm"
                 onClick={() => data.setCurrentPage(page)}
-                className="min-h-[44px] min-w-[44px] p-0 sm:h-8 sm:min-h-0 sm:min-w-[32px]"
+                className="min-h-11 min-w-11 p-0 sm:h-8 sm:min-h-0 sm:min-w-8"
               >
                 {page}
               </Button>
@@ -1282,7 +1292,7 @@ function DocumentsPagination({ data }: { readonly data: DocumentsListData }) {
             data.setCurrentPage((prev) => Math.min(data.totalPages, prev + 1))
           }
           disabled={data.currentPage === data.totalPages}
-          className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
+          className="min-h-11 min-w-11 sm:min-h-0 sm:min-w-0"
         >
           <span className="hidden sm:inline">Next</span>
           <ChevronRightIcon className="h-4 w-4" />
@@ -1905,10 +1915,7 @@ function DocumentsPage() {
                     day: "numeric",
                   })}
                   {dateRange.to &&
-                    ` - ${dateRange.to.toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })}`}
+                    `- ${dateRange.to.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
                   <button
                     type="button"
                     onClick={() => setDateRange(undefined)}

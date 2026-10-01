@@ -21,10 +21,7 @@ export function ShellHeaderControls(): React.JSX.Element | null {
 
   return (
     <div className="flex shrink-0 items-center gap-1">
-      <NotificationsPopover
-        slug={shell.slug}
-        organizationSlug={shell.slug}
-      />
+      <NotificationsPopover slug={shell.slug} organizationSlug={shell.slug} />
       <button
         type="button"
         className="text-foreground hover:bg-accent inline-flex size-8 items-center justify-center rounded-lg"

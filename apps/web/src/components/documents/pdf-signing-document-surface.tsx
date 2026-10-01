@@ -1,8 +1,8 @@
-import type { JSX, ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
 import { usePdfiumEngine } from "@embedpdf/engines/react";
 import type { PdfDocumentObject } from "@embedpdf/models";
 import pdfiumWasmUrl from "@embedpdf/pdfium/pdfium.wasm?url";
+import type { JSX, ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -49,11 +49,14 @@ export function PdfSigningDocumentSurface({
   onDocumentLoadSuccess,
   renderPageOverlays,
 }: PdfSigningDocumentSurfaceProps): JSX.Element {
-  const { engine, isLoading: engineLoading, error: engineError } =
-    usePdfiumEngine({
-      wasmUrl: pdfiumWasmUrl,
-      worker: false,
-    });
+  const {
+    engine,
+    isLoading: engineLoading,
+    error: engineError,
+  } = usePdfiumEngine({
+    wasmUrl: pdfiumWasmUrl,
+    worker: false,
+  });
 
   const [doc, setDoc] = useState<PdfDocumentObject | null>(null);
   const [pages, setPages] = useState<PageRaster[]>([]);
@@ -230,7 +233,9 @@ export function PdfSigningDocumentSurface({
       >
         <p className="text-kumo-danger font-medium">Failed to load PDF</p>
         <p className="text-kumo-secondary mt-1 text-sm">
-          {loadError ?? engineError?.message ?? "Please try refreshing the page"}
+          {loadError ??
+            engineError?.message ??
+            "Please try refreshing the page"}
         </p>
       </div>
     );

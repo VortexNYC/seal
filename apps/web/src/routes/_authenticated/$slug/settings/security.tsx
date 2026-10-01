@@ -186,102 +186,102 @@ function SecuritySettingsContent() {
   return (
     <PageWrapper title="Security Settings">
       <SettingsBody wide>
-      <form onSubmit={handleSubmit} className="grid gap-5 lg:grid-cols-2">
-        {!isOwner && (
-          <div className="border-warning/30 bg-warning-surface rounded-lg border p-4 lg:col-span-2">
-            <p className="text-warning text-sm">
-              Only workspace owners can change these settings.
-            </p>
+        <form onSubmit={handleSubmit} className="grid gap-5 lg:grid-cols-2">
+          {!isOwner && (
+            <div className="border-warning/30 bg-warning-surface rounded-lg border p-4 lg:col-span-2">
+              <p className="text-warning text-sm">
+                Only workspace owners can change these settings.
+              </p>
+            </div>
+          )}
+
+          <p className="text-muted-foreground text-sm lg:col-span-2">
+            Personal 2FA is under{" "}
+            <Link
+              className="text-foreground underline-offset-4 hover:underline"
+              params={{ slug }}
+              to="/$slug/settings/profile/security"
+            >
+              Account → Security
+            </Link>
+            . Document activity is in the{" "}
+            <Link
+              className="text-foreground underline-offset-4 hover:underline"
+              params={{ slug }}
+              to="/$slug/settings/audit-log"
+            >
+              audit log
+            </Link>
+            .
+          </p>
+
+          <SettingsSection
+            className="lg:col-span-2"
+            icon={<Shield className="size-4" />}
+            title="API access"
+            description="Programmatic access via API keys and SSO."
+          >
+            <Checkbox
+              label="Allow API access"
+              checked={formData.allowApiAccess}
+              disabled={!isOwner}
+              onCheckedChange={(checked) =>
+                setFormData({ ...formData, allowApiAccess: checked })
+              }
+            />
+            <Checkbox
+              label="Require company SSO"
+              checked={formData.ssoEnforced}
+              disabled={!isOwner}
+              onCheckedChange={(checked) =>
+                setFormData({ ...formData, ssoEnforced: checked })
+              }
+            />
+            <Text variant="secondary" size="sm">
+              SSO needs an IdP registered via the SSO API first. Owners can
+              always turn this off.
+            </Text>
+          </SettingsSection>
+
+          <SettingsSection
+            title="IP allowlist"
+            description="Restrict API access. One CIDR per line; empty = no limit."
+          >
+            <Label htmlFor="ip-allowlist">Allowed CIDR ranges</Label>
+            <Textarea
+              id="ip-allowlist"
+              value={formData.ipAllowlistText}
+              disabled={!isOwner}
+              onChange={(e) =>
+                setFormData({ ...formData, ipAllowlistText: e.target.value })
+              }
+              placeholder={"192.168.1.0/24\n10.0.0.0/8"}
+              rows={4}
+            />
+          </SettingsSection>
+
+          <SettingsSection
+            icon={<ArrowsLeftRight className="size-4" />}
+            title="Ownership transfer"
+            description="Let owners reassign documents to other members."
+          >
+            <Checkbox
+              label="Enable ownership transfer"
+              checked={delegateOwnership}
+              disabled={!isAdmin || isDelegateOwnershipUpdating}
+              onCheckedChange={(checked) =>
+                void handleDelegateOwnershipChange(checked)
+              }
+            />
+          </SettingsSection>
+
+          <div className="flex justify-end lg:col-span-2">
+            <Button type="submit" disabled={isSubmitting || !isOwner}>
+              <FloppyDisk className="mr-2 h-4 w-4" />
+              {isSubmitting ? "Saving…" : "Save changes"}
+            </Button>
           </div>
-        )}
-
-        <p className="text-muted-foreground text-sm lg:col-span-2">
-          Personal 2FA is under{" "}
-          <Link
-            className="text-foreground underline-offset-4 hover:underline"
-            params={{ slug }}
-            to="/$slug/settings/profile/security"
-          >
-            Account → Security
-          </Link>
-          . Document activity is in the{" "}
-          <Link
-            className="text-foreground underline-offset-4 hover:underline"
-            params={{ slug }}
-            to="/$slug/settings/audit-log"
-          >
-            audit log
-          </Link>
-          .
-        </p>
-
-        <SettingsSection
-          className="lg:col-span-2"
-          icon={<Shield className="size-4" />}
-          title="API access"
-          description="Programmatic access via API keys and SSO."
-        >
-          <Checkbox
-            label="Allow API access"
-            checked={formData.allowApiAccess}
-            disabled={!isOwner}
-            onCheckedChange={(checked) =>
-              setFormData({ ...formData, allowApiAccess: checked })
-            }
-          />
-          <Checkbox
-            label="Require company SSO"
-            checked={formData.ssoEnforced}
-            disabled={!isOwner}
-            onCheckedChange={(checked) =>
-              setFormData({ ...formData, ssoEnforced: checked })
-            }
-          />
-          <Text variant="secondary" size="sm">
-            SSO needs an IdP registered via the SSO API first. Owners can always
-            turn this off.
-          </Text>
-        </SettingsSection>
-
-        <SettingsSection
-          title="IP allowlist"
-          description="Restrict API access. One CIDR per line; empty = no limit."
-        >
-          <Label htmlFor="ip-allowlist">Allowed CIDR ranges</Label>
-          <Textarea
-            id="ip-allowlist"
-            value={formData.ipAllowlistText}
-            disabled={!isOwner}
-            onChange={(e) =>
-              setFormData({ ...formData, ipAllowlistText: e.target.value })
-            }
-            placeholder={"192.168.1.0/24\n10.0.0.0/8"}
-            rows={4}
-          />
-        </SettingsSection>
-
-        <SettingsSection
-          icon={<ArrowsLeftRight className="size-4" />}
-          title="Ownership transfer"
-          description="Let owners reassign documents to other members."
-        >
-          <Checkbox
-            label="Enable ownership transfer"
-            checked={delegateOwnership}
-            disabled={!isAdmin || isDelegateOwnershipUpdating}
-            onCheckedChange={(checked) =>
-              void handleDelegateOwnershipChange(checked)
-            }
-          />
-        </SettingsSection>
-
-        <div className="flex justify-end lg:col-span-2">
-          <Button type="submit" disabled={isSubmitting || !isOwner}>
-            <FloppyDisk className="mr-2 h-4 w-4" />
-            {isSubmitting ? "Saving…" : "Save changes"}
-          </Button>
-        </div>
-      </form>
+        </form>
       </SettingsBody>
     </PageWrapper>
   );

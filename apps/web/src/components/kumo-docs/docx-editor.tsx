@@ -1,8 +1,7 @@
+import { Button } from "@cloudflare/kumo/components/button";
+import mammoth from "mammoth";
 import type { JSX } from "react";
 import { useEffect, useState } from "react";
-import mammoth from "mammoth";
-
-import { Button } from "@cloudflare/kumo/components/button";
 
 import { cn } from "@/lib/utils";
 
@@ -90,7 +89,7 @@ export function DocxEditor({
           dangerouslySetInnerHTML={{ __html: html }}
         />
       )}
-      <p className="text-muted-foreground text-[11px]">
+      <p className="text-muted-foreground text-2xs">
         Saves a real .docx (OpenXML). Seal reconverts to PDF for signing
         preview.
       </p>

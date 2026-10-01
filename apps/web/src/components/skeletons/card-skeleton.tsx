@@ -16,8 +16,8 @@ export function CardSkeleton({
     <LayerCard role="status" aria-label="Loading card content">
       <LayerCard.Secondary>
         <div className="space-y-2">
-          <SkeletonLine className="h-5 w-[200px]" />
-          {showDescription && <SkeletonLine className="h-4 w-[250px]" />}
+          <SkeletonLine className="h-5 w-50" />
+          {showDescription && <SkeletonLine className="h-4 w-62.5" />}
         </div>
       </LayerCard.Secondary>
       <LayerCard.Primary>

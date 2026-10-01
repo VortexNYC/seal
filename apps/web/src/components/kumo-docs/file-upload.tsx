@@ -1,7 +1,7 @@
+import { Upload } from "lucide-react";
 import type { JSX } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDropzone, type FileRejection } from "react-dropzone";
-import { Upload } from "lucide-react";
 
 import {
   DROPZONE_ACCEPT_TYPES,

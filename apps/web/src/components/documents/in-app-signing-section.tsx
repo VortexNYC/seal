@@ -151,7 +151,7 @@ export function InAppSigningSection({
             </div>
             <div className="bg-muted h-2 overflow-hidden rounded-full">
               <div
-                className="bg-warning h-full rounded-full transition-[width] duration-300"
+                className="bg-warning transition-width h-full rounded-full duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>

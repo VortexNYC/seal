@@ -1,5 +1,5 @@
-import type { ReactElement } from "react";
 import { Button } from "@cloudflare/kumo/components/button";
+import type { ReactElement } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -55,7 +55,7 @@ export function DocumentCapabilityRail({
         })}
       </div>
       {activeCapability ? (
-        <p className="text-muted-foreground px-0.5 text-[11px] leading-snug">
+        <p className="text-muted-foreground text-2xs px-0.5 leading-snug">
           {activeCapability.description}
         </p>
       ) : null}

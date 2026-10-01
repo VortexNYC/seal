@@ -98,9 +98,7 @@ export function RecipientSelectorDialog({
     <Dialog.Root open={open} onOpenChange={(next) => onOpenChange(next)}>
       <Dialog>
         <Dialog.Title>Who fills this {label.toLowerCase()}?</Dialog.Title>
-        <Dialog.Description>
-          Pick the signer for this field.
-        </Dialog.Description>
+        <Dialog.Description>Pick the signer for this field.</Dialog.Description>
 
         <div className="space-y-4 py-4">
           {signers.length > 0 ? (

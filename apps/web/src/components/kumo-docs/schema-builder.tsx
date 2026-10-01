@@ -1,9 +1,9 @@
-import type { JSX } from "react";
-import { useMemo, useState } from "react";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Select } from "@cloudflare/kumo/components/select";
 import { Plus, Trash } from "@phosphor-icons/react";
+import type { JSX } from "react";
+import { useMemo, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -92,10 +92,7 @@ export function SchemaBuilderPanel({
     [schema]
   );
 
-  function updateProp(
-    id: string,
-    patch: Partial<SchemaBuilderProperty>
-  ): void {
+  function updateProp(id: string, patch: Partial<SchemaBuilderProperty>): void {
     onChange({
       properties: schema.properties.map((p) =>
         p.id === id ? { ...p, ...patch } : p
@@ -146,7 +143,7 @@ export function SchemaBuilderPanel({
       </div>
 
       {tab === "json" ? (
-        <pre className="font-mono flex-1 overflow-auto p-3 text-xs whitespace-pre-wrap">
+        <pre className="flex-1 overflow-auto p-3 font-mono text-xs whitespace-pre-wrap">
           {json}
         </pre>
       ) : (
@@ -159,7 +156,7 @@ export function SchemaBuilderPanel({
             schema.properties.map((prop) => (
               <div
                 key={prop.id}
-                className="border-border grid gap-2 rounded-lg border p-2 sm:grid-cols-[1fr_8rem_1fr_auto]"
+                className="border-border sm:grid-cols-mid-8 grid gap-2 rounded-lg border p-2"
               >
                 <Input
                   aria-label="Property key"

@@ -66,7 +66,9 @@ export type DocumentCapabilityId = (typeof DOCUMENT_CAPABILITIES)[number]["id"];
 export function getDocumentCapability(
   id: DocumentCapabilityId
 ): (typeof DOCUMENT_CAPABILITIES)[number] {
-  const found = DOCUMENT_CAPABILITIES.find((capability) => capability.id === id);
+  const found = DOCUMENT_CAPABILITIES.find(
+    (capability) => capability.id === id
+  );
   if (!found) {
     return DOCUMENT_CAPABILITIES[0];
   }

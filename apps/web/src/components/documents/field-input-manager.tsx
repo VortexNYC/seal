@@ -177,10 +177,7 @@ const FIELD_INPUT_RENDERERS: Record<
   email: ({ commonProps }) => <EmailFieldInput {...commonProps} />,
   phone: ({ commonProps }) => <PhoneFieldInput {...commonProps} />,
   cells: ({ commonProps, properties }) => (
-    <CellsFieldInput
-      {...commonProps}
-      cellCount={properties?.cellCount ?? 6}
-    />
+    <CellsFieldInput {...commonProps} cellCount={properties?.cellCount ?? 6} />
   ),
   heading: ({ commonProps }) => <HeadingFieldInput {...commonProps} />,
   strikethrough: ({ commonProps }) => (

@@ -1,7 +1,6 @@
-import type { JSX } from "react";
-
-import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo";
+import { Button } from "@cloudflare/kumo/components/button";
+import type { JSX } from "react";
 
 export interface SigningInviteGateProps {
   documentTitle: string;
@@ -31,7 +30,7 @@ export function SigningInviteGate({
   return (
     <main
       data-seal-enter
-      className="bg-background mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center gap-6 px-[max(1rem,env(safe-area-inset-left))] py-8 pr-[max(1rem,env(safe-area-inset-right))]"
+      className="bg-background px-safe mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center gap-6 py-8"
     >
       <div className="flex flex-col gap-2 text-center">
         <p className="text-muted-foreground m-0 text-sm font-medium tracking-wide uppercase">
@@ -46,8 +45,10 @@ export function SigningInviteGate({
         </p>
       </div>
 
-      <div className="border-border bg-card flex w-full flex-col gap-1 rounded-xl border p-[clamp(0.75rem,3vw,1.25rem)] shadow-sm">
-        <p className="m-0 text-lg font-semibold text-balance">{documentTitle}</p>
+      <div className="border-border bg-card p-fluid-sm flex w-full flex-col gap-1 rounded-xl border shadow-sm">
+        <p className="m-0 text-lg font-semibold text-balance">
+          {documentTitle}
+        </p>
         {invitedBy ? (
           <p className="text-muted-foreground m-0 text-sm text-pretty">
             From {invitedBy}

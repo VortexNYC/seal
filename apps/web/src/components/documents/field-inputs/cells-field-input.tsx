@@ -57,7 +57,7 @@ export function CellsFieldInput({
         maxLength={cellCount}
         autoComplete="off"
         spellCheck={false}
-        className="font-mono tracking-[0.35em]"
+        className="tracking-mega font-mono"
       />
       {helpText ? (
         <p className="text-muted-foreground text-xs">{helpText}</p>

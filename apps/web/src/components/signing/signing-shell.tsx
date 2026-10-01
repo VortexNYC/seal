@@ -49,7 +49,7 @@ export function SigningShell({
         </div>
       ) : (
         <div className="mt-4 flex flex-wrap items-start justify-between gap-y-2 px-4 sm:mt-6 sm:px-0">
-          <div className="max-w-[50ch] min-w-0">
+          <div className="max-w-measure min-w-0">
             <h1
               className="truncate text-2xl font-semibold md:text-3xl"
               title={title}
@@ -75,8 +75,8 @@ export function SigningShell({
         )}
       >
         <div className="min-w-0 flex-1">{document}</div>
-        <div className="fixed right-0 bottom-0 left-0 z-50 w-full px-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:sticky md:top-4 md:bottom-auto md:z-auto md:w-[min(100%,22rem)] md:shrink-0 md:self-start md:px-0 md:pb-0">
-          <div className="border-border bg-background flex w-full flex-col rounded-xl border px-4 py-4 shadow-sm transition-[box-shadow,transform] duration-200 md:py-6">
+        <div className="pb-safe fixed right-0 bottom-0 left-0 z-50 w-full max-w-88 px-4 md:sticky md:top-4 md:bottom-auto md:z-auto md:w-full md:shrink-0 md:self-start md:px-0 md:pb-0">
+          <div className="border-border bg-background transition-lift flex w-full flex-col rounded-xl border px-4 py-4 shadow-sm duration-200 md:py-6">
             {widget}
           </div>
         </div>

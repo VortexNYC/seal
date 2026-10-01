@@ -253,10 +253,10 @@ export function ShareDocumentDialog({
       <DialogPrimitive.Portal>
         {/* Overlay with subtle blur */}
         {/* vortex-allow-color: modal/dialog scrim needs fixed black opacity for backdrop contrast. */}
-        <DialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/30 backdrop-blur-[2px]" />
+        <DialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 backdrop-blur-hairline fixed inset-0 z-50 bg-black/30" />
 
         {/* Dialog Content */}
-        <DialogPrimitive.Content className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] fixed top-1/2 left-1/2 z-50 w-[calc(100%-32px)] max-w-[520px] -translate-x-1/2 -translate-y-1/2 duration-200">
+        <DialogPrimitive.Content className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-50 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-50 w-edge fixed top-1/2 left-1/2 z-50 max-w-130 -translate-x-1/2 -translate-y-1/2 duration-200">
           {/* Card with layered shadow for depth */}
           <div className="bg-card border-border relative overflow-hidden rounded-xl border shadow-sm">
             {/* Header */}
@@ -289,7 +289,7 @@ export function ShareDocumentDialog({
             </div>
 
             {/* Content */}
-            <div className="max-h-[60vh] overflow-y-auto px-6 py-5">
+            <div className="max-h-vh-60 overflow-y-auto px-6 py-5">
               {documentAccess === undefined ? (
                 <ShareDialogSkeleton />
               ) : documentAccess === null ? (
@@ -343,7 +343,7 @@ export function ShareDocumentDialog({
                               !documentAccess.canUseTeamSharing && (
                                 <Badge
                                   variant="outline"
-                                  className="border-border bg-card text-muted-foreground absolute -top-2 -right-2 px-1.5 py-0.5 text-[10px]"
+                                  className="border-border bg-card text-muted-foreground text-3xs absolute -top-2 -right-2 px-1.5 py-0.5"
                                 >
                                   Pro
                                 </Badge>
@@ -582,7 +582,7 @@ export function ShareDocumentDialog({
 
             {/* Subtle paper texture overlay */}
             <div
-              className="pointer-events-none absolute inset-0 opacity-[0.015] mix-blend-multiply"
+              className="pointer-events-none absolute inset-0 opacity-1.5 mix-blend-multiply"
               style={{
                 backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
               }}

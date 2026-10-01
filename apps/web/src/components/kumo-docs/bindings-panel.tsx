@@ -1,8 +1,8 @@
-import type { JSX } from "react";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Label } from "@cloudflare/kumo/components/label";
 import { Plus, Trash } from "@phosphor-icons/react";
+import type { JSX } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -31,7 +31,9 @@ export function BindingsPanel({
 }): JSX.Element {
   function setKey(fieldId: string, bindingKey: string): void {
     onChange(
-      rows.map((row) => (row.fieldId === fieldId ? { ...row, bindingKey } : row))
+      rows.map((row) =>
+        row.fieldId === fieldId ? { ...row, bindingKey } : row
+      )
     );
   }
 

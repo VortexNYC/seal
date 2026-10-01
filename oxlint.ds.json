@@ -11,13 +11,29 @@
     "shadcn/no-raw-colors": [
       "error",
       {
-        "message": "Use the theme token (e.g. bg-*/text-* names from styles.css), or declare a new --color-* there. ADR-002."
+        "message": "Use the theme token (e.g. bg-*/text-* names from styles.css), or declare a new --color-* there. ADR-002.",
+        "allow": [
+          "text-label",
+          "*:text-label",
+          "text-lede",
+          "*:text-lede",
+          "text-lead",
+          "*:text-lead",
+          "text-display",
+          "*:text-display",
+          "bg-hero-glow",
+          "*:bg-hero-glow",
+          "bg-fade-muted",
+          "*:bg-fade-muted",
+          "border-field",
+          "*:border-field"
+        ]
       }
     ],
     "shadcn/no-arbitrary-values": [
-      "warn",
+      "error",
       {
-        "message": "Prefer the theme scale — move off-token values to a token when the design calls for one."
+        "message": "Off-token value \u2014 use the spacing scale, a --text-*/--radius-*/--tracking-* token, or a named @utility in styles.css."
       }
     ],
     "shadcn/no-inline-styles": "warn",
@@ -27,7 +43,7 @@
       {
         "componentImports": ["@cloudflare/kumo/components/*"],
         "allow": ["layout"],
-        "message": "Kumo primitives own their look — prefer size/variant props over visual restyling. ADR-002."
+        "message": "Kumo primitives own their look \u2014 prefer size/variant props over visual restyling. ADR-002."
       }
     ]
   }

@@ -110,7 +110,9 @@ export function StatsCards({
         >
           <div
             className="bg-foreground h-full rounded-full"
-            style={{ width: `${Math.min(100, Math.max(0, stats.completionRate))}%` }}
+            style={{
+              width: `${Math.min(100, Math.max(0, stats.completionRate))}%`,
+            }}
           />
         </div>
       </StatCard>

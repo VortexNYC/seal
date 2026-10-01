@@ -5,16 +5,7 @@
  * profile forms, and creation forms.
  *
  * @example
- * ```tsx
- * // Default form with 3 fields
- * <FormSkeleton />
- *
- * // Form with custom field count
- * <FormSkeleton fields={5} />
- *
- * // Form without submit button
- * <FormSkeleton fields={4} showSubmitButton={false} />
- * ```
+ * ```tsx * // Default form with 3 fields * <FormSkeleton /> * * // Form with custom field count * <FormSkeleton fields={5} /> * * // Form without submit button * <FormSkeleton fields={4} showSubmitButton={false} /> *```
  */
 
 import { SkeletonLine } from "@cloudflare/kumo/components/loader";
@@ -34,15 +25,15 @@ export function FormSkeleton({
     <div className="space-y-6" role="status" aria-label="Loading form">
       {Array.from({ length: fields }).map((_, i) => (
         <div key={i} className="space-y-2">
-          <SkeletonLine className="h-4 w-[120px]" />
+          <SkeletonLine className="h-4 w-30" />
           <SkeletonLine className="h-10 w-full" />
         </div>
       ))}
 
       {showSubmitButton && (
         <div className="flex gap-2 pt-4">
-          <SkeletonLine className="h-10 w-[100px]" />
-          <SkeletonLine className="h-10 w-[100px]" />
+          <SkeletonLine className="h-10 w-25" />
+          <SkeletonLine className="h-10 w-25" />
         </div>
       )}
     </div>

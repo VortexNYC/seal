@@ -19,10 +19,7 @@ export function SealLogo({
   variant = "color",
   withBackground = false,
 }: SealLogoProps) {
-  const colorClass =
-    variant === "white"
-      ? "text-white"
-      : "text-foreground";
+  const colorClass = variant === "white" ? "text-white" : "text-foreground";
 
   const mark = (
     <svg

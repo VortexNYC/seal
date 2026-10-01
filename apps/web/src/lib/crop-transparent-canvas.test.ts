@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  findInkBounds,
-  isEmptyPixel,
-} from "./crop-transparent-canvas";
+import { findInkBounds, isEmptyPixel } from "./crop-transparent-canvas";
 
 function rgba(
   width: number,

@@ -11,7 +11,11 @@ import { useState } from "react";
 import { z } from "zod";
 
 import { useOrganizationMembers } from "@/hooks/use-organization-members";
-import { addRecipients, getContacts, getSigningSettings } from "@/lib/api-client";
+import {
+  addRecipients,
+  getContacts,
+  getSigningSettings,
+} from "@/lib/api-client";
 import { toast } from "@/lib/toast";
 import { cn, getErrorMessage } from "@/lib/utils";
 
@@ -81,9 +85,7 @@ export function AddRecipientDialog({
   });
 
   const resolvedAuthMethod: RecipientAuthMethod =
-    authMethod ??
-    signingSettings?.defaultRecipientAuthMethod ??
-    "email_otp";
+    authMethod ?? signingSettings?.defaultRecipientAuthMethod ?? "email_otp";
   const requireRecipientAuth = signingSettings?.requireRecipientAuth ?? true;
 
   const { data: contactSuggestions } = useQuery({
@@ -178,9 +180,7 @@ export function AddRecipientDialog({
         role,
         authMethod: resolvedAuthMethod,
         accessCode:
-          resolvedAuthMethod === "access_code"
-            ? accessCode.trim()
-            : undefined,
+          resolvedAuthMethod === "access_code" ? accessCode.trim() : undefined,
       });
 
       toast.success("Recipient added successfully");
@@ -221,9 +221,7 @@ export function AddRecipientDialog({
             tabs={[
               {
                 value: "team",
-                label: `Team${
-                  eligibleMembers ? ` (${eligibleMembers.length})` : ""
-                }`,
+                label: `Team${eligibleMembers ? ` (${eligibleMembers.length})` : ""}`,
               },
               { value: "outsider", label: "Email" },
             ]}
@@ -241,7 +239,7 @@ export function AddRecipientDialog({
                   <Loader2Icon className="text-muted-foreground h-6 w-6 animate-spin" />
                 </div>
               ) : eligibleMembers && eligibleMembers.length > 0 ? (
-                <div className="max-h-[min(12rem,40vh)] space-y-1 overflow-y-auto rounded-md border p-2">
+                <div className="max-h-drop space-y-1 overflow-y-auto rounded-md border p-2">
                   {eligibleMembers.map((member) => (
                     <button
                       key={member.userId}
@@ -381,7 +379,11 @@ export function AddRecipientDialog({
                 value={resolvedAuthMethod}
                 label="Auth"
                 onValueChange={(v) => {
-                  if (v === "none" || v === "access_code" || v === "email_otp") {
+                  if (
+                    v === "none" ||
+                    v === "access_code" ||
+                    v === "email_otp"
+                  ) {
                     setAuthMethod(v);
                   }
                 }}

@@ -111,7 +111,7 @@ export function XlsxViewer({
       {!loading && !error && sheets.length === 0 ? (
         <p className="text-muted-foreground p-4 text-sm">No workbook loaded.</p>
       ) : null}
-      {csv ? <CsvViewer content={csv} className="max-h-[32rem]" /> : null}
+      {csv ? <CsvViewer content={csv} className="max-h-128" /> : null}
     </div>
   );
 }

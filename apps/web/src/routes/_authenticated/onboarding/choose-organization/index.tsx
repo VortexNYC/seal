@@ -27,7 +27,11 @@ export const Route = createFileRoute(
     if (search.next === "developer") {
       result.next = "developer";
     }
-    if (search.create === true || search.create === "true" || search.create === "1") {
+    if (
+      search.create === true ||
+      search.create === "true" ||
+      search.create === "1"
+    ) {
       result.create = true;
     }
     return result;
@@ -45,9 +49,7 @@ function RouteComponent() {
   const newOrgDestination = (slug: string) =>
     buildOrganizationPath(
       slug,
-      next === "developer"
-        ? "/settings/developer"
-        : "/onboarding/compliance"
+      next === "developer" ? "/settings/developer" : "/onboarding/compliance"
     );
   const { data: organizations, isPending } = useQuery({
     queryKey: ["auth", "organization", "list"],

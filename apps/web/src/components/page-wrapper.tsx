@@ -50,17 +50,17 @@ export function PageWrapper({
         "bg-background flex h-full min-h-0 flex-col overscroll-contain",
         /* Cap: document editor — page itself must not scroll into empty void */
         dense
-          ? "overflow-hidden scroll-pb-0"
-          : "overflow-auto scroll-pb-24 sm:scroll-pb-28",
+          ? "scroll-pb-0 overflow-hidden"
+          : "scroll-pb-24 overflow-auto sm:scroll-pb-28",
         className
       )}
     >
-      <div className="bg-background/95 sticky top-0 z-10 border-b border-border backdrop-blur-sm">
+      <div className="bg-background/95 border-border sticky top-0 z-10 border-b backdrop-blur-sm">
         <div
           className={cn(
             "flex min-h-16 flex-col gap-3 px-4 py-3 sm:px-6",
             headerCenter
-              ? "lg:grid lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:items-center lg:gap-4"
+              ? "lg:grid-cols-center lg:grid lg:items-center lg:gap-4"
               : "sm:flex-row sm:items-center sm:gap-4 sm:py-0"
           )}
         >

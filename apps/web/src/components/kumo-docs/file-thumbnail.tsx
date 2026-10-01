@@ -1,5 +1,5 @@
-import type { JSX, ReactNode } from "react";
 import { FileIcon } from "lucide-react";
+import type { JSX, ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -20,10 +20,7 @@ export type FileThumbnailProps = {
 
 export function FileThumbnailLoadingOverlay(): JSX.Element {
   return (
-    <div
-      aria-hidden
-      className="bg-muted absolute inset-0 z-10 overflow-hidden"
-    >
+    <div aria-hidden className="bg-muted absolute inset-0 z-10 overflow-hidden">
       <div className="bg-background/55 absolute inset-0 animate-pulse" />
     </div>
   );
@@ -67,12 +64,12 @@ export function FileThumbnail({
         {showFallback && !isLoading ? (
           <div className="text-muted-foreground flex h-full flex-col items-center justify-center gap-2 p-3">
             <FileIcon className="size-8 opacity-50" />
-            <span className="line-clamp-2 text-center text-[10px]">{name}</span>
+            <span className="text-3xs line-clamp-2 text-center">{name}</span>
           </div>
         ) : null}
       </div>
       {showLabel ? (
-        <div className="truncate px-2 py-1.5 text-[11px]">{name}</div>
+        <div className="text-2xs truncate px-2 py-1.5">{name}</div>
       ) : null}
     </div>
   );

@@ -153,86 +153,86 @@ function GeneralSettingsContent() {
   return (
     <PageWrapper title="General Settings">
       <SettingsBody wide>
-      <div className="flex flex-col gap-5">
-        {organization && (
-          <OrganizationProfile
-            className="w-full max-w-none"
-            organizationId={organization.id}
-            onUpdated={(updated) => {
-              void queryClient.invalidateQueries({
-                queryKey: ["organization", updated.slug],
-              });
-              if (updated.slug !== slug) {
-                void navigate({
-                  to: "/$slug/settings",
-                  params: { slug: updated.slug },
+        <div className="flex flex-col gap-5">
+          {organization && (
+            <OrganizationProfile
+              className="w-full max-w-none"
+              organizationId={organization.id}
+              onUpdated={(updated) => {
+                void queryClient.invalidateQueries({
+                  queryKey: ["organization", updated.slug],
                 });
-              }
-            }}
-            onDeleted={() => {
-              void navigate({ to: "/" });
-            }}
-          />
-        )}
+                if (updated.slug !== slug) {
+                  void navigate({
+                    to: "/$slug/settings",
+                    params: { slug: updated.slug },
+                  });
+                }
+              }}
+              onDeleted={() => {
+                void navigate({ to: "/" });
+              }}
+            />
+          )}
 
-        <section className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1">
-            <h2 className="text-base font-semibold tracking-tight">
-              Regional defaults
-            </h2>
-            <p className="text-muted-foreground text-sm">
-              Product defaults for documents and payments in this workspace.
-            </p>
-          </div>
-          <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-3">
-            <Input
-              id="timezone"
-              label="Timezone"
-              value={product.timezone}
-              onChange={(event) =>
-                setProduct((prev) => ({
-                  ...prev,
-                  timezone: event.target.value,
-                }))
-              }
-              placeholder="UTC"
-              disabled={!isAdmin}
-            />
-            <Input
-              id="currency"
-              label="Currency"
-              value={product.currency}
-              onChange={(event) =>
-                setProduct((prev) => ({
-                  ...prev,
-                  currency: event.target.value,
-                }))
-              }
-              placeholder="USD"
-              disabled={!isAdmin}
-            />
-            <Input
-              id="currencyKind"
-              label="Currency kind"
-              value={product.currencyKind}
-              onChange={(event) =>
-                setProduct((prev) => ({
-                  ...prev,
-                  currencyKind: event.target.value,
-                }))
-              }
-              placeholder="normal"
-              disabled={!isAdmin}
-            />
-            <div className="flex justify-end md:col-span-3">
-              <Button type="submit" disabled={!isAdmin || isSubmitting}>
-                <FloppyDisk className="mr-2 h-4 w-4" />
-                {isSubmitting ? "Saving…" : "Save workspace settings"}
-              </Button>
+          <section className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <h2 className="text-base font-semibold tracking-tight">
+                Regional defaults
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                Product defaults for documents and payments in this workspace.
+              </p>
             </div>
-          </form>
-        </section>
-      </div>
+            <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-3">
+              <Input
+                id="timezone"
+                label="Timezone"
+                value={product.timezone}
+                onChange={(event) =>
+                  setProduct((prev) => ({
+                    ...prev,
+                    timezone: event.target.value,
+                  }))
+                }
+                placeholder="UTC"
+                disabled={!isAdmin}
+              />
+              <Input
+                id="currency"
+                label="Currency"
+                value={product.currency}
+                onChange={(event) =>
+                  setProduct((prev) => ({
+                    ...prev,
+                    currency: event.target.value,
+                  }))
+                }
+                placeholder="USD"
+                disabled={!isAdmin}
+              />
+              <Input
+                id="currencyKind"
+                label="Currency kind"
+                value={product.currencyKind}
+                onChange={(event) =>
+                  setProduct((prev) => ({
+                    ...prev,
+                    currencyKind: event.target.value,
+                  }))
+                }
+                placeholder="normal"
+                disabled={!isAdmin}
+              />
+              <div className="flex justify-end md:col-span-3">
+                <Button type="submit" disabled={!isAdmin || isSubmitting}>
+                  <FloppyDisk className="mr-2 h-4 w-4" />
+                  {isSubmitting ? "Saving…" : "Save workspace settings"}
+                </Button>
+              </div>
+            </form>
+          </section>
+        </div>
       </SettingsBody>
     </PageWrapper>
   );

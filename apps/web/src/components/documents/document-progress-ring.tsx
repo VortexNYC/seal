@@ -25,15 +25,15 @@ export function DocumentProgressRing({ progress }: DocumentProgressRingProps) {
     ringCircumference - (progress.percentComplete / 100) * ringCircumference;
 
   return (
-    <div className="border-border bg-card flex animate-[fadeInUp_0.3s_ease-out_forwards] flex-col items-center gap-4 rounded-2xl border p-6 shadow-sm sm:rounded-xl sm:p-4">
+    <div className="border-border bg-card animate-fade-in-up flex flex-col items-center gap-4 rounded-2xl border p-6 shadow-sm sm:rounded-xl sm:p-4">
       {/* Progress Ring */}
-      <div className="relative h-[120px] w-[120px] sm:h-[90px] sm:w-[90px]">
+      <div className="relative h-30 w-30 sm:h-22.5 sm:w-22.5">
         <svg
           width="120"
           height="120"
           viewBox="0 0 120 120"
           aria-hidden="true"
-          className="-rotate-90 sm:h-[90px] sm:w-[90px]"
+          className="-rotate-90 sm:h-22.5 sm:w-22.5"
         >
           {/* Background circle */}
           <circle
@@ -55,15 +55,15 @@ export function DocumentProgressRing({ progress }: DocumentProgressRingProps) {
             strokeLinecap="round"
             strokeDasharray={ringCircumference}
             strokeDashoffset={progressOffset}
-            className="transition-[stroke-dashoffset] duration-500 ease-out"
+            className="transition-dash duration-500 ease-out"
           />
         </svg>
         {/* Center text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-foreground font-serif text-[1.75rem] leading-none font-semibold sm:text-xl">
+          <span className="text-foreground text-display font-serif leading-none font-semibold sm:text-xl">
             {progress.percentComplete}%
           </span>
-          <span className="text-muted-foreground mt-0.5 font-sans text-[0.6875rem]">
+          <span className="text-muted-foreground text-2xs mt-0.5 font-sans">
             Complete
           </span>
         </div>
@@ -106,7 +106,7 @@ interface StatusBoxProps {
 
 function StatusBox({ value, label, colorClass }: StatusBoxProps) {
   return (
-    <div className="bg-muted rounded-[10px] px-2 py-3 text-center sm:px-1.5 sm:py-2.5">
+    <div className="bg-muted rounded-card px-2 py-3 text-center sm:px-1.5 sm:py-2.5">
       <div
         className={cn(
           "font-sans text-xl font-semibold sm:text-base",
@@ -115,7 +115,7 @@ function StatusBox({ value, label, colorClass }: StatusBoxProps) {
       >
         {value}
       </div>
-      <div className="text-muted-foreground mt-0.5 font-sans text-[0.6875rem]">
+      <div className="text-muted-foreground text-2xs mt-0.5 font-sans">
         {label}
       </div>
     </div>

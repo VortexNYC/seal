@@ -34,7 +34,7 @@ export function DocumentViewerShell({
         {main}
       </div>
       {right ? (
-        <div className="border-border bg-background hidden w-[22rem] shrink-0 border-l xl:block">
+        <div className="border-border bg-background hidden w-88 shrink-0 border-l xl:block">
           {right}
         </div>
       ) : null}

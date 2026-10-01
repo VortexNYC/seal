@@ -382,7 +382,7 @@ function PaymentConfigDialog({
 }) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog className="max-h-[85vh] max-w-2xl overflow-y-auto">
+      <Dialog className="max-h-vh-85 max-w-2xl overflow-y-auto">
         <PaymentConfigHeader />
         <PaymentConfigTabs form={form} total={total} />
         <PaymentConfigFooter

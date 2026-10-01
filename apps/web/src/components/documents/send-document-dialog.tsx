@@ -260,7 +260,7 @@ export function SendDocumentDialog({
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog className="flex max-h-[90vh] flex-col sm:max-w-[600px]">
+      <Dialog className="max-h-vh-90 flex flex-col sm:max-w-150">
         <Dialog.Title>Send for signature</Dialog.Title>
         <Dialog.Description>
           {pendingRecipients.length} recipient
@@ -317,7 +317,7 @@ export function SendDocumentDialog({
                   <span className="text-muted-foreground shrink-0 text-xs capitalize">
                     {recipient.role}
                     {fieldCountsByRecipient
-                      ? ` · ${fieldCountsByRecipient.get(recipient._id) ?? 0} fields`
+                      ? `· ${fieldCountsByRecipient.get(recipient._id) ?? 0} fields`
                       : ""}
                   </span>
                 </li>
@@ -369,7 +369,7 @@ export function SendDocumentDialog({
                             onChange={(e) =>
                               setRecipientMessage(recipient._id, e.target.value)
                             }
-                            className="min-h-[80px]"
+                            className="min-h-20"
                             maxLength={500}
                             aria-label="Custom message"
                           />
@@ -389,7 +389,7 @@ export function SendDocumentDialog({
                   placeholder="Add a personal message for all recipients..."
                   value={customMessage}
                   onChange={(e) => setCustomMessage(e.target.value)}
-                  className="mt-2 min-h-[80px]"
+                  className="mt-2 min-h-20"
                   maxLength={500}
                   aria-label="Default message"
                 />

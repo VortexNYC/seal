@@ -1,8 +1,8 @@
+import { Button } from "@cloudflare/kumo/components/button";
+import { Input } from "@cloudflare/kumo/components/input";
 import type { JSX } from "react";
 import { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
-import { Button } from "@cloudflare/kumo/components/button";
-import { Input } from "@cloudflare/kumo/components/input";
 
 import { cn } from "@/lib/utils";
 
@@ -124,7 +124,7 @@ export function XlsxEditor({
       {!sheet ? (
         <p className="text-muted-foreground p-4 text-sm">No sheet loaded.</p>
       ) : (
-        <div className="max-h-[32rem] overflow-auto">
+        <div className="max-h-128 overflow-auto">
           <table className="w-full border-collapse text-xs">
             <tbody>
               {sheet.rows.map((row, ri) => (

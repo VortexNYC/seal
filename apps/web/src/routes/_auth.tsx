@@ -18,11 +18,11 @@ function RouteComponent() {
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_-10%,var(--brand-200)_0%,transparent_55%)] opacity-70"
+        className="bg-hero-glow pointer-events-none absolute inset-0 opacity-70"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-[linear-gradient(to_top,var(--muted)_0%,transparent_100%)] opacity-30"
+        className="bg-fade-muted pointer-events-none absolute inset-x-0 bottom-0 h-1/3 opacity-30"
       />
       <div className="relative z-10 mx-auto flex w-full max-w-md flex-col items-center gap-6">
         <a

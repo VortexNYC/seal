@@ -4,8 +4,8 @@
  */
 
 import { SkeletonLine } from "@cloudflare/kumo/components/loader";
-import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Suspense } from "react";
 
 import { AllClear } from "@/components/dashboard/all-clear";
@@ -35,7 +35,10 @@ function StatsCardsFallback(): React.ReactElement {
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="border-border bg-card flex flex-col gap-2 rounded-lg border p-4">
+        <div
+          key={i}
+          className="border-border bg-card flex flex-col gap-2 rounded-lg border p-4"
+        >
           <SkeletonLine className="h-3 w-1/2" />
           <SkeletonLine className="h-6 w-1/3" />
         </div>
@@ -70,10 +73,7 @@ function WorkspaceHome(): React.ReactElement {
 
   return (
     <PageWrapper title="Dashboard">
-      <div
-        className="mx-auto flex max-w-5xl flex-col gap-5"
-        data-seal-stagger
-      >
+      <div className="mx-auto flex max-w-5xl flex-col gap-5" data-seal-stagger>
         <div className="flex flex-col gap-1">
           <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
             {organization.name}
@@ -98,7 +98,9 @@ function WorkspaceHome(): React.ReactElement {
         </Suspense>
 
         <div className="flex items-baseline justify-between gap-3">
-          <p className="text-muted-foreground text-sm">Trends and team activity</p>
+          <p className="text-muted-foreground text-sm">
+            Trends and team activity
+          </p>
           <Link
             to="/$slug/analytics"
             params={{ slug }}
@@ -108,7 +110,7 @@ function WorkspaceHome(): React.ReactElement {
           </Link>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_14rem]">
+        <div className="lg:grid-cols-split-14 grid gap-4">
           <Suspense fallback={<RecentDocsFallback />}>
             <RecentDocuments slug={slug} organizationSlug={slug} />
           </Suspense>

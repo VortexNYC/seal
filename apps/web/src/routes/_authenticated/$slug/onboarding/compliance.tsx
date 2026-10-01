@@ -8,9 +8,9 @@ import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
+import { ShieldCheck } from "@phosphor-icons/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ShieldCheck } from "@phosphor-icons/react";
 import { useEffect, useState, type ReactElement } from "react";
 
 import Loader from "@/components/loader";
@@ -80,7 +80,7 @@ function ComplianceOnboarding(): ReactElement {
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center gap-6 px-[max(1rem,env(safe-area-inset-left))] py-8 pr-[max(1rem,env(safe-area-inset-right))]">
+    <div className="px-safe mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center gap-6 py-8">
       <div className="flex flex-col gap-2 text-center">
         <div className="bg-kumo-elevated mx-auto flex size-12 items-center justify-center rounded-full">
           <ShieldCheck className="size-6" weight="duotone" />
@@ -96,7 +96,7 @@ function ComplianceOnboarding(): ReactElement {
       </div>
 
       <LayerCard className="w-full">
-        <LayerCard.Primary className="flex flex-col gap-5 p-[clamp(1rem,4vw,1.5rem)]">
+        <LayerCard.Primary className="p-fluid-md flex flex-col gap-5">
           <Checkbox
             checked={requireRecipientAuth}
             onCheckedChange={(checked) =>

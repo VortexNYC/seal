@@ -30,6 +30,29 @@
   --color-kumo-link: var(--kumo-link);
   --color-kumo-tint: var(--kumo-tint);
   --color-kumo-subtle: var(--kumo-subtle);
+
+  /* Seal micro type scale — field overlays, badges, captions */
+  --text-2xs: 0.6875rem; /* 11px */
+  --text-3xs: 0.625rem; /* 10px */
+  --text-4xs: 0.5625rem; /* 9px */
+  --text-5xs: 0.5rem; /* 8px */
+  --text-6xs: 0.4375rem; /* 7px */
+  --text-label: 0.8125rem; /* 13px */
+  --text-lede: 0.9375rem; /* 15px */
+  --text-display: 1.75rem; /* 28px */
+  --text-lead: 1.05rem; /* ~17px */
+
+  --radius-card: 10px;
+  --radius-mini: 3px;
+
+  --tracking-caps: 0.16em;
+  --tracking-mega: 0.35em;
+
+  --blur-hairline: 2px;
+
+  --container-measure: 50ch;
+
+  --animate-fade-in-up: fadeInUp 0.3s ease-out forwards;
 }
 
 /* Fumadocs: scan component files so Tailwind generates their utilities (md:hidden, etc.) */
@@ -244,11 +267,7 @@
 }
 
 [data-auth-shell] button[type="submit"]:hover:not(:disabled) {
-  background-color: color-mix(
-    in oklch,
-    var(--primary) 88%,
-    var(--foreground)
-  );
+  background-color: color-mix(in oklch, var(--primary) 88%, var(--foreground));
   box-shadow:
     0 2px 6px color-mix(in oklch, var(--foreground) 16%, transparent),
     0 0 0 1px color-mix(in oklch, var(--primary) 50%, transparent);
@@ -411,9 +430,15 @@
 }
 
 .dark .seal-settings-auth button[type="submit"] *,
-.dark .seal-settings-auth [data-kumo-component="Button"][data-variant="primary"] *,
+.dark
+  .seal-settings-auth
+  [data-kumo-component="Button"][data-variant="primary"]
+  *,
 .dark [data-auth-settings] button[type="submit"] *,
-.dark [data-auth-settings] [data-kumo-component="Button"][data-variant="primary"] * {
+.dark
+  [data-auth-settings]
+  [data-kumo-component="Button"][data-variant="primary"]
+  * {
   color: var(--primary-foreground) !important;
 }
 
@@ -480,4 +505,96 @@
   ::-webkit-scrollbar-corner {
     background: transparent;
   }
+}
+
+/* Structural utilities — the values that are legitimately off-scale.
+   Each encodes a real layout rule; arbitrary brackets on these were SEA-103 debt. */
+@utility w-edge {
+  /* fixed-position sheets: viewport minus 1rem gutters */
+  width: calc(100% - 2rem);
+}
+
+@utility px-safe {
+  padding-inline-start: max(1rem, env(safe-area-inset-left));
+  padding-inline-end: max(1rem, env(safe-area-inset-right));
+}
+
+@utility py-safe {
+  padding-block: max(1rem, env(safe-area-inset-bottom));
+}
+
+@utility pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+@utility p-fluid {
+  padding: clamp(1rem, 4vw, 2rem);
+}
+
+@utility p-fluid-sm {
+  padding: clamp(0.75rem, 3vw, 1.25rem);
+}
+
+@utility max-w-sheet {
+  max-width: min(28rem, 40vw);
+}
+
+@utility max-h-drop {
+  max-height: min(12rem, 40vh);
+}
+
+@utility grid-cols-split-14 {
+  grid-template-columns: minmax(0, 1fr) 14rem;
+}
+
+@utility grid-cols-center {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+@utility grid-rows-clip {
+  grid-template-rows: 0fr;
+}
+
+@utility bg-hero-glow {
+  background-image: radial-gradient(
+    ellipse at 50% -10%,
+    var(--brand-200) 0%,
+    transparent 55%
+  );
+}
+
+@utility bg-fade-muted {
+  background-image: linear-gradient(to top, var(--muted) 0%, transparent 100%);
+}
+
+@utility transition-lift {
+  transition-property: box-shadow, transform;
+}
+
+@utility transition-dash {
+  transition-property: stroke-dashoffset;
+}
+
+@utility border-field {
+  border-width: 1.5px;
+}
+
+@utility p-fluid-md {
+  padding: clamp(1rem, 4vw, 1.5rem);
+}
+
+@utility grid-cols-mid-8 {
+  grid-template-columns: 1fr 8rem 1fr auto;
+}
+
+@utility max-h-vh-* {
+  max-height: calc(--value(number) * 1vh);
+}
+
+@utility transition-width {
+  transition-property: width;
+}
+
+@utility content-empty {
+  content: "";
 }

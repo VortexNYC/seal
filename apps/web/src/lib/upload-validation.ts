@@ -109,7 +109,9 @@ export function validateFileForUpload(file: File): {
   if (!file.type) {
     errors.push("File type could not be determined");
   } else if (!ALLOWED_MIME_TYPES.has(file.type)) {
-    errors.push("Only PDF, DOCX, XLSX, PPTX, CSV, HTML, PNG, and JPG files are supported");
+    errors.push(
+      "Only PDF, DOCX, XLSX, PPTX, CSV, HTML, PNG, and JPG files are supported"
+    );
   }
 
   // Validate extension
@@ -117,7 +119,9 @@ export function validateFileForUpload(file: File): {
   if (!fileExt) {
     errors.push("File must have an extension");
   } else if (!ALLOWED_EXTENSIONS.has(fileExt)) {
-    errors.push("Only PDF, DOCX, XLSX, PPTX, CSV, HTML, PNG, and JPG files are supported");
+    errors.push(
+      "Only PDF, DOCX, XLSX, PPTX, CSV, HTML, PNG, and JPG files are supported"
+    );
   }
 
   // Trailer-only PDF stubs (~27B) pass size>0 but are not usable documents

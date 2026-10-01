@@ -1,5 +1,5 @@
-import type { JSX, ReactNode } from "react";
 import { PDFViewer } from "@embedpdf/react-pdf-viewer";
+import type { JSX, ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -27,7 +27,7 @@ export function PdfViewer({
       <div
         data-kumo-docs="pdf-viewer"
         className={cn(
-          "text-muted-foreground flex min-h-[24rem] items-center justify-center rounded-xl border border-dashed text-sm",
+          "text-muted-foreground flex min-h-96 items-center justify-center rounded-xl border border-dashed text-sm",
           className
         )}
       >

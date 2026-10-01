@@ -7,7 +7,11 @@ import {
   deleteSignatureField as deleteSignatureFieldApi,
   repositionSignatureField as repositionSignatureFieldApi,
 } from "@/lib/api-client";
-import { FIELD_TYPE_LABELS, FIELD_TYPES, type FieldType } from "@/lib/field-types";
+import {
+  FIELD_TYPE_LABELS,
+  FIELD_TYPES,
+  type FieldType,
+} from "@/lib/field-types";
 import { type Id, parseId } from "@/lib/ids";
 import { toast } from "@/lib/toast";
 
