@@ -90,7 +90,12 @@ export async function parseDocumentFromStorage(
       })
     );
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.error(
+        `anydoc parse failed: ${response.status} for ${storageKey}`
+      );
+      return null;
+    }
 
     const parsed = parseResultSchema.parse(await response.json());
     return {
@@ -107,7 +112,8 @@ export async function parseDocumentFromStorage(
       processingTimeMs: parsed.processingTimeMs ?? 0,
       fieldCandidates: parsed.fieldCandidates ?? [],
     };
-  } catch {
+  } catch (error) {
+    console.error(`anydoc parse threw for ${storageKey}:`, error);
     return null;
   }
 }
