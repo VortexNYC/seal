@@ -719,7 +719,7 @@ function DocumentAiStatus({
   if (status === "processing") {
     return tooltip ? (
       <Tooltip
-        content="AI analyzing document"
+        content="Analyzing document"
         render={<span className="inline-flex" />}
       >
         <Loader2Icon className="text-ai-accent h-3 w-3 animate-spin" />
@@ -731,7 +731,7 @@ function DocumentAiStatus({
   if (status !== "completed") return null;
   return tooltip ? (
     <Tooltip
-      content="AI analysis complete"
+      content="Analysis complete"
       render={<span className="inline-flex" />}
     >
       <SparklesIcon className="text-ai-accent h-3 w-3" />
