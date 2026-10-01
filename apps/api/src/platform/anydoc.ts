@@ -83,7 +83,9 @@ export async function parseDocumentFromStorage(
     const response = await env.ANYDOC.fetch(
       new Request("http://anydoc/parse", {
         method: "POST",
-        body: object.body,
+        // Buffer first — a live R2 stream body arrives empty (400) through
+        // the service binding.
+        body: await object.arrayBuffer(),
         headers: {
           "x-internal-api-key": env.INTERNAL_API_KEY,
         },
