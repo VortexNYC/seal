@@ -11,7 +11,7 @@ describe("review-matrix contract", () => {
   test("create schema accepts a minimal matrix", () => {
     const parsed = ZReviewMatrixCreate.parse({
       title: "NDA red-flag pass",
-      model: "echo/test",
+      model: "agent/test",
       columns: [{ index: 0, name: "Termination", prompt: "Find termination." }],
       documentIds: ["doc_1"],
     });

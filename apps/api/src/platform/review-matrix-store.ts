@@ -15,12 +15,6 @@ import {
   reviewMatrices,
   reviewRows,
 } from "../global/schema.js";
-import {
-  getProvider,
-  resolveAvailableModel,
-  streamKeyedModel,
-} from "./llm/index.js";
-import { ensureProvidersRegistered } from "./llm/providers.js";
 import { anchorQuote, type PdfWord } from "./quote-anchor.js";
 import {
   assertCellCitations,
@@ -201,24 +195,6 @@ function extractJsonObject(raw: string): Record<string, unknown> | null {
   return null;
 }
 
-async function collectStreamResult(
-  keyedModel: string,
-  prompt: string
-): Promise<{
-  text: string;
-  usage: { inputTokens?: number; outputTokens?: number } | undefined;
-}> {
-  let out = "";
-  let usage: { inputTokens?: number; outputTokens?: number } | undefined;
-  for await (const part of streamKeyedModel(keyedModel, {
-    messages: [{ role: "user", content: prompt }],
-  })) {
-    if (part.type === "text") out += part.text;
-    if (part.type === "finish" && part.usage) usage = part.usage;
-  }
-  return { text: out, usage };
-}
-
 export async function createReviewMatrix(
   db: Db,
   args: {
@@ -256,15 +232,14 @@ export async function createReviewMatrix(
   // pack_id expansion happens at the route layer; by the time the store is
   // called, columns + model must be resolved values.
   const columns = input.columns;
-  const model = input.model;
+  const model = input.model ?? "agent";
   if (!columns || columns.length === 0) {
     throw new ReviewMatrixError("invalid_input", 400, {
       columns: "required",
     });
   }
-  if (!model) {
-    throw new ReviewMatrixError("invalid_input", 400, { model: "required" });
-  }
+  // `model` is a provenance label (which agent filled the cells) — never
+  // executed by Seal. Optional; defaults to "agent".
 
   const matrixId = crypto.randomUUID();
   const matrixPublicId = newPublicId("rm");
@@ -417,206 +392,6 @@ export async function getReviewMatrix(
     created_at: matrix.createdAt.toISOString(),
     updated_at: matrix.updatedAt.toISOString(),
   };
-}
-
-export async function generateReviewMatrix(
-  db: Db,
-  env: CloudflareBindings,
-  organizationId: string,
-  matrixPublicId: string
-): Promise<ApiReviewMatrix> {
-  ensureProvidersRegistered(env);
-
-  const matrixRows = await db
-    .select()
-    .from(reviewMatrices)
-    .where(
-      and(
-        eq(reviewMatrices.publicId, matrixPublicId),
-        eq(reviewMatrices.organizationId, organizationId)
-      )
-    )
-    .limit(1);
-  const matrix = matrixRows[0];
-  if (!matrix) {
-    throw new ReviewMatrixError("not_found", 404);
-  }
-
-  const effectiveModel = resolveAvailableModel(matrix.model);
-  const parsedModel = effectiveModel.includes("/") ? effectiveModel : null;
-  if (!parsedModel) {
-    throw new ReviewMatrixError("invalid_model", 400, {
-      model: matrix.model,
-    });
-  }
-  const providerId = parsedModel.slice(0, parsedModel.indexOf("/"));
-  if (!getProvider(providerId)) {
-    throw new ReviewMatrixError("unknown_provider", 400, {
-      provider: providerId,
-    });
-  }
-
-  const columns = parseColumns(matrix.columnsConfig);
-  const columnByIndex = new Map(columns.map((c) => [c.index, c]));
-
-  const rows = await db
-    .select({
-      rowId: reviewRows.id,
-      rowPublicId: reviewRows.publicId,
-      documentId: reviewRows.documentId,
-      documentPublicId: documents.publicId,
-      parsedText: documents.parsedText,
-      storageKey: documents.storageKey,
-    })
-    .from(reviewRows)
-    .innerJoin(documents, eq(documents.id, reviewRows.documentId))
-    .where(eq(reviewRows.matrixId, matrix.id));
-
-  const rowIds = rows.map((r) => r.rowId);
-  const pendingCells =
-    rowIds.length === 0
-      ? []
-      : await db
-          .select()
-          .from(reviewCells)
-          .where(
-            and(
-              inArray(reviewCells.rowId, rowIds),
-              inArray(reviewCells.status, ["pending", "error"])
-            )
-          );
-
-  await db
-    .update(reviewMatrices)
-    .set({ status: "generating", updatedAt: new Date() })
-    .where(eq(reviewMatrices.id, matrix.id));
-
-  const rowById = new Map(rows.map((r) => [r.rowId, r]));
-
-  // Words are fetched once per document — many cells quote the same row.
-  const wordsCache = new Map<string, Promise<PdfWord[]>>();
-
-  for (const cell of pendingCells) {
-    const row = rowById.get(cell.rowId);
-    if (!row) continue;
-    const column = columnByIndex.get(cell.columnIndex);
-    if (!column) continue;
-
-    await db
-      .update(reviewCells)
-      .set({ status: "generating", updatedAt: new Date() })
-      .where(eq(reviewCells.id, cell.id));
-
-    const startedAt = Date.now();
-    try {
-      const prompt = [
-        `Column: ${column.name}`,
-        `Task: ${column.prompt}`,
-        "",
-        "Document text:",
-        row.parsedText?.trim() || "(empty)",
-        "",
-        "Respond with a single JSON object and nothing else:",
-        '{ "summary": string, "flag": "green"|"amber"|"red"|"grey", "reasoning": string, "quote": string }',
-        '"quote" must be a verbatim contiguous excerpt from the document text,',
-        `or the literal ${NOT_FOUND_QUOTE} when the column's question is not answered.`,
-      ].join("\n");
-
-      const result = await collectStreamResult(effectiveModel, prompt);
-      const tokensUsed =
-        result.usage?.inputTokens !== undefined ||
-        result.usage?.outputTokens !== undefined
-          ? (result.usage.inputTokens ?? 0) + (result.usage.outputTokens ?? 0)
-          : null;
-
-      const parsed = extractJsonObject(result.text);
-      const rawSummary =
-        typeof parsed?.summary === "string" && parsed.summary.trim()
-          ? parsed.summary.trim().slice(0, 500)
-          : result.text.trim().slice(0, 500) || column.name;
-      const reasoning =
-        typeof parsed?.reasoning === "string" && parsed.reasoning.trim()
-          ? parsed.reasoning.trim().slice(0, 1000)
-          : null;
-      const candidateQuote =
-        typeof parsed?.quote === "string" && parsed.quote.trim()
-          ? parsed.quote.trim()
-          : extractLikelyQuote(result.text, row.parsedText);
-      const citation = groundCitation(
-        row.documentPublicId,
-        row.parsedText,
-        candidateQuote
-      );
-      const grounded = citation.quote !== NOT_FOUND_QUOTE;
-      if (grounded && row.storageKey) {
-        // Best-effort page/bbox anchor — never fails the cell.
-        try {
-          const anchor = await anchorQuote(
-            env,
-            row.storageKey,
-            citation.quote,
-            wordsCache
-          );
-          if (anchor) {
-            citation.page = anchor.page;
-            citation.bbox = anchor.bbox;
-          }
-        } catch {
-          // Anchoring is additive; a quote-only citation is still valid.
-        }
-      }
-      const flag: ReviewFlag =
-        parseFlag(parsed?.flag) ?? (grounded ? "green" : "grey");
-
-      const done: ReviewCell = {
-        id: cell.publicId,
-        rowId: row.rowPublicId,
-        columnIndex: cell.columnIndex,
-        status: "done",
-        summary: grounded ? rawSummary : "not found",
-        flag,
-        reasoning,
-        citations: [citation],
-      };
-      assertCellCitations(done);
-
-      await db
-        .update(reviewCells)
-        .set({
-          status: "done",
-          summary: done.summary,
-          flag: done.flag,
-          reasoning: done.reasoning,
-          citations: JSON.stringify(done.citations),
-          modelUsed: effectiveModel,
-          tokensUsed,
-          processingTimeMs: Date.now() - startedAt,
-          updatedAt: new Date(),
-        })
-        .where(eq(reviewCells.id, cell.id));
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message.slice(0, 500) : "generate_failed";
-      await db
-        .update(reviewCells)
-        .set({
-          status: "error",
-          summary: null,
-          flag: null,
-          reasoning: message,
-          citations: "[]",
-          updatedAt: new Date(),
-        })
-        .where(eq(reviewCells.id, cell.id));
-    }
-  }
-
-  await db
-    .update(reviewMatrices)
-    .set({ status: "ready", updatedAt: new Date() })
-    .where(eq(reviewMatrices.id, matrix.id));
-
-  return getReviewMatrix(db, organizationId, matrixPublicId);
 }
 
 /** Lightweight list for the UI index — no row/cell fan-out. */

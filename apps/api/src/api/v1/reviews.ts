@@ -1,7 +1,7 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { createD1 } from "../../global/db.js";
-import { createJob, JobError, wakeJobRunner } from "../../platform/jobs.js";
+import { JobError } from "../../platform/jobs.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import {
   getReviewMatrix,
@@ -80,17 +80,11 @@ app.post("/", async (c) => {
         400
       );
     }
-    if (!model) {
-      return c.json(
-        { error: "validation_error", details: { model: "required" } },
-        400
-      );
-    }
 
     const matrix = await createReviewMatrix(db, {
       organizationId,
       ownerId: mcp.sub,
-      input: { ...parsed.data, columns, model },
+      input: { ...parsed.data, columns, model: model ?? "agent" },
     });
     return c.json(matrix, 201);
   } catch (err) {
@@ -172,33 +166,6 @@ app.patch("/:id/cells", async (c) => {
       parsed.data.model_used
     );
     return c.json(result);
-  } catch (err) {
-    return errorResponse(c, err);
-  }
-});
-
-app.post("/:id/generate", async (c) => {
-  const mcp = c.get("mcp");
-  if (!mcpHasScope(mcp, "documents:write")) {
-    return c.json({ error: "insufficient_scope" }, 403);
-  }
-  const organizationId = mcp.organizationId;
-  if (!organizationId) {
-    return c.json({ error: "organization_required" }, 403);
-  }
-
-  const id = c.req.param("id");
-  const db = createD1(c.env.D1);
-  try {
-    // Guard: matrix must exist + belong to this org before we queue work.
-    await getReviewMatrix(db, organizationId, id);
-    const job = await createJob(db, {
-      organizationId,
-      type: "review-generate",
-      payload: { matrixId: id },
-    });
-    await wakeJobRunner(c.env, organizationId);
-    return c.json({ job_id: job.publicId, status: job.status }, 202);
   } catch (err) {
     return errorResponse(c, err);
   }

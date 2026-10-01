@@ -82,7 +82,7 @@ function ReviewsPage() {
         <Empty
           icon={<ScaleIcon />}
           title="No reviews yet"
-          description="Create a review matrix — pick a pack like NDA review, choose documents, generate. Every cell answers with a citation."
+          description="Create a review matrix — pick a pack like NDA review, choose documents, and your agent fills each cell with a grounded citation."
         />
       ) : (
         <Table>

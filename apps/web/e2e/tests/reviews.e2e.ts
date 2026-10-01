@@ -8,14 +8,14 @@ import { pollUntil } from "../fixtures/poll";
 
 /**
  * Review-matrix E2E — the human flow over the legal arc:
- *   create (via API) → generate (job runner) → list row → grid cell →
+ *   create (via API) → agent writes cells (PATCH) → list row → grid cell →
  *   cell panel → propose redline → pending rail → accept → derived doc.
  *
- * Uses the echo provider (`model: "echo/test"`) — wiring, not model quality.
+ * Agent-write flow — `PATCH .../cells` fills results; wiring, not model quality.
  */
 
 test.describe("reviews", () => {
-  test("create → generate → grid → propose → accept", async ({
+  test("create → agent cells → grid → propose → accept", async ({
     authenticatedPage,
     organizationSlug,
   }) => {
@@ -36,7 +36,7 @@ test.describe("reviews", () => {
       const create = await request.post(`/api/reviews/${organizationSlug}`, {
         data: {
           title: "E2E review",
-          model: "echo/test",
+          model: "agent/e2e",
           columns: [
             { index: 0, name: "Termination", prompt: "termination clause" },
           ],
@@ -44,13 +44,31 @@ test.describe("reviews", () => {
         },
       });
       expect(create.status()).toBe(201);
-      matrixId = ((await create.json()) as { id: string }).id;
+      const createdBody = (await create.json()) as {
+        id: string;
+        rows: Array<{ id: string }>;
+      };
+      matrixId = createdBody.id;
 
-      // Generate → 202 job; poll the matrix until ready
-      const gen = await request.post(
-        `/api/reviews/${organizationSlug}/${matrixId}/generate`
+      // Agent writes cells — Seal grounds the quote against parsed text.
+      const cells = await request.patch(
+        `/api/reviews/${organizationSlug}/${matrixId}/cells`,
+        {
+          data: {
+            model_used: "agent/e2e",
+            cells: [
+              {
+                row_id: createdBody.rows[0]?.id,
+                column_index: 0,
+                summary: "Termination clause present.",
+                flag: "green",
+                quote: "not_found",
+              },
+            ],
+          },
+        }
       );
-      expect(gen.status()).toBe(202);
+      expect(cells.status()).toBe(200);
 
       const ready = await pollUntil(
         async () => {

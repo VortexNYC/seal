@@ -3352,17 +3352,6 @@ export async function createReviewMatrix(
   });
 }
 
-export async function generateReviewMatrix(
-  slug: string,
-  id: string
-): Promise<{ job_id: string; status: string }> {
-  return apiFetch(
-    `${reviewsBase(slug)}/${encodeURIComponent(id)}/generate`,
-    z.object({ job_id: z.string(), status: z.string() }),
-    { method: "POST" }
-  );
-}
-
 /**
  * SSE stream of a generating matrix — same-origin session auth, so plain
  * EventSource works (cookies travel automatically). Returns a close handle.

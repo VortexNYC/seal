@@ -587,7 +587,7 @@ components:
         title: { type: string }
         model:
           type: string
-          description: Provider/model key, e.g. `echo/test` or `anthropic/claude-sonnet-4-5`
+          description: Provenance label of the agent/model that filled cells — recorded, never executed by Seal
         status: { type: string }
         columns:
           type: array
@@ -605,7 +605,7 @@ components:
         id: { type: string }
         type:
           type: string
-          description: Job type, e.g. `review-generate`
+          description: Job type key
         status:
           type: string
           enum: [queued, running, done, error]
@@ -3607,7 +3607,9 @@ paths:
       summary: Create a review matrix
       description: >
         Creates a matrix with one row per document and one pending cell per
-        column. Generation is a separate call (`POST /reviews/{id}/generate`).
+        column. Cells are filled by the calling agent via
+        `PATCH /reviews/{id}/cells` — Seal runs no inference; it grounds each
+        submitted quote against the row document's stored text.
         Every `done` cell must carry ≥1 citation or the literal `not_found`.
       requestBody:
         required: true
@@ -3620,14 +3622,14 @@ paths:
                 title: { type: string, maxLength: 200 }
                 model:
                   type: string
-                  description: Provider/model key (`echo/test` for local stub). Optional when `pack_id` supplies a default.
+                  description: Provenance label — which agent/model fills the cells (e.g. `agent/claude-opus-4-6`). Never executed by Seal. Defaults to `agent`.
                   maxLength: 120
                 pack_id:
                   type: string
                   description: >
                     Review pack to expand — `builtin/nda`, `builtin/msa`,
                     `builtin/employment`, or an org-authored `pack_*` id.
-                    Explicit `columns`/`model` override pack defaults.
+                    Explicit `columns` override pack defaults.
                 columns:
                   type: array
                   minItems: 1
@@ -3669,47 +3671,6 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ReviewMatrix" }
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-
-  /reviews/{id}/generate:
-    post:
-      tags: [Reviews]
-      operationId: generateReviewMatrix
-      summary: Generate pending review cells
-      description: >
-        Enqueues a `review-generate` job — generation runs asynchronously on
-        the org's JobRunner Durable Object, not the request lifecycle. `model`
-        is a `provider/model` key — `echo/*` is always registered for
-        dev/tests; `anthropic/*` registers when `ANTHROPIC_API_KEY` is bound.
-        Each cell parses the model's JSON `{summary, flag, reasoning, quote}`
-        reply and re-validates the quote against `parsedText`; ungroundable
-        cells come back as the literal `not_found`, never invented. Poll
-        `GET /jobs/{job_id}` or `GET /reviews/{id}` for status.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
-      responses:
-        "202":
-          description: Generation job queued
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [job_id, status]
-                properties:
-                  job_id:
-                    type: string
-                    description: Job public ID — poll `GET /jobs/{id}`
-                  status:
-                    type: string
-                    enum: [queued]
-        "400":
-          $ref: "#/components/responses/ValidationError"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -3818,9 +3779,9 @@ paths:
       summary: Poll an async job
       description: >
         Returns the job's status (`queued|running|done|error`), error, and
-        result payload. Jobs are created by long-running ops such as
-        `POST /reviews/{id}/generate`; they run on the org's JobRunner
-        Durable Object, sequentially per org with retries (max 3 attempts).
+        result payload. Jobs are created by long-running ops; they run on the
+        org's JobRunner Durable Object, sequentially per org with retries
+        (max 3 attempts).
       parameters:
         - name: id
           in: path
@@ -3893,7 +3854,10 @@ paths:
               properties:
                 title: { type: string, maxLength: 200 }
                 description: { type: string, maxLength: 2000 }
-                model: { type: string, maxLength: 120 }
+                model:
+                  type: string
+                  maxLength: 120
+                  description: Default provenance label for matrices using this pack
                 columns:
                   type: array
                   minItems: 1
