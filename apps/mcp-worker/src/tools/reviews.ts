@@ -93,6 +93,50 @@ export function registerReviewTools(
   );
 
   server.tool(
+    "seal_write_review_cells",
+    "Write agent-authored review cell results — you (the calling agent) reason over each row's parsed document text and post answers; Seal grounds each quote against the stored document text and flips the matrix to ready when all cells resolve. Ungrounded quotes collapse to not_found — never invent anchors.",
+    {
+      id: z.string().describe("Matrix public ID (rm_…)"),
+      model_used: z
+        .string()
+        .max(120)
+        .optional()
+        .describe(
+          "Your model label (e.g. agent/claude-opus-4-6) — provenance only, not billed"
+        ),
+      cells: z
+        .array(
+          z.object({
+            cell_id: z.string().optional(),
+            row_id: z.string().optional(),
+            column_index: z.number().int().nonnegative().optional(),
+            summary: z.string().max(500),
+            flag: z.enum(["green", "amber", "red", "grey"]).optional(),
+            reasoning: z.string().max(1000).optional(),
+            quote: z
+              .string()
+              .max(500)
+              .describe(
+                "Verbatim excerpt from the row's document text — grounded server-side"
+              ),
+          })
+        )
+        .min(1)
+        .max(256),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const { id, ...body } = args;
+      const response = await client.patch<unknown>(
+        `/reviews/${encodeURIComponent(id)}/cells`,
+        body,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
     "seal_list_jobs",
     "List async jobs for the org — newest first. Optional status filter.",
     {

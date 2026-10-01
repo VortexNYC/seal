@@ -27,6 +27,7 @@ import {
   ZReviewColumn,
   type ReviewCell,
   type ReviewCitation,
+  type ReviewCellWrite,
   type ReviewColumn,
   type ReviewFlag,
   type ReviewMatrixCreate,
@@ -720,4 +721,139 @@ export class ReviewMatrixError extends Error {
     this.status = status;
     this.details = details;
   }
+}
+
+/**
+ * Agent-authored cell results — the caller's model did the reasoning; Seal
+ * grounds each submitted quote against the row's parsed text so agents can
+ * never anchor on invented text, then flips the matrix to ready when all
+ * cells resolve.
+ */
+export async function writeReviewCells(
+  env: CloudflareBindings,
+  organizationId: string,
+  matrixPublicId: string,
+  writes: ReviewCellWrite[],
+  modelUsed?: string
+): Promise<{ updated: number; matrixStatus: string }> {
+  const db = createD1(env.D1);
+  const matrixRows = await db
+    .select()
+    .from(reviewMatrices)
+    .where(
+      and(
+        eq(reviewMatrices.publicId, matrixPublicId),
+        eq(reviewMatrices.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+  const matrix = matrixRows[0];
+  if (!matrix) {
+    throw new ReviewMatrixError("not_found", 404);
+  }
+
+  const rows = await db
+    .select({
+      rowId: reviewRows.id,
+      rowPublicId: reviewRows.publicId,
+      documentPublicId: documents.publicId,
+      parsedText: documents.parsedText,
+    })
+    .from(reviewRows)
+    .innerJoin(documents, eq(documents.id, reviewRows.documentId))
+    .where(eq(reviewRows.matrixId, matrix.id));
+  const rowById = new Map(rows.map((r) => [r.rowId, r]));
+  const rowByPublicId = new Map(rows.map((r) => [r.rowPublicId, r]));
+
+  const cells = await db
+    .select()
+    .from(reviewCells)
+    .innerJoin(reviewRows, eq(reviewRows.id, reviewCells.rowId))
+    .where(eq(reviewRows.matrixId, matrix.id));
+  const cellByPublicId = new Map(
+    cells.map((c) => [c.review_cells.publicId, c.review_cells])
+  );
+  const cellByRowCol = new Map(
+    cells.map((c) => [
+      `${c.review_cells.rowId}:${c.review_cells.columnIndex}`,
+      c.review_cells,
+    ])
+  );
+
+  let updated = 0;
+  for (const write of writes) {
+    let cell = write.cell_id ? cellByPublicId.get(write.cell_id) : undefined;
+    if (
+      !cell &&
+      write.row_id !== undefined &&
+      write.column_index !== undefined
+    ) {
+      const row = rowByPublicId.get(write.row_id);
+      if (row) cell = cellByRowCol.get(`${row.rowId}:${write.column_index}`);
+    }
+    if (!cell) {
+      throw new ReviewMatrixError("cell_not_found", 400, {
+        cell_id: write.cell_id ?? write.row_id ?? null,
+      });
+    }
+    const row = rowById.get(cell.rowId);
+    if (!row) continue;
+
+    const citation = groundCitation(
+      row.documentPublicId,
+      row.parsedText,
+      write.quote
+    );
+    const grounded = citation.quote !== NOT_FOUND_QUOTE;
+
+    const done: ReviewCell = {
+      id: cell.publicId,
+      rowId: row.rowPublicId,
+      columnIndex: cell.columnIndex,
+      status: "done",
+      summary: grounded ? write.summary : "not found",
+      flag: write.flag ?? (grounded ? "grey" : "grey"),
+      reasoning: write.reasoning ?? null,
+      citations: [citation],
+    };
+    assertCellCitations(done);
+
+    await db
+      .update(reviewCells)
+      .set({
+        status: "done",
+        summary: done.summary,
+        flag: done.flag,
+        reasoning: done.reasoning,
+        citations: JSON.stringify(done.citations),
+        modelUsed: modelUsed ?? "agent",
+        updatedAt: new Date(),
+      })
+      .where(eq(reviewCells.id, cell.id));
+    updated += 1;
+  }
+
+  // All cells resolved → matrix is ready.
+  const unresolved = await db
+    .select({ n: count() })
+    .from(reviewCells)
+    .innerJoin(reviewRows, eq(reviewRows.id, reviewCells.rowId))
+    .where(
+      and(
+        eq(reviewRows.matrixId, matrix.id),
+        or(
+          eq(reviewCells.status, "pending"),
+          eq(reviewCells.status, "generating")
+        )
+      )
+    );
+  const remaining = unresolved[0]?.n ?? 0;
+  if (remaining === 0 && matrix.status !== "ready") {
+    await db
+      .update(reviewMatrices)
+      .set({ status: "ready", updatedAt: new Date() })
+      .where(eq(reviewMatrices.id, matrix.id));
+  }
+
+  return { updated, matrixStatus: remaining === 0 ? "ready" : matrix.status };
 }

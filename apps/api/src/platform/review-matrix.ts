@@ -81,3 +81,28 @@ export function matrixCellCount(
 ): number {
   return documentCount * columnCount;
 }
+
+/**
+ * Agent-authored cell write — the model doing the review is the caller's,
+ * not Seal's. Seal grounds `quote` against the row document's parsed text;
+ * ungrounded quotes collapse to not_found, never invent an anchor.
+ */
+export const ZReviewCellWrite = z.object({
+  /** Cell public id — or row_id + column_index. */
+  cell_id: z.string().min(1).optional(),
+  row_id: z.string().min(1).optional(),
+  column_index: z.number().int().nonnegative().optional(),
+  summary: z.string().max(500),
+  flag: z.enum(REVIEW_FLAGS).optional(),
+  reasoning: z.string().max(1000).optional(),
+  /** Verbatim excerpt — grounded server-side against the row document. */
+  quote: z.string().max(500),
+});
+export type ReviewCellWrite = z.infer<typeof ZReviewCellWrite>;
+
+export const ZReviewCellsWrite = z.object({
+  cells: z.array(ZReviewCellWrite).min(1).max(256),
+  /** Caller's model label, e.g. "claude-opus-4-6" — recorded, not billed. */
+  model_used: z.string().min(1).max(120).optional(),
+});
+export type ReviewCellsWrite = z.infer<typeof ZReviewCellsWrite>;

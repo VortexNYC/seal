@@ -646,4 +646,189 @@ describe("GET /api/v1/jobs/:id/stream", () => {
     expect(viaQuery.status).toBe(200);
     viaQuery.body?.cancel();
   });
+
+  it("accepts agent-authored cell writes and grounds quotes", async () => {
+    const privateJwk = await configureSigningKey();
+    const { userId, orgId, db } = await seedOrgAndUser();
+
+    const docPublicId = `doc_${crypto.randomUUID().slice(0, 8)}`;
+    const storageKey = `uploads/${crypto.randomUUID()}`;
+    await env.DOCUMENTS_BUCKET.put(storageKey, "%PDF-1.4 fake");
+    await db.insert(documents).values({
+      id: crypto.randomUUID(),
+      publicId: docPublicId,
+      organizationId: orgId,
+      ownerId: userId,
+      name: "NDA",
+      status: "draft",
+      storageKey,
+      parsedText:
+        "Either party may terminate this Agreement on thirty days written notice.",
+    });
+
+    const token = await signAccessToken(privateJwk, {
+      sub: userId,
+      organizationId: orgId,
+      scope: "documents:read documents:write",
+      clientId: "test-client",
+      jti: crypto.randomUUID(),
+    });
+
+    const createRes = await indexApp.request(
+      "http://localhost/api/v1/reviews",
+      {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          title: "Agent pass",
+          model: "agent",
+          columns: [
+            { index: 0, name: "Termination", prompt: "Find the clause." },
+          ],
+          documentIds: [docPublicId],
+        }),
+      },
+      env
+    );
+    expect(createRes.status).toBe(201);
+    const created = matrixSchema.parse(await createRes.json());
+    const cell = created.rows[0]?.cells[0];
+    expect(cell?.status).toBe("pending");
+
+    // Grounded quote — agent reasoned externally, Seal verifies the anchor.
+    const writeRes = await indexApp.request(
+      `http://localhost/api/v1/reviews/${created.id}/cells`,
+      {
+        method: "PATCH",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          model_used: "agent/claude-opus-4-6",
+          cells: [
+            {
+              row_id: created.rows[0]?.id,
+              column_index: 0,
+              summary: "Termination on thirty days written notice.",
+              flag: "green",
+              reasoning: "Plain-language clause present.",
+              quote: "Either party may terminate this Agreement",
+            },
+          ],
+        }),
+      },
+      env
+    );
+    expect(writeRes.status).toBe(200);
+    const writeResult = (await writeRes.json()) as {
+      updated: number;
+      matrixStatus: string;
+    };
+    expect(writeResult.updated).toBe(1);
+    expect(writeResult.matrixStatus).toBe("ready");
+
+    const getRes = await indexApp.request(
+      `http://localhost/api/v1/reviews/${created.id}`,
+      {
+        headers: { authorization: `Bearer ${token}` },
+      },
+      env
+    );
+    const done = matrixSchema.parse(await getRes.json());
+    expect(done.status).toBe("ready");
+    const doneCell = done.rows[0]?.cells[0];
+    expect(doneCell?.status).toBe("done");
+    expect(doneCell?.summary).toBe(
+      "Termination on thirty days written notice."
+    );
+    expect(doneCell?.citations[0]?.quote).toBe(
+      "Either party may terminate this Agreement"
+    );
+  });
+
+  it("rejects an ungrounded agent quote to not_found", async () => {
+    const privateJwk = await configureSigningKey();
+    const { userId, orgId, db } = await seedOrgAndUser();
+
+    const docPublicId = `doc_${crypto.randomUUID().slice(0, 8)}`;
+    const storageKey = `uploads/${crypto.randomUUID()}`;
+    await env.DOCUMENTS_BUCKET.put(storageKey, "%PDF-1.4 fake");
+    await db.insert(documents).values({
+      id: crypto.randomUUID(),
+      publicId: docPublicId,
+      organizationId: orgId,
+      ownerId: userId,
+      name: "NDA",
+      status: "draft",
+      storageKey,
+      parsedText: "This agreement is governed by New York law.",
+    });
+
+    const token = await signAccessToken(privateJwk, {
+      sub: userId,
+      organizationId: orgId,
+      scope: "documents:read documents:write",
+      clientId: "test-client",
+      jti: crypto.randomUUID(),
+    });
+
+    const createRes = await indexApp.request(
+      "http://localhost/api/v1/reviews",
+      {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          title: "Agent pass",
+          model: "agent",
+          columns: [{ index: 0, name: "Governing law", prompt: "Find it." }],
+          documentIds: [docPublicId],
+        }),
+      },
+      env
+    );
+    const created = matrixSchema.parse(await createRes.json());
+
+    const writeRes = await indexApp.request(
+      `http://localhost/api/v1/reviews/${created.id}/cells`,
+      {
+        method: "PATCH",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          cells: [
+            {
+              row_id: created.rows[0]?.id,
+              column_index: 0,
+              summary: "Governed by Delaware law.",
+              flag: "green",
+              quote: "governed by Delaware law",
+            },
+          ],
+        }),
+      },
+      env
+    );
+    expect(writeRes.status).toBe(200);
+
+    const getRes = await indexApp.request(
+      `http://localhost/api/v1/reviews/${created.id}`,
+      {
+        headers: { authorization: `Bearer ${token}` },
+      },
+      env
+    );
+    const done = matrixSchema.parse(await getRes.json());
+    const cell = done.rows[0]?.cells[0];
+    expect(cell?.citations[0]?.quote).toBe("not_found");
+    expect(cell?.summary).toBe("not found");
+  });
 });

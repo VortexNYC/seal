@@ -8,8 +8,12 @@ import {
   createReviewMatrix,
   listReviewMatrices,
   ReviewMatrixError,
+  writeReviewCells,
 } from "../../platform/review-matrix-store.js";
-import { ZReviewMatrixCreate } from "../../platform/review-matrix.js";
+import {
+  ZReviewCellsWrite,
+  ZReviewMatrixCreate,
+} from "../../platform/review-matrix.js";
 import { getReviewPack } from "../../platform/review-packs.js";
 import { sseResponse } from "../../platform/sse.js";
 
@@ -134,6 +138,45 @@ app.get("/:id", async (c) => {
  * columns — the JobRunner DO drains it asynchronously; poll the job (or
  * the matrix) for status.
  */
+/**
+ * Agent-authored cell results — the caller's own model reasons over the
+ * row's parsed text and posts answers; Seal grounds each quote against the
+ * stored text (ungrounded quotes collapse to not_found) and flips the
+ * matrix to ready once every cell resolves. Seal runs no inference here.
+ */
+app.patch("/:id/cells", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) {
+    return c.json({ error: "organization_required" }, 403);
+  }
+
+  const body = await c.req.json();
+  const parsed = ZReviewCellsWrite.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      { error: "validation_error", details: parsed.error.flatten() },
+      400
+    );
+  }
+
+  try {
+    const result = await writeReviewCells(
+      c.env,
+      organizationId,
+      c.req.param("id"),
+      parsed.data.cells,
+      parsed.data.model_used
+    );
+    return c.json(result);
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
 app.post("/:id/generate", async (c) => {
   const mcp = c.get("mcp");
   if (!mcpHasScope(mcp, "documents:write")) {
