@@ -1171,6 +1171,15 @@ app.openapi(uploadRouteDef, async (c) => {
     return c.json({ error: "Document not found" }, 404);
   }
 
+  // Seal-documents bucket is object-locked: a doc that already has content
+  // cannot be overwritten in place — a second upload must be a new document.
+  if (doc.storageKey) {
+    return c.json(
+      { error: "already_uploaded", message: "Document already has content — create a new draft to replace it." },
+      409
+    );
+  }
+
   const bytes = base64ToBytes(input.contentBase64);
   const contentType = input.contentType || "application/octet-stream";
 
