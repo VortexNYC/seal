@@ -63,7 +63,7 @@ app.post("/", async (c) => {
 
   const db = createD1(c.env.D1);
   try {
-    // Pack expansion — explicit columns/model override the pack's defaults.
+    // Pack expansion — explicit columns override the pack's defaults.
     let columns = parsed.data.columns;
     if (parsed.data.pack_id) {
       const pack = await getReviewPack(db, organizationId, parsed.data.pack_id);
