@@ -120,9 +120,9 @@ function ReviewMatrixPage() {
       title={matrix.title}
       description={`${matrix.rows.length} documents × ${matrix.columns.length} questions — ${doneCells} done, ${pendingCells} pending`}
       action={{
-        label: "New matrix",
-        icon: PlusIcon,
-        onClick: () => void navigate({ to: `/${slug}/reviews/new` }),
+        label: "Back to reviews",
+        icon: ArrowLeftIcon,
+        onClick: () => void navigate({ to: `/${slug}/reviews` }),
       }}
     >
       <div className="flex gap-6">
