@@ -11,12 +11,12 @@ async function collect(
   return out;
 }
 
-function fakeAi(run: (model: string, input: unknown) => unknown): {
-  run: (model: string, input: never) => Promise<never>;
-} {
+type FakeAi = Parameters<typeof createWorkersAiProvider>[0];
+
+function fakeAi(run: (model: string, input: unknown) => unknown): FakeAi {
   return {
     run: ((model: string, input: unknown) =>
-      Promise.resolve(run(model, input))) as never,
+      Promise.resolve(run(model, input))) as FakeAi["run"],
   };
 }
 
@@ -52,9 +52,10 @@ describe("workers-ai provider", () => {
   });
 
   it("forwards model + messages to the binding", async () => {
-    let seen: { model: string; input: unknown } | null = null;
+    const seen: { model?: string; input?: unknown } = {};
     const ai = fakeAi((model, input) => {
-      seen = { model, input };
+      seen.model = model;
+      seen.input = input;
       return sseStream(`data: {"response":"ok"}\n\ndata: [DONE]\n\n`);
     });
     const provider = createWorkersAiProvider(ai);
@@ -69,8 +70,8 @@ describe("workers-ai provider", () => {
         temperature: 0.2,
       })
     );
-    expect(seen?.model).toBe("@cf/meta/llama-3.1-8b-instruct");
-    const input = seen?.input as {
+    expect(seen.model).toBe("@cf/meta/llama-3.1-8b-instruct");
+    const input = seen.input as {
       messages: Array<{ role: string; content: string }>;
       max_tokens: number;
       temperature: number;
