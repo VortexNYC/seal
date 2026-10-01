@@ -234,6 +234,14 @@ export function DocumentCanvas({
     }
   }, []);
 
+  // Pages don't paint until the first zoom/layout event — request fit-width
+  // once the viewer is ready, and retry once on the first page event in case
+  // the ready call raced document load.
+  const fitRetriedRef = useRef(false);
+  useEffect(() => {
+    fitRetriedRef.current = false;
+  }, [src]);
+
   const handleReady = useCallback(
     (registry: unknown) => {
       registryRef.current = registry;
@@ -251,6 +259,7 @@ export function DocumentCanvas({
         setZoom(level);
         onZoomChangeRef.current?.(level);
       }
+      getZoomCapability(registry)?.requestZoom?.("fit-width");
     },
     [refreshPageBox]
   );
@@ -267,6 +276,10 @@ export function DocumentCanvas({
       setTotalPages(Math.max(1, event.totalPages));
       onPageChangeRef.current(event.pageNumber);
       refreshPageBox(event.pageNumber);
+      if (!fitRetriedRef.current) {
+        fitRetriedRef.current = true;
+        getZoomCapability(registryRef.current)?.requestZoom?.("fit-width");
+      }
     });
   }, [ready, refreshPageBox]);
 
