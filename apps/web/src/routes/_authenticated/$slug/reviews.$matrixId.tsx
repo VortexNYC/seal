@@ -4,6 +4,7 @@
  * Route: /{slug}/reviews/{matrixId}
  */
 
+import { Text } from "@cloudflare/kumo/components/text";
 import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
@@ -12,13 +13,7 @@ import { Select } from "@cloudflare/kumo/components/select";
 import { Table } from "@cloudflare/kumo/components/table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import {
-  CheckIcon,
-  FileTextIcon,
-  FilePenLineIcon,
-  ArrowLeftIcon,
-  XIcon,
-} from "lucide-react";
+import { ArrowLeft as ArrowLeftIcon, Check as CheckIcon, FileText as FileTextIcon, NotePencil as FilePenLineIcon, X as XIcon } from "@phosphor-icons/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
@@ -53,11 +48,11 @@ const FLAG_STYLES: Record<string, { label: string; cls: string }> = {
   green: { label: "green", cls: "bg-green-500" },
   amber: { label: "amber", cls: "bg-amber-500" },
   red: { label: "red", cls: "bg-red-500" },
-  grey: { label: "grey", cls: "bg-muted-foreground/40" },
+  grey: { label: "grey", cls: "bg-kumo-fill/40" },
 };
 
 const CELL_STATUS_DOT: Record<string, string> = {
-  pending: "bg-muted-foreground/20",
+  pending: "bg-kumo-fill/20",
   done: "",
   error: "bg-red-300",
 };
@@ -117,6 +112,7 @@ function ReviewMatrixPage() {
 
   return (
     <PageWrapper
+      bleed
       title={matrix.title}
       description={`${matrix.rows.length} documents × ${matrix.columns.length} questions — ${doneCells} done, ${pendingCells} pending`}
       action={{
@@ -153,10 +149,12 @@ function ReviewMatrixPage() {
                         : CELL_STATUS_DOT[cell.status];
                     return (
                       <Table.Cell key={col.index}>
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
+                          size="sm"
                           data-testid={`cell-${row.id}-${col.index}`}
-                          className="hover:bg-muted/60 flex min-h-8 w-full min-w-40 items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors"
+                          className="h-auto w-full min-w-40 justify-start"
                           onClick={() =>
                             setSelectedCell({ rowId: row.id, cell })
                           }
@@ -166,11 +164,11 @@ function ReviewMatrixPage() {
                             className={`inline-block size-2.5 shrink-0 rounded-full ${dot ?? ""}`}
                           />
                           {cell.summary ? (
-                            <span className="text-foreground line-clamp-2 text-xs leading-snug">
+                            <span className="text-kumo-default line-clamp-2 text-xs leading-snug">
                               {cell.summary}
                             </span>
                           ) : null}
-                        </button>
+                        </Button>
                       </Table.Cell>
                     );
                   })}
@@ -222,7 +220,7 @@ function CellDetail({
   return (
     <aside
       data-testid="cell-panel"
-      className="border-border w-80 shrink-0 rounded-lg border p-4"
+      className="border-kumo-line w-80 shrink-0 rounded-lg border p-4"
     >
       <div className="flex items-start justify-between gap-2">
         <div>
@@ -240,12 +238,12 @@ function CellDetail({
 
       <div className="mt-3 text-sm">
         <div className="font-medium">Summary</div>
-        <p className="text-muted-foreground mt-1">{cell.summary ?? "—"}</p>
+        <Text as="p" variant="secondary" DANGEROUS_className="mt-1">{cell.summary ?? "—"}</Text>
       </div>
       {cell.reasoning ? (
         <div className="mt-3 text-sm">
           <div className="font-medium">Reasoning</div>
-          <p className="text-muted-foreground mt-1">{cell.reasoning}</p>
+          <Text as="p" variant="secondary" DANGEROUS_className="mt-1">{cell.reasoning}</Text>
         </div>
       ) : null}
 
@@ -256,7 +254,7 @@ function CellDetail({
             <CitationRow key={i} citation={cit} slug={slug} />
           ))}
           {cell.citations.length === 0 ? (
-            <li className="text-muted-foreground text-xs">None</li>
+            <li className="text-kumo-secondary text-xs">None</li>
           ) : null}
         </ul>
       </div>
@@ -303,7 +301,7 @@ function CitationRow({
 }) {
   if (citation.quote === "not_found") {
     return (
-      <li className="text-muted-foreground text-xs italic">
+      <li className="text-kumo-secondary text-xs italic">
         not grounded in the document
       </li>
     );
@@ -313,12 +311,12 @@ function CitationRow({
       ? `${citation.page},${(citation.bbox.x * 100).toFixed(2)},${(citation.bbox.y * 100).toFixed(2)},${(citation.bbox.width * 100).toFixed(2)},${(citation.bbox.height * 100).toFixed(2)}`
       : undefined;
   return (
-    <li className="border-border rounded-md border p-2 text-xs">
-      <blockquote className="text-muted-foreground italic">
+    <li className="border-kumo-line rounded-md border p-2 text-xs">
+      <blockquote className="text-kumo-secondary italic">
         “{citation.quote}”
       </blockquote>
       {citation.page ? (
-        <div className="text-muted-foreground mt-1">
+        <div className="text-kumo-secondary mt-1">
           p. {citation.page}
           {hl ? (
             <>
@@ -328,7 +326,7 @@ function CitationRow({
                 to="/$slug/documents/$documentId"
                 params={{ slug, documentId: citation.documentId }}
                 search={{ hl }}
-                className="text-primary underline"
+                className="text-kumo-link underline"
               >
                 jump to highlight
               </Link>
@@ -510,15 +508,13 @@ function RevisionsRail({
 
   return (
     <section className="mt-8">
-      <h2 className="text-sm font-semibold">
-        Pending redlines ({pending.length})
-      </h2>
+      <Text as="h2" variant="heading">Pending redlines ({pending.length})</Text>
       {[...byDoc.entries()].map(([docId, revs]) => (
         <div
           key={docId}
-          className="border-border mt-3 flex items-center justify-between rounded-md border px-3 py-2"
+          className="border-kumo-line mt-3 flex items-center justify-between rounded-md border px-3 py-2"
         >
-          <span className="text-muted-foreground text-xs">
+          <span className="text-kumo-secondary text-xs">
             {revs.length} on {docId.slice(0, 8)}…
           </span>
           <div className="flex gap-1">
@@ -551,7 +547,7 @@ function RevisionsRail({
           <li
             key={rev.id}
             data-testid={`pending-revision-${rev.id}`}
-            className="border-border flex items-start justify-between gap-3 rounded-lg border p-3"
+            className="border-kumo-line flex items-start justify-between gap-3 rounded-lg border p-3"
           >
             <div className="min-w-0">
               <div className="flex items-center gap-2">
@@ -560,16 +556,14 @@ function RevisionsRail({
                   {rev.document_id.slice(0, 8)}…
                 </span>
               </div>
-              <blockquote className="text-muted-foreground mt-1 text-xs italic">
+              <blockquote className="text-kumo-secondary mt-1 text-xs italic">
                 “{rev.anchor_quote}”
               </blockquote>
               {rev.proposed_text ? (
-                <p className="mt-1 text-xs">→ {rev.proposed_text}</p>
+                <Text as="p" size="xs" DANGEROUS_className="mt-1">→ {rev.proposed_text}</Text>
               ) : null}
               {rev.rationale ? (
-                <p className="text-muted-foreground mt-1 text-xs">
-                  {rev.rationale}
-                </p>
+                <Text as="p" variant="secondary" size="xs" DANGEROUS_className="mt-1">{rev.rationale}</Text>
               ) : null}
             </div>
             <div className="flex shrink-0 gap-1">

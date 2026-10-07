@@ -18,6 +18,10 @@ import { z } from "zod";
 
 import { createD1 } from "../../global/db.js";
 import {
+  isEnvelopeClosed,
+  presentedWorkflowStatus,
+} from "../../platform/workflow-status.js";
+import {
   aiFieldSuggestions,
   documents,
   folders,
@@ -55,7 +59,11 @@ import { buildSigningInteraction } from "../../platform/interaction-session.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import { recordUsageEvent } from "../../platform/usage-events.js";
 import { emitWebhookEvent } from "../../platform/webhook-events.js";
-import { sendDocumentForSigning } from "../document-send.js";
+import {
+  bulkSendDocumentIds,
+  documentSigningPatch,
+  sendDocumentForSigning,
+} from "../document-send.js";
 import documentAgentRoutes from "./document-agent.js";
 import { materializeAnnotationsFromParsedText } from "./document-agent.js";
 import { createDownloadToken, verifyDownloadToken } from "./download-token.js";
@@ -262,7 +270,7 @@ function toApiDocument(
     public_id: (row as { publicId?: string }).publicId,
     title: row.name,
     ...(row.description ? { description: row.description } : {}),
-    status: row.status,
+    status: presentedWorkflowStatus(row.status),
     created_at: row.createdAt.toISOString(),
     updated_at: row.updatedAt.toISOString(),
     recipients_count: counts.total,
@@ -1035,6 +1043,9 @@ app.delete("/delete", async (c) => handleDeleteDocument(c));
 const sendDocumentBodySchema = z.object({
   notify: z.boolean().optional(),
   expires_in_days: z.number().int().positive().max(365).optional(),
+  message: z.string().optional(),
+  signing_mode: z.enum(["parallel", "sequential"]).optional(),
+  allow_dictate_next_signer: z.boolean().optional(),
 });
 
 async function handleSendDocument(
@@ -1101,6 +1112,18 @@ async function handleSendDocument(
   const expirationMs = parsedBody.data.expires_in_days
     ? parsedBody.data.expires_in_days * 24 * 60 * 60 * 1000
     : undefined;
+  const signingPatch = documentSigningPatch({
+    signingMode: parsedBody.data.signing_mode,
+    allowDictateNextSigner: parsedBody.data.allow_dictate_next_signer,
+  });
+  if (signingPatch) {
+    await db
+      .update(documents)
+      .set({ ...signingPatch, updatedAt: new Date() })
+      .where(
+        and(eq(documents.id, id), eq(documents.organizationId, organizationId))
+      );
+  }
 
   const orgRows = await db
     .select({ name: organization.name })
@@ -1118,6 +1141,7 @@ async function handleSendDocument(
     documentName: row.name,
     senderName,
     expirationMs,
+    defaultMessage: parsedBody.data.message,
     notify,
   });
 
@@ -1225,13 +1249,13 @@ async function handleVoidDocument(
   if (!row) {
     return c.json({ error: "not_found" }, 404);
   }
-  if (row.status === "completed" || row.status === "voided") {
+  if (row.status === "completed" || isEnvelopeClosed(row.status)) {
     return c.json({ error: "document_cannot_be_voided" }, 400);
   }
 
   await db
     .update(documents)
-    .set({ status: "voided" })
+    .set({ status: "cancelled" })
     .where(
       and(eq(documents.id, id), eq(documents.organizationId, organizationId))
     );
@@ -1440,7 +1464,7 @@ app.post("/bulk-void", async (c) => {
       if (!row) {
         return { id, success: false, error: "Document not found" };
       }
-      if (row.status === "completed" || row.status === "voided") {
+      if (row.status === "completed" || isEnvelopeClosed(row.status)) {
         return {
           id,
           success: false,
@@ -1450,7 +1474,7 @@ app.post("/bulk-void", async (c) => {
 
       await db
         .update(documents)
-        .set({ status: "voided" })
+        .set({ status: "cancelled" })
         .where(
           and(
             eq(documents.id, id),
@@ -1496,7 +1520,8 @@ app.post("/bulk-void", async (c) => {
 });
 
 const bulkSendSchema = z.object({
-  document_ids: z.array(z.string()).max(50),
+  document_ids: z.array(z.string()).max(50).optional(),
+  ids: z.array(z.string()).max(50).optional(),
   message: z.string().optional(),
 });
 
@@ -1517,17 +1542,27 @@ app.post("/bulk-send", async (c) => {
     return c.json({ error: "validation_error" }, 400);
   }
 
-  const { document_ids } = parsed.data;
+  const documentIds = bulkSendDocumentIds(parsed.data);
+  if (!documentIds) {
+    return c.json({ error: "validation_error" }, 400);
+  }
   const db = createD1(c.env.D1);
 
   const actor = getAuditActor({ mcp: c.get("mcp") });
+  const orgRows = await db
+    .select({ name: organization.name })
+    .from(organization)
+    .where(eq(organization.id, organizationId))
+    .limit(1);
+  const senderName = orgRows[0]?.name ?? "your team";
 
   const results = await Promise.all(
-    document_ids.map(async (id) => {
+    documentIds.map(async (id) => {
       const rows = await db
         .select({
           id: documents.id,
           publicId: documents.publicId,
+          name: documents.name,
           status: documents.status,
         })
         .from(documents)
@@ -1560,29 +1595,51 @@ app.post("/bulk-send", async (c) => {
         return { id, success: false, error: "Document has no recipients" };
       }
 
-      await db
-        .update(documents)
-        .set({ status: "sent", sentAt: new Date() })
-        .where(
-          and(
-            eq(documents.id, id),
-            eq(documents.organizationId, organizationId)
-          )
-        );
+      try {
+        const { sentAt, recipients: sentRecipients } =
+          await sendDocumentForSigning(db, c.env, {
+            documentId: id,
+            documentName: row.name,
+            senderName,
+            defaultMessage: parsed.data.message,
+          });
 
-      if (actor) {
-        await writeAuditLog(db, {
+        await recordUsageEvent(db, {
           organizationId,
-          actor,
-          action: "document.sent",
-          resourceType: "document",
-          resourceId: row.id,
-          metadata: {
-            publicId: row.publicId,
-            recipientCount: recipientRows.length,
-          },
-          ...getAuditRequestMeta(c),
+          eventType: "document.sent",
+          metadata: { documentId: row.id, publicId: row.publicId },
         });
+
+        if (actor) {
+          await writeAuditLog(db, {
+            organizationId,
+            actor,
+            action: "document.sent",
+            resourceType: "document",
+            resourceId: row.id,
+            metadata: {
+              publicId: row.publicId,
+              recipientCount: sentRecipients.length,
+            },
+            ...getAuditRequestMeta(c),
+          });
+        }
+
+        await emitWebhookEvent(c.env, {
+          organizationId,
+          eventType: "document.sent",
+          payload: {
+            documentId: row.id,
+            publicId: row.publicId,
+            name: row.name,
+            sentAt: sentAt.getTime(),
+          },
+        }).catch((err) => {
+          console.error("[webhooks] document.sent emit failed:", err);
+        });
+      } catch (err) {
+        console.error("[bulk-send] document send failed:", err);
+        return { id, success: false, error: "Could not send this document" };
       }
 
       return { id, success: true };

@@ -1,3 +1,4 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
 import { FloppyDisk } from "@phosphor-icons/react";
@@ -13,7 +14,7 @@ import { useEffect, useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { SettingsBody } from "@/components/settings-body";
-import { FormSkeleton } from "@/components/skeletons";
+import { FormSkeleton, PageFormSkeleton } from "@/components/skeletons";
 import { useOrganization } from "@/hooks/use-organization";
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { pageSEO } from "@/lib/seo";
@@ -21,7 +22,7 @@ import { toast } from "@/lib/toast";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/")({
   component: GeneralSettings,
-  pendingComponent: FormSkeleton,
+  pendingComponent: () => <PageFormSkeleton title="General Settings" />,
   head: () => ({
     meta: [
       { title: pageSEO.settings.title },
@@ -152,7 +153,7 @@ function GeneralSettingsContent() {
 
   return (
     <PageWrapper title="General Settings">
-      <SettingsBody wide>
+      <SettingsBody>
         <div className="flex flex-col gap-5">
           {organization && (
             <OrganizationProfile
@@ -177,12 +178,8 @@ function GeneralSettingsContent() {
 
           <section className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
-              <h2 className="text-base font-semibold tracking-tight">
-                Regional defaults
-              </h2>
-              <p className="text-muted-foreground text-sm">
-                Product defaults for documents and payments in this workspace.
-              </p>
+              <Text as="h2" variant="heading">Regional defaults</Text>
+              <Text as="p" variant="secondary" size="sm">Product defaults for documents and payments in this workspace.</Text>
             </div>
             <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-3">
               <Input
@@ -225,8 +222,7 @@ function GeneralSettingsContent() {
                 disabled={!isAdmin}
               />
               <div className="flex justify-end md:col-span-3">
-                <Button type="submit" disabled={!isAdmin || isSubmitting}>
-                  <FloppyDisk className="mr-2 h-4 w-4" />
+                <Button type="submit" disabled={!isAdmin || isSubmitting} icon={FloppyDisk}>
                   {isSubmitting ? "Saving…" : "Save workspace settings"}
                 </Button>
               </div>

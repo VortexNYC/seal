@@ -1,3 +1,4 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
 import { DatePicker } from "@cloudflare/kumo/components/date-picker";
@@ -5,7 +6,8 @@ import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { DropdownMenu } from "@cloudflare/kumo/components/dropdown";
 import { Empty } from "@cloudflare/kumo/components/empty";
 import { Input } from "@cloudflare/kumo/components/input";
-import { SkeletonLine } from "@cloudflare/kumo/components/loader";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Loader, SkeletonLine } from "@cloudflare/kumo/components/loader";
 import { Popover } from "@cloudflare/kumo/components/popover";
 import { Table } from "@cloudflare/kumo/components/table";
 import { Tooltip } from "@cloudflare/kumo/components/tooltip";
@@ -21,31 +23,7 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 import Fuse, { type FuseResultMatch } from "fuse.js";
-import {
-  ArrowDownIcon,
-  ArrowRightLeftIcon,
-  ArrowUpIcon,
-  BanIcon,
-  CalendarIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  DownloadIcon,
-  FileIcon,
-  FileTextIcon,
-  FolderIcon,
-  LayoutGridIcon,
-  LayoutListIcon,
-  Loader2Icon,
-  FolderInputIcon,
-  MoreVerticalIcon,
-  SearchIcon,
-  SendIcon,
-  SparklesIcon,
-  Share2Icon,
-  TrashIcon,
-  UploadIcon,
-  XIcon,
-} from "lucide-react";
+import { ArrowDown as ArrowDownIcon, ArrowsLeftRight as ArrowRightLeftIcon, ArrowUp as ArrowUpIcon, Calendar as CalendarIcon, CaretLeft as ChevronLeftIcon, CaretRight as ChevronRightIcon, DotsThreeVertical as MoreVerticalIcon, DownloadSimple as DownloadIcon, File as FileIcon, FileText as FileTextIcon, Folder as FolderIcon, FolderSimple as FolderInputIcon, List as LayoutListIcon, MagnifyingGlass as SearchIcon, PaperPlaneTilt as SendIcon, Prohibit as BanIcon, ShareNetwork as Share2Icon, Sparkle as SparklesIcon, SquaresFour as LayoutGridIcon, Trash as TrashIcon, UploadSimple as UploadIcon, X as XIcon } from "@phosphor-icons/react";
 import {
   Suspense,
   useCallback,
@@ -84,8 +62,11 @@ import {
   type ApiFolder,
 } from "@/lib/api-client";
 import {
+  listRowDate,
+  signerProgressLine,
   toWorkflowStatus,
   type DocumentWorkflowStatus,
+  type SigningProgress,
 } from "@/lib/document-status";
 import { pageSEO } from "@/lib/seo";
 import { toast } from "@/lib/toast";
@@ -180,7 +161,7 @@ function HighlightedText({
     }
     // Add highlighted matching text
     parts.push(
-      <mark key={`${start}-${end}`} className="bg-warning/30 rounded px-0.5">
+      <mark key={`${start}-${end}`} className="bg-kumo-warning/30 rounded px-0.5">
         {text.slice(start, end + 1)}
       </mark>
     );
@@ -233,6 +214,10 @@ type DocumentListItem = {
   readonly thumbnailDataUrl?: string;
   readonly pageCount?: number;
   readonly createdAt: number;
+  readonly sentAt?: number | null;
+  readonly deadline?: number | null;
+  readonly progress?: SigningProgress | null;
+  readonly activityAt: number;
   readonly fileSize: number;
   readonly workflowStatus?: DocumentWorkflowStatus;
   readonly aiProcessingStatus?: string;
@@ -408,7 +393,7 @@ function documentSortValue(
   sortField: SortField
 ): number {
   if (sortField === "name") return a.name.localeCompare(b.name);
-  if (sortField === "createdAt") return a.createdAt - b.createdAt;
+  if (sortField === "createdAt") return a.activityAt - b.activityAt;
   return (a.workflowStatus ?? "draft").localeCompare(
     b.workflowStatus ?? "draft"
   );
@@ -451,31 +436,25 @@ function FolderTableRow({
   return (
     <Table.Row
       key={folder._id}
-      className="hover:bg-muted/50 cursor-pointer"
+      className="hover:bg-kumo-elevated/50 cursor-pointer"
       onClick={() => onFolderNavigate(folder._id)}
     >
-      <Table.Cell>
-        <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-md sm:h-12 sm:w-15">
-          <FolderIcon className="text-muted-foreground h-5 w-5" />
-        </div>
-      </Table.Cell>
       <Table.Cell className="max-w-sheet">
-        <p className="truncate font-medium" title={folder.name}>
+        <p className="flex items-center gap-2 truncate font-medium" title={folder.name}>
+          <FolderIcon className="text-kumo-secondary h-4 w-4 shrink-0" />
           {folder.name}
         </p>
-        <p className="text-muted-foreground text-xs">Folder</p>
+        <Text as="p" variant="secondary" size="xs">Folder</Text>
       </Table.Cell>
-      <Table.Cell className="hidden sm:table-cell">
-        <div className="text-sm">
-          <p>{formatDate(folder.createdAt)}</p>
-        </div>
+      <Table.Cell className="hidden whitespace-nowrap sm:table-cell">
+        <p className="text-sm">{formatDate(folder.createdAt)}</p>
       </Table.Cell>
-      <Table.Cell>
-        <Badge variant="outline" className="text-xs">
+      <Table.Cell className="whitespace-nowrap">
+        <Badge variant="outline" className="px-3.5 py-1.5 text-base">
           Folder
         </Badge>
       </Table.Cell>
-      <Table.Cell className="text-right" />
+      <Table.Cell className="w-14" />
     </Table.Row>
   );
 }
@@ -496,7 +475,7 @@ function DocumentTableRow({
     <Table.Row
       key={doc._id}
       data-testid="document-row"
-      className="hover:bg-muted/50 relative cursor-pointer"
+      className="hover:bg-kumo-elevated/50 relative cursor-pointer"
     >
       <Table.Cell className="relative">
         <Link
@@ -506,27 +485,10 @@ function DocumentTableRow({
           aria-label={`Open ${doc.name}`}
         />
         <div className="pointer-events-none relative z-1">
-          <DocumentThumbnail
-            organizationSlug={slug}
-            publicId={doc._id}
-            thumbnailDataUrl={doc.thumbnailDataUrl}
-            name={doc.name}
-          />
-        </div>
-      </Table.Cell>
-      <Table.Cell className="relative">
-        <Link
-          to="/$slug/documents/$documentId"
-          params={{ slug, documentId: doc._id }}
-          className="absolute inset-0 z-0"
-          tabIndex={-1}
-          aria-hidden
-        />
-        <div className="pointer-events-none relative z-1">
           <DocumentSummary doc={doc} matches={matches} />
         </div>
       </Table.Cell>
-      <Table.Cell className="relative hidden sm:table-cell">
+      <Table.Cell className="relative hidden whitespace-nowrap sm:table-cell">
         <Link
           to="/$slug/documents/$documentId"
           params={{ slug, documentId: doc._id }}
@@ -535,11 +497,10 @@ function DocumentTableRow({
           aria-hidden
         />
         <div className="pointer-events-none relative z-1 text-sm">
-          <p>{formatDate(doc.createdAt)}</p>
-          <p className="text-muted-foreground">{formatBytes(doc.fileSize)}</p>
+          <DocumentListDate doc={doc} />
         </div>
       </Table.Cell>
-      <Table.Cell className="relative">
+      <Table.Cell className="relative whitespace-nowrap">
         <Link
           to="/$slug/documents/$documentId"
           params={{ slug, documentId: doc._id }}
@@ -552,14 +513,16 @@ function DocumentTableRow({
           <DocumentAiStatus status={doc.aiProcessingStatus} tooltip />
         </div>
       </Table.Cell>
-      <Table.Cell className="relative z-1 text-right">
-        <DocumentActionsMenu
-          actions={actions}
-          delegateOwnership={delegateOwnership}
-          doc={doc}
-          includeExpiredSend
-          includeTransferOwnership
-        />
+      <Table.Cell className="relative z-1 w-14">
+        <div className="flex justify-end">
+          <DocumentActionsMenu
+            actions={actions}
+            delegateOwnership={delegateOwnership}
+            doc={doc}
+            includeExpiredSend
+            includeTransferOwnership
+          />
+        </div>
       </Table.Cell>
     </Table.Row>
   );
@@ -572,13 +535,28 @@ function DocumentSummary({
   readonly doc: DocumentListItem;
   readonly matches: readonly FuseResultMatch[] | undefined;
 }) {
+  const progress = signerProgressLine(doc.workflowStatus, doc.progress);
+  const pages =
+    doc.pageCount !== undefined && doc.pageCount > 0
+      ? `${doc.pageCount} ${doc.pageCount === 1 ? "page" : "pages"}`
+      : null;
   return (
-    <div>
-      <p className="font-medium">
+    <div className="min-w-0">
+      <p className="truncate font-medium">
         <HighlightedText text={doc.name} matches={matches} fieldKey="name" />
+        {pages ? (
+          <Text as="span" variant="secondary" size="xs">
+            {` · ${pages}`}
+          </Text>
+        ) : null}
       </p>
+      {progress ? (
+        <Text as="p" variant="secondary" size="sm" DANGEROUS_className="truncate">
+          {progress}
+        </Text>
+      ) : null}
       {doc.description && (
-        <p className="text-muted-foreground line-clamp-1 text-sm">
+        <p className="text-kumo-secondary line-clamp-1 text-sm">
           <HighlightedText
             text={doc.description}
             matches={matches}
@@ -586,12 +564,35 @@ function DocumentSummary({
           />
         </p>
       )}
-      {doc.pageCount !== undefined && doc.pageCount > 0 && (
-        <p className="text-muted-foreground mt-1 text-xs">
-          {doc.pageCount} {doc.pageCount === 1 ? "page" : "pages"}
-        </p>
-      )}
     </div>
+  );
+}
+
+function DocumentListDate({ doc }: { readonly doc: DocumentListItem }) {
+  const date = listRowDate({
+    status: doc.workflowStatus,
+    createdAt: doc.createdAt,
+    sentAt: doc.sentAt,
+    deadline: doc.deadline,
+    now: Date.now(),
+  });
+  return (
+    <>
+      <p>{date.sent ? `Sent ${formatDate(date.at)}` : formatDate(date.at)}</p>
+      {date.dueAt ? (
+        <Text
+          as="p"
+          variant={date.overdue ? "error" : "secondary"}
+          size="xs"
+        >
+          {`Due ${formatDate(date.dueAt)}`}
+        </Text>
+      ) : date.sent ? null : (
+        <Text as="p" variant="secondary" size="xs">
+          {formatBytes(doc.fileSize)}
+        </Text>
+      )}
+    </>
   );
 }
 
@@ -603,25 +604,17 @@ function FolderGridCard({
   readonly onFolderNavigate: (folderId?: string) => void;
 }) {
   return (
-    <button
-      type="button"
-      key={folder._id}
-      className="border-border bg-card hover:bg-muted/40 flex cursor-pointer flex-col overflow-hidden rounded-xl border text-left transition-colors"
-      onClick={() => onFolderNavigate(folder._id)}
-    >
-      <div className="bg-muted flex h-32 w-full items-center justify-center border-b">
-        <FolderIcon className="text-muted-foreground h-10 w-10" />
-      </div>
-      <div className="flex flex-col gap-0.5 p-3">
-        <h3
-          className="line-clamp-2 text-sm font-medium break-all"
-          title={folder.name}
-        >
-          {folder.name}
-        </h3>
-        <p className="text-muted-foreground text-xs">Folder</p>
-      </div>
-    </button>
+    <LayerCard key={folder._id}>
+      <Button
+        type="button"
+        variant="ghost"
+        className="h-auto w-full justify-start"
+        icon={FolderIcon}
+        onClick={() => onFolderNavigate(folder._id)}
+      >
+        {folder.name}
+      </Button>
+    </LayerCard>
   );
 }
 
@@ -638,7 +631,7 @@ function DocumentGridCard({
   return (
     <div
       key={doc._id}
-      className="border-border bg-card relative flex flex-col overflow-hidden rounded-xl border transition-shadow hover:shadow-md"
+      className="border-kumo-line bg-kumo-base relative flex flex-col overflow-hidden rounded-xl border transition-shadow hover:shadow-md"
     >
       <Link
         to="/$slug/documents/$documentId"
@@ -646,7 +639,7 @@ function DocumentGridCard({
         className="absolute inset-0 z-0"
         aria-label={`Open ${doc.name}`}
       />
-      <div className="bg-muted pointer-events-none relative z-1 h-36 w-full overflow-hidden border-b">
+      <div className="bg-kumo-elevated pointer-events-none relative z-1 h-36 w-full overflow-hidden border-b">
         <DocumentThumbnail
           organizationSlug={slug}
           publicId={doc._id}
@@ -658,7 +651,7 @@ function DocumentGridCard({
       <div className="relative z-1 flex flex-col gap-2 p-3">
         <GridCardHeader actions={actions} doc={doc} matches={matches} />
         {doc.description ? (
-          <p className="text-muted-foreground pointer-events-none line-clamp-2 text-xs">
+          <p className="text-kumo-secondary pointer-events-none line-clamp-2 text-xs">
             <HighlightedText
               text={doc.description}
               matches={matches}
@@ -684,10 +677,14 @@ function GridCardHeader({
   return (
     <div className="flex items-start justify-between">
       <div className="pointer-events-none flex min-w-0 flex-1 items-start gap-2">
-        <FileIcon className="text-muted-foreground h-5 w-5" />
-        <h3 className="line-clamp-2 text-base leading-5 break-all">
+        <FileIcon className="text-kumo-secondary h-5 w-5" />
+        <Text
+          as="h3"
+          size="sm"
+          DANGEROUS_className="line-clamp-2 break-all"
+        >
           <HighlightedText text={doc.name} matches={matches} fieldKey="name" />
-        </h3>
+        </Text>
       </div>
       <div className="relative z-2">
         <DocumentActionsMenu actions={actions} doc={doc} />
@@ -697,12 +694,34 @@ function GridCardHeader({
 }
 
 function DocumentGridMetadata({ doc }: { readonly doc: DocumentListItem }) {
+  const progress = signerProgressLine(doc.workflowStatus, doc.progress);
+  const date = listRowDate({
+    status: doc.workflowStatus,
+    createdAt: doc.createdAt,
+    sentAt: doc.sentAt,
+    deadline: doc.deadline,
+    now: Date.now(),
+  });
   return (
-    <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+    <div className="text-kumo-secondary flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
       <WorkflowStatusBadge status={doc.workflowStatus} />
       <DocumentAiStatus status={doc.aiProcessingStatus} />
+      {progress ? (
+        <>
+          <span aria-hidden>·</span>
+          <span>{progress}</span>
+        </>
+      ) : null}
       <span aria-hidden>·</span>
-      <span>{formatDate(doc.createdAt)}</span>
+      <span>{date.sent ? `Sent ${formatDate(date.at)}` : formatDate(date.at)}</span>
+      {date.dueAt ? (
+        <>
+          <span aria-hidden>·</span>
+          <span className={date.overdue ? "text-kumo-danger" : undefined}>
+            {`Due ${formatDate(date.dueAt)}`}
+          </span>
+        </>
+      ) : null}
       <span aria-hidden>·</span>
       <span>{formatBytes(doc.fileSize)}</span>
     </div>
@@ -722,10 +741,10 @@ function DocumentAiStatus({
         content="Analyzing document"
         render={<span className="inline-flex" />}
       >
-        <Loader2Icon className="text-ai-accent h-3 w-3 animate-spin" />
+        <Loader size="sm" className="text-kumo-brand" />
       </Tooltip>
     ) : (
-      <Loader2Icon className="text-ai-accent h-3 w-3 animate-spin" />
+      <Loader size="sm" className="text-kumo-brand" />
     );
   }
   if (status !== "completed") return null;
@@ -734,10 +753,10 @@ function DocumentAiStatus({
       content="Analysis complete"
       render={<span className="inline-flex" />}
     >
-      <SparklesIcon className="text-ai-accent h-3 w-3" />
+      <SparklesIcon className="text-kumo-brand h-3 w-3" />
     </Tooltip>
   ) : (
-    <SparklesIcon className="text-ai-accent h-3 w-3" />
+    <SparklesIcon className="text-kumo-brand h-3 w-3" />
   );
 }
 
@@ -768,23 +787,20 @@ function DocumentActionsMenu({
           shape="square"
           size="sm"
           aria-label={`Document actions for ${doc.name}`}
-          className="h-8 w-8 shrink-0"
+          className="shrink-0"
           onClick={(event) => event.stopPropagation()}
-        >
-          <MoreVerticalIcon className="h-4 w-4" />
-        </Button>
+          icon={MoreVerticalIcon}
+        />
       </DropdownMenu.Trigger>
       <DropdownMenu.Content
         align="end"
         onClick={(event) => event.stopPropagation()}
       >
-        <DropdownMenu.Item onClick={() => actions.openDocument(doc._id)}>
-          <FileTextIcon className="mr-2 h-4 w-4" />
+        <DropdownMenu.Item onClick={() => actions.openDocument(doc._id)} icon={FileTextIcon}>
           Open
         </DropdownMenu.Item>
         {canSend && (
-          <DropdownMenu.Item onClick={() => actions.sendDocument(doc._id)}>
-            <SendIcon className="mr-2 h-4 w-4" />
+          <DropdownMenu.Item onClick={() => actions.sendDocument(doc._id)} icon={SendIcon}>
             {workflowStatus === "expired"
               ? "Re-send Document"
               : "Send Document"}
@@ -794,36 +810,30 @@ function DocumentActionsMenu({
           <DropdownMenu.Item
             onClick={() => actions.cancelDocument(doc._id)}
             variant="danger"
-          >
-            <BanIcon className="mr-2 h-4 w-4" />
+           icon={BanIcon}>
             Cancel Document
           </DropdownMenu.Item>
         )}
-        <DropdownMenu.Item onClick={() => actions.downloadDocument(doc._id)}>
-          <DownloadIcon className="mr-2 h-4 w-4" />
+        <DropdownMenu.Item onClick={() => actions.downloadDocument(doc._id)} icon={DownloadIcon}>
           Download
         </DropdownMenu.Item>
         <DropdownMenu.Item
           onClick={() => actions.shareDocument(doc._id, doc.name)}
-        >
-          <Share2Icon className="mr-2 h-4 w-4" />
+         icon={Share2Icon}>
           Share
         </DropdownMenu.Item>
-        <DropdownMenu.Item onClick={() => actions.moveToFolder(doc._id)}>
-          <FolderInputIcon className="mr-2 h-4 w-4" />
+        <DropdownMenu.Item onClick={() => actions.moveToFolder(doc._id)} icon={FolderInputIcon}>
           Move to Folder
         </DropdownMenu.Item>
         {includeTransferOwnership && delegateOwnership && (
-          <DropdownMenu.Item onClick={() => actions.transferOwnership(doc)}>
-            <ArrowRightLeftIcon className="mr-2 h-4 w-4" />
+          <DropdownMenu.Item onClick={() => actions.transferOwnership(doc)} icon={ArrowRightLeftIcon}>
             Transfer Ownership
           </DropdownMenu.Item>
         )}
         <DropdownMenu.Item
           onClick={() => actions.deleteDocument(doc._id)}
           variant="danger"
-        >
-          <TrashIcon className="mr-2 h-4 w-4" />
+         icon={TrashIcon}>
           Delete
         </DropdownMenu.Item>
       </DropdownMenu.Content>
@@ -832,6 +842,14 @@ function DocumentActionsMenu({
 }
 
 function toDocumentListItem(doc: ApiDocument): DocumentListItem {
+  const workflowStatus = toWorkflowStatus(doc.workflowStatus);
+  const date = listRowDate({
+    status: workflowStatus,
+    createdAt: doc.createdAt,
+    sentAt: doc.sentAt,
+    deadline: doc.deadline,
+    now: Date.now(),
+  });
   return {
     _id: doc.publicId,
     name: doc.name,
@@ -840,8 +858,12 @@ function toDocumentListItem(doc: ApiDocument): DocumentListItem {
     thumbnailDataUrl: doc.thumbnailDataUrl ?? undefined,
     pageCount: doc.pageCount ?? undefined,
     createdAt: doc.createdAt,
+    sentAt: doc.sentAt,
+    deadline: doc.deadline,
+    progress: doc.progress,
+    activityAt: date.at,
     fileSize: doc.fileSize ?? doc.size ?? 0,
-    workflowStatus: toWorkflowStatus(doc.workflowStatus),
+    workflowStatus,
     aiProcessingStatus: doc.aiProcessingStatus ?? undefined,
     sharingMode: doc.sharingMode,
     ownerId: doc.ownerId,
@@ -1065,20 +1087,20 @@ function DocumentsEmptyState({
     >
       {hasFiltersOrSearch ? (
         <Empty
-          icon={<SearchIcon size={48} />}
+          icon={<SearchIcon size={24} />}
           title="No documents found"
           description="Try adjusting your search or filters to find what you're looking for."
         />
       ) : (
         <Empty
-          icon={<FileTextIcon size={48} />}
+          icon={<FileTextIcon size={24} />}
           title="Send your first document"
           description="Upload a PDF, add people, place fields, send. About a minute."
           contents={
             <Button
               onClick={onUploadClick}
               variant="primary"
-              icon={<UploadIcon className="h-4 w-4" />}
+              icon={UploadIcon}
             >
               Upload PDF
             </Button>
@@ -1109,12 +1131,11 @@ function DocumentsTable({
   readonly sortField: SortField;
 }) {
   return (
-    <div className="overflow-x-auto rounded-lg border">
-      <Table className="min-w-150">
+    <div className="max-w-4xl overflow-x-auto rounded-lg border">
+      <Table className="table-fixed">
         <Table.Header>
           <Table.Row>
-            <Table.Head className="w-20 sm:w-25">Thumbnail</Table.Head>
-            <Table.Head>
+            <Table.Head className="w-[28rem]">
               <SortHeader
                 field="name"
                 label="Title"
@@ -1123,16 +1144,16 @@ function DocumentsTable({
                 sortField={sortField}
               />
             </Table.Head>
-            <Table.Head className="hidden sm:table-cell">
+            <Table.Head className="hidden w-[16rem] sm:table-cell">
               <SortHeader
                 field="createdAt"
-                label="Upload Date"
+                label="Date"
                 onSortChange={onSortChange}
                 sortDirection={sortDirection}
                 sortField={sortField}
               />
             </Table.Head>
-            <Table.Head>
+            <Table.Head className="w-40">
               <SortHeader
                 field="workflowStatus"
                 label="Status"
@@ -1141,7 +1162,9 @@ function DocumentsTable({
                 sortField={sortField}
               />
             </Table.Head>
-            <Table.Head className="text-right">Actions</Table.Head>
+            <Table.Head className="w-14">
+              <span className="sr-only">Menu</span>
+            </Table.Head>
           </Table.Row>
         </Table.Header>
         <Table.Body>
@@ -1198,7 +1221,7 @@ function DocumentsFinder({
   ];
 
   return (
-    <div className="border-border bg-card rounded-xl border">
+    <div className="border-kumo-line bg-kumo-base rounded-xl border">
       <FileSystem
         items={items}
         view="icons"
@@ -1249,7 +1272,7 @@ function DocumentsPagination({ data }: { readonly data: DocumentsListData }) {
   return (
     <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
       <p
-        className="text-muted-foreground text-center text-sm sm:text-left"
+        className="text-kumo-secondary text-center text-sm sm:text-left"
         aria-live="polite"
       >
         Showing {(data.currentPage - 1) * DOCUMENTS_PER_PAGE + 1} to{" "}
@@ -1265,9 +1288,8 @@ function DocumentsPagination({ data }: { readonly data: DocumentsListData }) {
           size="sm"
           onClick={() => data.setCurrentPage((prev) => Math.max(1, prev - 1))}
           disabled={data.currentPage === 1}
-          className="min-h-11 min-w-11 sm:min-h-0 sm:min-w-0"
+          icon={ChevronLeftIcon}
         >
-          <ChevronLeftIcon className="h-4 w-4" />
           <span className="hidden sm:inline">Previous</span>
         </Button>
         <div className="flex items-center gap-1">
@@ -1278,7 +1300,6 @@ function DocumentsPagination({ data }: { readonly data: DocumentsListData }) {
                 variant={page === data.currentPage ? "primary" : "outline"}
                 size="sm"
                 onClick={() => data.setCurrentPage(page)}
-                className="min-h-11 min-w-11 p-0 sm:h-8 sm:min-h-0 sm:min-w-8"
               >
                 {page}
               </Button>
@@ -1292,10 +1313,9 @@ function DocumentsPagination({ data }: { readonly data: DocumentsListData }) {
             data.setCurrentPage((prev) => Math.min(data.totalPages, prev + 1))
           }
           disabled={data.currentPage === data.totalPages}
-          className="min-h-11 min-w-11 sm:min-h-0 sm:min-w-0"
+          icon={ChevronRightIcon}
         >
           <span className="hidden sm:inline">Next</span>
-          <ChevronRightIcon className="h-4 w-4" />
         </Button>
       </div>
     </div>
@@ -1313,15 +1333,17 @@ function SortHeader({
     <Button
       variant="ghost"
       onClick={() => onSortChange(field)}
-      className="h-auto p-0 hover:bg-transparent"
+      size="sm"
+      className="-ml-2"
+      icon={
+        sortField === field
+          ? sortDirection === "asc"
+            ? ArrowUpIcon
+            : ArrowDownIcon
+          : undefined
+      }
     >
-      <span className="font-medium">{label}</span>
-      {sortField === field &&
-        (sortDirection === "asc" ? (
-          <ArrowUpIcon className="ml-2 h-4 w-4" />
-        ) : (
-          <ArrowDownIcon className="ml-2 h-4 w-4" />
-        ))}
+      {label}
     </Button>
   );
 }
@@ -1683,11 +1705,11 @@ function DocumentsPage() {
       }
     >
       {/* Cap: intentional reading width — not a full-bleed ocean */}
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+      <div className="flex w-full flex-col gap-4">
         {/* SEA-99: flat toolbar — no nested filter cards */}
         <div className="flex flex-col gap-3">
           <div className="relative">
-            <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+            <SearchIcon className="text-kumo-secondary absolute top-1/2 left-3 size-4 -translate-y-1/2" />
             <Input
               type="text"
               aria-label="Search documents by name or description"
@@ -1735,42 +1757,36 @@ function DocumentsPage() {
                 Shared
               </Button>
             </div>
-            <div className="bg-muted/40 flex items-center gap-0.5 rounded-md p-0.5">
+            <div className="bg-kumo-elevated/40 flex items-center gap-0.5 rounded-md p-0.5">
               <Button
                 variant={viewMode === "table" ? "primary" : "ghost"}
                 shape="square"
                 size="sm"
-                className="size-8"
                 aria-label="Table view"
+                icon={LayoutListIcon}
                 onClick={() => setViewMode("table")}
-              >
-                <LayoutListIcon className="size-4" />
-              </Button>
+              />
               <Button
                 variant={viewMode === "grid" ? "primary" : "ghost"}
                 shape="square"
                 size="sm"
-                className="size-8"
                 aria-label="Grid view"
+                icon={LayoutGridIcon}
                 onClick={() => setViewMode("grid")}
-              >
-                <LayoutGridIcon className="size-4" />
-              </Button>
+              />
               <Button
                 variant={viewMode === "finder" ? "primary" : "ghost"}
                 shape="square"
                 size="sm"
-                className="size-8"
                 aria-label="Finder view"
+                icon={FolderIcon}
                 onClick={() => setViewMode("finder")}
-              >
-                <FolderIcon className="size-4" />
-              </Button>
+              />
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+            <span className="text-kumo-secondary text-xs font-medium tracking-wide uppercase">
               Status
             </span>
             {(
@@ -1801,7 +1817,7 @@ function DocumentsPage() {
                     <Button
                       variant={dateRange?.from ? "primary" : "outline"}
                       size="sm"
-                      className="min-h-9 w-full gap-2 sm:w-auto"
+                      className="w-full sm:w-auto"
                     >
                       <CalendarIcon className="size-4" />
                       {dateRange?.from ? (
@@ -1867,29 +1883,33 @@ function DocumentsPage() {
             workflowStatusFilter !== "all" ||
             dateRange?.from) && (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-muted-foreground text-xs">Active</span>
+              <span className="text-kumo-secondary text-xs">Active</span>
               {searchQuery.trim() && (
                 <Badge variant="secondary" className="gap-1 pl-2">
                   Search: "{searchQuery}"
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
+                    shape="square"
+                    icon={XIcon}
+                    aria-label="Clear search"
                     onClick={() => setSearchQuery("")}
-                    className="hover:bg-muted ml-1 rounded-full p-0.5"
-                  >
-                    <XIcon className="h-3 w-3" />
-                  </button>
+                  />
                 </Badge>
               )}
               {filter !== "all" && (
                 <Badge variant="secondary" className="gap-1 pl-2 capitalize">
                   {filter === "owned" ? "Mine" : "Shared"}
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
+                    shape="square"
+                    icon={XIcon}
+                    aria-label="Clear ownership filter"
                     onClick={() => setFilter("all")}
-                    className="hover:bg-muted ml-1 rounded-full p-0.5"
-                  >
-                    <XIcon className="h-3 w-3" />
-                  </button>
+                  />
                 </Badge>
               )}
               {workflowStatusFilter !== "all" && (
@@ -1898,13 +1918,15 @@ function DocumentsPage() {
                   {workflowStatusFilter === "in_progress"
                     ? "In Progress"
                     : workflowStatusFilter}
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
+                    shape="square"
+                    icon={XIcon}
+                    aria-label="Clear status filter"
                     onClick={() => setWorkflowStatusFilter("all")}
-                    className="hover:bg-muted ml-1 rounded-full p-0.5"
-                  >
-                    <XIcon className="h-3 w-3" />
-                  </button>
+                  />
                 </Badge>
               )}
               {dateRange?.from && (
@@ -1916,19 +1938,20 @@ function DocumentsPage() {
                   })}
                   {dateRange.to &&
                     `- ${dateRange.to.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
+                    shape="square"
+                    icon={XIcon}
+                    aria-label="Clear date filter"
                     onClick={() => setDateRange(undefined)}
-                    className="hover:bg-muted ml-1 rounded-full p-0.5"
-                  >
-                    <XIcon className="h-3 w-3" />
-                  </button>
+                  />
                 </Badge>
               )}
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-muted-foreground h-6 px-2"
                 onClick={() => {
                   setSearchQuery("");
                   setFilter("all");
@@ -1948,7 +1971,7 @@ function DocumentsPage() {
           fallback={
             viewMode === "table" ? (
               <div className="flex items-center justify-center rounded-lg border p-12">
-                <p className="text-muted-foreground">Loading documents...</p>
+                <Text as="p" variant="secondary">Loading documents...</Text>
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

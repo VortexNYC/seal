@@ -1,3 +1,5 @@
+import { Loader } from "@cloudflare/kumo/components/loader";
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Input } from "@cloudflare/kumo/components/input";
@@ -6,7 +8,7 @@ import { Select } from "@cloudflare/kumo/components/select";
 import { Tabs } from "@cloudflare/kumo/components/tabs";
 import { useQuery } from "@tanstack/react-query";
 import { useMutation } from "@tanstack/react-query";
-import { CheckIcon, Loader2Icon, UsersIcon } from "lucide-react";
+import { ArrowLeft, Check as CheckIcon, Users as UsersIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { z } from "zod";
 
@@ -17,7 +19,7 @@ import {
   getSigningSettings,
 } from "@/lib/api-client";
 import { toast } from "@/lib/toast";
-import { cn, getErrorMessage } from "@/lib/utils";
+import { getErrorMessage } from "@/lib/utils";
 
 import { parseSelectValue } from "../../lib/select-values";
 
@@ -38,6 +40,8 @@ interface AddRecipientDialogProps {
   existingRecipientEmails?: string[];
   currentUserEmail?: string;
   organizationSlug: string;
+  /** Dialog covers the page. Panel replaces the right rail. */
+  presentation?: "dialog" | "panel";
 }
 
 function getInitials(name: string | null | undefined): string {
@@ -58,6 +62,7 @@ export function AddRecipientDialog({
   existingRecipientEmails = [],
   currentUserEmail,
   organizationSlug,
+  presentation = "dialog",
 }: AddRecipientDialogProps) {
   const [activeTab, setActiveTab] = useState<"team" | "outsider">("team");
   const [selectedMember, setSelectedMember] = useState<{
@@ -208,14 +213,7 @@ export function AddRecipientDialog({
     (activeTab === "outsider" && (!email || !email.includes("@"))) ||
     (resolvedAuthMethod === "access_code" && accessCode.trim().length < 4);
 
-  return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog size="lg" className="p-5 sm:p-6">
-        <Dialog.Title>Add recipient</Dialog.Title>
-        <Dialog.Description>
-          Who needs to sign, approve, or view this document?
-        </Dialog.Description>
-
+  const form = (
         <form onSubmit={handleSubmit} className="mt-2 space-y-4">
           <Tabs
             tabs={[
@@ -236,14 +234,20 @@ export function AddRecipientDialog({
             <div className="space-y-4">
               {members === undefined ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2Icon className="text-muted-foreground h-6 w-6 animate-spin" />
+                  <Loader size="lg" />
                 </div>
               ) : eligibleMembers && eligibleMembers.length > 0 ? (
                 <div className="max-h-drop space-y-1 overflow-y-auto rounded-md border p-2">
                   {eligibleMembers.map((member) => (
-                    <button
+                    <Button
                       key={member.userId}
                       type="button"
+                      variant={
+                        selectedMember?.id === member.userId
+                          ? "primary"
+                          : "ghost"
+                      }
+                      className="h-auto w-full justify-start"
                       onClick={() =>
                         setSelectedMember({
                           id: member.userId,
@@ -251,12 +255,8 @@ export function AddRecipientDialog({
                           name: member.name ?? null,
                         })
                       }
-                      className={cn(
-                        "hover:bg-accent flex w-full items-center gap-3 rounded-md p-2 text-left transition-colors",
-                        selectedMember?.id === member.userId && "bg-accent"
-                      )}
                     >
-                      <div className="bg-muted text-foreground flex h-8 w-8 items-center justify-center overflow-hidden rounded-full text-xs font-medium">
+                      <div className="bg-kumo-elevated text-kumo-default flex h-8 w-8 items-center justify-center overflow-hidden rounded-full text-xs font-medium">
                         {member.avatarUrl ? (
                           <img
                             src={member.avatarUrl}
@@ -268,27 +268,21 @@ export function AddRecipientDialog({
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">
-                          {member.name || "Unknown"}
-                        </p>
-                        <p className="text-muted-foreground truncate text-xs">
-                          {member.email}
-                        </p>
+                        <Text as="p" size="sm" bold truncate>{member.name || "Unknown"}</Text>
+                        <Text as="p" variant="secondary" size="xs" truncate>{member.email}</Text>
                       </div>
                       {selectedMember?.id === member.userId && (
-                        <CheckIcon className="text-primary h-4 w-4 shrink-0" />
+                        <CheckIcon className="h-4 w-4 shrink-0" />
                       )}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <UsersIcon className="text-muted-foreground mb-2 h-8 w-8" />
-                  <p className="text-muted-foreground text-sm">
-                    {existingRecipientEmails.length > 0
+                  <UsersIcon className="text-kumo-secondary mb-2 h-8 w-8" />
+                  <Text as="p" variant="secondary" size="sm">{existingRecipientEmails.length > 0
                       ? "All team members have been added"
-                      : "No team members available"}
-                  </p>
+                      : "No team members available"}</Text>
                 </div>
               )}
             </div>
@@ -319,12 +313,13 @@ export function AddRecipientDialog({
                   {showSuggestions &&
                     filteredSuggestions &&
                     filteredSuggestions.length > 0 && (
-                      <div className="bg-popover absolute top-full left-0 z-50 mt-1 w-full rounded-md border p-1 shadow-md">
+                      <div className="bg-kumo-elevated absolute top-full left-0 z-50 mt-1 w-full rounded-md border p-1 shadow-md">
                         {filteredSuggestions.map((contact) => (
-                          <button
+                          <Button
                             key={contact._id}
                             type="button"
-                            className="hover:bg-accent flex w-full flex-col rounded-sm px-2 py-1.5 text-left text-sm"
+                            variant="ghost"
+                            className="h-auto w-full flex-col items-start"
                             onClick={() => {
                               setEmail(contact.email);
                               setName(contact.fullName);
@@ -334,17 +329,15 @@ export function AddRecipientDialog({
                             <span className="font-medium">
                               {contact.fullName}
                             </span>
-                            <span className="text-muted-foreground text-xs">
-                              {contact.email}
-                            </span>
-                          </button>
+                            <span className="text-xs">{contact.email}</span>
+                          </Button>
                         ))}
                       </div>
                     )}
                 </div>
               </div>
               {emailError && (
-                <p className="text-destructive text-sm">{emailError}</p>
+                <Text as="p" variant="error" size="sm">{emailError}</Text>
               )}
 
               <div className="space-y-2">
@@ -425,6 +418,44 @@ export function AddRecipientDialog({
             </Button>
           </div>
         </form>
+  );
+
+  if (presentation === "panel") {
+    if (!open) return null;
+    return (
+      <div data-testid="add-recipient-panel" className="flex flex-col gap-2">
+        <span title="Back to People, Fields, and Send" className="inline-flex">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            icon={ArrowLeft}
+            onClick={() => onOpenChange(false)}
+          >
+            Back
+          </Button>
+        </span>
+        <div>
+          <Text as="p" size="sm" bold>
+            Add recipient
+          </Text>
+          <Text as="p" variant="secondary" size="xs">
+            Who needs to sign, approve, or view this document?
+          </Text>
+        </div>
+        {form}
+      </div>
+    );
+  }
+
+  return (
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog size="lg" className="p-5 sm:p-6">
+        <Dialog.Title>Add recipient</Dialog.Title>
+        <Dialog.Description>
+          Who needs to sign, approve, or view this document?
+        </Dialog.Description>
+        {form}
       </Dialog>
     </Dialog.Root>
   );

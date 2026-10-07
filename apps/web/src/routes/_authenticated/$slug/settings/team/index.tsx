@@ -1,3 +1,4 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   AuthProvider,
@@ -38,13 +39,11 @@ function TeamSettings() {
   return (
     <AuthProvider client={client}>
       <PageWrapper title="Team">
-        <SettingsBody wide>
+        <SettingsBody>
           <div className="flex flex-col gap-5">
             {!isPro && (
-              <p className="text-muted-foreground text-sm">
-                Inviting teammates requires Pro. You can still view members on
-                Free.
-              </p>
+              <Text as="p" variant="secondary" size="sm">Inviting teammates requires Pro. You can still view members on
+                Free.</Text>
             )}
 
             {isPro && canManage && (

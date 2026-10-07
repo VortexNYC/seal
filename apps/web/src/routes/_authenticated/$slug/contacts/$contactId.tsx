@@ -51,7 +51,7 @@ export const Route = createFileRoute(
 function ContactDetailSkeleton(): ReactElement {
   return (
     <PageWrapper title="Contact">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
+      <div className="flex w-full flex-col gap-4">
         <SkeletonLine className="h-8 w-40" />
         <div className="grid gap-4 lg:grid-cols-3">
           <SkeletonLine className="h-64 w-full rounded-xl lg:col-span-2" />
@@ -115,28 +115,27 @@ function RelatedDocumentsContent({
 
   if ((documents ?? []).length === 0) {
     return (
-      <p className="text-kumo-secondary py-4 text-center text-sm">
-        No documents found
-      </p>
+      <Text as="p" variant="secondary" size="sm" DANGEROUS_className="py-4">No documents found</Text>
     );
   }
 
   return (
     <div className="space-y-3">
       {(documents ?? []).map((doc: ApiRelatedDocument) => (
-        <button
+        <Button
           key={doc.id}
           type="button"
+          variant="ghost"
+          className="h-auto w-full justify-between"
           onClick={() =>
             router.navigate({
               to: "/$slug/documents/$documentId",
               params: { slug, documentId: doc.id },
             })
           }
-          className="hover:bg-kumo-elevated/50 flex w-full items-center justify-between rounded-md p-2 text-left transition-colors"
         >
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{doc.name}</p>
+            <Text as="p" size="sm" bold truncate>{doc.name}</Text>
             <span className="capitalize">
               <Text as="p" variant="secondary" size="xs">
                 {doc.role}
@@ -144,7 +143,7 @@ function RelatedDocumentsContent({
             </span>
           </div>
           <WorkflowStatusBadge status={toWorkflowStatus(doc.workflowStatus)} />
-        </button>
+        </Button>
       ))}
     </div>
   );
@@ -185,12 +184,12 @@ function ContactDetailContent() {
 
   return (
     <PageWrapper title={contact.fullName}>
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
+      <div className="flex w-full flex-col gap-4">
         <div>
           <Button
             variant="ghost"
             size="sm"
-            className="text-muted-foreground hover:text-foreground gap-1"
+            className="text-kumo-secondary hover:text-kumo-default gap-1"
             onClick={() =>
               router.navigate({ to: "/$slug/contacts", params: { slug } })
             }
@@ -215,8 +214,7 @@ function ContactDetailContent() {
                   variant="outline"
                   size="sm"
                   onClick={() => setEditOpen(true)}
-                >
-                  <PencilSimple className="mr-2 h-4 w-4" />
+                 icon={PencilSimple}>
                   Edit
                 </Button>
               </LayerCard.Secondary>
@@ -245,9 +243,7 @@ function ContactDetailContent() {
                         <Text as="p" variant="secondary" size="xs">
                           Notes
                         </Text>
-                        <p className="text-kumo-default text-sm whitespace-pre-wrap">
-                          {contact.notes}
-                        </p>
+                        <Text as="p" size="sm" DANGEROUS_className="whitespace-pre-wrap">{contact.notes}</Text>
                       </div>
                     </div>
                   </div>
@@ -316,8 +312,7 @@ function ContactDetailContent() {
                     variant="destructive"
                     size="sm"
                     onClick={() => setDeleteOpen(true)}
-                  >
-                    <Trash className="mr-2 h-4 w-4" />
+                   icon={Trash}>
                     Delete Contact
                   </Button>
                 </div>
@@ -329,10 +324,10 @@ function ContactDetailContent() {
           <div className="lg:col-span-1">
             <LayerCard>
               <LayerCard.Secondary>
-                <h3 className="flex items-center gap-2 text-base font-medium">
+                <Text as="h3" size="sm" DANGEROUS_className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
                   Related Documents
-                </h3>
+                </Text>
               </LayerCard.Secondary>
               <LayerCard.Primary>
                 <Suspense fallback={<RelatedDocumentsSkeleton />}>

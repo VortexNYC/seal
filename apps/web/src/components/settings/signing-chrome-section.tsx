@@ -88,7 +88,7 @@ export function SigningChromeSection({ slug }: { slug: string }): ReactElement {
               Optional footer line on the signing page and in document emails.
               Workspace name, colors, and email-from live under{" "}
               <Link
-                className="text-primary underline-offset-4 hover:underline"
+                className="text-kumo-link underline-offset-4 hover:underline"
                 params={{ slug }}
                 to="/$slug/settings"
               >
@@ -154,8 +154,7 @@ export function SigningChromeSection({ slug }: { slug: string }): ReactElement {
         </LayerCard>
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting}>
-            <FloppyDisk className="mr-2 h-4 w-4" />
+          <Button type="submit" disabled={isSubmitting} icon={FloppyDisk}>
             {isSubmitting ? "Saving…" : "Save brand strip"}
           </Button>
         </div>

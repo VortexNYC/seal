@@ -122,7 +122,8 @@ function ComplianceOnboarding(): ReactElement {
           </Text>
 
           <Button
-            className="min-h-12 w-full text-base"
+            size="lg"
+            className="w-full"
             disabled={save.isPending}
             onClick={() => save.mutate()}
             type="button"

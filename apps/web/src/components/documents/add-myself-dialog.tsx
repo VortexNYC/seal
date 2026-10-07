@@ -1,5 +1,6 @@
-import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
-import { UserIcon } from "lucide-react";
+import { Button } from "@cloudflare/kumo/components/button";
+import { Text } from "@cloudflare/kumo/components/text";
+import { ArrowLeft } from "@phosphor-icons/react";
 import { useEffect, useState, type JSX } from "react";
 
 interface AddMyselfDialogProps {
@@ -19,7 +20,7 @@ export function AddMyselfDialog({
   onConfirm,
   userEmail,
   userName,
-}: AddMyselfDialogProps): JSX.Element {
+}: AddMyselfDialogProps): JSX.Element | null {
   const [isConfirming, setIsConfirming] = useState(false);
 
   useEffect(() => {
@@ -35,68 +36,55 @@ export function AddMyselfDialog({
       try {
         await onConfirm();
       } finally {
-        // Parent closes on success/error; reset if it stays open.
         setIsConfirming(false);
       }
     })();
   };
 
+  const body = (
+    <>
+      <div className="mt-3">
+        {userName ? <Text>{userName}</Text> : null}
+        <Text variant="secondary">{userEmail}</Text>
+      </div>
+      <div className="mt-4 flex flex-col gap-2">
+        <Button
+          type="button"
+          variant="primary"
+          className="w-full"
+          onClick={handleConfirm}
+          disabled={isConfirming || !userEmail}
+        >
+          {isConfirming ? "Adding..." : "Add as signer"}
+        </Button>
+      </div>
+    </>
+  );
+
+  if (!open) return null;
+
   return (
-    <AlertDialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
-      <AlertDialogPrimitive.Portal>
-        {/* vortex-allow-color: modal/dialog scrim needs fixed black opacity for backdrop contrast. */}
-        <AlertDialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/40 duration-150" />
-
-        <AlertDialogPrimitive.Content className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 w-edge fixed top-1/2 left-1/2 z-50 max-w-100 -translate-x-1/2 -translate-y-1/2 duration-200">
-          <div className="bg-card rounded-lg border shadow-sm">
-            <div className="p-6">
-              <div className="mb-4 flex items-center gap-3">
-                <div className="bg-info-surface flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full">
-                  <UserIcon className="text-info h-5 w-5" />
-                </div>
-                <AlertDialogPrimitive.Title className="text-foreground text-base font-semibold">
-                  Add yourself as a signer?
-                </AlertDialogPrimitive.Title>
-              </div>
-
-              <AlertDialogPrimitive.Description className="text-muted-foreground text-sm">
-                You will be added as a signer to this document.
-              </AlertDialogPrimitive.Description>
-
-              <div className="bg-muted border-border/50 mt-3 rounded-md border px-3 py-2">
-                {userName ? (
-                  <div className="text-foreground text-sm font-medium">
-                    {userName}
-                  </div>
-                ) : null}
-                <div className="text-muted-foreground text-sm">{userEmail}</div>
-              </div>
-            </div>
-
-            <div className="bg-muted border-border/50 flex justify-end gap-3 rounded-b-lg border-t px-6 py-4">
-              <AlertDialogPrimitive.Cancel asChild>
-                <button
-                  type="button"
-                  className="border-border bg-card text-foreground hover:bg-muted rounded-md border px-4 py-2 text-sm font-medium transition-colors"
-                >
-                  Cancel
-                </button>
-              </AlertDialogPrimitive.Cancel>
-
-              <AlertDialogPrimitive.Action asChild>
-                <button
-                  type="button"
-                  onClick={handleConfirm}
-                  disabled={isConfirming || !userEmail}
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isConfirming ? "Adding..." : "Add as signer"}
-                </button>
-              </AlertDialogPrimitive.Action>
-            </div>
-          </div>
-        </AlertDialogPrimitive.Content>
-      </AlertDialogPrimitive.Portal>
-    </AlertDialogPrimitive.Root>
+      <div data-testid="add-myself-panel" className="flex flex-col gap-2">
+        <span title="Back to recipients" className="inline-flex">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            icon={ArrowLeft}
+            onClick={() => onOpenChange(false)}
+          >
+            Back
+          </Button>
+        </span>
+        <div>
+          <Text as="p" size="sm" bold>
+            Add yourself as a signer
+          </Text>
+          <Text as="p" variant="secondary" size="xs">
+            You will be added as a signer on this document.
+          </Text>
+        </div>
+        {body}
+      </div>
   );
 }

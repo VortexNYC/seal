@@ -121,19 +121,13 @@ function SuggestionOverlay({
   const colors = getConfidenceColor(field.confidence);
 
   return (
-    <button
+    <Button
       type="button"
+      variant={isSelected ? "primary" : "outline"}
       onClick={onToggle}
       aria-label={`${isSelected ? "Deselect" : "Select"} ${field.label} ${field.fieldType} field`}
       aria-pressed={isSelected}
-      className={cn(
-        "rounded-mini border-field absolute z-30 flex items-center gap-1 border-dashed transition-colors duration-200",
-        colors.bg,
-        colors.border,
-        isSelected
-          ? "ring-kumo-info/30 opacity-100 ring-2"
-          : "opacity-70 hover:opacity-100"
-      )}
+      className="absolute z-30 p-0"
       style={{
         left: absoluteX,
         top: absoluteY,
@@ -143,7 +137,7 @@ function SuggestionOverlay({
     >
       <div
         className={cn(
-          "text-2xs absolute -top-5 left-0 flex items-center gap-1 rounded-t-sm px-1.5 py-0.5 font-sans font-medium whitespace-nowrap",
+          "text-xs absolute -top-5 left-0 flex items-center gap-1 rounded-t-sm px-1.5 py-0.5 font-sans font-medium whitespace-nowrap",
           colors.badge
         )}
       >
@@ -157,11 +151,11 @@ function SuggestionOverlay({
         {getFieldIcon(field.fieldType)}
       </div>
       {isSelected && (
-        <div className="bg-kumo-info text-primary-foreground absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full shadow-sm">
+        <div className="bg-kumo-info text-kumo-inverse absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full shadow-sm">
           <Check className="h-2.5 w-2.5" />
         </div>
       )}
-    </button>
+    </Button>
   );
 }
 
@@ -406,7 +400,7 @@ export function AIFieldReviewBar({
       className="bg-kumo-elevated/95 border-kumo-hairline flex items-center justify-between gap-3 rounded-xl border px-4 py-3 shadow-lg backdrop-blur-sm"
     >
       <div className="flex items-center gap-2">
-        <div className="bg-kumo-info text-primary-foreground flex h-7 w-7 items-center justify-center rounded-lg shadow-sm">
+        <div className="bg-kumo-info text-kumo-inverse flex h-7 w-7 items-center justify-center rounded-lg shadow-sm">
           <Sparkle className="h-3.5 w-3.5" />
         </div>
         <div className="font-sans text-sm">
@@ -427,7 +421,6 @@ export function AIFieldReviewBar({
               variant="ghost"
               size="sm"
               onClick={selectHighConfidence}
-              className="h-7 text-xs"
             >
               High confidence ({highConfidenceCount})
             </Button>
@@ -436,7 +429,6 @@ export function AIFieldReviewBar({
           variant="ghost"
           size="sm"
           onClick={selectAll}
-          className="h-7 text-xs"
         >
           Select all
         </Button>
@@ -448,10 +440,9 @@ export function AIFieldReviewBar({
           <Button
             variant="ghost"
             size="sm"
-            className="text-kumo-secondary h-7 text-xs"
+            icon={X}
             onClick={() => setDismissOpen(true)}
           >
-            <X className="mr-1 h-3 w-3" />
             Dismiss
           </Button>
           <Dialog size="sm" className="p-6">

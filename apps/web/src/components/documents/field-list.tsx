@@ -82,45 +82,6 @@ const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
   kba: <Gear className="size-4" />,
 };
 
-const FIELD_COLORS: Record<FieldType, string> = {
-  signature:
-    "bg-field-signature-surface text-field-signature border-field-signature-border",
-  free_signature:
-    "bg-field-signature-surface text-field-signature border-field-signature-border",
-  initials:
-    "bg-field-initials-surface text-field-initials border-field-initials-border",
-  name: "bg-field-name-surface text-field-name border-field-name-border",
-  email: "bg-field-email-surface text-field-email border-field-email-border",
-  text: "bg-field-text-surface text-field-text border-field-text-border",
-  number:
-    "bg-field-number-surface text-field-number border-field-number-border",
-  date: "bg-field-date-surface text-field-date border-field-date-border",
-  date_signed:
-    "bg-field-date-signed-surface text-field-date-signed border-field-date-signed-border",
-  checkbox:
-    "bg-field-checkbox-surface text-field-checkbox border-field-checkbox-border",
-  dropdown:
-    "bg-field-dropdown-surface text-field-dropdown border-field-dropdown-border",
-  radio: "bg-field-radio-surface text-field-radio border-field-radio-border",
-  multi_select:
-    "bg-field-multi-select-surface text-field-multi-select border-field-multi-select-border",
-  attachment:
-    "bg-field-attachment-surface text-field-attachment border-field-attachment-border",
-  image: "bg-field-image-surface text-field-image border-field-image-border",
-  payment:
-    "bg-field-payment-surface text-field-payment border-field-payment-border",
-  phone: "bg-field-phone-surface text-field-phone border-field-phone-border",
-  cells: "bg-field-cells-surface text-field-cells border-field-cells-border",
-  stamp: "bg-field-stamp-surface text-field-stamp border-field-stamp-border",
-  heading:
-    "bg-field-heading-surface text-field-heading border-field-heading-border",
-  strikethrough:
-    "bg-field-strikethrough-surface text-field-strikethrough border-field-strikethrough-border",
-  verification:
-    "bg-field-verification-surface text-field-verification border-field-verification-border",
-  kba: "bg-field-kba-surface text-field-kba border-field-kba-border",
-};
-
 const FIELD_LABELS = FIELD_TYPE_LABELS;
 
 const PAYMENT_TYPE_LABELS: Record<string, string> = {
@@ -170,25 +131,15 @@ function FieldRow({
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-1 items-start gap-2">
-          <div
-            className={cn(
-              "mt-0.5 rounded-md border p-1.5",
-              FIELD_COLORS[field.fieldType]
-            )}
-          >
+          <div className="text-kumo-default mt-0.5">
             {FIELD_ICONS[field.fieldType]}
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <Text
-                as="span"
-                size="sm"
-                variant="body"
-                DANGEROUS_className="font-medium"
-              >
+              <Text as="span" size="sm" variant="body">
                 {field.label || FIELD_LABELS[field.fieldType]}
               </Text>
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline">
                 Page {field.page}
               </Badge>
             </div>
@@ -199,7 +150,7 @@ function FieldRow({
                     as="p"
                     size="xs"
                     variant="body"
-                    DANGEROUS_className="truncate font-medium text-kumo-primary/80"
+                    DANGEROUS_className="truncate"
                   >
                     {recipient.name}
                   </Text>
@@ -214,23 +165,13 @@ function FieldRow({
                 </Text>
               </div>
             ) : (
-              <Text
-                as="p"
-                size="xs"
-                variant="secondary"
-                DANGEROUS_className="mt-1 italic"
-              >
+              <Text as="p" size="xs" variant="secondary">
                 Unassigned
               </Text>
             )}
             {field.fieldType === "payment" && field.paymentConfig && (
               <div className="mt-1 flex items-center gap-1.5 text-xs">
-                <Text
-                  as="span"
-                  size="xs"
-                  variant="body"
-                  DANGEROUS_className="font-semibold text-field-payment"
-                >
+                <Text as="span" size="xs" variant="body">
                   {formatCents(
                     field.paymentConfig.totalAmountCents,
                     field.paymentConfig.currency
@@ -246,12 +187,7 @@ function FieldRow({
               </div>
             )}
             {field.fieldType === "payment" && !field.paymentConfig && (
-              <Text
-                as="p"
-                size="xs"
-                variant="secondary"
-                DANGEROUS_className="mt-1 italic"
-              >
+              <Text as="p" size="xs" variant="secondary">
                 Not configured
               </Text>
             )}
@@ -259,26 +195,26 @@ function FieldRow({
         </div>
         {canEdit && (
           <div className="flex shrink-0 items-center gap-1">
+            <span title="Edit this field" className="inline-flex">
             <Button
               variant="ghost"
               size="sm"
               shape="square"
-              className="size-8"
               aria-label="Open field properties"
-              title="Field properties"
               onClick={(e) => {
                 e.stopPropagation();
                 onFieldProperties?.(field._id);
               }}
-              icon={<Gear className="text-kumo-secondary size-4" />}
+              icon={Gear}
             />
+            </span>
+            <span title="Delete this field" className="inline-flex">
             <Button
-              variant="ghost"
+              variant="destructive"
               size="sm"
               shape="square"
-              className="size-8"
               aria-label="Delete this field"
-              title="Delete field"
+              icon={Trash}
               onClick={(e) => {
                 e.stopPropagation();
                 onFieldSelect?.(field._id);
@@ -286,8 +222,8 @@ function FieldRow({
                   onFieldDelete?.(field._id);
                 }, 0);
               }}
-              icon={<Trash className="text-kumo-danger size-4" />}
             />
+            </span>
           </div>
         )}
       </div>

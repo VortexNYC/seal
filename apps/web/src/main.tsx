@@ -24,10 +24,15 @@ const queryClient = new QueryClient({
 });
 
 const AppLink = forwardRef<HTMLAnchorElement, LinkComponentProps>(
-  ({ to, ...rest }, ref) => {
+  ({ href: hrefProp, to, ...rest }, ref) => {
     // Cap: Documentation → docs.seal.nyc. Absolute URLs must stay real <a>
     // tags — TanStack Link treats them as in-app paths and blanks the SPA.
-    const href = typeof to === "string" ? to : "";
+    const href =
+      typeof hrefProp === "string" && hrefProp.length > 0
+        ? hrefProp
+        : typeof to === "string"
+          ? to
+          : "";
     const isExternal = /^https?:\/\//i.test(href);
 
     const { pathname, search } = useMemo(() => {

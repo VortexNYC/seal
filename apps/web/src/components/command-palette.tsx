@@ -46,7 +46,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             </Text>
           )}
         </div>
-        <div className="text-kumo-secondary border-kumo-hairline text-3xs border-t px-3 py-2">
+        <div className="text-kumo-secondary border-kumo-hairline text-xs border-t px-3 py-2">
           <kbd className="bg-kumo-elevated border-kumo-hairline rounded border px-1">
             &uarr;&darr;
           </kbd>{" "}

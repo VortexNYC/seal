@@ -21,7 +21,7 @@ import { PageWrapper } from "@/components/page-wrapper";
 import { SettingsBody } from "@/components/settings-body";
 import { SettingsSection } from "@/components/settings-section";
 import { DeveloperNav } from "@/components/settings/developer-nav";
-import { FormSkeleton } from "@/components/skeletons";
+import { FormSkeleton, PageFormSkeleton } from "@/components/skeletons";
 import { useOrganization } from "@/hooks/use-organization";
 import {
   createApiToken,
@@ -37,7 +37,7 @@ export const Route = createFileRoute(
   "/_authenticated/$slug/settings/developer/api-keys"
 )({
   component: ApiKeysPage,
-  pendingComponent: FormSkeleton,
+  pendingComponent: () => <PageFormSkeleton title="Developer" />,
 });
 
 function formatDate(iso: string | null | undefined): string {
@@ -112,7 +112,7 @@ function ApiKeysPage() {
       description="Programmatic access to the Seal API"
       title="Developer"
     >
-      <SettingsBody wide>
+      <SettingsBody>
         <DeveloperNav slug={slug} active="api-keys" />
         <SettingsSection
           title="API keys"

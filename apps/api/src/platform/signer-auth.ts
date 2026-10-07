@@ -25,10 +25,15 @@ const challengeSchema = z.object({
   attempts: z.number().int().nonnegative(),
 });
 
+const verifiedMethodSchema = z.enum([
+  ...SIGNER_AUTH_METHODS,
+  "session",
+]);
+
 const authStateSchema = z.object({
   challenge: challengeSchema.optional(),
   verifiedAt: z.number().optional(),
-  verifiedMethod: signerAuthMethodSchema.optional(),
+  verifiedMethod: verifiedMethodSchema.optional(),
 });
 
 export type SignerAuthState = z.infer<typeof authStateSchema>;
@@ -70,9 +75,31 @@ export function isSignerAuthVerified(
     return true;
   }
   const state = parseSignerAuthState(authenticationData);
-  return (
-    typeof state.verifiedAt === "number" && state.verifiedMethod === method
-  );
+  if (typeof state.verifiedAt !== "number") {
+    return false;
+  }
+  if (state.verifiedMethod === method) {
+    return true;
+  }
+  return method === "email_otp" && state.verifiedMethod === "session";
+}
+
+/** The signed-in account is the recipient. Email OTP is already satisfied. */
+export function sessionMatchesRecipient(
+  sessionEmail: string | null | undefined,
+  recipientEmail: string | null | undefined
+): boolean {
+  if (!sessionEmail || !recipientEmail) {
+    return false;
+  }
+  return sessionEmail.trim().toLowerCase() === recipientEmail.trim().toLowerCase();
+}
+
+export function markSessionVerified(): SignerAuthState {
+  return {
+    verifiedAt: Date.now(),
+    verifiedMethod: "session",
+  };
 }
 
 export function maskEmail(email: string): string {
@@ -110,7 +137,7 @@ export function generateEmailOtpCode(): string {
 }
 
 export async function startEmailOtpChallenge(
-  existing: SignerAuthState
+  _existing: SignerAuthState
 ): Promise<{ state: SignerAuthState; code: string }> {
   const code = generateEmailOtpCode();
   const codeHash = await hashToken(code);

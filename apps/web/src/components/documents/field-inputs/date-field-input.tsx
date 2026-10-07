@@ -1,3 +1,4 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { DatePicker } from "@cloudflare/kumo/components/date-picker";
 import { Label } from "@cloudflare/kumo/components/label";
@@ -6,6 +7,7 @@ import { CalendarBlank } from "@phosphor-icons/react";
 import { format } from "date-fns";
 import { useState } from "react";
 
+import { calendarDate, parseCalendarDate } from "@/lib/field-date";
 import { cn } from "@/lib/utils";
 
 interface DateFieldInputProps {
@@ -26,7 +28,7 @@ export function DateFieldInput({
   onValidationChange,
 }: DateFieldInputProps) {
   const [date, setDate] = useState<Date | undefined>(
-    value ? new Date(value) : undefined
+    value ? parseCalendarDate(value) : undefined
   );
   const [error, setError] = useState<string | undefined>();
 
@@ -40,8 +42,7 @@ export function DateFieldInput({
 
   const handleDateChange = (selectedDate: Date | undefined) => {
     setDate(selectedDate);
-    const isoString = selectedDate ? selectedDate.toISOString() : "";
-    onChange(isoString);
+    onChange(selectedDate ? calendarDate(selectedDate) : "");
 
     const validation = validateValue(selectedDate);
     setError(validation.error);
@@ -60,12 +61,11 @@ export function DateFieldInput({
             <Button
               variant="outline"
               className={cn(
-                "w-full justify-start text-left font-normal",
+                "w-full justify-start text-left",
                 !date && "text-kumo-secondary",
                 error && "border-kumo-danger"
               )}
-            >
-              <CalendarBlank className="mr-2 h-4 w-4" />
+             icon={CalendarBlank}>
               {date ? format(date, "PPP") : <span>Pick a date</span>}
             </Button>
           }
@@ -79,9 +79,9 @@ export function DateFieldInput({
         </Popover.Content>
       </Popover>
       {helpText && !error && (
-        <p className="text-kumo-secondary text-xs">{helpText}</p>
+        <Text as="p" variant="secondary" size="xs">{helpText}</Text>
       )}
-      {error && <p className="text-kumo-danger text-xs">{error}</p>}
+      {error && <Text as="p" variant="error" size="xs">{error}</Text>}
     </div>
   );
 }

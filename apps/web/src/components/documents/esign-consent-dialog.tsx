@@ -11,16 +11,11 @@
  * 3. Declined with alternative options
  */
 
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
-import {
-  CheckCircle2Icon,
-  DownloadIcon,
-  FileTextIcon,
-  MailIcon,
-  XCircleIcon,
-} from "lucide-react";
+import { CheckCircle as CheckCircle2Icon, DownloadSimple as DownloadIcon, Envelope as MailIcon, FileText as FileTextIcon, XCircle as XCircleIcon } from "@phosphor-icons/react";
 import { useCallback, useState } from "react";
 
 import { SealLogo } from "@/components/seal-logo";
@@ -74,7 +69,7 @@ export function EsignConsentDialog({
     return (
       <div
         data-seal-enter
-        className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8"
+        className="bg-kumo-canvas flex min-h-dvh flex-col items-center justify-center px-4 py-8"
       >
         <div className="flex w-full max-w-lg flex-col gap-6">
           <div className="flex justify-center">
@@ -83,21 +78,17 @@ export function EsignConsentDialog({
 
           <div className="flex flex-col gap-2 text-center">
             <div className="flex items-center justify-center gap-2">
-              <XCircleIcon className="text-destructive size-6" />
-              <h1 className="text-2xl font-bold text-balance">
-                Electronic Signature Declined
-              </h1>
+              <XCircleIcon className="text-kumo-danger size-6" />
+              <Text as="h1" variant="heading">Electronic Signature Declined</Text>
             </div>
-            <p className="text-muted-foreground text-sm text-pretty">
-              You declined electronic signatures. You can still complete this
+            <Text as="p" variant="secondary" size="sm">You declined electronic signatures. You can still complete this
               document with a paper or wet-ink signature — choose an option
-              below and the sender will be notified.
-            </p>
+              below and the sender will be notified.</Text>
           </div>
 
           <LayerCard>
             <LayerCard.Primary className="flex flex-col gap-3 p-5">
-              <p className="text-sm font-medium">Manual signature options:</p>
+              <Text as="p" size="sm" bold>Manual signature options:</Text>
               <div className="flex flex-col gap-2">
                 {onDownloadPdf && (
                   <Button
@@ -148,7 +139,7 @@ export function EsignConsentDialog({
             </Button>
           </div>
 
-          <p className="text-muted-foreground text-center text-xs">
+          <p className="text-kumo-secondary text-center text-xs">
             For assistance, contact the sender
             {ownerEmail ? (
               <>
@@ -184,7 +175,7 @@ export function EsignConsentDialog({
     return (
       <div
         data-seal-enter
-        className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8"
+        className="bg-kumo-canvas flex min-h-dvh flex-col items-center justify-center px-4 py-8"
       >
         <div className="flex w-full max-w-lg flex-col gap-6">
           <div className="flex justify-center">
@@ -193,29 +184,21 @@ export function EsignConsentDialog({
 
           <div className="flex flex-col gap-2 text-center">
             <div className="flex items-center justify-center gap-2">
-              <CheckCircle2Icon className="text-success size-6" />
-              <h1 className="text-2xl font-bold text-balance">
-                Consent Accepted
-              </h1>
+              <CheckCircle2Icon className="text-kumo-default size-6" />
+              <Text as="h1" variant="heading">Consent Accepted</Text>
             </div>
-            <p className="text-muted-foreground text-sm text-pretty">
-              Thank you for providing your consent. Loading your document...
-            </p>
+            <Text as="p" variant="secondary" size="sm">Thank you for providing your consent. Loading your document...</Text>
           </div>
 
-          <LayerCard className="border-status-completed-border bg-status-completed-surface">
+          <LayerCard className="border-kumo-line">
             <LayerCard.Primary className="space-y-1 p-5 text-center">
-              <p className="text-status-completed-text text-sm font-medium">
-                {recipientEmail}
-              </p>
-              <p className="text-status-completed-text/80 text-xs">
-                Consent Date:{" "}
+              <Text as="p" size="sm">{recipientEmail}</Text>
+              <Text as="p" size="xs">Consent Date:{" "}
                 {new Date().toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
                   year: "numeric",
-                })}
-              </p>
+                })}</Text>
             </LayerCard.Primary>
           </LayerCard>
         </div>
@@ -227,7 +210,7 @@ export function EsignConsentDialog({
   return (
     <div
       data-seal-enter
-      className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8"
+      className="bg-kumo-canvas flex min-h-dvh flex-col items-center justify-center px-4 py-8"
     >
       <div className="flex w-full max-w-lg flex-col gap-6">
         <div className="flex justify-center">
@@ -235,31 +218,21 @@ export function EsignConsentDialog({
         </div>
 
         <div className="flex flex-col gap-2 text-center">
-          <h1 className="text-2xl font-bold text-balance sm:text-3xl">
-            Electronic Signature Consent
-          </h1>
-          <p className="text-muted-foreground text-sm text-pretty">
-            Before you can sign documents electronically, please review and
-            accept the following:
-          </p>
+          <Text as="h1" variant="heading">Electronic Signature Consent</Text>
+          <Text as="p" variant="secondary" size="sm">Before you can sign documents electronically, please review and
+            accept the following:</Text>
         </div>
 
         <div>
-          <h2 className="mb-3 text-lg font-semibold">
-            Electronic Signature Agreement
-          </h2>
-          <LayerCard className="border-info-surface bg-info-surface/50">
+          <Text as="h2" variant="heading" DANGEROUS_className="mb-3">Electronic Signature Agreement</Text>
+          <LayerCard className="border-kumo-line">
             <LayerCard.Primary className="flex flex-col gap-4 p-5">
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                {customConsentText ??
-                  "By checking the box below, you consent to use electronic signatures for this document and future documents."}
-              </p>
+              <Text as="p" variant="secondary" size="sm">{customConsentText ??
+                  "By checking the box below, you consent to use electronic signatures for this document and future documents."}</Text>
 
               <div>
-                <p className="mb-2 text-sm font-medium">
-                  You acknowledge that:
-                </p>
-                <ul className="text-muted-foreground space-y-1.5 text-sm">
+                <Text as="p" size="sm" bold DANGEROUS_className="mb-2">You acknowledge that:</Text>
+                <ul className="text-kumo-secondary space-y-1.5 text-sm">
                   <li className="flex items-start gap-2">
                     <span className="mt-1.5 block size-1 shrink-0 rounded-full bg-current" />
                     Electronic signatures have the same legal effect as
@@ -277,10 +250,8 @@ export function EsignConsentDialog({
               </div>
 
               <div>
-                <p className="mb-2 text-sm font-medium">
-                  Technical Requirements:
-                </p>
-                <ul className="text-muted-foreground space-y-1 text-sm">
+                <Text as="p" size="sm" bold DANGEROUS_className="mb-2">Technical Requirements:</Text>
+                <ul className="text-kumo-secondary space-y-1 text-sm">
                   <li className="flex items-start gap-2">
                     <span className="mt-1.5 block size-1 shrink-0 rounded-full bg-current" />
                     Modern web browser with JavaScript enabled
@@ -300,7 +271,7 @@ export function EsignConsentDialog({
           role="checkbox"
           aria-checked={isChecked}
           tabIndex={0}
-          className="border-border hover:bg-muted/40 flex w-full cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors"
+          className="border-kumo-line hover:bg-kumo-elevated/40 flex w-full cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors"
           onClick={() => setIsChecked((prev) => !prev)}
           onKeyDown={(event) => {
             if (event.key === " " || event.key === "Enter") {
@@ -322,7 +293,7 @@ export function EsignConsentDialog({
 
         <div className="flex flex-col gap-3">
           <Button
-            className="h-12 w-full text-base font-medium shadow-sm transition-shadow hover:shadow"
+            className="w-full"
             size="lg"
             disabled={!isChecked || isSubmitting}
             onClick={handleAccept}
@@ -333,7 +304,7 @@ export function EsignConsentDialog({
           <div className="text-center">
             <Button
               variant="ghost"
-              className="text-muted-foreground"
+              className="text-kumo-secondary"
               onClick={handleDecline}
               disabled={isSubmitting}
               aria-label="Decline electronic signature consent"

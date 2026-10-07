@@ -192,11 +192,14 @@ function buildNav({
 
   const developerItems = [
     {
-      title: "Developer",
-      url: buildOrganizationPath(slug, "/settings/developer"),
-      visible:
-        canView(permissionFlags?.canManageAPIKeys) ||
-        canView(permissionFlags?.canManageWebhooks),
+      title: "API keys",
+      url: buildOrganizationPath(slug, "/settings/developer/api-keys"),
+      visible: canView(permissionFlags?.canManageAPIKeys),
+    },
+    {
+      title: "Webhooks",
+      url: buildOrganizationPath(slug, "/settings/developer/webhooks"),
+      visible: canView(permissionFlags?.canManageWebhooks),
     },
     {
       title: "Documentation",
@@ -463,7 +466,7 @@ export function AppSidebar({
       <Sidebar.Content className="px-1 pt-2">
         <NavMain primary={primary} groups={groups} />
       </Sidebar.Content>
-      <Sidebar.Footer className="border-sidebar-border relative isolate z-20 gap-1 border-t px-1 py-2">
+      <Sidebar.Footer>
         {currentUser ? (
           <WorkspaceAccountMenu
             teams={teamOptions}

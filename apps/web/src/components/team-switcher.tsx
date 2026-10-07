@@ -39,7 +39,7 @@ function WorkspaceMark({
   return (
     <span
       className={cn(
-        "text-2xs grid size-full place-items-center rounded-md font-semibold uppercase",
+        "text-xs grid size-full place-items-center rounded-md font-semibold uppercase",
         className
       )}
       aria-hidden
@@ -91,7 +91,7 @@ export function TeamSwitcher({
                   {active?.name ?? "Workspace"}
                 </span>
               </div>
-              <CaretDown className="text-muted-foreground ml-auto size-4 shrink-0" />
+              <CaretDown className="text-kumo-secondary ml-auto size-4 shrink-0" />
             </Sidebar.MenuButton>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content

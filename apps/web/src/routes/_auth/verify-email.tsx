@@ -1,3 +1,4 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { createFileRoute, Link } from "@tanstack/react-router";
 /**
  * Email verification landing — linked from signup / change-email messages (?token=…).
@@ -36,7 +37,7 @@ function VerifyEmailRoute() {
   const callbackUrl = `${resolveAppOrigin()}/verify-email`;
 
   if (client === null) {
-    return <p className="text-center text-sm">Auth client not configured.</p>;
+    return <Text as="p" size="sm">Auth client not configured.</Text>;
   }
 
   return (
@@ -52,7 +53,7 @@ function VerifyEmailRoute() {
           }}
         />
       </AuthProvider>
-      <p className="text-muted-foreground text-center text-sm">
+      <p className="text-kumo-secondary text-center text-sm">
         <Link className="underline underline-offset-4" to="/sign-in">
           Back to sign in
         </Link>

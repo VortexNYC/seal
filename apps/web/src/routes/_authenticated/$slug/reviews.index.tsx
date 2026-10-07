@@ -3,6 +3,7 @@
  * Route: /{slug}/reviews
  */
 
+import { Text } from "@cloudflare/kumo/components/text";
 import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
@@ -13,7 +14,7 @@ import { Select } from "@cloudflare/kumo/components/select";
 import { Table } from "@cloudflare/kumo/components/table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { PackageIcon, PlusIcon, ScaleIcon, TrashIcon } from "lucide-react";
+import { Package as PackageIcon, Plus as PlusIcon, Scales as ScaleIcon, Trash as TrashIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
@@ -98,7 +99,7 @@ function ReviewsPage() {
               <Table.Row
                 key={m.id}
                 data-testid={`matrix-row-${m.id}`}
-                className="hover:bg-muted/50 cursor-pointer"
+                className="hover:bg-kumo-elevated/50 cursor-pointer"
                 onClick={() =>
                   void navigate({
                     to: "/$slug/reviews/$matrixId",
@@ -120,7 +121,7 @@ function ReviewsPage() {
                 <Table.Cell>
                   {m.row_count} docs × {m.column_count} cols
                 </Table.Cell>
-                <Table.Cell className="text-muted-foreground">
+                <Table.Cell className="text-kumo-secondary">
                   {new Date(m.updated_at).toLocaleString()}
                 </Table.Cell>
               </Table.Row>
@@ -243,9 +244,7 @@ function NewReviewDialog({
               <Select.Option value="custom">Custom columns…</Select.Option>
             </Select>
             {selectedPack?.description ? (
-              <p className="text-muted-foreground text-xs">
-                {selectedPack.description}
-              </p>
+              <Text as="p" variant="secondary" size="xs">{selectedPack.description}</Text>
             ) : null}
           </div>
 
@@ -304,28 +303,22 @@ function NewReviewDialog({
             <span className="text-sm font-medium">
               Documents ({docIds.size} selected)
             </span>
-            <div className="border-border max-h-48 overflow-y-auto rounded-md border">
+            <div className="border-kumo-line flex max-h-48 flex-col gap-2 overflow-y-auto rounded-md border p-3">
               {docs.length === 0 ? (
-                <p className="text-muted-foreground p-3 text-xs">
-                  No draft documents — upload one first.
-                </p>
+                <Text as="p" variant="secondary" size="xs" DANGEROUS_className="p-3">No draft documents — upload one first.</Text>
               ) : (
                 docs.map((d) => (
-                  <label
+                  <Checkbox
                     key={d.publicId}
-                    className="hover:bg-muted/50 flex cursor-pointer items-center gap-2 px-3 py-2 text-sm"
-                  >
-                    <Checkbox
-                      checked={docIds.has(d.publicId)}
-                      onCheckedChange={(checked) => {
-                        const next = new Set(docIds);
-                        if (checked === true) next.add(d.publicId);
-                        else next.delete(d.publicId);
-                        setDocIds(next);
-                      }}
-                    />
-                    {d.name}
-                  </label>
+                    label={d.name}
+                    checked={docIds.has(d.publicId)}
+                    onCheckedChange={(checked) => {
+                      const next = new Set(docIds);
+                      if (checked === true) next.add(d.publicId);
+                      else next.delete(d.publicId);
+                      setDocIds(next);
+                    }}
+                  />
                 ))
               )}
             </div>
@@ -416,7 +409,7 @@ function PacksDialog({
           {packs.map((p) => (
             <li
               key={p.id}
-              className="border-border flex items-center justify-between rounded-md border px-3 py-2"
+              className="border-kumo-line flex items-center justify-between rounded-md border px-3 py-2"
             >
               <div>
                 <div className="text-sm font-medium">
@@ -427,7 +420,7 @@ function PacksDialog({
                     </Badge>
                   ) : null}
                 </div>
-                <div className="text-muted-foreground text-xs">
+                <div className="text-kumo-secondary text-xs">
                   {p.columns.length} columns
                   {p.description ? ` — ${p.description}` : ""}
                 </div>
@@ -446,7 +439,7 @@ function PacksDialog({
           ))}
         </ul>
 
-        <div className="border-border mt-4 flex flex-col gap-3 border-t pt-4">
+        <div className="border-kumo-line mt-4 flex flex-col gap-3 border-t pt-4">
           <div className="text-sm font-medium">New pack</div>
           <Input
             label="Title"

@@ -1,3 +1,4 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { usePdfiumEngine } from "@embedpdf/engines/react";
 import type { PdfDocumentObject } from "@embedpdf/models";
 import pdfiumWasmUrl from "@embedpdf/pdfium/pdfium.wasm?url";
@@ -218,7 +219,7 @@ export function PdfSigningDocumentSurface({
 
   if (!src) {
     return (
-      <div className="text-muted-foreground p-16 text-center text-sm">
+      <div className="text-kumo-secondary p-16 text-center text-sm">
         No PDF loaded
       </div>
     );
@@ -231,12 +232,10 @@ export function PdfSigningDocumentSurface({
         role="alert"
         data-testid="pdf-signing-error"
       >
-        <p className="text-kumo-danger font-medium">Failed to load PDF</p>
-        <p className="text-kumo-secondary mt-1 text-sm">
-          {loadError ??
+        <Text as="p" variant="error">Failed to load PDF</Text>
+        <Text as="p" variant="secondary" size="sm" DANGEROUS_className="mt-1">{loadError ??
             engineError?.message ??
-            "Please try refreshing the page"}
-        </p>
+            "Please try refreshing the page"}</Text>
       </div>
     );
   }
@@ -249,7 +248,7 @@ export function PdfSigningDocumentSurface({
         aria-live="polite"
         data-testid="pdf-signing-loading"
       >
-        <p className="text-kumo-secondary mb-4 text-sm">Loading document…</p>
+        <Text as="p" variant="secondary" size="sm" DANGEROUS_className="mb-4">Loading document…</Text>
         <div className="animate-pulse space-y-4">
           <div className="bg-kumo-hairline mx-auto h-4 w-1/3 rounded" />
           <div className="bg-kumo-hairline mx-auto h-4 w-1/2 rounded" />

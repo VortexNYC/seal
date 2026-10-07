@@ -6,31 +6,20 @@
  * and validation rules for signature fields.
  */
 
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input, Textarea } from "@cloudflare/kumo/components/input";
 import { Label } from "@cloudflare/kumo/components/label";
 import { Select } from "@cloudflare/kumo/components/select";
 import { Switch } from "@cloudflare/kumo/components/switch";
 import { useMutation } from "@tanstack/react-query";
-import {
-  AlertCircleIcon,
-  AlertTriangleIcon,
-  CalendarIcon,
-  CheckSquareIcon,
-  CreditCardIcon,
-  HashIcon,
-  HelpCircleIcon,
-  PenToolIcon,
-  TypeIcon,
-  XIcon,
-} from "lucide-react";
+import { Calendar as CalendarIcon, CheckSquare as CheckSquareIcon, CreditCard as CreditCardIcon, Hash as HashIcon, PenNib as PenToolIcon, Question as HelpCircleIcon, TextT as TypeIcon, Warning as AlertTriangleIcon, WarningCircle as AlertCircleIcon, X as XIcon } from "@phosphor-icons/react";
 import { useEffect, useState, type ChangeEvent } from "react";
 
 import { updateSignatureField } from "@/lib/api-client";
 import { FIELD_TYPE_LABELS, type FieldType } from "@/lib/field-types";
 import { type Id } from "@/lib/ids";
 import { toast } from "@/lib/toast";
-import { cn } from "@/lib/utils";
 
 // Common validation patterns
 type ValidationPatternOption = {
@@ -359,26 +348,18 @@ function FieldPanelHeader({
   return (
     <div className="flex items-center justify-between border-b p-4">
       <div className="flex items-center gap-2">
-        <div
-          className={cn(
-            "rounded-md border p-1.5",
-            FIELD_COLORS[field.fieldType]
-          )}
-        >
+        <div className="text-kumo-default">
           {FIELD_ICONS[field.fieldType]}
         </div>
         <div>
-          <h3 className="text-sm font-medium">Field Properties</h3>
-          <p className="text-muted-foreground text-xs">
-            {FIELD_TYPE_LABELS[field.fieldType]} Field
-          </p>
+          <Text as="h3" variant="heading">Field Properties</Text>
+          <Text as="p" variant="secondary" size="xs">{FIELD_TYPE_LABELS[field.fieldType]} Field</Text>
         </div>
       </div>
       <Button
         variant="ghost"
         shape="square"
         size="sm"
-        className="h-8 w-8"
         aria-label="Close field properties"
         onClick={onClose}
       >
@@ -408,7 +389,7 @@ function RecipientAssignmentSection({
           id="field-recipient"
           className={
             selectedRecipientId === "unassigned"
-              ? "border-warning/50 text-warning"
+              ? "border-kumo-warning/50 text-kumo-warning"
               : undefined
           }
           renderValue={(value) =>
@@ -436,12 +417,10 @@ function RecipientAssignmentSection({
           ))}
         </Select>
       ) : (
-        <p className="text-muted-foreground text-xs">
-          Add a recipient to the document first
-        </p>
+        <Text as="p" variant="secondary" size="xs">Add a recipient to the document first</Text>
       )}
       {selectedRecipientId === "unassigned" && recipients.length > 0 && (
-        <p className="text-warning flex items-center gap-1 text-xs">
+        <p className="text-kumo-warning flex items-center gap-1 text-xs">
           <AlertTriangleIcon className="h-3 w-3" />
           This field must be assigned before sending
         </p>
@@ -463,15 +442,12 @@ function PaymentConfigurationSection({
     <div className="space-y-2">
       <Button
         variant="outline"
-        className="border-field-payment-border bg-field-payment-surface text-field-payment hover:bg-field-payment-surface/80 w-full"
+        className="w-full"
         onClick={() => onConfigurePayment(field._id)}
-      >
-        <CreditCardIcon className="mr-2 h-4 w-4" />
+       icon={CreditCardIcon}>
         Configure Payment
       </Button>
-      <p className="text-muted-foreground text-xs">
-        Set up line items, payment terms, and methods
-      </p>
+      <Text as="p" variant="secondary" size="xs">Set up line items, payment terms, and methods</Text>
     </div>
   );
 }
@@ -512,17 +488,13 @@ function BasicFieldSettings({
           onChange={(event) => setLabel(event.target.value)}
           placeholder="Enter field label"
         />
-        <p className="text-muted-foreground text-xs">
-          The name displayed on the field
-        </p>
+        <Text as="p" variant="secondary" size="xs">The name displayed on the field</Text>
       </div>
 
       <div className="flex items-center justify-between">
         <div className="space-y-0.5">
           <Label htmlFor="field-required">Required</Label>
-          <p className="text-muted-foreground text-xs">
-            Must be filled before submission
-          </p>
+          <Text as="p" variant="secondary" size="xs">Must be filled before submission</Text>
         </div>
         <Switch
           aria-label="Required"
@@ -541,9 +513,7 @@ function BasicFieldSettings({
             onChange={(event) => setPlaceholder(event.target.value)}
             placeholder="Enter placeholder text"
           />
-          <p className="text-muted-foreground text-xs">
-            Shown when the field is empty
-          </p>
+          <Text as="p" variant="secondary" size="xs">Shown when the field is empty</Text>
         </div>
       )}
 
@@ -558,9 +528,7 @@ function BasicFieldSettings({
           className="font-mono text-xs"
           spellCheck={false}
         />
-        <p className="text-muted-foreground text-xs">
-          Structured key for agent apply-bindings
-        </p>
+        <Text as="p" variant="secondary" size="xs">Structured key for agent apply-bindings</Text>
       </div>
 
       <div className="space-y-2">
@@ -580,9 +548,7 @@ function BasicFieldSettings({
           placeholder="Add instructions for the signer"
           rows={2}
         />
-        <p className="text-muted-foreground text-xs">
-          Additional guidance for the recipient
-        </p>
+        <Text as="p" variant="secondary" size="xs">Additional guidance for the recipient</Text>
       </div>
     </>
   );
@@ -610,7 +576,7 @@ function ValidationSettings({
   return (
     <div className="space-y-4 border-t pt-2">
       <div className="flex items-center gap-2">
-        <AlertCircleIcon className="text-muted-foreground h-4 w-4" />
+        <AlertCircleIcon className="text-kumo-secondary h-4 w-4" />
         <span className="text-sm font-medium">Validation</span>
       </div>
       <div className="space-y-2">
@@ -658,9 +624,7 @@ function ValidationSettings({
             onChange={(event) => setCustomMessage(event.target.value)}
             placeholder="Please enter a valid value"
           />
-          <p className="text-muted-foreground text-xs">
-            Shown when validation fails
-          </p>
+          <Text as="p" variant="secondary" size="xs">Shown when validation fails</Text>
         </div>
       )}
     </div>
@@ -729,7 +693,7 @@ function FieldPropertiesFooter({
   onSave: () => void;
 }) {
   return (
-    <div className="bg-muted/30 border-t p-4">
+    <div className="bg-kumo-elevated/30 border-t p-4">
       <div className="flex items-center justify-end gap-3">
         <Button variant="outline" size="sm" onClick={onClose}>
           Cancel
@@ -768,45 +732,6 @@ const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
   kba: <TypeIcon className="h-4 w-4" />,
 };
 
-const FIELD_COLORS: Record<FieldType, string> = {
-  signature:
-    "bg-field-signature-surface text-field-signature border-field-signature-border",
-  free_signature:
-    "bg-field-signature-surface text-field-signature border-field-signature-border",
-  initials:
-    "bg-field-initials-surface text-field-initials border-field-initials-border",
-  name: "bg-field-name-surface text-field-name border-field-name-border",
-  email: "bg-field-email-surface text-field-email border-field-email-border",
-  text: "bg-field-text-surface text-field-text border-field-text-border",
-  number:
-    "bg-field-number-surface text-field-number border-field-number-border",
-  date: "bg-field-date-surface text-field-date border-field-date-border",
-  date_signed:
-    "bg-field-date-signed-surface text-field-date-signed border-field-date-signed-border",
-  checkbox:
-    "bg-field-checkbox-surface text-field-checkbox border-field-checkbox-border",
-  dropdown:
-    "bg-field-dropdown-surface text-field-dropdown border-field-dropdown-border",
-  radio: "bg-field-radio-surface text-field-radio border-field-radio-border",
-  multi_select:
-    "bg-field-multi-select-surface text-field-multi-select border-field-multi-select-border",
-  attachment:
-    "bg-field-attachment-surface text-field-attachment border-field-attachment-border",
-  image: "bg-field-image-surface text-field-image border-field-image-border",
-  payment:
-    "bg-field-payment-surface text-field-payment border-field-payment-border",
-  phone: "bg-field-phone-surface text-field-phone border-field-phone-border",
-  cells: "bg-field-cells-surface text-field-cells border-field-cells-border",
-  stamp: "bg-field-stamp-surface text-field-stamp border-field-stamp-border",
-  heading:
-    "bg-field-heading-surface text-field-heading border-field-heading-border",
-  strikethrough:
-    "bg-field-strikethrough-surface text-field-strikethrough border-field-strikethrough-border",
-  verification:
-    "bg-field-verification-surface text-field-verification border-field-verification-border",
-  kba: "bg-field-kba-surface text-field-kba border-field-kba-border",
-};
-
 export function FieldPropertiesPanel({
   organizationSlug,
   documentPublicId,
@@ -826,7 +751,7 @@ export function FieldPropertiesPanel({
   });
 
   return (
-    <div className="field-properties-panel bg-background flex h-full flex-col">
+    <div className="field-properties-panel bg-kumo-canvas flex h-full flex-col">
       <FieldPanelHeader field={field} onClose={onClose} />
 
       <div className="flex-1 space-y-6 overflow-y-auto p-4">

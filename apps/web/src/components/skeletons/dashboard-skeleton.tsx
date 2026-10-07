@@ -11,7 +11,7 @@ export function DashboardSkeleton(): React.ReactElement {
   return (
     <PageWrapper title="Dashboard">
       <div
-        className="mx-auto flex max-w-5xl flex-col gap-5"
+        className="flex flex-col gap-5"
         role="status"
         aria-label="Loading dashboard"
       >

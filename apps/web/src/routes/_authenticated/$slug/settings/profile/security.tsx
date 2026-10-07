@@ -37,7 +37,7 @@ function SecuritySettings() {
 
   return (
     <AuthProvider client={client}>
-      <SettingsBody narrow className="items-stretch">
+      <SettingsBody className="items-stretch">
         <SettingsStack className="w-full">
           <SessionList
             className="w-full"

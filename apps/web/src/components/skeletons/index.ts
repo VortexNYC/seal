@@ -9,5 +9,5 @@
  * stable layout before real content renders.
  */
 
-export { FormSkeleton } from "./form-skeleton";
+export { FormSkeleton, PageFormSkeleton } from "./form-skeleton";
 export { TemplatesSkeleton } from "./templates-skeleton";

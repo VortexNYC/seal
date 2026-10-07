@@ -14,7 +14,7 @@ function RouteComponent() {
   return (
     <div
       data-auth-shell
-      className="bg-background relative flex min-h-dvh flex-col items-center justify-center overflow-hidden px-4 py-10 sm:px-6 lg:px-8"
+      className="bg-kumo-canvas relative flex min-h-dvh flex-col items-center justify-center overflow-hidden px-4 py-10 sm:px-6 lg:px-8"
     >
       <div
         aria-hidden
@@ -27,7 +27,7 @@ function RouteComponent() {
       <div className="relative z-10 mx-auto flex w-full max-w-md flex-col items-center gap-6">
         <a
           href="https://seal.nyc"
-          className="text-foreground flex flex-row items-center gap-3 no-underline"
+          className="text-kumo-default flex flex-row items-center gap-3 no-underline"
         >
           <SealLogo size={40} variant="color" />
           <span className="font-serif text-4xl leading-none tracking-tight">

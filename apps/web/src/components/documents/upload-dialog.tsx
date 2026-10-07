@@ -1,9 +1,12 @@
+import { Banner } from "@cloudflare/kumo/components/banner";
+import { Loader } from "@cloudflare/kumo/components/loader";
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Label } from "@cloudflare/kumo/components/label";
 import { Meter } from "@cloudflare/kumo/components/meter";
 import { useMutation } from "@tanstack/react-query";
-import { AlertCircle, CheckCircle2, FileIcon, X } from "lucide-react";
+import { CheckCircle as CheckCircle2, File as FileIcon, WarningCircle as AlertCircle, X } from "@phosphor-icons/react";
 import { useState } from "react";
 import { type FileRejection } from "react-dropzone";
 
@@ -127,7 +130,7 @@ export function UploadDialog({
   return (
     <>
       <Dialog.Root open={open} onOpenChange={onOpenChange}>
-        <Dialog className="max-h-vh-80 flex flex-col sm:max-w-156.25">
+        <Dialog size="xl" className="flex max-h-vh-80 flex-col">
           <UploadDialogHeader />
           <form
             onSubmit={controller.handleSubmit}
@@ -335,9 +338,9 @@ function UsageCounter({ usageStats }: { readonly usageStats: UsageStats }) {
     usageStats.documentsThisMonth >= usageStats.documentsLimit;
   return (
     <div className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-      <span className="text-muted-foreground">Documents this month</span>
+      <span className="text-kumo-secondary">Documents this month</span>
       <span
-        className={isOverLimit ? "text-destructive font-medium" : "font-medium"}
+        className={isOverLimit ? "text-kumo-danger font-medium" : "font-medium"}
       >
         {usageStats.documentsThisMonth} / {usageStats.documentsLimit}
       </span>
@@ -351,12 +354,15 @@ function DocumentLimitAlert({
   readonly usageStats: UsageStats | null | undefined;
 }) {
   return (
-    <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm">
-      You've reached your monthly document limit.{" "}
-      {usageStats?.plan === "free" && (
-        <span>Upgrade to Professional for up to 500 documents per month.</span>
-      )}
-    </div>
+    <Banner
+      variant="error"
+      size="sm"
+      description={
+        usageStats?.plan === "free"
+          ? "You've reached your monthly document limit. Upgrade to Professional for up to 500 documents per month."
+          : "You've reached your monthly document limit."
+      }
+    />
   );
 }
 
@@ -424,14 +430,15 @@ function SelectedFileRow({
   readonly uploading: boolean;
 }) {
   return (
-    <div className="bg-muted/50 flex items-start gap-3 rounded-md p-3">
+    <div className="bg-kumo-elevated/50 flex items-start gap-3 rounded-md p-3">
       <FilePreview fileWithStatus={fileWithStatus} />
       <FileDetails fileWithStatus={fileWithStatus} />
       {fileWithStatus.status === "pending" && !uploading && (
         <Button
           type="button"
           variant="ghost"
-          className="h-8 w-8"
+          shape="square"
+          size="sm"
           aria-label={`Remove ${fileWithStatus.file.name}`}
           onClick={() => removeFile(index)}
         >
@@ -454,7 +461,7 @@ function FilePreview({
       <img
         src={fileWithStatus.thumbnail}
         alt="PDF Preview"
-        className="border-border h-20 w-16 rounded border object-cover"
+        className="border-kumo-line h-20 w-16 rounded border object-cover"
       />
     </div>
   );
@@ -468,14 +475,12 @@ function FileDetails({
   return (
     <div className="min-w-0 flex-1">
       <div className="mb-1 flex items-center justify-between gap-2">
-        <p className="truncate text-sm font-medium">
-          {fileWithStatus.file.name}
-        </p>
+        <Text as="p" size="sm" bold truncate>{fileWithStatus.file.name}</Text>
       </div>
       <FileMetadata fileWithStatus={fileWithStatus} />
       <UploadProgressBar fileWithStatus={fileWithStatus} />
       {fileWithStatus.status === "error" && fileWithStatus.error && (
-        <p className="text-destructive mt-1 text-xs">{fileWithStatus.error}</p>
+        <Text as="p" variant="error" size="xs" DANGEROUS_className="mt-1">{fileWithStatus.error}</Text>
       )}
     </div>
   );
@@ -487,7 +492,7 @@ function FileMetadata({
   readonly fileWithStatus: FileWithStatus;
 }) {
   return (
-    <p className="text-muted-foreground mb-2 text-xs">
+    <p className="text-kumo-secondary mb-2 text-xs">
       {formatFileSize(fileWithStatus.file.size)}
       <PageCountText fileWithStatus={fileWithStatus} />
       <RetryCountText fileWithStatus={fileWithStatus} />
@@ -518,7 +523,7 @@ function RetryCountText({
   if (fileWithStatus.retryCount === undefined || fileWithStatus.retryCount <= 0)
     return null;
   return (
-    <span className="text-warning ml-2">
+    <span className="text-kumo-warning ml-2">
       (Retry {fileWithStatus.retryCount}/{MAX_RETRIES})
     </span>
   );
@@ -796,14 +801,12 @@ function showUploadSummary({
 function getStatusIcon(status: FileWithStatus["status"]) {
   switch (status) {
     case "success":
-      return <CheckCircle2 className="text-success h-4 w-4" />;
+      return <CheckCircle2 className="text-kumo-success h-4 w-4" />;
     case "error":
-      return <AlertCircle className="text-destructive h-4 w-4" />;
+      return <AlertCircle className="text-kumo-danger h-4 w-4" />;
     case "uploading":
-      return (
-        <div className="border-primary h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" />
-      );
+      return <Loader size="sm" />;
     default:
-      return <FileIcon className="text-muted-foreground h-4 w-4" />;
+      return <FileIcon className="text-kumo-secondary h-4 w-4" />;
   }
 }

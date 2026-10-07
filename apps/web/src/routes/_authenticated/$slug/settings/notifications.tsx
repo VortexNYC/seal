@@ -9,16 +9,17 @@ import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Label } from "@cloudflare/kumo/components/label";
 import { Switch } from "@cloudflare/kumo/components/switch";
+import { Text } from "@cloudflare/kumo/components/text";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Bell, Save, X } from "lucide-react";
+import { Bell, FloppyDisk as Save, X } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { SettingsBody } from "@/components/settings-body";
 import { SettingsSection } from "@/components/settings-section";
 import { UserNotificationPreferences } from "@/components/settings/user-notification-preferences";
-import { FormSkeleton } from "@/components/skeletons";
+import { FormSkeleton, PageFormSkeleton } from "@/components/skeletons";
 import {
   getNotificationSettings,
   updateNotificationSettings,
@@ -29,7 +30,7 @@ export const Route = createFileRoute(
   "/_authenticated/$slug/settings/notifications"
 )({
   component: NotificationSettings,
-  pendingComponent: FormSkeleton,
+  pendingComponent: () => <PageFormSkeleton title="Notifications" />,
 });
 
 function NotificationSettings() {
@@ -76,16 +77,14 @@ function NotificationSettings() {
   if (isError) {
     return (
       <PageWrapper title="Notifications">
-        <SettingsBody wide>
+        <SettingsBody>
           <SettingsSection
             title="Workspace notifications"
             description="Workspace notification settings need admin access."
           >
-            <p className="text-muted-foreground m-0 text-sm">
-              {error instanceof Error
+            <Text as="p" variant="secondary" size="sm" DANGEROUS_className="m-0">{error instanceof Error
                 ? error.message
-                : "Your personal preferences are below."}
-            </p>
+                : "Your personal preferences are below."}</Text>
           </SettingsSection>
           <YourPreferencesBlock />
         </SettingsBody>
@@ -148,15 +147,15 @@ function NotificationSettings() {
 
   if (!notificationSettings) {
     return (
-      <PageWrapper title="Notification Settings">
+      <PageWrapper title="Notifications">
         <FormSkeleton />
       </PageWrapper>
     );
   }
 
   return (
-    <PageWrapper title="Notification Settings">
-      <SettingsBody wide>
+    <PageWrapper title="Notifications">
+      <SettingsBody>
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <SettingsSection
             title="Reminder schedule"
@@ -167,23 +166,22 @@ function NotificationSettings() {
               {formData.reminderSchedule.map((day) => (
                 <span
                   key={day}
-                  className="border-border bg-muted/50 text-foreground inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-sm tabular-nums"
+                  className="border-kumo-line bg-kumo-elevated/50 text-kumo-default inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-sm tabular-nums"
                 >
                   Day {day}
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
+                    shape="square"
+                    icon={X}
                     onClick={() => removeReminderDay(day)}
-                    className="text-muted-foreground hover:text-destructive ml-0.5"
                     aria-label={`Remove day ${day}`}
-                  >
-                    <X className="size-3.5" />
-                  </button>
+                  />
                 </span>
               ))}
               {formData.reminderSchedule.length === 0 ? (
-                <p className="text-muted-foreground m-0 text-sm">
-                  No reminders configured
-                </p>
+                <Text as="p" variant="secondary" size="sm" DANGEROUS_className="m-0">No reminders configured</Text>
               ) : null}
             </div>
             <div className="flex items-end gap-2">
@@ -247,15 +245,12 @@ function NotificationSettings() {
               <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex flex-col gap-0.5">
-                    <Label
-                      htmlFor="completion-email"
-                      className="text-sm font-medium"
-                    >
+                    <Label htmlFor="completion-email">
                       Completion email
                     </Label>
-                    <p className="text-muted-foreground m-0 text-xs">
+                    <Text variant="secondary" size="xs">
                       When all recipients have signed
-                    </p>
+                    </Text>
                   </div>
                   <Switch
                     id="completion-email"
@@ -267,15 +262,12 @@ function NotificationSettings() {
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex flex-col gap-0.5">
-                    <Label
-                      htmlFor="viewed-notification"
-                      className="text-sm font-medium"
-                    >
+                    <Label htmlFor="viewed-notification">
                       Viewed notification
                     </Label>
-                    <p className="text-muted-foreground m-0 text-xs">
+                    <Text variant="secondary" size="xs">
                       When a recipient opens the document
-                    </p>
+                    </Text>
                   </div>
                   <Switch
                     id="viewed-notification"
@@ -309,12 +301,8 @@ function NotificationSettings() {
 function YourPreferencesBlock(): React.JSX.Element {
   return (
     <div id="your-preferences" className="flex flex-col gap-3">
-      <h2 className="text-foreground m-0 text-base font-semibold tracking-tight">
-        Your preferences
-      </h2>
-      <p className="text-muted-foreground m-0 text-sm">
-        Email, in-app, and desktop choices for your account — not the workspace.
-      </p>
+      <Text as="h2" variant="heading" DANGEROUS_className="m-0">Your preferences</Text>
+      <Text as="p" variant="secondary" size="sm" DANGEROUS_className="m-0">Email, in-app, and desktop choices for your account — not the workspace.</Text>
       <UserNotificationPreferences />
     </div>
   );

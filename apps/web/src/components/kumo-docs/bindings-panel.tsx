@@ -1,3 +1,4 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Label } from "@cloudflare/kumo/components/label";
@@ -46,7 +47,7 @@ export function BindingsPanel({
       data-kumo-docs="bindings-panel"
       className={cn("flex h-full flex-col", className)}
     >
-      <div className="border-border flex items-center justify-between gap-2 border-b px-3 py-2">
+      <div className="border-kumo-line flex items-center justify-between gap-2 border-b px-3 py-2">
         <span className="text-sm font-medium">Bindings</span>
         {onSave ? (
           <Button type="button" size="sm" onClick={onSave} disabled={saving}>
@@ -57,13 +58,11 @@ export function BindingsPanel({
 
       <div className="flex-1 space-y-3 overflow-y-auto p-3">
         {rows.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            Place fields first, then bind them to structured keys.
-          </p>
+          <Text as="p" variant="secondary" size="sm">Place fields first, then bind them to structured keys.</Text>
         ) : (
           rows.map((row) => (
             <div key={row.fieldId} className="space-y-1.5">
-              <Label className="text-xs">{row.fieldLabel}</Label>
+              <Label>{row.fieldLabel}</Label>
               <div className="flex items-center gap-1.5">
                 <Input
                   aria-label={`Binding key for ${row.fieldLabel}`}

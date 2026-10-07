@@ -1,5 +1,8 @@
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
+import { Table } from "@cloudflare/kumo/components/table";
+import { Tabs } from "@cloudflare/kumo/components/tabs";
+import { Text } from "@cloudflare/kumo/components/text";
 import type { JSX } from "react";
 import { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
@@ -94,22 +97,17 @@ export function XlsxEditor({
       data-kumo-docs="xlsx-editor"
       className={cn("flex flex-col", className)}
     >
-      <div className="border-border flex items-center justify-between gap-2 border-b px-2 py-1">
-        <div className="flex gap-1 overflow-x-auto">
-          {sheets.map((s, index) => (
-            <button
-              key={s.name}
-              type="button"
-              className={cn(
-                "rounded-md px-2 py-1 text-xs",
-                index === active ? "bg-accent font-medium" : "hover:bg-muted"
-              )}
-              onClick={() => setActive(index)}
-            >
-              {s.name}
-            </button>
-          ))}
-        </div>
+      <div className="border-kumo-line flex items-center justify-between gap-2 border-b px-2 py-1">
+        <Tabs
+          variant="segmented"
+          size="sm"
+          value={String(active)}
+          onValueChange={(value) => setActive(Number(value))}
+          tabs={sheets.map((s, index) => ({
+            value: String(index),
+            label: s.name,
+          }))}
+        />
         {onSave ? (
           <Button
             type="button"
@@ -122,27 +120,28 @@ export function XlsxEditor({
         ) : null}
       </div>
       {!sheet ? (
-        <p className="text-muted-foreground p-4 text-sm">No sheet loaded.</p>
+        <Text variant="secondary" size="sm">
+          No sheet loaded.
+        </Text>
       ) : (
         <div className="max-h-128 overflow-auto">
-          <table className="w-full border-collapse text-xs">
-            <tbody>
+          <Table>
+            <Table.Body>
               {sheet.rows.map((row, ri) => (
-                <tr key={ri} className="border-border/60 border-b">
+                <Table.Row key={ri}>
                   {Array.from({ length: colCount }, (_, ci) => (
-                    <td key={ci} className="border-border/40 border p-0">
+                    <Table.Cell key={ci} className="p-0">
                       <Input
                         aria-label={`Cell row ${ri + 1} column ${ci + 1}`}
                         value={row[ci] ?? ""}
                         onChange={(e) => updateCell(ri, ci, e.target.value)}
-                        className="h-8 rounded-none border-0 text-xs shadow-none"
                       />
-                    </td>
+                    </Table.Cell>
                   ))}
-                </tr>
+                </Table.Row>
               ))}
-            </tbody>
-          </table>
+            </Table.Body>
+          </Table>
         </div>
       )}
     </div>

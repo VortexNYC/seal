@@ -2,6 +2,7 @@
  * Personal notification preferences — embedded on workspace Notifications.
  */
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
+import { Select } from "@cloudflare/kumo/components/select";
 import { Label } from "@cloudflare/kumo/components/label";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
@@ -305,12 +306,12 @@ export function UserNotificationPreferences() {
                 Choose how often you receive notification digests
               </Text>
             </div>
-            <select
+            <Select
               id="frequency"
               value={frequency}
-              onChange={(e) => {
+              onValueChange={(value) => {
                 const parsed = parseSelectValue(
-                  e.target.value,
+                  value ?? "",
                   NOTIFICATION_FREQUENCIES
                 );
                 if (parsed) {
@@ -318,12 +319,12 @@ export function UserNotificationPreferences() {
                 }
               }}
               disabled={isUpdating}
-              className="h-10 rounded-md border bg-transparent px-3 py-2 text-base md:text-sm"
+              aria-label="Frequency"
             >
-              <option value="instant">Instant</option>
-              <option value="daily">Daily Digest</option>
-              <option value="weekly">Weekly Digest</option>
-            </select>
+              <Select.Option value="instant">Instant</Select.Option>
+              <Select.Option value="daily">Daily Digest</Select.Option>
+              <Select.Option value="weekly">Weekly Digest</Select.Option>
+            </Select>
           </div>
         </LayerCard.Primary>
       </LayerCard>

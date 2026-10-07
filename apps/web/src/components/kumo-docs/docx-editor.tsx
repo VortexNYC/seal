@@ -1,4 +1,7 @@
 import { Button } from "@cloudflare/kumo/components/button";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Loader } from "@cloudflare/kumo/components/loader";
+import { Text } from "@cloudflare/kumo/components/text";
 import mammoth from "mammoth";
 import type { JSX } from "react";
 import { useEffect, useState } from "react";
@@ -65,34 +68,37 @@ export function DocxEditor({
           <Button
             type="button"
             size="sm"
-            disabled={saving || loading}
+            loading={saving}
+            disabled={loading}
             onClick={() => {
               void onSave(html);
             }}
           >
-            {saving ? "Saving…" : "Save as DOCX"}
+            Save as DOCX
           </Button>
         ) : null}
       </div>
       {loading ? (
-        <p className="text-muted-foreground text-sm">Loading…</p>
+        <LayerCard className="flex min-h-64 items-center justify-center">
+          <Loader size="lg" />
+        </LayerCard>
       ) : (
-        <div
-          className="border-border prose prose-sm dark:prose-invert min-h-64 max-w-none rounded-lg border bg-white p-4 outline-none"
-          contentEditable
-          suppressContentEditableWarning
-          onInput={(event) => {
-            const next = (event.currentTarget as HTMLDivElement).innerHTML;
-            setHtml(next);
-            onChange?.(next);
-          }}
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
+        <LayerCard>
+          <div
+            className="prose prose-sm dark:prose-invert bg-kumo-base min-h-64 max-w-none p-4 outline-none"
+            contentEditable
+            suppressContentEditableWarning
+            onInput={(event) => {
+              const next = (event.currentTarget as HTMLDivElement).innerHTML;
+              setHtml(next);
+              onChange?.(next);
+            }}
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
+        </LayerCard>
       )}
-      <p className="text-muted-foreground text-2xs">
-        Saves a real .docx (OpenXML). Seal reconverts to PDF for signing
-        preview.
-      </p>
+      <Text as="p" variant="secondary" size="xs">Saves a real .docx (OpenXML). Seal reconverts to PDF for signing
+        preview.</Text>
     </div>
   );
 }

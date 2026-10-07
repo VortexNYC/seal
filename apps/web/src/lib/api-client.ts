@@ -1038,6 +1038,14 @@ const documentSchema = z.object({
   allowDictateNextSigner: z.boolean(),
   sentAt: z.number().nullable().optional(),
   deadline: z.number().nullable().optional(),
+  progress: z
+    .object({
+      signed: z.number().int(),
+      total: z.number().int(),
+      waitingOn: z.string().nullable(),
+    })
+    .nullable()
+    .optional(),
   createdAt: z.number(),
   updatedAt: z.number(),
 });
@@ -1212,6 +1220,9 @@ export async function sendDocument(
       unit: "day" | "week" | "month";
     };
     recipientMessages?: Record<string, string>;
+    customMessage?: string;
+    signingMode?: "parallel" | "sequential";
+    allowDictateNextSigner?: boolean;
   }
 ): Promise<void> {
   await apiFetch(
@@ -1956,7 +1967,8 @@ export type ApiReplaceDocumentPdfResult = z.infer<
 export async function replaceDocumentPdf(
   organizationSlug: string,
   publicId: string,
-  input: { contentBase64: string }
+  input: { contentBase64: string },
+  options?: { keepalive?: boolean }
 ): Promise<ApiReplaceDocumentPdfResult> {
   return apiFetch(
     `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/replace-pdf`,
@@ -1964,6 +1976,7 @@ export async function replaceDocumentPdf(
     {
       method: "POST",
       body: JSON.stringify(input),
+      keepalive: options?.keepalive,
     }
   );
 }

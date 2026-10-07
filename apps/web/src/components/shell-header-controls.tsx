@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@cloudflare/kumo/components/button";
 import { Moon, Sun } from "@phosphor-icons/react";
 
 import { NotificationsPopover } from "@/components/notifications/notifications-popover";
@@ -22,15 +23,15 @@ export function ShellHeaderControls(): React.JSX.Element | null {
   return (
     <div className="flex shrink-0 items-center gap-1">
       <NotificationsPopover slug={shell.slug} organizationSlug={shell.slug} />
-      <button
-        type="button"
-        className="text-foreground hover:bg-accent inline-flex size-8 items-center justify-center rounded-lg"
+      <Button
+        variant="ghost"
+        shape="square"
+        size="sm"
         onClick={() => setTheme(isDark ? "light" : "dark")}
         aria-pressed={isDark}
         aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      >
-        {isDark ? <Moon className="size-4" /> : <Sun className="size-4" />}
-      </button>
+        icon={isDark ? Moon : Sun}
+      />
     </div>
   );
 }

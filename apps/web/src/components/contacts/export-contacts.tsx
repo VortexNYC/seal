@@ -71,8 +71,7 @@ export function ExportContacts({ contacts }: ExportContactsProps) {
       size="sm"
       onClick={handleExport}
       disabled={contacts.length === 0}
-    >
-      <Download className="mr-2 h-4 w-4" />
+     icon={Download}>
       Export CSV
     </Button>
   );

@@ -350,7 +350,7 @@ export interface paths {
         put?: never;
         /**
          * Send a document
-         * @description Sends the document to all recipients and transitions it from `draft` to `sent`. The document must have at least one recipient.
+         * @description Sends the document and transitions it from `draft` to `sent`. The document must have at least one recipient. `signing_mode` `sequential` invites only the current signer group.
          */
         post: operations["sendDocument"];
         delete?: never;
@@ -2369,6 +2369,22 @@ export interface operations {
                 "application/json": {
                     /** @description Custom message included in the invitation email */
                     message?: string;
+                    /** @description Send invitation email. Defaults to true. */
+                    notify?: boolean;
+                    /**
+                     * @description How many days recipients have to sign.
+                     * @example 14
+                     */
+                    expires_in_days?: number;
+                    /**
+                     * @description parallel invites everyone still open. sequential invites only the earliest open signer group, then the next group after that group finishes.
+                     * @enum {string}
+                     */
+                    signing_mode?: "parallel" | "sequential";
+                    /**
+                     * @description When signing_mode is sequential, each signer may choose who signs next.
+                     */
+                    allow_dictate_next_signer?: boolean;
                 };
             };
         };
@@ -4002,7 +4018,8 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    ids: string[];
+                    ids?: string[];
+                    document_ids?: string[];
                     message?: string;
                 };
             };

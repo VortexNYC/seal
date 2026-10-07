@@ -1,4 +1,6 @@
-import { Upload } from "lucide-react";
+import { Text } from "@cloudflare/kumo/components/text";
+import { Button } from "@cloudflare/kumo/components/button";
+import { UploadSimple as Upload } from "@phosphor-icons/react";
 import type { JSX } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDropzone, type FileRejection } from "react-dropzone";
@@ -88,7 +90,7 @@ export function FileUpload({
     [multiple, onFilesAccepted, onFilesChange, onFilesRejected]
   );
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps } = useDropzone({
     accept,
     multiple,
     disabled,
@@ -97,38 +99,30 @@ export function FileUpload({
 
   return (
     <div data-kumo-docs="file-upload" className={cn("space-y-3", className)}>
-      <div
+      <Button
         {...getRootProps()}
-        className={cn(
-          "border-border bg-muted/40 text-foreground flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-5 py-6 text-center transition-colors",
-          "hover:border-foreground/40 hover:bg-muted/60",
-          isDragActive && "border-primary bg-primary/10",
-          disabled && "cursor-not-allowed opacity-50"
-        )}
+        type="button"
+        variant="outline"
+        className="h-auto w-full flex-col py-6"
+        icon={Upload}
+        disabled={disabled}
       >
         <input {...getInputProps()} />
-        <div className="bg-background text-foreground border-border flex size-9 items-center justify-center rounded-full border">
-          <Upload className="size-4" aria-hidden />
-        </div>
-        <div>
-          <p className="text-foreground text-sm font-medium">{title}</p>
-          {description ? (
-            <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed">
-              {description}
-            </p>
-          ) : null}
-        </div>
-      </div>
-      {error ? <p className="text-destructive text-xs">{error}</p> : null}
+        <span className="flex flex-col items-center">
+          <span>{title}</span>
+          {description ? <span>{description}</span> : null}
+        </span>
+      </Button>
+      {error ? <Text as="p" variant="error" size="xs">{error}</Text> : null}
       {showFileList && items.length > 0 ? (
         <ul className="space-y-1">
           {items.map((item) => (
             <li
               key={item.id}
-              className="border-border bg-card text-foreground flex items-center justify-between rounded-md border px-3 py-2 text-xs"
+              className="border-kumo-line bg-kumo-base text-kumo-default flex items-center justify-between rounded-md border px-3 py-2 text-xs"
             >
               <span className="truncate">{item.file.name}</span>
-              <span className="text-muted-foreground tabular-nums">
+              <span className="text-kumo-secondary tabular-nums">
                 {(item.file.size / 1024).toFixed(0)} KB
               </span>
             </li>

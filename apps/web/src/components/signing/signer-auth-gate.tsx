@@ -1,7 +1,8 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
-import { ShieldCheck, Spinner } from "@phosphor-icons/react";
+import { ShieldCheck } from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type ReactElement } from "react";
 
@@ -83,15 +84,11 @@ export function SignerAuthGate({
       <LayerCard className="p-fluid w-full max-w-lg">
         <div className="mb-4 flex items-center gap-2">
           <ShieldCheck className="size-6 shrink-0" weight="duotone" />
-          <h1 className="text-xl font-semibold tracking-tight text-balance">
-            {title}
-          </h1>
+          <Text as="h1" variant="heading">{title}</Text>
         </div>
-        <p className="text-muted-foreground mb-6 text-sm text-pretty">
-          {challengeSent || method === "access_code"
+        <Text as="p" variant="secondary" size="sm" DANGEROUS_className="mb-6">{challengeSent || method === "access_code"
             ? description
-            : "Sending a verification code…"}
-        </p>
+            : "Sending a verification code…"}</Text>
 
         <form
           className="space-y-4"
@@ -115,29 +112,28 @@ export function SignerAuthGate({
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder={method === "email_otp" ? "123456" : "Access code"}
-              className="min-h-12 w-full text-base"
+              className="w-full"
             />
           </div>
 
           <div className="flex w-full flex-col gap-3">
             <Button
               type="submit"
-              className="min-h-12 w-full text-base"
-              disabled={!code.trim() || verifyMutation.isPending}
+              size="lg"
+              className="w-full"
+              disabled={!code.trim()}
+              loading={verifyMutation.isPending}
               data-testid="signer-auth-verify"
             >
-              {verifyMutation.isPending ? (
-                <Spinner className="size-4 animate-spin" />
-              ) : (
-                "Continue"
-              )}
+              Continue
             </Button>
             {method === "email_otp" ? (
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-12 w-full text-base"
-                disabled={challengeMutation.isPending}
+                size="lg"
+                className="w-full"
+                loading={challengeMutation.isPending}
                 onClick={() => challengeMutation.mutate()}
                 data-testid="signer-auth-resend"
               >

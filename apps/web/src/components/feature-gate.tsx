@@ -1,5 +1,6 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
-import { LockIcon } from "lucide-react";
+import { Lock as LockIcon } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
@@ -36,15 +37,13 @@ export function FeatureGate({
       <LayerCard className="border-dashed">
         <LayerCard.Primary>
           <div className="flex items-start gap-3 py-4">
-            <div className="bg-muted flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
-              <LockIcon className="text-muted-foreground h-4 w-4" />
+            <div className="bg-kumo-elevated flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
+              <LockIcon className="text-kumo-secondary h-4 w-4" />
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-medium">
-                {feature} — available on{" "}
-                {tier === "pro" ? "Professional" : "Enterprise"}
-              </p>
-              <p className="text-muted-foreground text-sm">{description}</p>
+              <Text as="p" size="sm" bold>{feature} — available on{" "}
+                {tier === "pro" ? "Professional" : "Enterprise"}</Text>
+              <Text as="p" variant="secondary" size="sm">{description}</Text>
             </div>
           </div>
         </LayerCard.Primary>

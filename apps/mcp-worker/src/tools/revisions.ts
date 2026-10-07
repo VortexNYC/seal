@@ -125,6 +125,7 @@ export function registerRevisionTools(
       const response = await client.post<unknown>(
         "/revisions/accept-all",
         { document_id: args.document_id, output: args.output },
+        undefined,
         authToken
       );
       return createToolResponse(response);

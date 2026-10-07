@@ -22,6 +22,7 @@ interface PdfCanvasLayerProps {
     width: number,
     height: number
   ) => void;
+  onEmptyClick?: (clientX: number, clientY: number) => void;
 }
 
 /**
@@ -39,6 +40,7 @@ export function PdfCanvasLayer({
   selectedFieldId,
   onFieldSelect,
   onFieldUpdate,
+  onEmptyClick,
 }: PdfCanvasLayerProps) {
   const stageRef = useRef<Konva.Stage>(null);
   const [dimensions, setDimensions] = useState({
@@ -80,6 +82,10 @@ export function PdfCanvasLayer({
   ) => {
     // Deselect when clicking on empty area
     if (e.target === e.target.getStage()) {
+      const native = e.evt;
+      if ("clientX" in native) {
+        onEmptyClick?.(native.clientX, native.clientY);
+      }
       onFieldSelect?.(null);
     }
   };

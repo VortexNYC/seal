@@ -48,7 +48,7 @@ function ProfileSettings() {
 
   return (
     <AuthProvider client={client}>
-      <SettingsBody narrow className="items-stretch">
+      <SettingsBody className="items-stretch">
         <SettingsStack className="w-full">
           <UserProfileForm
             className="w-full"

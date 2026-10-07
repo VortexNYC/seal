@@ -41,6 +41,7 @@ function createQueryClient() {
 interface BuildPropsOptions {
   open?: boolean;
   signatureFieldCount?: number;
+  requiresSigningField?: boolean;
   recipients?: Array<{
     _id: Id<"document_recipients">;
     publicId: string;
@@ -144,6 +145,16 @@ describe("SendDocumentDialog", () => {
     renderDialog({ signatureFieldCount: 0 });
     const button = screen.getByRole("button", { name: /Send Document/i });
     expect(button).toBeDisabled();
+  });
+
+  test("lets an approver-only document send without a signature field", () => {
+    renderDialog({ signatureFieldCount: 0, requiresSigningField: false });
+    expect(
+      screen.queryByText("Cannot send document without signature fields.")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Send Document/i })
+    ).not.toBeDisabled();
   });
 
   test("Send button is enabled when signatureFieldCount > 0", () => {

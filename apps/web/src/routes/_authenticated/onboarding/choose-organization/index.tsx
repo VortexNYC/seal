@@ -82,9 +82,9 @@ function RouteComponent() {
   if (showCreate || sorted.length === 0) {
     const hasOrgs = sorted.length > 0;
     return (
-      <div className="bg-background text-foreground flex min-h-dvh flex-col">
+      <div className="bg-kumo-canvas text-kumo-default flex min-h-dvh flex-col">
         {hasOrgs ? (
-          <header className="border-border flex h-14 shrink-0 items-center border-b px-4">
+          <header className="border-kumo-line flex h-14 shrink-0 items-center border-b px-4">
             <Button
               type="button"
               variant="ghost"
@@ -203,21 +203,17 @@ function OrganizationOption({
 
   return (
     <Button
-      className="h-auto w-full justify-start gap-3 py-3"
+      className="w-full justify-start"
       disabled={select.isPending}
       onClick={() => {
         select.mutate(slug, { onSuccess: onSelect });
       }}
       type="button"
       variant="outline"
+      icon={Building}
     >
-      <div className="bg-kumo-elevated flex size-8 items-center justify-center rounded-md">
-        <Building className="size-4" />
-      </div>
-      <div className="text-left">
-        <p className="text-sm font-medium">{name}</p>
-        <p className="text-kumo-secondary text-xs">{slug}</p>
-      </div>
+      <span className="truncate">{name}</span>
+      <span className="text-kumo-secondary truncate">{slug}</span>
     </Button>
   );
 }

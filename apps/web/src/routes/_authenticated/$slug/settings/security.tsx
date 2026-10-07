@@ -1,3 +1,4 @@
+import { Banner } from "@cloudflare/kumo/components/banner";
 import { Textarea } from "@cloudflare/kumo";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
@@ -26,7 +27,7 @@ import { useEffect, useState } from "react";
 import { PageWrapper } from "@/components/page-wrapper";
 import { SettingsBody } from "@/components/settings-body";
 import { SettingsSection } from "@/components/settings-section";
-import { FormSkeleton } from "@/components/skeletons";
+import { FormSkeleton, PageFormSkeleton } from "@/components/skeletons";
 import { useOrganization } from "@/hooks/use-organization";
 import { getSecuritySettings, updateSecuritySettings } from "@/lib/api-client";
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
@@ -35,7 +36,7 @@ import { toast } from "@/lib/toast";
 export const Route = createFileRoute("/_authenticated/$slug/settings/security")(
   {
     component: SecuritySettings,
-    pendingComponent: FormSkeleton,
+    pendingComponent: () => <PageFormSkeleton title="Security Settings" />,
   }
 );
 
@@ -185,20 +186,21 @@ function SecuritySettingsContent() {
 
   return (
     <PageWrapper title="Security Settings">
-      <SettingsBody wide>
+      <SettingsBody>
         <form onSubmit={handleSubmit} className="grid gap-5 lg:grid-cols-2">
           {!isOwner && (
-            <div className="border-warning/30 bg-warning-surface rounded-lg border p-4 lg:col-span-2">
-              <p className="text-warning text-sm">
-                Only workspace owners can change these settings.
-              </p>
-            </div>
+            <Banner
+              className="lg:col-span-2"
+              variant="alert"
+              size="sm"
+              description="Only workspace owners can change these settings."
+            />
           )}
 
-          <p className="text-muted-foreground text-sm lg:col-span-2">
+          <p className="text-kumo-secondary text-sm lg:col-span-2">
             Personal 2FA is under{" "}
             <Link
-              className="text-foreground underline-offset-4 hover:underline"
+              className="text-kumo-default underline-offset-4 hover:underline"
               params={{ slug }}
               to="/$slug/settings/profile/security"
             >
@@ -206,7 +208,7 @@ function SecuritySettingsContent() {
             </Link>
             . Document activity is in the{" "}
             <Link
-              className="text-foreground underline-offset-4 hover:underline"
+              className="text-kumo-default underline-offset-4 hover:underline"
               params={{ slug }}
               to="/$slug/settings/audit-log"
             >
@@ -276,8 +278,7 @@ function SecuritySettingsContent() {
           </SettingsSection>
 
           <div className="flex justify-end lg:col-span-2">
-            <Button type="submit" disabled={isSubmitting || !isOwner}>
-              <FloppyDisk className="mr-2 h-4 w-4" />
+            <Button type="submit" disabled={isSubmitting || !isOwner} icon={FloppyDisk}>
               {isSubmitting ? "Saving…" : "Save changes"}
             </Button>
           </div>

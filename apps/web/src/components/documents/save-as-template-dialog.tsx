@@ -17,6 +17,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { saveAsTemplate } from "@/lib/api-client";
+import { RailBack } from "./rail-back";
 import { toast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
 
@@ -27,6 +28,7 @@ interface SaveAsTemplateDialogProps {
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
   organizationSlug: string;
+  presentation?: "dialog" | "panel";
 }
 
 export function SaveAsTemplateDialog({
@@ -36,6 +38,7 @@ export function SaveAsTemplateDialog({
   onOpenChange,
   onSuccess,
   organizationSlug,
+  presentation = "dialog",
 }: SaveAsTemplateDialogProps) {
   const [name, setName] = useState(`${documentName} Template`);
   const [description, setDescription] = useState("");
@@ -74,23 +77,10 @@ export function SaveAsTemplateDialog({
     }
   };
 
-  return (
-    <Dialog.Root
-      open={open}
-      onOpenChange={(nextOpen) => onOpenChange(nextOpen)}
-    >
-      <Dialog size="sm" className="p-6">
-        <Dialog.Title>
-          <span className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Save as Template
-          </span>
-        </Dialog.Title>
-        <Dialog.Description>
-          Create a reusable template from "{documentName}". All signature fields
-          will be preserved and can be assigned to new recipients when you use
-          the template.
-        </Dialog.Description>
+  const templateDescription = `Create a reusable template from "${documentName}". Signature fields stay on the template.`;
+
+  const templateBody = (
+    <>
 
         <div className="space-y-4 py-4">
           <Input
@@ -116,9 +106,7 @@ export function SaveAsTemplateDialog({
               rows={3}
               maxLength={500}
             />
-            <p className="text-kumo-secondary text-right text-xs">
-              {description.length}/500
-            </p>
+            <Text as="p" variant="secondary" size="xs">{description.length}/500</Text>
           </div>
         </div>
 
@@ -139,6 +127,41 @@ export function SaveAsTemplateDialog({
             Save Template
           </Button>
         </div>
+    </>
+  );
+
+  if (presentation === "panel") {
+    if (!open) return null;
+    return (
+      <div data-testid="save-template-panel" className="flex flex-col gap-3">
+        <RailBack onBack={() => onOpenChange(false)} tip="Back to the document" />
+        <div>
+          <Text as="p" size="sm" bold>
+            Save as template
+          </Text>
+          <Text as="p" variant="secondary" size="xs">
+            {templateDescription}
+          </Text>
+        </div>
+        {templateBody}
+      </div>
+    );
+  }
+
+  return (
+    <Dialog.Root
+      open={open}
+      onOpenChange={(nextOpen) => onOpenChange(nextOpen)}
+    >
+      <Dialog size="sm" className="p-6">
+        <Dialog.Title>
+          <span className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Save as Template
+          </span>
+        </Dialog.Title>
+        <Dialog.Description>{templateDescription}</Dialog.Description>
+        {templateBody}
       </Dialog>
     </Dialog.Root>
   );

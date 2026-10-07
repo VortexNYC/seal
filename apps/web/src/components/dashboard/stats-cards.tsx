@@ -3,14 +3,10 @@
  * Color only on status semantics (pending / completed), not decorative accents.
  */
 
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Text } from "@cloudflare/kumo/components/text";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import {
-  CheckCircle2Icon,
-  ClockIcon,
-  FileTextIcon,
-  TrendingUpIcon,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { CheckCircle as CheckCircle2Icon, Clock as ClockIcon, FileText as FileTextIcon, type Icon, TrendUp as TrendingUpIcon } from "@phosphor-icons/react";
 
 import { getDocumentStats } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
@@ -19,7 +15,7 @@ interface StatCardProps {
   title: string;
   value: string | number;
   subtitle: string;
-  icon: LucideIcon;
+  icon: Icon;
   tone?: "neutral" | "warning" | "success";
   children?: React.ReactNode;
 }
@@ -33,30 +29,30 @@ function StatCard({
   children,
 }: StatCardProps): React.ReactElement {
   return (
-    <div
+    <LayerCard
       aria-label={`${title}: ${value}`}
-      className="border-border bg-card flex flex-col gap-1 rounded-lg border p-4"
+      className="flex flex-col gap-1 p-4"
     >
       <div className="flex items-center justify-between gap-2">
-        <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+        <Text variant="secondary" size="xs">
           {title}
-        </p>
+        </Text>
         <Icon
           className={cn(
-            "size-3.5 shrink-0",
-            tone === "warning" && "text-warning",
-            tone === "success" && "text-success",
-            tone === "neutral" && "text-muted-foreground"
+            "size-4 shrink-0",
+            tone === "warning" && "text-kumo-warning",
+            tone === "success" && "text-kumo-success",
+            tone === "neutral" && "text-kumo-secondary"
           )}
           strokeWidth={2}
         />
       </div>
-      <p className="text-2xl font-semibold tracking-tight tabular-nums">
-        {value}
-      </p>
-      <p className="text-muted-foreground text-xs">{subtitle}</p>
+      <Text size="lg">{value}</Text>
+      <Text variant="secondary" size="xs">
+        {subtitle}
+      </Text>
       {children}
-    </div>
+    </LayerCard>
   );
 }
 
@@ -101,7 +97,7 @@ export function StatsCards({
         icon={TrendingUpIcon}
       >
         <div
-          className="bg-muted mt-2 h-1.5 w-full overflow-hidden rounded-full"
+          className="bg-kumo-elevated mt-2 h-1.5 w-full overflow-hidden rounded-full"
           role="meter"
           aria-label="Completion rate"
           aria-valuenow={stats.completionRate}

@@ -13,6 +13,7 @@ import {
   user as userTable,
 } from "../global/schema.js";
 import { writeAuditLog } from "../platform/audit-log.js";
+import { presentedWorkflowStatus } from "../platform/workflow-status.js";
 import { autoStampRecipientFields } from "../platform/auto-sign-fields.js";
 import { certificateStorageKey } from "../platform/certificate-of-completion.js";
 import { generateAndStoreCertificateOfCompletion } from "../platform/certificate-store.js";
@@ -51,11 +52,13 @@ import { getSessionUser } from "../platform/session.js";
 import {
   isSignerAuthVerified,
   markAccessCodeVerified,
+  markSessionVerified,
   maskEmail,
   normalizeAuthMethod,
   OTP_TTL_MS,
   parseSignerAuthState,
   serializeSignerAuthState,
+  sessionMatchesRecipient,
   startEmailOtpChallenge,
   verifyAccessCode,
   verifyEmailOtpChallenge,
@@ -67,6 +70,7 @@ import {
 } from "../platform/signing-submit.js";
 import { recordUsageEvent } from "../platform/usage-events.js";
 import { emitWebhookEvent } from "../platform/webhook-events.js";
+import { inviteNextSequentialGroup } from "./document-send.js";
 
 /**
  * SEA-64 reopen (Vortex live evidence 2026-09-25): public-submit path used
@@ -208,6 +212,21 @@ app.openapi(signingTokenRouteDef, async (c) => {
     return c.json({ error: "Signing token has expired" }, 400);
   }
 
+  if (
+    normalizeAuthMethod(recipient.authMethod) === "email_otp" &&
+    !isSignerAuthVerified(recipient.authMethod, recipient.authenticationData)
+  ) {
+    const session = await getSessionUser(c.env, c.req.raw);
+    if (sessionMatchesRecipient(session?.user.email, recipient.email)) {
+      const authenticationData = serializeSignerAuthState(markSessionVerified());
+      await db
+        .update(recipients)
+        .set({ authenticationData, updatedAt: new Date() })
+        .where(eq(recipients.id, recipient.id));
+      recipient.authenticationData = authenticationData;
+    }
+  }
+
   const docRows = await db
     .select()
     .from(documents)
@@ -217,6 +236,9 @@ app.openapi(signingTokenRouteDef, async (c) => {
   const doc = docRows[0];
   if (!doc || doc.status === "deleted" || doc.documentStatus === "deleted") {
     return c.json({ error: "Document not found" }, 404);
+  }
+  if (doc.status === "voided" || doc.status === "cancelled") {
+    return c.json({ error: "This document was voided" }, 400);
   }
 
   const ownerRows = await db
@@ -304,7 +326,7 @@ app.openapi(signingTokenRouteDef, async (c) => {
         publicId: doc.publicId,
         name: doc.name,
         status: doc.status,
-        workflowStatus: doc.status,
+        workflowStatus: presentedWorkflowStatus(doc.status),
         description: doc.description,
         ownerName: owner?.name || owner?.email,
         ownerEmail: owner?.email ?? null,
@@ -923,6 +945,9 @@ app.openapi(submitRouteDef, async (c) => {
   if (doc.status === "completed") {
     return c.json({ error: "Document is already completed" }, 400);
   }
+  if (doc.status === "voided" || doc.status === "cancelled") {
+    return c.json({ error: "This document was voided" }, 400);
+  }
 
   if (["signed", "approved", "declined"].includes(recipient.status)) {
     return c.json({ error: "Recipient has already completed" }, 403);
@@ -1227,6 +1252,19 @@ app.openapi(submitRouteDef, async (c) => {
       });
       if (!result.success) {
         console.error("[public/submit] signing complete email failed:", result);
+      }
+    }
+
+    if (pendingCount > 0 && doc.signingMode === "sequential") {
+      try {
+        await inviteNextSequentialGroup(db, c.env, {
+          documentId: doc.id,
+          documentName: doc.name,
+          senderName: owner?.name ?? owner?.email ?? "Someone",
+          completedOrder: recipient.order,
+        });
+      } catch (err) {
+        console.error("[public/submit] next signer invitation failed:", err);
       }
     }
 

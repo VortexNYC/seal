@@ -35,7 +35,6 @@ export class DocumentPage {
   readonly zoomOutButton: Locator;
   readonly zoomLevelSelect: Locator;
   readonly mobileZoomLevel: Locator;
-  readonly resetZoomButton: Locator;
   readonly fitButton: Locator;
   readonly recipientsSectionButton: Locator;
   readonly detailsSectionButton: Locator;
@@ -65,7 +64,6 @@ export class DocumentPage {
       .locator("span:not([data-slot='select-value'])")
       .filter({ hasText: /^\d+%$/ })
       .first();
-    this.resetZoomButton = page.getByRole("button", { name: "Reset" });
     this.fitButton = page.getByRole("button", { name: "Fit" });
     this.recipientsSectionButton = page.getByRole("button", {
       name: /^Recipients/,
