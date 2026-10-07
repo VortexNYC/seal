@@ -367,7 +367,7 @@ export function DocumentPagesCapabilityPanel({
       data-docked={docked ? "true" : "false"}
       className={
         docked
-          ? "border-border bg-card flex flex-col gap-3 rounded-xl border p-3"
+          ? "border-kumo-line bg-kumo-base flex flex-col gap-3 rounded-xl border p-3"
           : "flex flex-col gap-4"
       }
     >
@@ -412,7 +412,7 @@ export function DocumentPagesCapabilityPanel({
         className={docked ? "p-0" : undefined}
       />
       {pageCount >= 2 ? (
-        <div className="border-border overflow-hidden rounded-xl border">
+        <div className="border-kumo-line overflow-hidden rounded-xl border">
           <DocumentSplitsPanel
             className={docked ? "max-h-64" : "max-h-112"}
             splits={splits}

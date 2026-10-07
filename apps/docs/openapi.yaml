@@ -2450,8 +2450,9 @@ paths:
       operationId: sendDocument
       summary: Send a document
       description: >
-        Sends the document to all recipients and transitions it from `draft` to
-        `sent`. The document must have at least one recipient.
+        Sends the document and transitions it from `draft` to `sent`.
+        The document must have at least one recipient. `signing_mode`
+        `sequential` invites only the current signer group.
       parameters:
         - name: id
           in: query
@@ -2467,6 +2468,26 @@ paths:
                 message:
                   type: string
                   description: Custom message included in the invitation email
+                notify:
+                  type: boolean
+                  description: Send invitation email. Defaults to true.
+                expires_in_days:
+                  type: integer
+                  minimum: 1
+                  maximum: 365
+                  description: How many days recipients have to sign.
+                signing_mode:
+                  type: string
+                  enum: [parallel, sequential]
+                  description: >
+                    parallel invites everyone still open. sequential invites
+                    only the earliest open signer group, then the next group
+                    after that group finishes.
+                allow_dictate_next_signer:
+                  type: boolean
+                  description: >
+                    When signing_mode is sequential, each signer may choose
+                    who signs next.
       responses:
         "200":
           description: Sent
@@ -4979,17 +5000,25 @@ paths:
       tags: [Documents]
       operationId: bulkSendDocuments
       summary: Send multiple documents
+      description: |
+        Each draft is sent the same way as `POST /documents/send`, including invitation email.
+        Sequential documents invite only the current signer group.
+        Pass `ids` or `document_ids`.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [ids]
               properties:
                 ids:
                   type: array
                   items: { type: string }
+                  maxItems: 50
+                document_ids:
+                  type: array
+                  items: { type: string }
+                  maxItems: 50
                 message: { type: string }
       responses:
         "200":

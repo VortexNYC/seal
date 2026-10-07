@@ -1,3 +1,5 @@
+import { calendarDate } from "@/lib/field-date";
+
 import { DateFieldInput } from "./date-field-input";
 
 interface DateSignedFieldInputProps {
@@ -21,7 +23,7 @@ export function DateSignedFieldInput({
   onChange,
   onValidationChange,
 }: DateSignedFieldInputProps) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = calendarDate(new Date());
   return (
     <DateFieldInput
       label={label}

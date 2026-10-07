@@ -24,12 +24,12 @@ const LINES_PER_PAGE = 50;
 const LEFT_MARGIN = 10;
 
 const DEFAULT_SIZE: Record<FieldType, { width: number; height: number }> = {
-  signature: { width: 33, height: 5 },
-  initials: { width: 13, height: 4 },
-  date: { width: 23, height: 5 },
-  name: { width: 30, height: 5 },
+  signature: { width: 17, height: 4 },
+  initials: { width: 16, height: 4 },
+  date: { width: 11, height: 4 },
+  name: { width: 12, height: 4 },
   checkbox: { width: 5, height: 4 },
-  text: { width: 30, height: 5 },
+  text: { width: 11, height: 4 },
 };
 
 const LINE_BOTTOM_ANCHORED = new Set<FieldType>(["signature", "initials"]);

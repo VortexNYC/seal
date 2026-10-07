@@ -5,20 +5,21 @@
  * Route: /{slug}/settings/signing
  */
 
+import { Text } from "@cloudflare/kumo/components/text";
 import { Textarea } from "@cloudflare/kumo";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
 import { Input } from "@cloudflare/kumo/components/input";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { PenTool, Save } from "lucide-react";
+import { FloppyDisk as Save, PenNib as PenTool } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { SettingsBody } from "@/components/settings-body";
 import { SettingsSection } from "@/components/settings-section";
 import { SigningChromeSection } from "@/components/settings/signing-chrome-section";
-import { FormSkeleton } from "@/components/skeletons";
+import { FormSkeleton, PageFormSkeleton } from "@/components/skeletons";
 import { getSigningSettings, updateSigningSettings } from "@/lib/api-client";
 import { toast } from "@/lib/toast";
 
@@ -32,7 +33,7 @@ const SIGNATURE_TYPE_OPTIONS = [
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/signing")({
   component: SigningSettings,
-  pendingComponent: FormSkeleton,
+  pendingComponent: () => <PageFormSkeleton title="Signing Settings" />,
 });
 
 function SigningSettings() {
@@ -136,7 +137,7 @@ function SigningSettings() {
 
   return (
     <PageWrapper title="Signing Settings">
-      <SettingsBody wide>
+      <SettingsBody>
         <form onSubmit={handleSubmit} className="grid gap-5 lg:grid-cols-2">
           <SettingsSection
             className="lg:col-span-2"
@@ -214,9 +215,7 @@ function SigningSettings() {
                   }
                 />
               </div>
-              <p className="text-muted-foreground mb-2.5 text-sm">
-                after the document is sent
-              </p>
+              <Text as="p" variant="secondary" size="sm" DANGEROUS_className="mb-2.5">after the document is sent</Text>
             </div>
           </SettingsSection>
 

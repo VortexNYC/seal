@@ -179,7 +179,7 @@ export function DocumentStructurePanel({
       data-docked={docked ? "true" : "false"}
       className={cn(
         docked
-          ? "border-border bg-card space-y-3 rounded-xl border p-3"
+          ? "border-kumo-line bg-kumo-base space-y-3 rounded-xl border p-3"
           : "space-y-4"
       )}
     >
@@ -187,12 +187,12 @@ export function DocumentStructurePanel({
         blocks={blocks}
         activeId={activeBlockId}
         onSelect={(block) => setActiveBlockId(block.id)}
-        className="border-border max-h-64 overflow-hidden rounded-xl border"
+        className="border-kumo-line max-h-64 overflow-hidden rounded-xl border"
       />
       {!docked && pageWidth > 0 && pageHeight > 0 ? (
-        <div className="border-border relative hidden overflow-hidden rounded-xl border lg:block">
+        <div className="border-kumo-line relative hidden overflow-hidden rounded-xl border lg:block">
           <div
-            className="bg-muted relative"
+            className="bg-kumo-elevated relative"
             style={{ width: pageWidth, height: Math.min(pageHeight, 240) }}
           >
             <LayoutBlockOverlay
@@ -212,7 +212,7 @@ export function DocumentStructurePanel({
           if (!canEdit) return;
           saveSchema.mutate(next);
         }}
-        className="border-border rounded-xl border"
+        className="border-kumo-line rounded-xl border"
       />
     </div>
   );

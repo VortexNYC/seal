@@ -17,7 +17,7 @@ import { useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { SettingsBody } from "@/components/settings-body";
-import { FormSkeleton } from "@/components/skeletons";
+import { PageFormSkeleton } from "@/components/skeletons";
 import { useOrganization } from "@/hooks/use-organization";
 import { getAuditLogs, type AuditLogList } from "@/lib/api-client";
 
@@ -36,7 +36,7 @@ export const Route = createFileRoute(
   "/_authenticated/$slug/settings/audit-log"
 )({
   component: AuditLogPage,
-  pendingComponent: FormSkeleton,
+  pendingComponent: () => <PageFormSkeleton title="Audit Log" />,
 });
 
 function AuditLogPage() {
@@ -138,7 +138,7 @@ function AuditLogPage() {
       description="Review workspace activity and audit events."
       title="Audit Log"
     >
-      <SettingsBody wide>
+      <SettingsBody>
         <LayerCard>
           <LayerCard.Secondary>
             <Text as="h2" variant="heading">

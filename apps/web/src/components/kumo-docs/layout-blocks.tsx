@@ -1,3 +1,5 @@
+import { Text } from "@cloudflare/kumo/components/text";
+import { Button } from "@cloudflare/kumo/components/button";
 import type { JSX } from "react";
 
 import { cn } from "@/lib/utils";
@@ -56,23 +58,21 @@ export function LayoutBlocksPanel({
       data-kumo-docs="layout-blocks-panel"
       className={cn("flex h-full flex-col", className)}
     >
-      <div className="border-border border-b px-3 py-2 text-sm font-medium">
+      <div className="border-kumo-line border-b px-3 py-2 text-sm font-medium">
         Layout blocks
       </div>
       <div className="flex-1 space-y-1 overflow-y-auto p-2">
         {blocks.length === 0 ? (
-          <p className="text-muted-foreground p-2 text-sm">No blocks.</p>
+          <Text as="p" variant="secondary" size="sm" DANGEROUS_className="p-2">No blocks.</Text>
         ) : (
           blocks.map((block) => {
             const active = block.id === activeId;
             return (
-              <button
+              <Button
                 key={block.id}
                 type="button"
-                className={cn(
-                  "border-border hover:bg-accent w-full rounded-md border px-2 py-2 text-left text-xs",
-                  active && "border-primary bg-accent"
-                )}
+                variant={active ? "secondary" : "ghost"}
+                className="h-auto w-full justify-start"
                 onClick={() => {
                   onSelect?.(block);
                   onJumpPage?.(block.page);
@@ -80,16 +80,14 @@ export function LayoutBlocksPanel({
               >
                 <div className="mb-1 flex items-center justify-between gap-2">
                   <span className="font-medium capitalize">{block.type}</span>
-                  <span className="text-muted-foreground tabular-nums">
+                  <span className="text-kumo-secondary tabular-nums">
                     p.{block.page}
                   </span>
                 </div>
                 {block.text ? (
-                  <p className="text-muted-foreground line-clamp-2">
-                    {block.text}
-                  </p>
+                  <Text as="p" variant="secondary" DANGEROUS_className="line-clamp-2">{block.text}</Text>
                 ) : null}
-              </button>
+              </Button>
             );
           })
         )}
@@ -121,13 +119,11 @@ export function LayoutBlockOverlay({
       {pageBlocks.map((block) => {
         const active = block.id === activeId;
         return (
-          <button
+          <Button
             key={block.id}
             type="button"
-            className={cn(
-              "border-info/60 bg-info/10 pointer-events-auto absolute border",
-              active && "border-primary bg-primary/15 ring-primary/40 ring-2"
-            )}
+            variant={active ? "primary" : "outline"}
+            className="pointer-events-auto absolute p-0"
             style={{
               left: block.x * pageWidth,
               top: block.y * pageHeight,

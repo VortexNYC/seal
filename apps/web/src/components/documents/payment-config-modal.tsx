@@ -1,3 +1,4 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
@@ -5,23 +6,21 @@ import { DatePicker } from "@cloudflare/kumo/components/date-picker";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Label } from "@cloudflare/kumo/components/label";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Loader } from "@cloudflare/kumo/components/loader";
 import { Popover } from "@cloudflare/kumo/components/popover";
 import { Select } from "@cloudflare/kumo/components/select";
 import { Switch } from "@cloudflare/kumo/components/switch";
 import { Tabs } from "@cloudflare/kumo/components/tabs";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { format, parse } from "date-fns";
-import {
-  CalendarIcon,
-  CreditCardIcon,
-  Loader2Icon,
-  PlusIcon,
-  TrashIcon,
-} from "lucide-react";
+import { Calendar as CalendarIcon, CreditCard as CreditCardIcon, Plus as PlusIcon, Trash as TrashIcon } from "@phosphor-icons/react";
 import { useCallback, useEffect, useState } from "react";
 
 import type { ApiPaymentConfigDetail } from "@/lib/api-client";
 import { getPaymentConfig, upsertPaymentConfig } from "@/lib/api-client";
+import { finishPaymentSave } from "./document-rail";
+import { RailBack } from "./rail-back";
 import {
   allocate,
   applyRate,
@@ -113,6 +112,8 @@ interface PaymentConfigModalProps {
   onOpenChange: (open: boolean) => void;
   fieldPublicId: string | null;
   organizationSlug: string;
+  presentation?: "dialog" | "panel";
+  onSaved?: () => void;
 }
 
 type PaymentFieldConfig = ApiPaymentConfigDetail;
@@ -219,6 +220,8 @@ export function PaymentConfigModal({
   onOpenChange,
   fieldPublicId,
   organizationSlug,
+  presentation = "dialog",
+  onSaved,
 }: PaymentConfigModalProps) {
   const { data: existingConfig, isLoading: existingConfigLoading } = useQuery({
     queryKey: ["documents", documentPublicId, "payment-configs", fieldPublicId],
@@ -256,6 +259,7 @@ export function PaymentConfigModal({
       draft: form.draft,
       fieldPublicId,
       onOpenChange,
+      onSaved,
       setIsSaving,
       upsertConfig,
     });
@@ -263,7 +267,11 @@ export function PaymentConfigModal({
 
   if (fieldPublicId && existingConfigLoading) {
     return (
-      <PaymentConfigLoadingDialog open={open} onOpenChange={onOpenChange} />
+      <PaymentConfigLoadingDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        presentation={presentation}
+      />
     );
   }
 
@@ -275,6 +283,7 @@ export function PaymentConfigModal({
       total={total}
       onOpenChange={onOpenChange}
       onSave={handleSave}
+      presentation={presentation}
     />
   );
 }
@@ -350,15 +359,28 @@ function usePaymentConfigForm(
 function PaymentConfigLoadingDialog({
   open,
   onOpenChange,
+  presentation = "dialog",
 }: {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
+  readonly presentation?: "dialog" | "panel";
 }) {
+  if (presentation === "panel") {
+    if (!open) return null;
+    return (
+      <div className="flex flex-col gap-3">
+        <RailBack onBack={() => onOpenChange(false)} tip="Back to the fields" />
+        <div className="flex items-center justify-center py-12">
+          <Loader size="lg" />
+        </div>
+      </div>
+    );
+  }
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog className="max-w-2xl">
+      <Dialog size="xl">
         <div className="flex items-center justify-center py-12">
-          <Loader2Icon className="text-muted-foreground h-6 w-6 animate-spin" />
+          <Loader size="lg" />
         </div>
       </Dialog>
     </Dialog.Root>
@@ -372,6 +394,7 @@ function PaymentConfigDialog({
   total,
   onOpenChange,
   onSave,
+  presentation = "dialog",
 }: {
   readonly form: PaymentConfigForm;
   readonly isSaving: boolean;
@@ -379,18 +402,41 @@ function PaymentConfigDialog({
   readonly total: number;
   readonly onOpenChange: (open: boolean) => void;
   readonly onSave: () => void;
+  readonly presentation?: "dialog" | "panel";
 }) {
+  const formBody = (
+    <>
+      <PaymentConfigTabs form={form} total={total} />
+      <PaymentConfigFooter
+        isSaving={isSaving}
+        total={total}
+        onCancel={() => onOpenChange(false)}
+        onSave={onSave}
+      />
+    </>
+  );
+  if (presentation === "panel") {
+    if (!open) return null;
+    return (
+      <div data-testid="payment-config-panel" className="flex flex-col gap-3">
+        <RailBack onBack={() => onOpenChange(false)} tip="Back to the fields" />
+        <div>
+          <Text as="p" size="sm" bold>
+            Configure payment
+          </Text>
+          <Text as="p" variant="secondary" size="xs">
+            Line items, terms, and accepted methods for this payment field.
+          </Text>
+        </div>
+        {formBody}
+      </div>
+    );
+  }
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog className="max-h-vh-85 max-w-2xl overflow-y-auto">
+      <Dialog size="xl" className="max-h-vh-85 overflow-y-auto">
         <PaymentConfigHeader />
-        <PaymentConfigTabs form={form} total={total} />
-        <PaymentConfigFooter
-          isSaving={isSaving}
-          total={total}
-          onCancel={() => onOpenChange(false)}
-          onSave={onSave}
-        />
+        {formBody}
       </Dialog>
     </Dialog.Root>
   );
@@ -400,7 +446,7 @@ function PaymentConfigHeader() {
   return (
     <>
       <Dialog.Title className="flex items-center gap-2">
-        <CreditCardIcon className="text-field-payment h-5 w-5" />
+        <CreditCardIcon className="text-kumo-info h-5 w-5" />
         Configure Payment
       </Dialog.Title>
       <Dialog.Description>
@@ -531,12 +577,14 @@ function InvoiceItemRow({
       </div>
       <Button
         variant="ghost"
-        className="h-8 w-8 shrink-0"
+        shape="square"
+        size="sm"
+        className="shrink-0"
         aria-label="Remove invoice item"
         onClick={() => form.removeItem(item.id)}
         disabled={form.draft.items.length <= 1}
       >
-        <TrashIcon className="text-destructive h-4 w-4" />
+        <TrashIcon className="text-kumo-danger h-4 w-4" />
       </Button>
     </div>
   );
@@ -715,7 +763,7 @@ function CustomDueDaysInput({
           setDraftField("customDueDays", Number(event.target.value))
         }
       />
-      <span className="text-muted-foreground text-sm">days</span>
+      <span className="text-kumo-secondary text-sm">days</span>
     </div>
   );
 }
@@ -760,8 +808,8 @@ function RecurringScheduleSection({
   readonly setDraftField: DraftFieldSetter;
 }) {
   return (
-    <div className="space-y-4 rounded-lg border p-4">
-      <span className="text-sm font-medium">Recurring Schedule</span>
+    <LayerCard className="space-y-4 p-4">
+      <Text size="sm" bold>Recurring Schedule</Text>
       <div className="flex items-center gap-2">
         <span className="text-sm">Every</span>
         <Input
@@ -805,7 +853,7 @@ function RecurringScheduleSection({
         draft={draft}
         setDraftField={setDraftField}
       />
-    </div>
+    </LayerCard>
   );
 }
 
@@ -856,7 +904,7 @@ function RecurringEndConditionSection({
               )
             }
           />
-          <span className="text-muted-foreground text-sm">payments</span>
+          <span className="text-kumo-secondary text-sm">payments</span>
         </div>
       )}
     </div>
@@ -873,8 +921,8 @@ function InstallmentPlanSection({
   readonly total: number;
 }) {
   return (
-    <div className="space-y-4 rounded-lg border p-4">
-      <span className="text-sm font-medium">Installment Plan</span>
+    <LayerCard className="space-y-4 p-4">
+      <Text size="sm" bold>Installment Plan</Text>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Number of Payments</Label>
@@ -897,7 +945,7 @@ function InstallmentPlanSection({
         />
       </div>
       {total > 0 && (
-        <p className="text-muted-foreground text-sm">
+        <p className="text-kumo-secondary text-sm">
           {draft.installmentsCount} payments of{" "}
           <span className="font-medium">
             {formatCents(
@@ -909,7 +957,7 @@ function InstallmentPlanSection({
           </span>
         </p>
       )}
-    </div>
+    </LayerCard>
   );
 }
 
@@ -967,14 +1015,14 @@ function DepositBalanceSection({
     money(depositAmount, DRAFT_CURRENCY)
   ).amount;
   return (
-    <div className="space-y-4 rounded-lg border p-4">
-      <span className="text-sm font-medium">Deposit & Balance</span>
+    <LayerCard className="space-y-4 p-4">
+      <Text size="sm" bold>Deposit & Balance</Text>
       <div className="grid grid-cols-2 gap-4">
         <DepositPercentInput draft={draft} setDraftField={setDraftField} />
         <BalanceDueDaysInput draft={draft} setDraftField={setDraftField} />
       </div>
       {total > 0 && (
-        <div className="text-muted-foreground space-y-1 text-sm">
+        <div className="text-kumo-secondary space-y-1 text-sm">
           <p>
             Deposit:{" "}
             <span className="font-medium">{formatCents(depositAmount)}</span> (
@@ -987,7 +1035,7 @@ function DepositBalanceSection({
           </p>
         </div>
       )}
-    </div>
+    </LayerCard>
   );
 }
 
@@ -1056,9 +1104,7 @@ function LateFeesSection({
       <div className="flex items-center justify-between">
         <div>
           <Label>Late Fees</Label>
-          <p className="text-muted-foreground text-xs">
-            Charge fees for overdue payments
-          </p>
+          <Text as="p" variant="secondary" size="xs">Charge fees for overdue payments</Text>
         </div>
         <Switch
           checked={draft.lateFeeEnabled}
@@ -1084,7 +1130,7 @@ function LateFeeInputs({
   return (
     <div className="grid grid-cols-3 gap-3">
       <div className="space-y-1">
-        <Label className="text-xs">Type</Label>
+        <Label>Type</Label>
         <Select
           value={draft.lateFeeType}
           onValueChange={(value) => {
@@ -1107,7 +1153,7 @@ function LateFeeInputs({
       </div>
       <LateFeeAmountInput draft={draft} setDraftField={setDraftField} />
       <div className="space-y-1">
-        <Label className="text-xs">Grace (days)</Label>
+        <Label>Grace (days)</Label>
         <Input
           aria-label="Late fee grace days"
           type="number"
@@ -1131,7 +1177,7 @@ function LateFeeAmountInput({
 }) {
   return (
     <div className="space-y-1">
-      <Label className="text-xs">
+      <Label>
         {draft.lateFeeType === "percentage" ? "Rate (%)" : "Amount"}
       </Label>
       <Input
@@ -1213,20 +1259,16 @@ function PaymentMethodsSection({ form }: { readonly form: PaymentConfigForm }) {
   return (
     <div className="space-y-3">
       <Label>Accepted Payment Methods</Label>
-      <div className="space-y-2">
+      <div className="flex flex-col gap-2">
         {paymentMethodOptions.map(({ key, label }) => (
-          <label
+          <Checkbox
             key={key}
-            className="hover:bg-muted/50 flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors"
-          >
-            <Checkbox
-              checked={form.draft.paymentMethods[key]}
-              onCheckedChange={(checked) =>
-                form.setPaymentMethod(key, !!checked)
-              }
-            />
-            <span className="text-sm">{label}</span>
-          </label>
+            label={label}
+            checked={form.draft.paymentMethods[key]}
+            onCheckedChange={(checked) =>
+              form.setPaymentMethod(key, !!checked)
+            }
+          />
         ))}
       </div>
     </div>
@@ -1245,9 +1287,7 @@ function TaxSection({
       <div className="flex items-center justify-between">
         <div>
           <Label>Tax</Label>
-          <p className="text-muted-foreground text-xs">
-            Enable automatic tax calculation through Vortex Payments
-          </p>
+          <Text as="p" variant="secondary" size="xs">Enable automatic tax calculation through Vortex Payments</Text>
         </div>
         <Switch
           checked={draft.taxEnabled}
@@ -1270,7 +1310,7 @@ function TaxBehaviorSelect({
 }) {
   return (
     <div className="space-y-2">
-      <Label className="text-xs">Tax Behavior</Label>
+      <Label>Tax Behavior</Label>
       <Select
         value={draft.taxBehavior}
         onValueChange={(value) => {
@@ -1312,10 +1352,7 @@ function PaymentConfigFooter({
   return (
     <div className="mt-4 flex items-center justify-between gap-2 border-t pt-4">
       <div className="flex flex-1 items-center gap-2">
-        <Badge
-          variant="neutral"
-          className="border-field-payment-border text-field-payment"
-        >
+        <Badge variant="neutral">
           Total: {formatCents(total)}
         </Badge>
       </div>
@@ -1323,15 +1360,8 @@ function PaymentConfigFooter({
         <Button variant="outline" onClick={onCancel} disabled={isSaving}>
           Cancel
         </Button>
-        <Button onClick={onSave} disabled={isSaving}>
-          {isSaving ? (
-            <>
-              <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            "Save Payment Config"
-          )}
+        <Button onClick={onSave} disabled={isSaving} loading={isSaving}>
+          {isSaving ? "Saving..." : "Save Payment Config"}
         </Button>
       </div>
     </div>
@@ -1518,6 +1548,7 @@ async function savePaymentConfig(input: {
   readonly draft: PaymentConfigDraft;
   readonly fieldPublicId: string | null;
   readonly onOpenChange: (open: boolean) => void;
+  readonly onSaved?: () => void;
   readonly setIsSaving: (isSaving: boolean) => void;
   readonly upsertConfig: UpsertPaymentConfig;
 }) {
@@ -1536,7 +1567,10 @@ async function savePaymentConfig(input: {
       buildPaymentConfigMutationInput(input.draft, input.fieldPublicId)
     );
     toast.success("Payment configuration saved");
-    input.onOpenChange(false);
+    finishPaymentSave({
+      onSaved: input.onSaved,
+      onOpenChange: input.onOpenChange,
+    });
   } catch (error) {
     toast.error("Failed to save payment configuration", {
       description: getErrorMessage(error),

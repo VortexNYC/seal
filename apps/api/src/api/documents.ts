@@ -6,7 +6,6 @@ import {
   desc,
   asc,
   gte,
-  lt,
   inArray,
   isNull,
   not,
@@ -32,6 +31,10 @@ import {
   user as userTable,
 } from "../global/schema.js";
 import { parseDocumentFromStorage } from "../platform/anydoc.js";
+import {
+  isEnvelopeClosed,
+  presentedWorkflowStatus,
+} from "../platform/workflow-status.js";
 import {
   getAuditActor,
   getAuditRequestMeta,
@@ -75,8 +78,11 @@ import type { Variables } from "../platform/types.js";
 import ai from "./ai.js";
 import documentPower from "./document-power.js";
 import {
+  documentSigningPatch,
   generateSigningToken,
+  recipientsDueInvitation,
   sendDocumentForSigning,
+  signingProgress,
 } from "./document-send.js";
 import { materializeAnnotationsFromParsedText } from "./v1/document-agent.js";
 
@@ -108,6 +114,14 @@ const DocumentSchema = z
     allowDictateNextSigner: z.boolean(),
     sentAt: z.number().nullable().optional(),
     deadline: z.number().nullable().optional(),
+    progress: z
+      .object({
+        signed: z.number().int(),
+        total: z.number().int(),
+        waitingOn: z.string().nullable(),
+      })
+      .nullable()
+      .optional(),
     createdAt: z.number(),
     updatedAt: z.number(),
   })
@@ -159,7 +173,7 @@ function documentResponse(doc: {
     description: doc.description,
     status: doc.documentStatus,
     documentStatus: doc.documentStatus,
-    workflowStatus: doc.status,
+    workflowStatus: presentedWorkflowStatus(doc.status),
     sharingMode: doc.sharingMode,
     signingMode: doc.signingMode,
     aiProcessingStatus: doc.aiProcessingStatus,
@@ -421,7 +435,9 @@ app.openapi(listRouteDef, async (c) => {
     eq(documents.documentStatus, "active"),
   ];
 
-  if (workflowStatus) {
+  if (workflowStatus === "cancelled") {
+    conditions.push(inArray(documents.status, ["cancelled", "voided"]));
+  } else if (workflowStatus) {
     conditions.push(eq(documents.status, workflowStatus));
   }
 
@@ -475,7 +491,38 @@ app.openapi(listRouteDef, async (c) => {
     .where(and(...conditions))
     .orderBy(desc(documents.createdAt));
 
-  return c.json(rows.map(documentResponse));
+  const docIds = rows.map((doc) => doc.id);
+  const recipientRows =
+    docIds.length === 0
+      ? []
+      : await db
+          .select({
+            id: recipients.id,
+            documentId: recipients.documentId,
+            name: recipients.name,
+            email: recipients.email,
+            role: recipients.role,
+            order: recipients.order,
+            status: recipients.status,
+          })
+          .from(recipients)
+          .where(inArray(recipients.documentId, docIds));
+  const partiesByDocument = new Map<string, typeof recipientRows>();
+  for (const recipient of recipientRows) {
+    const existing = partiesByDocument.get(recipient.documentId) ?? [];
+    existing.push(recipient);
+    partiesByDocument.set(recipient.documentId, existing);
+  }
+
+  return c.json(
+    rows.map((doc) => ({
+      ...documentResponse(doc),
+      progress: signingProgress(
+        doc.signingMode,
+        partiesByDocument.get(doc.id) ?? []
+      ),
+    }))
+  );
 });
 
 const DocumentStatsSchema = z
@@ -517,7 +564,13 @@ app.openapi(statsRouteDef, async (c) => {
     const result = await db
       .select({ value: count() })
       .from(documents)
-      .where(and(eq(documents.organizationId, organizationId), ...conditions));
+      .where(
+        and(
+          eq(documents.organizationId, organizationId),
+          eq(documents.documentStatus, "active"),
+          ...conditions
+        )
+      );
     return result[0]?.value ?? 0;
   };
 
@@ -631,6 +684,7 @@ app.openapi(trendsRouteDef, async (c) => {
       .where(
         and(
           eq(documents.organizationId, organizationId),
+          eq(documents.documentStatus, "active"),
           gte(documents.createdAt, startDay)
         )
       )
@@ -641,6 +695,7 @@ app.openapi(trendsRouteDef, async (c) => {
       .where(
         and(
           eq(documents.organizationId, organizationId),
+          eq(documents.documentStatus, "active"),
           eq(documents.status, "completed"),
           gte(documents.updatedAt, startDay)
         )
@@ -703,7 +758,12 @@ app.openapi(recentRouteDef, async (c) => {
   const docs = await db
     .select()
     .from(documents)
-    .where(eq(documents.organizationId, organizationId))
+    .where(
+      and(
+        eq(documents.organizationId, organizationId),
+        eq(documents.documentStatus, "active")
+      )
+    )
     .orderBy(desc(documents.createdAt))
     .limit(limit);
 
@@ -804,6 +864,7 @@ app.openapi(attentionRouteDef, async (c) => {
     .where(
       and(
         eq(documents.organizationId, organizationId),
+        eq(documents.documentStatus, "active"),
         inArray(documents.status, ["sent", "in_progress"])
       )
     );
@@ -1846,6 +1907,16 @@ app.openapi(resendRecipientRouteDef, async (c) => {
       400
     );
   }
+  if (
+    doc.status === "voided" ||
+    doc.status === "cancelled" ||
+    doc.status === "completed"
+  ) {
+    return c.json(
+      { error: "Cannot resend email for this document" },
+      400
+    );
+  }
 
   const recipientRows = await db
     .select()
@@ -1870,7 +1941,32 @@ app.openapi(resendRecipientRouteDef, async (c) => {
     );
   }
 
+  const partyRows = await db
+    .select({
+      id: recipients.id,
+      role: recipients.role,
+      order: recipients.order,
+      status: recipients.status,
+    })
+    .from(recipients)
+    .where(eq(recipients.documentId, doc.id));
+  const parties = partyRows.map((row) =>
+    row.id === recipient.id && recipient.status === "declined"
+      ? { ...row, status: "pending" }
+      : row
+  );
+  const due = recipientsDueInvitation(doc.signingMode, parties);
+  if (!due.includes(recipient.id)) {
+    return c.json({ error: "It is not this person's turn yet" }, 400);
+  }
+
   const now = new Date();
+  if (recipient.status === "declined") {
+    await db
+      .update(recipients)
+      .set({ status: "pending", declinedAt: null, updatedAt: now })
+      .where(eq(recipients.id, recipient.id));
+  }
   const newToken = generateSigningToken();
   const newExpiration = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
@@ -4239,6 +4335,9 @@ const sendDocumentBodySchema = z.object({
     })
     .optional(),
   recipientMessages: z.record(z.string(), z.string()).optional(),
+  customMessage: z.string().optional(),
+  signingMode: z.enum(["parallel", "sequential"]).optional(),
+  allowDictateNextSigner: z.boolean().optional(),
 });
 
 const sendRouteDef = createRoute({
@@ -4305,6 +4404,17 @@ app.openapi(sendRouteDef, async (c) => {
     );
   }
 
+  const signingPatch = documentSigningPatch({
+    signingMode: input.signingMode,
+    allowDictateNextSigner: input.allowDictateNextSigner,
+  });
+  if (signingPatch) {
+    await db
+      .update(documents)
+      .set({ ...signingPatch, updatedAt: new Date() })
+      .where(eq(documents.id, doc.id));
+  }
+
   const expirationMs = input.expirationPeriod
     ? input.expirationPeriod.amount *
       (input.expirationPeriod.unit === "day"
@@ -4353,6 +4463,7 @@ app.openapi(sendRouteDef, async (c) => {
       senderName,
       expirationMs,
       recipientMessages: input.recipientMessages,
+      defaultMessage: input.customMessage,
     }
   );
 
@@ -4441,8 +4552,8 @@ app.openapi(cancelRouteDef, async (c) => {
     return c.json({ error: "Forbidden" }, 403);
   }
 
-  const terminalStatuses = ["completed", "cancelled", "declined", "expired"];
-  if (terminalStatuses.includes(doc.status)) {
+  const terminalStatuses = ["completed", "declined", "expired"];
+  if (terminalStatuses.includes(doc.status) || isEnvelopeClosed(doc.status)) {
     return c.json(
       { error: `Cannot cancel document with status: ${doc.status}` },
       400

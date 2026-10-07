@@ -240,7 +240,7 @@ function ContactsTableContent({
     if (hasFilters) {
       return (
         <Empty
-          icon={<MagnifyingGlass size={48} />}
+          icon={<MagnifyingGlass size={24} />}
           title="No contacts found"
           description="Try adjusting your search or filters to find what you're looking for."
         />
@@ -250,7 +250,7 @@ function ContactsTableContent({
     return (
       <div className="motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2 motion-safe:duration-300">
         <Empty
-          icon={<Users size={48} />}
+          icon={<Users size={24} />}
           title="No contacts yet"
           description="Optional address book — recipients also appear here after you send."
           contents={
@@ -271,7 +271,7 @@ function ContactsTableContent({
     <>
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
-        <div className="bg-muted/50 flex items-center justify-between gap-2 rounded-lg border p-2">
+        <div className="bg-kumo-elevated/50 flex items-center justify-between gap-2 rounded-lg border p-2">
           <Text as="span" variant="secondary" size="sm">
             {selectedIds.size} selected
           </Text>
@@ -320,9 +320,7 @@ function ContactsTableContent({
                   onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 />
                 <Table.Cell>
-                  <p className="text-kumo-default font-medium">
-                    {contact.fullName}
-                  </p>
+                  <Text as="p" bold>{contact.fullName}</Text>
                 </Table.Cell>
                 <Table.Cell>
                   <Text as="p" variant="secondary" size="sm">
@@ -349,11 +347,10 @@ function ContactsTableContent({
                         variant="ghost"
                         size="sm"
                         aria-label={`Contact actions for ${contact.fullName ?? "selected contact"}`}
-                        className="h-8 w-8"
+                        shape="square"
+                        icon={DotsThreeVertical}
                         onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                      >
-                        <DotsThreeVertical className="h-4 w-4" />
-                      </Button>
+                      />
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Content
                       align="end"
@@ -603,7 +600,7 @@ function ContactsPage() {
       <div className="flex w-full flex-col gap-4">
         <div className="flex flex-col gap-3">
           <div className="relative">
-            <MagnifyingGlass className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+            <MagnifyingGlass className="text-kumo-secondary absolute top-1/2 left-3 size-4 -translate-y-1/2" />
             <Input
               type="text"
               aria-label="Search contacts by name"
@@ -627,7 +624,7 @@ function ContactsPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+            <span className="text-kumo-secondary text-xs font-medium tracking-wide uppercase">
               Status
             </span>
             <Button

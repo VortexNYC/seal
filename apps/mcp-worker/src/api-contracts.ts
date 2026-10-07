@@ -161,6 +161,18 @@ export const sendDocumentSchema = z.object({
     .string()
     .optional()
     .describe("Custom message to include in the signing email"),
+  signing_mode: z
+    .enum(["parallel", "sequential"])
+    .optional()
+    .describe(
+      "parallel invites everyone still open. sequential invites only the current signer group, then the next group after they finish."
+    ),
+  allow_dictate_next_signer: z
+    .boolean()
+    .optional()
+    .describe(
+      "When signing_mode is sequential, each signer may choose who signs next."
+    ),
 });
 export type SendDocumentInput = z.infer<typeof sendDocumentSchema>;
 

@@ -350,6 +350,7 @@ app.post("/replace-pdf", async (c) => {
   }
 
   const bytes = base64ToBytes(parsed.data.contentBase64);
+  const pageCount = await getPdfPageCount(bytes);
   const storageId = `uploads/${crypto.randomUUID()}`;
   await c.env.DOCUMENTS_BUCKET.put(storageId, bytes, {
     httpMetadata: { contentType: "application/pdf" },
@@ -366,6 +367,7 @@ app.post("/replace-pdf", async (c) => {
       storageKey: storageId,
       size: bytes.byteLength,
       contentType: "application/pdf",
+      pageCount,
       updatedAt: new Date(),
     })
     .where(eq(documents.id, doc.id));

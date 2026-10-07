@@ -2,7 +2,9 @@
  * Circular progress ring showing document signing progress.
  */
 
-import { cn } from "@/lib/utils";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Meter } from "@cloudflare/kumo/components/meter";
+import { Text } from "@cloudflare/kumo/components/text";
 
 interface ProgressData {
   percentComplete: number;
@@ -18,83 +20,67 @@ interface DocumentProgressRingProps {
   progress: ProgressData;
 }
 
+const PROGRESS_STATS = [
+  { key: "signed", label: "Signed" },
+  { key: "pending", label: "Pending" },
+  { key: "viewed", label: "Viewed" },
+] as const;
+
+/** Counts shown under the meter. Declined appears only after someone declines. */
+export function progressStats(progress: ProgressData): Array<{
+  label: string;
+  value: number;
+  colorClass: string;
+}> {
+  const stats: Array<{ label: string; value: number; colorClass: string }> =
+    PROGRESS_STATS.map((stat) => ({
+      label: stat.label,
+      value: progress.byStatus[stat.key],
+      colorClass: "text-kumo-default",
+    }));
+  if (progress.byStatus.declined > 0) {
+    stats.push({
+      label: "Declined",
+      value: progress.byStatus.declined,
+      colorClass: "text-kumo-danger",
+    });
+  }
+  return stats;
+}
+
+/** Four counts sit in two full rows. Three sit on one row, so none is left alone. */
+export function progressStatColumns(count: number): 2 | 3 {
+  return count === 4 ? 2 : 3;
+}
+
 export function DocumentProgressRing({ progress }: DocumentProgressRingProps) {
-  const ringRadius = 52;
-  const ringCircumference = 2 * Math.PI * ringRadius;
-  const progressOffset =
-    ringCircumference - (progress.percentComplete / 100) * ringCircumference;
-
+  const stats = progressStats(progress);
+  const columns = progressStatColumns(stats.length);
   return (
-    <div className="border-border bg-card animate-fade-in-up flex flex-col items-center gap-4 rounded-2xl border p-6 shadow-sm sm:rounded-xl sm:p-4">
-      {/* Progress Ring */}
-      <div className="relative h-30 w-30 sm:h-22.5 sm:w-22.5">
-        <svg
-          width="120"
-          height="120"
-          viewBox="0 0 120 120"
-          aria-hidden="true"
-          className="-rotate-90 sm:h-22.5 sm:w-22.5"
-        >
-          {/* Background circle */}
-          <circle
-            cx="60"
-            cy="60"
-            r={ringRadius}
-            fill="none"
-            stroke="var(--border)"
-            strokeWidth="8"
-          />
-          {/* Progress circle */}
-          <circle
-            cx="60"
-            cy="60"
-            r={ringRadius}
-            fill="none"
-            stroke="var(--success)"
-            strokeWidth="8"
-            strokeLinecap="round"
-            strokeDasharray={ringCircumference}
-            strokeDashoffset={progressOffset}
-            className="transition-dash duration-500 ease-out"
-          />
-        </svg>
-        {/* Center text */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-foreground text-display font-serif leading-none font-semibold sm:text-xl">
-            {progress.percentComplete}%
-          </span>
-          <span className="text-muted-foreground text-2xs mt-0.5 font-sans">
-            Complete
-          </span>
-        </div>
-      </div>
+    <LayerCard className="flex shrink-0 flex-col gap-4 p-6 sm:p-4">
+      <Meter
+        label="Signing progress"
+        value={progress.percentComplete}
+        customValue={`${progress.percentComplete}% complete`}
+      />
 
-      {/* Status Grid */}
-      <div className="grid w-full grid-cols-2 gap-3 sm:gap-2">
-        <StatusBox
-          value={progress.byStatus.signed}
-          label="Signed"
-          colorClass="text-success"
-        />
-        <StatusBox
-          value={progress.byStatus.pending}
-          label="Pending"
-          colorClass="text-warning"
-        />
-        <StatusBox
-          value={progress.byStatus.viewed}
-          label="Viewed"
-          colorClass="text-foreground"
-        />
-        {progress.byStatus.declined > 0 && (
+      <div
+        className={
+          columns === 2
+            ? "grid w-full grid-cols-2 gap-2"
+            : "grid w-full grid-cols-3 gap-2"
+        }
+      >
+        {stats.map((stat) => (
           <StatusBox
-            value={progress.byStatus.declined}
-            label="Declined"
-            colorClass="text-destructive"
+            key={stat.label}
+            value={stat.value}
+            label={stat.label}
+            colorClass={stat.colorClass}
           />
-        )}
+        ))}
       </div>
-    </div>
+    </LayerCard>
   );
 }
 
@@ -106,18 +92,13 @@ interface StatusBoxProps {
 
 function StatusBox({ value, label, colorClass }: StatusBoxProps) {
   return (
-    <div className="bg-muted rounded-card px-2 py-3 text-center sm:px-1.5 sm:py-2.5">
-      <div
-        className={cn(
-          "font-sans text-xl font-semibold sm:text-base",
-          colorClass
-        )}
-      >
+    <div className="px-2 py-3 text-center sm:px-1.5 sm:py-2.5">
+      <Text size="lg" DANGEROUS_className={colorClass}>
         {value}
-      </div>
-      <div className="text-muted-foreground text-2xs mt-0.5 font-sans">
+      </Text>
+      <Text variant="secondary" size="xs">
         {label}
-      </div>
+      </Text>
     </div>
   );
 }

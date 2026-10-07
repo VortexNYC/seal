@@ -1,13 +1,7 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Collapsible } from "@cloudflare/kumo/components/collapsible";
-import {
-  CheckCircleIcon,
-  ChevronDownIcon,
-  ClockIcon,
-  ExternalLinkIcon,
-  PenLineIcon,
-  XCircleIcon,
-} from "lucide-react";
+import { CaretDown as ChevronDownIcon, CheckCircle as CheckCircleIcon, Clock as ClockIcon, Pen as PenLineIcon, XCircle as XCircleIcon } from "@phosphor-icons/react";
 import type { JSX } from "react";
 
 import { cn } from "@/lib/utils";
@@ -84,23 +78,23 @@ export function InAppSigningSection({
   } => {
     if (isCompleted) {
       return {
-        bgColor: "bg-success-surface",
-        textColor: "text-success",
+        bgColor: "bg-kumo-elevated",
+        textColor: "text-kumo-default",
         icon: CheckCircleIcon,
         label: recipient.status === "approved" ? "Approved" : "Signed",
       };
     }
     if (isDeclined) {
       return {
-        bgColor: "bg-destructive/10",
-        textColor: "text-destructive",
+        bgColor: "bg-kumo-danger/10",
+        textColor: "text-kumo-danger",
         icon: XCircleIcon,
         label: "Declined",
       };
     }
     return {
-      bgColor: "bg-warning-surface",
-      textColor: "text-warning",
+      bgColor: "bg-kumo-elevated",
+      textColor: "text-kumo-secondary",
       icon: ClockIcon,
       label: "Pending",
     };
@@ -111,7 +105,7 @@ export function InAppSigningSection({
 
   return (
     <Collapsible.Root open={isOpen} onOpenChange={onOpenChange}>
-      <Collapsible.Trigger className="hover:bg-muted/50 flex w-full items-center justify-between rounded-lg px-1 py-2 text-left">
+      <Collapsible.Trigger className="flex w-full items-center justify-between text-left">
         <div className="flex items-center gap-2">
           <div
             className={cn(
@@ -123,7 +117,7 @@ export function InAppSigningSection({
             <StatusIcon className="h-4 w-4" />
           </div>
           <div>
-            <div className="text-foreground text-sm font-semibold">
+            <div className="text-kumo-default text-sm font-semibold">
               Your Signature
             </div>
             <div className={cn("text-xs font-medium", status.textColor)}>
@@ -133,7 +127,7 @@ export function InAppSigningSection({
         </div>
         <ChevronDownIcon
           className={cn(
-            "text-muted-foreground h-4 w-4 transition-transform",
+            "text-kumo-secondary h-4 w-4 transition-transform",
             isOpen && "rotate-180"
           )}
         />
@@ -142,16 +136,16 @@ export function InAppSigningSection({
       <Collapsible.Panel className="px-1 pt-2 pb-1">
         {canSign && requiredFields.length > 0 && (
           <div className="mb-3 space-y-2">
-            <div className="text-muted-foreground flex items-center justify-between text-xs">
+            <div className="text-kumo-secondary flex items-center justify-between text-xs">
               <span>Progress</span>
               <span>
                 {filledRequiredFields.length} of {requiredFields.length}{" "}
                 required fields
               </span>
             </div>
-            <div className="bg-muted h-2 overflow-hidden rounded-full">
+            <div className="bg-kumo-elevated h-2 overflow-hidden rounded-full">
               <div
-                className="bg-warning transition-width h-full rounded-full duration-300"
+                className="bg-kumo-default transition-width h-full rounded-full duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -162,34 +156,31 @@ export function InAppSigningSection({
           <div className="mt-4 space-y-2">
             {signingHref ? (
               <>
-                <p className="text-muted-foreground text-sm">
-                  Open the secure signing page to review and complete your
-                  fields.
-                </p>
+                <Text as="p" variant="secondary" size="sm">Open the secure signing page to review and complete your
+                  fields.</Text>
                 <Button
-                  className="h-11 w-full text-sm font-medium"
+                  className="w-full"
+                  size="lg"
                   type="button"
+                  icon={PenLineIcon}
                   onClick={() => {
                     window.open(signingHref, "_blank", "noopener,noreferrer");
                   }}
                 >
-                  <PenLineIcon className="mr-2 h-4 w-4" />
                   Open signing page
-                  <ExternalLinkIcon className="ml-2 h-3.5 w-3.5 opacity-70" />
                 </Button>
               </>
             ) : (
               <>
-                <p className="text-muted-foreground text-sm">
-                  Your signing link is not available yet. Check your email for
-                  the invitation, or ask the sender to resend it.
-                </p>
+                <Text as="p" variant="secondary" size="sm">Your signing link is not available yet. Check your email for
+                  the invitation, or ask the sender to resend it.</Text>
                 <Button
                   disabled
-                  className="h-11 w-full text-sm font-medium"
+                  className="w-full"
+                  size="lg"
                   type="button"
+                  icon={PenLineIcon}
                 >
-                  <PenLineIcon className="mr-2 h-4 w-4" />
                   Signing link unavailable
                 </Button>
               </>
@@ -198,27 +189,25 @@ export function InAppSigningSection({
         )}
 
         {isCompleted && (
-          <div className="bg-success-surface/50 mt-4 rounded-xl py-5 text-center">
-            <div className="bg-success-surface text-success mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
+          <div className="bg-kumo-elevated mt-4 rounded-xl py-5 text-center">
+            <div className="bg-kumo-base text-kumo-default mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
               <CheckCircleIcon className="h-6 w-6" />
             </div>
-            <div className="text-foreground font-sans text-sm font-semibold">
+            <div className="text-kumo-default font-sans text-sm font-semibold">
               {recipient.status === "approved"
                 ? "You have approved this document"
                 : "You have signed this document"}
             </div>
-            <p className="text-muted-foreground mt-1 text-xs">
-              A copy has been sent to your email
-            </p>
+            <Text as="p" variant="secondary" size="xs" DANGEROUS_className="mt-1">A copy has been sent to your email</Text>
           </div>
         )}
 
         {isDeclined && (
           <div className="mt-4 py-4 text-center">
-            <div className="bg-destructive/10 text-destructive mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
+            <div className="bg-kumo-danger/10 text-kumo-danger mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
               <XCircleIcon className="h-6 w-6" />
             </div>
-            <div className="text-foreground font-sans text-sm font-semibold">
+            <div className="text-kumo-default font-sans text-sm font-semibold">
               You have declined this document
             </div>
           </div>

@@ -1,3 +1,4 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Select } from "@cloudflare/kumo/components/select";
@@ -111,7 +112,7 @@ export function SchemaBuilderPanel({
       data-kumo-docs="schema-builder"
       className={cn("flex h-full flex-col", className)}
     >
-      <div className="border-border flex items-center gap-2 border-b px-3 py-2">
+      <div className="border-kumo-line flex items-center gap-2 border-b px-3 py-2">
         <Button
           type="button"
           size="sm"
@@ -149,14 +150,12 @@ export function SchemaBuilderPanel({
       ) : (
         <div className="flex-1 space-y-2 overflow-y-auto p-3">
           {schema.properties.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              No properties yet. Add a field key to start the schema.
-            </p>
+            <Text as="p" variant="secondary" size="sm">No properties yet. Add a field key to start the schema.</Text>
           ) : (
             schema.properties.map((prop) => (
               <div
                 key={prop.id}
-                className="border-border sm:grid-cols-mid-8 grid gap-2 rounded-lg border p-2"
+                className="border-kumo-line sm:grid-cols-mid-8 grid gap-2 rounded-lg border p-2"
               >
                 <Input
                   aria-label="Property key"

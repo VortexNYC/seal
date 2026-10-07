@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { type FieldProperties } from "@/data/document-detail";
 import {
@@ -16,6 +16,17 @@ import { type Id, parseId } from "@/lib/ids";
 import { toast } from "@/lib/toast";
 
 import { parseSelectValue } from "../../../lib/select-values";
+import {
+  FINISH_FIELD_MESSAGE,
+  allowFieldDelete,
+  fieldTypeNeedsOptions,
+  isFieldSetupOpen,
+  nextPlacementSignerId,
+  provisionalPaymentToDelete,
+  signerForPlacement,
+  signerRecipients,
+} from "../document-rail";
+import { fieldPlacementBox, pagePercent } from "../document-surface";
 import { FIELD_DIMENSIONS, type PlacedField } from "../draggable-field";
 import { type FieldOptionsConfig } from "../field-options-dialog";
 
@@ -73,15 +84,6 @@ function formatFieldTypeLabel(fieldType: FieldType): string {
   return `${FIELD_TYPE_LABELS[fieldType]} Field`;
 }
 
-function fieldTypeRequiresOptions(fieldType: FieldType): boolean {
-  return (
-    fieldType === "checkbox" ||
-    fieldType === "dropdown" ||
-    fieldType === "radio" ||
-    fieldType === "multi_select"
-  );
-}
-
 function handleFieldDragOver(e: React.DragEvent): void {
   e.preventDefault();
   e.dataTransfer.dropEffect = "copy";
@@ -117,6 +119,13 @@ export function useFieldPlacement({
   const [showRecipientSelector, setShowRecipientSelector] = useState(false);
   const [selectedRecipientId, setSelectedRecipientId] =
     useState<Id<"document_recipients"> | null>(null);
+
+  useEffect(() => {
+    const next = nextPlacementSignerId(recipients, selectedRecipientId);
+    if (next !== selectedRecipientId) {
+      setSelectedRecipientId(next);
+    }
+  }, [recipients, selectedRecipientId]);
   const [pendingFieldData, setPendingFieldData] = useState<{
     fieldType: FieldType;
     x: number;
@@ -143,6 +152,9 @@ export function useFieldPlacement({
   const [paymentConfigFieldId, setPaymentConfigFieldId] = useState<
     string | null
   >(null);
+  const [provisionalPaymentFieldPublicId, setProvisionalPaymentFieldPublicId] =
+    useState<string | null>(null);
+  const paymentCommittedRef = useRef(false);
 
   const createField = useMutation({
     mutationFn: ({
@@ -222,10 +234,27 @@ export function useFieldPlacement({
 
   // Keyboard shortcut: Delete/Backspace to delete selected field
   const requestFieldDelete = useCallback(() => {
+    if (
+      !allowFieldDelete({
+        showFieldOptions,
+        showPaymentConfigModal,
+        showFieldProperties,
+        provisionalPaymentFieldPublicId,
+      })
+    ) {
+      if (selectedFieldId) toast.info(FINISH_FIELD_MESSAGE);
+      return;
+    }
     if (selectedFieldId) {
       setShowFieldDeleteDialog(true);
     }
-  }, [selectedFieldId]);
+  }, [
+    provisionalPaymentFieldPublicId,
+    selectedFieldId,
+    showFieldOptions,
+    showFieldProperties,
+    showPaymentConfigModal,
+  ]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -249,15 +278,22 @@ export function useFieldPlacement({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedFieldId, requestFieldDelete]);
 
-  const handleFieldDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
-    const fieldType = parseSelectValue(
-      e.dataTransfer.getData("fieldType"),
-      FIELD_TYPES
-    );
-    if (!fieldType) return;
-
-    const signers = recipients.filter((r) => r.role === "signer");
+  const placeFieldAt = async (
+    fieldType: FieldType,
+    clientX: number,
+    clientY: number
+  ): Promise<void> => {
+    if (
+      isFieldSetupOpen({
+        showFieldOptions,
+        provisionalPaymentFieldPublicId,
+      })
+    ) {
+      toast.info(FINISH_FIELD_MESSAGE);
+      setDraggingFieldType(null);
+      return;
+    }
+    const signers = signerRecipients(recipients);
     if (signers.length === 0) {
       toast.error(
         "Please add at least one signer before placing fields. Approvers and viewers cannot have fields assigned."
@@ -292,86 +328,85 @@ export function useFieldPlacement({
     const { width: widthPixels, height: heightPixels } =
       FIELD_DIMENSIONS[fieldType];
 
-    const currentScale = pageRect.width / pdfWidth;
-    const scaledFieldWidth = widthPixels * currentScale;
-    const scaledFieldHeight = heightPixels * currentScale;
-
     // Signature-like fields: cursor marks the rule (field bottom). Others: center.
     const bottomAnchored =
       fieldType === "signature" ||
       fieldType === "free_signature" ||
       fieldType === "initials" ||
       fieldType === "stamp";
-    const dropXPixels = e.clientX - pageRect.left - scaledFieldWidth / 2;
-    const dropYPixels = bottomAnchored
-      ? e.clientY - pageRect.top - scaledFieldHeight
-      : e.clientY - pageRect.top - scaledFieldHeight / 2;
-
-    const unscaledDropX = dropXPixels / currentScale;
-    const unscaledDropY = dropYPixels / currentScale;
-
-    const xPercent = (unscaledDropX / pdfWidth) * 100;
-    const yPercent = (unscaledDropY / pdfHeight) * 100;
-    const widthPercent = (widthPixels / pdfWidth) * 100;
-    const heightPercent = (heightPixels / pdfHeight) * 100;
-
     const pending = {
       fieldType,
-      x: xPercent,
-      y: yPercent,
-      width: widthPercent,
-      height: heightPercent,
+      ...fieldPlacementBox({
+        naturalWidth: pdfWidth,
+        naturalHeight: pdfHeight,
+        renderedWidth: pageRect.width,
+        renderedHeight: pageRect.height,
+        pageLeft: pageRect.left,
+        pageTop: pageRect.top,
+        clientX,
+        clientY,
+        widthPx: widthPixels,
+        heightPx: heightPixels,
+        anchor: bottomAnchored ? "bottom" : "center",
+      }),
       page: targetPageNumber,
     };
     setPendingFieldData(pending);
     setDraggingFieldType(null);
 
-    // One signer → skip assign dialog. Options/payment still need their panels.
-    if (signers.length === 1) {
-      const sole = signers[0];
-      setSelectedRecipientId(sole._id);
-      if (fieldTypeRequiresOptions(fieldType)) {
-        setShowFieldOptions(true);
-        return;
-      }
-      try {
-        const label = formatFieldTypeLabel(fieldType);
-        const created = await createField.mutateAsync({
-          publicId: documentPublicId,
-          input: {
-            recipientPublicId: sole.publicId,
-            fieldType,
-            label,
-            isRequired: true,
-            x: pending.x,
-            y: pending.y,
-            width: pending.width,
-            height: pending.height,
-            page: pending.page,
-            properties: null,
-          },
-        });
-        setSelectedFieldId(parseId("signature_fields", created.id));
-        setPendingFieldData(null);
-        setSelectedRecipientId(null);
-        await refetchFields();
-        toast.success(`${label} placed`);
-        if (fieldType === "payment") {
-          setPaymentConfigFieldId(created.publicId);
-          setShowPaymentConfigModal(true);
-        }
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Failed to create field";
-        toast.error(errorMessage);
-        setPendingFieldData(null);
-        setSelectedRecipientId(null);
-      }
-      return;
+    const signer = signerForPlacement(signers, selectedRecipientId);
+    if (!signer) return;
+    if (selectedRecipientId !== signer._id) {
+      setSelectedRecipientId(signer._id);
     }
 
-    setSelectedRecipientId(signers[0]._id);
-    setShowRecipientSelector(true);
+    if (fieldTypeNeedsOptions(fieldType)) {
+      setShowFieldOptions(true);
+      return;
+    }
+    try {
+      const label = formatFieldTypeLabel(fieldType);
+      const created = await createField.mutateAsync({
+        publicId: documentPublicId,
+        input: {
+          recipientPublicId: signer.publicId,
+          fieldType,
+          label,
+          isRequired: true,
+          x: pending.x,
+          y: pending.y,
+          width: pending.width,
+          height: pending.height,
+          page: pending.page,
+          properties: null,
+        },
+      });
+      setSelectedFieldId(parseId("signature_fields", created.id));
+      setPendingFieldData(null);
+      await refetchFields();
+      toast.success(`${label} placed`);
+      if (fieldType === "payment") {
+        paymentCommittedRef.current = false;
+        setProvisionalPaymentFieldPublicId(created.publicId);
+        setPaymentConfigFieldId(created.publicId);
+        setShowPaymentConfigModal(true);
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to create field";
+      toast.error(errorMessage);
+      setPendingFieldData(null);
+    }
+  };
+
+  const handleFieldDrop = async (e: React.DragEvent): Promise<void> => {
+    e.preventDefault();
+    const fieldType = parseSelectValue(
+      e.dataTransfer.getData("fieldType"),
+      FIELD_TYPES
+    );
+    if (!fieldType) return;
+    await placeFieldAt(fieldType, e.clientX, e.clientY);
   };
 
   const createFieldWithOptions = async (
@@ -400,8 +435,8 @@ export function useFieldPlacement({
         const heightPixels = titleHeight + padding + optionCount * rowHeight;
         const widthPixels = Math.max(minWidth, 150);
 
-        finalWidth = (widthPixels / pdfWidth) * 100;
-        finalHeight = (heightPixels / pdfHeight) * 100;
+        finalWidth = pagePercent(widthPixels, pdfWidth);
+        finalHeight = pagePercent(heightPixels, pdfHeight);
       }
 
       const label =
@@ -430,6 +465,8 @@ export function useFieldPlacement({
       setDraggingFieldType(null);
 
       if (pendingFieldData.fieldType === "payment") {
+        paymentCommittedRef.current = false;
+        setProvisionalPaymentFieldPublicId(created.publicId);
         setPaymentConfigFieldId(created.publicId);
         setShowPaymentConfigModal(true);
       }
@@ -439,7 +476,6 @@ export function useFieldPlacement({
 
       setShowRecipientSelector(false);
       setPendingFieldData(null);
-      setSelectedRecipientId(null);
       setPendingFieldOptions(null);
       setPendingFieldName(null);
     } catch (error) {
@@ -455,7 +491,7 @@ export function useFieldPlacement({
 
     setPendingFieldName(fieldName);
 
-    if (fieldTypeRequiresOptions(pendingFieldData.fieldType)) {
+    if (fieldTypeNeedsOptions(pendingFieldData.fieldType)) {
       setShowRecipientSelector(false);
       setShowFieldOptions(true);
       return;
@@ -473,7 +509,6 @@ export function useFieldPlacement({
   const handleFieldOptionsCancel = () => {
     setShowFieldOptions(false);
     setPendingFieldData(null);
-    setSelectedRecipientId(null);
     setPendingFieldOptions(null);
     setPendingFieldName(null);
     setDraggingFieldType(null);
@@ -541,6 +576,48 @@ export function useFieldPlacement({
     setShowFieldDeleteDialog(false);
   }, [handleFieldDelete]);
 
+  const openExistingPaymentConfig = useCallback((fieldPublicId: string | null): void => {
+    paymentCommittedRef.current = false;
+    setProvisionalPaymentFieldPublicId(null);
+    setPaymentConfigFieldId(fieldPublicId);
+    setShowPaymentConfigModal(true);
+  }, []);
+
+  const commitPaymentConfig = useCallback((): void => {
+    paymentCommittedRef.current = true;
+  }, []);
+
+  const closePaymentConfig = useCallback(async (): Promise<void> => {
+    const provisional = provisionalPaymentFieldPublicId;
+    const committed = paymentCommittedRef.current;
+    setShowPaymentConfigModal(false);
+    setPaymentConfigFieldId(null);
+    setProvisionalPaymentFieldPublicId(null);
+    paymentCommittedRef.current = false;
+    const provisionalToDelete = provisionalPaymentToDelete({
+      provisionalFieldPublicId: provisional,
+      committed,
+    });
+    if (!provisionalToDelete) return;
+    try {
+      await deleteField.mutateAsync({
+        publicId: documentPublicId,
+        fieldPublicId: provisionalToDelete,
+      });
+      await refetchFields();
+      toast.info("Payment field removed.");
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to remove payment field";
+      toast.error(errorMessage);
+    }
+  }, [
+    deleteField,
+    documentPublicId,
+    provisionalPaymentFieldPublicId,
+    refetchFields,
+  ]);
+
   return {
     // State
     draggingFieldType,
@@ -564,9 +641,18 @@ export function useFieldPlacement({
     setShowPaymentConfigModal,
     paymentConfigFieldId,
     setPaymentConfigFieldId,
+    provisionalPaymentFieldPublicId,
+    fieldSetupOpen: isFieldSetupOpen({
+      showFieldOptions,
+      provisionalPaymentFieldPublicId,
+    }),
+    openExistingPaymentConfig,
+    commitPaymentConfig,
+    closePaymentConfig,
     // Handlers
     handleFieldDragOver,
     handleFieldDrop,
+    placeFieldAt,
     handleFieldUpdate,
     handleFieldSelect,
     requestFieldDelete,

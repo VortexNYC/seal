@@ -1,14 +1,18 @@
 import { Button } from "@cloudflare/kumo/components/button";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Loader } from "@cloudflare/kumo/components/loader";
+import { Text } from "@cloudflare/kumo/components/text";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   type ErrorComponentProps,
   createFileRoute,
   useRouter,
 } from "@tanstack/react-router";
-import { ArrowLeftIcon, Loader2Icon, SaveIcon, SendIcon } from "lucide-react";
+import { ArrowLeft as ArrowLeftIcon, DownloadSimple as DownloadIcon, FloppyDisk as SaveIcon, PaperPlaneTilt as SendIcon } from "@phosphor-icons/react";
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 
-import { FIELD_TYPES } from "@/components/documents/field-toolbar";
+import { DocumentToolRow } from "@/components/documents/document-tool-row";
+import type { FieldType } from "@/lib/field-types";
 import { NotFoundPage } from "@/components/not-found-page";
 import { PageWrapper } from "@/components/page-wrapper";
 import { RouteErrorComponent } from "@/components/route-error-component";
@@ -18,17 +22,21 @@ import { useCurrentUser as useUser } from "@/hooks/use-current-user";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import {
   addRecipients as addRecipientsApi,
+  cancelDocument,
+  downloadDocument,
   getAiSettings,
   getSigningSettings,
   removeRecipient as removeRecipientApi,
   replaceDocumentPdf,
   resendRecipientEmail as resendRecipientEmailApi,
-  updateDocument as updateDocumentApi,
 } from "@/lib/api-client";
 import { buildActivityEvents } from "@/lib/document-activity";
-import { isWorkflowStatus } from "@/lib/document-status";
-import { parseSelectValue } from "@/lib/select-values";
-import { countSignatureFields } from "@/lib/signature-fields";
+import {
+  documentHeaderAction,
+  signedPdfFilename,
+  toWorkflowStatus,
+} from "@/lib/document-status";
+import { parseId } from "@/lib/ids";
 import { toast } from "@/lib/toast";
 
 import { AddMyselfDialog } from "../../../../components/documents/add-myself-dialog";
@@ -44,16 +52,23 @@ import {
 } from "../../../../components/documents/ai-field-suggestions";
 import { DeleteFieldDialog } from "../../../../components/documents/delete-field-dialog";
 import { DocumentCanvas } from "../../../../components/documents/document-canvas";
-import { DocumentCapabilityRail } from "../../../../components/documents/document-capability-rail";
-import { DocumentOfficeEditPanel } from "../../../../components/documents/document-office-edit-panel";
-import { DocumentPagesCapabilityPanel } from "../../../../components/documents/document-pages-capability-panel";
 import { DocumentPresence } from "../../../../components/documents/document-presence";
 import { DocumentSidebar } from "../../../../components/documents/document-sidebar";
 import {
-  DocumentLayoutCanvasOverlay,
-  DocumentStructurePanel,
-} from "../../../../components/documents/document-structure-panel";
-import type { DocumentCapabilityId } from "../../../../components/documents/document-workspace";
+  FINISH_FIELD_MESSAGE,
+  activeRailPanel,
+  countSigningFields,
+  asOptionsFieldType,
+  canLeaveFieldSetup,
+  fieldOptionsPanelReady,
+  railStepFor,
+  resolvePagePlaceIntent,
+  resolvePlaceFieldsIntent,
+  resolveSendIntent,
+  sendDocumentReadiness,
+  signerRecipients,
+} from "../../../../components/documents/document-rail";
+import { thumbnailPdfUrl } from "../../../../components/documents/document-surface";
 import { FieldOptionsDialog } from "../../../../components/documents/field-options-dialog";
 import { FieldPropertiesDialog } from "../../../../components/documents/field-properties-dialog";
 import { useDocumentState } from "../../../../components/documents/hooks/use-document-state";
@@ -66,7 +81,6 @@ import { usePdfViewer } from "../../../../components/documents/hooks/use-pdf-vie
 import { useSectionState } from "../../../../components/documents/hooks/use-section-state";
 import { PaymentConfigModal } from "../../../../components/documents/payment-config-modal";
 import { RecipientOptionsDialog } from "../../../../components/documents/recipient-options-dialog";
-import { RecipientSelectorDialog } from "../../../../components/documents/recipient-selector-dialog";
 import { RemoveRecipientDialog } from "../../../../components/documents/remove-recipient-dialog";
 import { SaveAsTemplateDialog } from "../../../../components/documents/save-as-template-dialog";
 import { SendDocumentDialog } from "../../../../components/documents/send-document-dialog";
@@ -111,7 +125,7 @@ export const Route = createFileRoute(
 function DocumentDetailSkeleton(): ReactElement {
   return (
     <PageWrapper title="Document">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+      <div className="flex w-full flex-col gap-4">
         <FormSkeleton />
       </div>
     </PageWrapper>
@@ -152,14 +166,13 @@ function DocumentDetailPage() {
     currentUserFields,
     refetchDocument,
     refetchRecipients,
+    refetchProgress,
     refetchFields,
     refetchCurrentUserRecipient,
     refetchCurrentUserFields,
   } = useDocumentDetail(slug, documentPublicId);
 
-  const signatureFieldCount = countSignatureFields(signatureFields);
-
-  const merchantPaymentsReady = false;
+  const signatureFieldCount = countSigningFields(signatureFields);
 
   const { data: aiSettings } = useQuery({
     queryKey: ["organization", slug, "ai-settings"],
@@ -239,14 +252,6 @@ function DocumentDetailPage() {
   ) => {
     await addRecipientsApi(slug, documentPublicId, recipientsInput);
   };
-  const updateDocument = async (input: {
-    name?: string;
-    description?: string | null;
-    redirectUrl?: string | null;
-    allowDictateNextSigner?: boolean;
-  }) => {
-    await updateDocumentApi(slug, documentPublicId, input);
-  };
   const resendRecipientEmail = async (recipientPublicId: string) => {
     await resendRecipientEmailApi(slug, documentPublicId, recipientPublicId);
   };
@@ -259,11 +264,9 @@ function DocumentDetailPage() {
     : false;
 
   // ── Custom hooks ────────────────────────────────────────────────────────
-  const [capability, setCapability] = useState<DocumentCapabilityId>("fields");
-  const [layoutActiveBlockId, setLayoutActiveBlockId] = useState<string | null>(
-    null
-  );
+  const [armedField, setArmedField] = useState<FieldType | null>(null);
   const [pdfReloadKey, setPdfReloadKey] = useState(0);
+  const [openFieldsToken, setOpenFieldsToken] = useState(0);
   const pdfViewer = usePdfViewer(slug, documentPublicId, pdfReloadKey);
 
   // ?hl=page,x,y,w,h — citation/deep-link highlight (percent-of-page)
@@ -284,29 +287,38 @@ function DocumentDetailPage() {
   }, [hl, pdfViewer.numPages, pdfViewer.setCurrentPage]);
 
   const saveMarkupMutation = useMutation({
-    mutationFn: async (buffer: ArrayBuffer) => {
-      const bytes = new Uint8Array(buffer);
+    mutationFn: async (input: { buffer: ArrayBuffer; keepalive?: boolean }) => {
+      const bytes = new Uint8Array(input.buffer);
       let binary = "";
       const chunk = 0x8000;
       for (let i = 0; i < bytes.length; i += chunk) {
         binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
       }
-      return replaceDocumentPdf(slug, documentPublicId, {
-        contentBase64: btoa(binary),
-      });
-    },
-    onSuccess: () => {
-      toast.success("PDF saved to Seal");
-      setPdfReloadKey((key) => key + 1);
-    },
-    onError: (error) => {
-      toast.error("Failed to save PDF", {
-        description: error instanceof Error ? error.message : "Unknown error",
-      });
+      return replaceDocumentPdf(
+        slug,
+        documentPublicId,
+        { contentBase64: btoa(binary) },
+        { keepalive: input.keepalive }
+      );
     },
   });
+  const savedMarkupUrlRef = useRef<string | null>(null);
+  const [savedMarkupUrl, setSavedMarkupUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!savedMarkupUrlRef.current) return;
+    URL.revokeObjectURL(savedMarkupUrlRef.current);
+    savedMarkupUrlRef.current = null;
+    setSavedMarkupUrl(null);
+  }, [pdfViewer.pdfUrl]);
+  useEffect(() => {
+    return () => {
+      if (!savedMarkupUrlRef.current) return;
+      URL.revokeObjectURL(savedMarkupUrlRef.current);
+      savedMarkupUrlRef.current = null;
+    };
+  }, []);
   const pageThumbnails = usePdfPageThumbnails(
-    pdfViewer.pdfUrl,
+    thumbnailPdfUrl(pdfViewer.pdfUrl, savedMarkupUrl),
     pdfViewer.numPages
   );
 
@@ -357,21 +369,13 @@ function DocumentDetailPage() {
 
   // SEA-85: OCR/detect field_candidates → one-tap Accept on Fields canvas.
   const fieldSuggestions = useAIFieldSuggestions(documentPublicId, {
-    enabled: canEdit && showAiFeatures && capability === "fields",
+    enabled: canEdit && showAiFeatures,
     onApplied: () => {
       void refetchFields();
     },
   });
 
-  // Fields / Mark up / Pages / Layout / read-only view share one EmbedPDF mount.
-  // Office still swaps a panel on the same workspace roof.
-  const sharedPdfCanvas =
-    Boolean(pdfViewer.pdfUrl) &&
-    (!canEdit ||
-      capability === "fields" ||
-      capability === "markup" ||
-      capability === "pages" ||
-      capability === "layout");
+  const sharedPdfCanvas = Boolean(pdfViewer.pdfUrl);
 
   const isExpired = documentData.workflowStatus === "expired";
 
@@ -383,43 +387,12 @@ function DocumentDetailPage() {
     }
   }
 
-  const getSendDocumentValidation = () => {
-    const canSendStatus = isPrepStatus || isExpired;
-    if (!canSendStatus || recipients.length === 0 || (!canEdit && !isExpired)) {
-      return {
-        canSend: false,
-        tooltip:
-          "Document must be in draft or expired status with recipients to send",
-      };
-    }
-
-    const unassignedFields = signatureFields.filter((f) => !f.recipientId);
-    if (unassignedFields.length > 0) {
-      return {
-        canSend: false,
-        tooltip: `${unassignedFields.length} field(s) are not assigned to a recipient. Assign all fields before sending.`,
-      };
-    }
-
-    const signers = recipients.filter((r) => r.role === "signer");
-    const signersWithoutFields = signers.filter(
-      (signer) =>
-        !signatureFields.some((field) => field.recipientId === signer._id)
-    );
-    if (signersWithoutFields.length > 0) {
-      const signerNames = signersWithoutFields
-        .map((s) => s.name || s.email)
-        .join(", ");
-      return {
-        canSend: false,
-        tooltip: `The following signers need at least one signature field: ${signerNames}`,
-      };
-    }
-
-    return { canSend: true };
-  };
-
-  const sendDocumentValidation = getSendDocumentValidation();
+  const sendDocumentValidation = sendDocumentReadiness({
+    workflowStatus: documentData.workflowStatus,
+    documentStatus: documentData.status,
+    recipients,
+    fields: signatureFields,
+  });
 
   const activityEvents = useMemo(
     () => buildActivityEvents(documentData, recipients),
@@ -436,16 +409,6 @@ function DocumentDetailPage() {
         paymentConfig: paymentConfigByFieldId.get(f._id),
       })),
     [signatureFields, paymentConfigByFieldId]
-  );
-
-  const bindingFields = useMemo(
-    () =>
-      signatureFields.map((f) => ({
-        publicId: f.publicId,
-        label: f.label,
-        bindingKey: f.properties?.bindingKey ?? f.properties?.binding_key ?? "",
-      })),
-    [signatureFields]
   );
 
   const sidebarRecipients = useMemo(
@@ -486,6 +449,7 @@ function DocumentDetailPage() {
       );
       docState.setRemoveRecipientOpen(false);
       docState.setRecipientToRemove(null);
+      docState.setRecipientOptionsOpen(false);
       void refetchRecipients();
       void refetchFields();
     } catch (error) {
@@ -497,6 +461,19 @@ function DocumentDetailPage() {
     }
   };
 
+  const handleVoidDocument = async (): Promise<void> => {
+    try {
+      await cancelDocument(slug, documentPublicId);
+      toast.success("Document voided");
+      void refetchDocument();
+      void refetchRecipients();
+      void refetchProgress();
+      void refetchCurrentUserRecipient();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not void");
+    }
+  };
+
   const handleResendEmail = async (recipientId: string) => {
     const recipient = recipients.find((r) => r._id === recipientId);
     if (!recipient) return;
@@ -504,6 +481,7 @@ function DocumentDetailPage() {
     try {
       await resendRecipientEmail(recipient.publicId);
       toast.success("Email resent successfully");
+      void refetchRecipients();
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to resend email"
@@ -539,36 +517,6 @@ function DocumentDetailPage() {
     }
   };
 
-  const handleSaveRedirectUrl = async () => {
-    const url = docState.redirectUrlInput.trim();
-    if (url) {
-      try {
-        const parsed = new URL(url);
-        if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-          docState.setRedirectUrlError("Must use http or https protocol");
-          return;
-        }
-      } catch {
-        docState.setRedirectUrlError("Enter a valid URL");
-        return;
-      }
-    }
-    docState.setRedirectUrlError(null);
-    docState.setIsSavingRedirect(true);
-    try {
-      await updateDocument({
-        redirectUrl: url || null,
-      });
-      toast.success(url ? "Redirect URL saved" : "Redirect URL removed");
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to save redirect URL"
-      );
-    } finally {
-      docState.setIsSavingRedirect(false);
-    }
-  };
-
   const openRemoveRecipientDialog = (recipient: {
     _id: string;
     email: string;
@@ -597,43 +545,156 @@ function DocumentDetailPage() {
   const saveAsTemplateButton =
     canEdit && signatureFields.length > 0 ? (
       <div key="save-template" className="flex-1 sm:flex-none">
+        <span
+          title={
+            canCreateTemplates
+              ? "Save this document as a template"
+              : "Templates require a Professional plan"
+          }
+          className="inline-flex w-full"
+        >
         <Button
-          onClick={() => docState.setSaveAsTemplateOpen(true)}
+          onClick={() => {
+            if (!dismissRail()) return;
+            docState.setSaveAsTemplateOpen(true);
+          }}
           size="sm"
           variant="outline"
           className="w-full"
           disabled={!canCreateTemplates}
-          title={
-            !canCreateTemplates
-              ? "Templates require a Professional plan"
-              : undefined
-          }
-        >
-          <SaveIcon className="mr-2 h-4 w-4" />
+         icon={SaveIcon}>
           <span className="truncate">Save as Template</span>
         </Button>
+        </span>
       </div>
     ) : null;
 
+  const openFieldMenu = (): void => {
+    setOpenFieldsToken((token) => token + 1);
+    if (!openSections.has("fields")) toggleSection("fields");
+  };
+
+  const handlePlaceFields = (): void => {
+    const intent = resolvePlaceFieldsIntent({
+      canEdit,
+      signerCount: signerRecipients(recipients).length,
+    });
+    if (intent === "stay") return;
+    if (intent === "add-recipient") {
+      if (!dismissRail()) return;
+      docState.setAddRecipientOpen(true);
+      return;
+    }
+    openFieldMenu();
+  };
+
+  const handleSendIntent = (): void => {
+    const intent = resolveSendIntent({
+      fieldSetupOpen: fieldPlacement.fieldSetupOpen,
+      canSend: sendDocumentValidation.canSend,
+      canEdit,
+      signerCount: signerRecipients(recipients).length,
+      blockedReason: sendDocumentValidation.tooltip,
+    });
+    if (intent.kind === "finish-field") {
+      toast.info(FINISH_FIELD_MESSAGE);
+      return;
+    }
+    if (intent.kind === "open-send") {
+      dismissRail();
+      docState.setSendDocumentOpen(true);
+      return;
+    }
+    if (intent.kind === "open-add-recipient") {
+      dismissRail();
+      docState.setAddRecipientOpen(true);
+      return;
+    }
+    toast.info(intent.message);
+    if (!intent.openFields || !dismissRail()) return;
+    openFieldMenu();
+  };
+
+  const downloadSignedPdf = (): void => {
+    void downloadDocument(slug, documentPublicId)
+      .then((blob) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = signedPdfFilename(documentData.name);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      })
+      .catch(() => {
+        toast.error("Failed to download the PDF");
+      });
+  };
+
   const sendDocumentButton = (
     <div key="send-document" className="flex-1 sm:flex-none">
-      <Button
-        onClick={() => docState.setSendDocumentOpen(true)}
-        size="sm"
-        variant="primary"
-        className="w-full"
-        disabled={!sendDocumentValidation.canSend}
+      <span
         title={
-          !sendDocumentValidation.canSend
-            ? sendDocumentValidation.tooltip
-            : undefined
+          sendDocumentValidation.canSend
+            ? "Send this document"
+            : sendDocumentValidation.tooltip
         }
+        className="inline-flex"
       >
-        <SendIcon className="mr-2 h-4 w-4" />
-        <span className="truncate">{sendButtonLabel}</span>
-      </Button>
+        <Button
+          onClick={handleSendIntent}
+          size="sm"
+          variant="primary"
+          className="w-full"
+          icon={SendIcon}
+        >
+          <span className="truncate">{sendButtonLabel}</span>
+        </Button>
+      </span>
     </div>
   );
+
+  const dismissRail = (): boolean => {
+    if (!canLeaveFieldSetup(fieldPlacement.fieldSetupOpen)) {
+      toast.info(FINISH_FIELD_MESSAGE);
+      return false;
+    }
+    docState.setAddRecipientOpen(false);
+    docState.setAddMyselfOpen(false);
+    docState.setSendDocumentOpen(false);
+    docState.setSaveAsTemplateOpen(false);
+    docState.setRecipientOptionsOpen(false);
+    docState.setRemoveRecipientOpen(false);
+    docState.setRecipientToRemove(null);
+    fieldPlacement.setShowFieldProperties(false);
+    fieldPlacement.setFieldPropertiesId(null);
+    fieldPlacement.setShowFieldDeleteDialog(false);
+    fieldPlacement.setShowPaymentConfigModal(false);
+    fieldPlacement.setPaymentConfigFieldId(null);
+    fieldPlacement.setShowRecipientSelector(false);
+    return true;
+  };
+
+  const optionsFieldType = asOptionsFieldType(
+    fieldPlacement.pendingFieldData?.fieldType
+  );
+  const railPanelId = activeRailPanel({
+    removeRecipient: docState.removeRecipientOpen,
+    recipientOptions: docState.recipientOptionsOpen,
+    deleteField: fieldPlacement.showFieldDeleteDialog,
+    fieldOptions: fieldOptionsPanelReady(
+      fieldPlacement.showFieldOptions,
+      fieldPlacement.pendingFieldData?.fieldType
+    ),
+    payment: fieldPlacement.showPaymentConfigModal,
+    fieldProperties: fieldPlacement.showFieldProperties,
+    send: docState.sendDocumentOpen,
+    saveTemplate: docState.saveAsTemplateOpen,
+    addMyself: docState.addMyselfOpen,
+    addRecipient: docState.addRecipientOpen,
+  });
+  const railStep = railStepFor(railPanelId);
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
@@ -642,6 +703,7 @@ function DocumentDetailPage() {
       dense
       headerActions={
         <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+          <span title="Return to documents" className="inline-flex">
           <Button
             onClick={() =>
               router.navigate({
@@ -653,20 +715,35 @@ function DocumentDetailPage() {
             variant="ghost"
             size="sm"
             className="flex-1 sm:flex-none"
+            icon={ArrowLeftIcon}
           >
-            <ArrowLeftIcon className="mr-2 h-4 w-4" />
-            <span className="truncate">Back</span>
+            <span className="truncate">Documents</span>
           </Button>
+          </span>
           <DocumentPresence documentId={documentId} />
-          {sendDocumentButton}
+          {documentHeaderAction(documentData.workflowStatus) === "download" ? (
+            <div key="download-pdf" className="flex-1 sm:flex-none">
+              <Button
+                onClick={downloadSignedPdf}
+                size="sm"
+                variant="primary"
+                className="w-full"
+                icon={DownloadIcon}
+              >
+                <span className="truncate">Download PDF</span>
+              </Button>
+            </div>
+          ) : (
+            sendDocumentButton
+          )}
           {saveAsTemplateButton}
         </div>
       }
     >
       <div className="flex h-full min-h-0 flex-col gap-3">
-        <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-3">
+        <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
           {/* Left column: PDF Preview — Kumo viewer shell + thumbnail rail */}
-          <div className="flex min-h-0 flex-col lg:col-span-2">
+          <div className="flex h-full max-h-[42dvh] min-h-0 min-w-0 flex-col lg:max-h-none lg:min-h-0">
             <DocumentViewerShell
               left={
                 <ThumbnailSidebar
@@ -679,28 +756,17 @@ function DocumentDetailPage() {
               main={
                 <div
                   ref={pdfViewer.pdfWrapperRef}
-                  className="bg-background relative flex min-h-0 flex-col gap-3 p-3 md:p-4"
+                  className="bg-kumo-canvas relative flex h-full min-h-0 flex-col gap-3 p-3 md:p-4"
                 >
-                  {canEdit ? (
-                    <DocumentCapabilityRail
-                      active={capability}
-                      onChange={setCapability}
-                    />
-                  ) : null}
-
                   {sharedPdfCanvas && pdfViewer.pdfUrl ? (
                     <>
-                      {canEdit &&
-                      isScannedOrImageDocument &&
-                      capability === "fields" ? (
+                      {canEdit && isScannedOrImageDocument ? (
                         <div className="border-kumo-warning/30 bg-kumo-warning-tint/40 text-kumo-warning rounded-lg border px-3 py-2 text-xs">
                           This is a scanned or image-only PDF. Field detection
-                          is not available — drag fields onto the document
-                          manually.
+                          is not available — choose a field, then click the page.
                         </div>
                       ) : null}
                       {canEdit &&
-                      capability === "fields" &&
                       fieldSuggestions.suggestions &&
                       fieldSuggestions.suggestions.fields.length > 0 ? (
                         <AIFieldReviewBar
@@ -721,14 +787,67 @@ function DocumentDetailPage() {
                       ) : null}
                       <DocumentCanvas
                         src={pdfViewer.pdfUrl}
-                        interaction={
-                          !canEdit ||
-                          capability === "pages" ||
-                          capability === "layout"
-                            ? "view"
-                            : capability === "markup"
-                              ? "markup"
-                              : "fields"
+                        interaction={canEdit ? "fields" : "view"}
+                        suspendMarkup={canEdit && armedField !== null}
+                        onClearTool={() => {
+                          setArmedField(null);
+                        }}
+                        onMarkupToolChange={(toolId) => {
+                          if (toolId === null) return;
+                          setArmedField(null);
+                        }}
+                        onEmptyClick={
+                          canEdit && armedField
+                            ? (clientX, clientY) => {
+                                const intent = resolvePagePlaceIntent({
+                                  fieldSetupOpen: fieldPlacement.fieldSetupOpen,
+                                  signerCount: signerRecipients(recipients).length,
+                                });
+                                if (intent === "finish-field") {
+                                  toast.info(FINISH_FIELD_MESSAGE);
+                                  return;
+                                }
+                                if (intent === "add-recipient") {
+                                  if (!dismissRail()) return;
+                                  docState.setAddRecipientOpen(true);
+                                  return;
+                                }
+                                void fieldPlacement.placeFieldAt(
+                                  armedField,
+                                  clientX,
+                                  clientY
+                                );
+                              }
+                            : undefined
+                        }
+                        toolbarExtras={
+                          canEdit ? (
+                            <DocumentToolRow
+                              organizationSlug={slug}
+                              documentPublicId={documentPublicId}
+                              pageCount={pdfViewer.numPages ?? 0}
+                              currentPage={pdfViewer.currentPage}
+                              armedField={armedField}
+                              onArmField={(fieldType) => {
+                                if (!canLeaveFieldSetup(fieldPlacement.fieldSetupOpen)) {
+                                  toast.info(FINISH_FIELD_MESSAGE);
+                                  return;
+                                }
+                                dismissRail();
+                                setArmedField(fieldType);
+                                if (!openSections.has("fields")) {
+                                  toggleSection("fields");
+                                }
+                              }}
+                              onClearField={() => {
+                                setArmedField(null);
+                              }}
+                              onPdfChanged={() => {
+                                setPdfReloadKey((key) => key + 1);
+                              }}
+                              openFieldsToken={openFieldsToken}
+                            />
+                          ) : null
                         }
                         currentPage={pdfViewer.currentPage}
                         onPageChange={pdfViewer.handlePageChange}
@@ -743,30 +862,45 @@ function DocumentDetailPage() {
                             meta.pageHeight
                           );
                         }}
-                        fields={fieldPlacement.placedFields}
+                        fields={
+                          documentData.workflowStatus === "completed"
+                            ? []
+                            : fieldPlacement.placedFields
+                        }
                         selectedFieldId={
-                          canEdit && capability === "fields"
-                            ? fieldPlacement.selectedFieldId
-                            : null
+                          canEdit ? fieldPlacement.selectedFieldId : null
                         }
                         onFieldSelect={
-                          canEdit && capability === "fields"
-                            ? fieldPlacement.handleFieldSelect
-                            : undefined
+                          canEdit ? fieldPlacement.handleFieldSelect : undefined
                         }
                         onFieldUpdate={
-                          canEdit && capability === "fields"
-                            ? fieldPlacement.handleFieldUpdate
-                            : undefined
+                          canEdit ? fieldPlacement.handleFieldUpdate : undefined
                         }
                         onFieldDragOver={
-                          canEdit && capability === "fields"
+                          canEdit
                             ? fieldPlacement.handleFieldDragOver
                             : undefined
                         }
                         onFieldDrop={
-                          canEdit && capability === "fields"
-                            ? fieldPlacement.handleFieldDrop
+                          canEdit
+                            ? (event) => {
+                                const intent = resolvePagePlaceIntent({
+                                  fieldSetupOpen: fieldPlacement.fieldSetupOpen,
+                                  signerCount: signerRecipients(recipients).length,
+                                });
+                                if (intent === "finish-field") {
+                                  event.preventDefault();
+                                  toast.info(FINISH_FIELD_MESSAGE);
+                                  return;
+                                }
+                                if (intent === "add-recipient") {
+                                  event.preventDefault();
+                                  if (!dismissRail()) return;
+                                  docState.setAddRecipientOpen(true);
+                                  return;
+                                }
+                                void fieldPlacement.handleFieldDrop(event);
+                              }
                             : undefined
                         }
                         fieldContainerRef={pdfViewer.containerRef}
@@ -788,7 +922,6 @@ function DocumentDetailPage() {
                               />
                             ) : null}
                             {canEdit &&
-                            capability === "fields" &&
                             fieldSuggestions.suggestions &&
                             fieldSuggestions.suggestions.fields.length > 0 ? (
                               <AIFieldOverlays
@@ -800,17 +933,6 @@ function DocumentDetailPage() {
                                 currentPage={pdfViewer.currentPage}
                                 pdfPageWidth={pdfViewer.pdfWidth}
                                 pdfPageHeight={pdfViewer.pdfHeight}
-                              />
-                            ) : null}
-                            {canEdit && capability === "layout" ? (
-                              <DocumentLayoutCanvasOverlay
-                                organizationSlug={slug}
-                                documentPublicId={documentPublicId}
-                                currentPage={pdfViewer.currentPage}
-                                pageWidth={pdfViewer.pdfWidth}
-                                pageHeight={pdfViewer.pdfHeight}
-                                activeBlockId={layoutActiveBlockId}
-                                onActiveBlockIdChange={setLayoutActiveBlockId}
                               />
                             ) : null}
                             {showAiFeatures &&
@@ -828,69 +950,47 @@ function DocumentDetailPage() {
                           </>
                         }
                         onSaveMarkup={
-                          canEdit && capability === "markup"
-                            ? async (buffer) => {
-                                await saveMarkupMutation.mutateAsync(buffer);
+                          canEdit
+                            ? async (buffer, options) => {
+                                const copy = buffer.slice(0);
+                                await saveMarkupMutation.mutateAsync({
+                                  buffer,
+                                  keepalive: options?.keepalive,
+                                });
+                                const url = URL.createObjectURL(
+                                  new Blob([copy], { type: "application/pdf" })
+                                );
+                                if (savedMarkupUrlRef.current) {
+                                  URL.revokeObjectURL(savedMarkupUrlRef.current);
+                                }
+                                savedMarkupUrlRef.current = url;
+                                setSavedMarkupUrl(url);
                               }
                             : undefined
                         }
-                        savingMarkup={saveMarkupMutation.isPending}
                       />
-                      {canEdit && capability === "pages" ? (
-                        <DocumentPagesCapabilityPanel
-                          organizationSlug={slug}
-                          documentPublicId={documentPublicId}
-                          pageCount={pdfViewer.numPages ?? 0}
-                          currentPage={pdfViewer.currentPage}
-                          docked
-                          onPdfChanged={() => {
-                            setPdfReloadKey((key) => key + 1);
-                          }}
-                          onPageJump={pdfViewer.handlePageChange}
-                        />
-                      ) : null}
-                      {canEdit && capability === "layout" ? (
-                        <DocumentStructurePanel
-                          organizationSlug={slug}
-                          documentPublicId={documentPublicId}
-                          canEdit={canEdit}
-                          currentPage={pdfViewer.currentPage}
-                          pageWidth={pdfViewer.pdfWidth}
-                          pageHeight={pdfViewer.pdfHeight}
-                          docked
-                          activeBlockId={layoutActiveBlockId}
-                          onActiveBlockIdChange={setLayoutActiveBlockId}
-                        />
-                      ) : null}
                     </>
-                  ) : canEdit && capability === "office" ? (
-                    <DocumentOfficeEditPanel
-                      organizationSlug={slug}
-                      documentPublicId={documentPublicId}
-                      canEdit={canEdit}
-                      onSaved={() => {
-                        setPdfReloadKey((key) => key + 1);
-                      }}
-                    />
                   ) : (
                     <>
                       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                        <div className="text-foreground flex items-center gap-3 font-serif text-lg font-medium sm:flex-wrap sm:text-base">
+                        <div className="text-kumo-default flex items-center gap-3 font-serif text-lg font-medium sm:flex-wrap sm:text-base">
                           <span>Document Preview</span>
                           {pdfViewer.numPages && (
-                            <span className="bg-muted text-muted-foreground rounded-full px-2.5 py-1 font-sans text-xs font-medium">
+                            <span className="bg-kumo-elevated text-kumo-secondary rounded-full px-2.5 py-1 font-sans text-xs font-medium">
                               {pdfViewer.numPages}{" "}
                               {pdfViewer.numPages === 1 ? "page" : "pages"}
                             </span>
                           )}
                         </div>
                       </div>
-                      <div className="border-border bg-card text-muted-foreground relative overflow-hidden rounded-lg border p-16 text-center shadow-sm">
+                      <LayerCard className="p-16 text-center">
                         <div className="flex flex-col items-center gap-3">
-                          <Loader2Icon className="size-5 animate-spin" />
-                          <span>Loading document…</span>
+                          <Loader />
+                          <Text variant="secondary" size="sm">
+                            Loading document…
+                          </Text>
                         </div>
-                      </div>
+                      </LayerCard>
                     </>
                   )}
                 </div>
@@ -898,16 +998,13 @@ function DocumentDetailPage() {
             />
           </div>
 
-          {/* Right column: Document Sidebar */}
-          <div className="min-h-0 overflow-y-auto">
+          <div className="flex min-h-0 flex-col overflow-hidden">
             <DocumentSidebar
               documentId={documentId}
               documentPublicId={documentPublicId}
-              slug={slug}
               workflowStatus={
-                documentData.workflowStatus &&
-                isWorkflowStatus(documentData.workflowStatus)
-                  ? documentData.workflowStatus
+                documentData.workflowStatus
+                  ? toWorkflowStatus(documentData.workflowStatus)
                   : undefined
               }
               createdAt={documentData.createdAt}
@@ -918,11 +1015,6 @@ function DocumentDetailPage() {
               recipients={sidebarRecipients}
               progress={progress}
               signatureFields={sidebarFields}
-              bindingFields={bindingFields}
-              onBindingsSaved={() => {
-                void refetchFields();
-              }}
-              hasSigners={recipients.some((r) => r.role === "signer")}
               currentUserRecipient={currentUserRecipient}
               currentUserFields={currentUserFields}
               onCurrentUserFieldsRefetch={() => {
@@ -933,7 +1025,6 @@ function DocumentDetailPage() {
               }}
               canEdit={canEdit}
               isUserAlreadyRecipient={isUserAlreadyRecipient}
-              merchantPaymentsReady={merchantPaymentsReady}
               openSections={openSections}
               toggleSection={toggleSection}
               aiEnabled={showAiFeatures}
@@ -943,28 +1034,21 @@ function DocumentDetailPage() {
               onFieldSelect={fieldPlacement.handleFieldSelect}
               onFieldDelete={fieldPlacement.requestFieldDelete}
               onFieldProperties={(fieldId) => {
+                if (!dismissRail()) return;
                 fieldPlacement.setFieldPropertiesId(fieldId);
                 fieldPlacement.setShowFieldProperties(true);
               }}
-              onFieldDragStart={(fieldType) =>
-                fieldPlacement.setDraggingFieldType(
-                  parseSelectValue(fieldType, FIELD_TYPES)
-                )
-              }
-              onFieldDragEnd={() => fieldPlacement.setDraggingFieldType(null)}
-              redirectUrlInput={docState.redirectUrlInput}
-              redirectUrlError={docState.redirectUrlError}
-              isSavingRedirect={docState.isSavingRedirect}
-              onRedirectUrlChange={(url) => {
-                docState.setRedirectUrlInput(url);
-                docState.setRedirectUrlError(null);
+              onAddRecipient={() => {
+                if (!dismissRail()) return;
+                docState.setAddRecipientOpen(true);
               }}
-              onSaveRedirectUrl={handleSaveRedirectUrl}
-              onAddRecipient={() => docState.setAddRecipientOpen(true)}
-              onAddMyself={() => docState.setAddMyselfOpen(true)}
+              onAddMyself={() => {
+                if (!dismissRail()) return;
+                docState.setAddMyselfOpen(true);
+              }}
               onRecipientOptions={(recipient) => {
                 const full = recipients.find((r) => r._id === recipient._id);
-                if (!full) return;
+                if (!full || !dismissRail()) return;
                 docState.setSelectedRecipientForOptions({
                   _id: full._id,
                   publicId: full.publicId,
@@ -989,168 +1073,184 @@ function DocumentDetailPage() {
                   ? undefined
                   : sendDocumentValidation.tooltip
               }
-              onSendDocument={() => docState.setSendDocumentOpen(true)}
+              onSendDocument={handleSendIntent}
+              onDownloadPdf={downloadSignedPdf}
+              onVoidDocument={() => {
+                void handleVoidDocument();
+              }}
+              onPlaceFields={handlePlaceFields}
               onEnsureSection={(section) => {
                 if (!openSections.has(section)) {
                   toggleSection(section);
                 }
               }}
+              railOpen={railPanelId !== null}
+              railStep={railStep}
+              placementSignerId={fieldPlacement.selectedRecipientId}
+              onPlacementSignerChange={(signerId) => {
+                fieldPlacement.setSelectedRecipientId(
+                  parseId("document_recipients", signerId)
+                );
+              }}
+              onDismissRail={dismissRail}
+              railPanel={
+                railPanelId === "remove-recipient" ? (
+                  <RemoveRecipientDialog
+                    presentation="panel"
+                    open
+                    onOpenChange={(open) => {
+                      docState.setRemoveRecipientOpen(open);
+                      if (!open) docState.setRecipientToRemove(null);
+                    }}
+                    onConfirm={handleRemoveRecipientConfirm}
+                    recipientEmail={docState.recipientToRemove?.email}
+                    recipientName={docState.recipientToRemove?.name}
+                    recipientRole={docState.recipientToRemove?.role}
+                    fieldCount={docState.recipientToRemove?.fieldCount}
+                  />
+                ) : railPanelId === "recipient-options" ? (
+                  <RecipientOptionsDialog
+                    presentation="panel"
+                    open
+                    onOpenChange={docState.setRecipientOptionsOpen}
+                    recipient={docState.selectedRecipientForOptions}
+                    documentStatus={documentData.workflowStatus}
+                    canEdit={canEdit}
+                    onResendEmail={handleResendEmail}
+                    onRemove={(recipient) => {
+                      openRemoveRecipientDialog(recipient);
+                    }}
+                  />
+                ) : railPanelId === "delete-field" ? (
+                  <DeleteFieldDialog
+                    presentation="panel"
+                    open
+                    onOpenChange={fieldPlacement.setShowFieldDeleteDialog}
+                    onConfirm={fieldPlacement.handleFieldDeleteConfirm}
+                    fieldType={
+                      fieldPlacement.selectedFieldId
+                        ? fieldPlacement.placedFields.find(
+                            (field) => field.id === fieldPlacement.selectedFieldId
+                          )?.fieldType
+                        : undefined
+                    }
+                  />
+                ) : railPanelId === "field-options" && optionsFieldType ? (
+                  <FieldOptionsDialog
+                    presentation="panel"
+                    open
+                    onOpenChange={(open) => {
+                      if (!open) fieldPlacement.handleFieldOptionsCancel();
+                    }}
+                    fieldType={optionsFieldType}
+                    onConfirm={fieldPlacement.handleFieldOptionsConfirm}
+                    initialConfig={fieldPlacement.pendingFieldOptions ?? undefined}
+                  />
+                ) : railPanelId === "payment" ? (
+                  <PaymentConfigModal
+                    presentation="panel"
+                    organizationSlug={slug}
+                    documentPublicId={documentPublicId}
+                    open
+                    onSaved={fieldPlacement.commitPaymentConfig}
+                    onOpenChange={(open) => {
+                      if (!open) void fieldPlacement.closePaymentConfig();
+                    }}
+                    fieldPublicId={fieldPlacement.paymentConfigFieldId}
+                  />
+                ) : railPanelId === "field-properties" ? (
+                  <FieldPropertiesDialog
+                    presentation="panel"
+                    organizationSlug={slug}
+                    documentPublicId={documentPublicId}
+                    open
+                    onOpenChange={(open) => {
+                      fieldPlacement.setShowFieldProperties(open);
+                      if (!open) fieldPlacement.setFieldPropertiesId(null);
+                    }}
+                    field={
+                      fieldPlacement.fieldPropertiesId
+                        ? (signatureFields.find(
+                            (field) =>
+                              field._id === fieldPlacement.fieldPropertiesId
+                          ) ?? null)
+                        : null
+                    }
+                    recipients={recipients}
+                    onSave={() => {
+                      void refetchFields();
+                    }}
+                    onConfigurePayment={(fieldId) => {
+                      const field = signatureFields.find(
+                        (item) => item._id === fieldId
+                      );
+                      fieldPlacement.setShowFieldProperties(false);
+                      fieldPlacement.openExistingPaymentConfig(
+                        field?.publicId ?? null
+                      );
+                    }}
+                  />
+                ) : railPanelId === "send" ? (
+                  <SendDocumentDialog
+                    presentation="panel"
+                    organizationSlug={slug}
+                    documentPublicId={documentPublicId}
+                    documentName={documentData.name}
+                    recipients={recipients}
+                    signatureFieldCount={signatureFieldCount}
+                    requiresSigningField={signerRecipients(recipients).length > 0}
+                    fieldCountsByRecipient={fieldCountsByRecipient}
+                    paymentConfigs={paymentConfigs}
+                    open
+                    onOpenChange={docState.setSendDocumentOpen}
+                    defaultDeadlineDays={signingSettings?.defaultDeadlineDays}
+                    onSuccess={() => {
+                      void refetchDocument();
+                      void refetchRecipients();
+                      void refetchProgress();
+                      void refetchCurrentUserRecipient();
+                      void refetchCurrentUserFields();
+                    }}
+                  />
+                ) : railPanelId === "save-template" ? (
+                  <SaveAsTemplateDialog
+                    presentation="panel"
+                    organizationSlug={slug}
+                    documentPublicId={documentPublicId}
+                    documentName={documentData.name}
+                    open
+                    onOpenChange={docState.setSaveAsTemplateOpen}
+                  />
+                ) : railPanelId === "add-myself" ? (
+                  <AddMyselfDialog
+                    open
+                    onOpenChange={docState.setAddMyselfOpen}
+                    onConfirm={handleAddMyselfConfirm}
+                    userEmail={
+                      userEmail ??
+                      user?.primaryEmailAddress?.emailAddress ??
+                      undefined
+                    }
+                    userName={user?.fullName || undefined}
+                  />
+                ) : railPanelId === "add-recipient" ? (
+                  <AddRecipientDialog
+                    presentation="panel"
+                    organizationSlug={slug}
+                    documentPublicId={documentPublicId}
+                    slug={slug}
+                    open={docState.addRecipientOpen}
+                    onOpenChange={docState.setAddRecipientOpen}
+                    onSuccess={() => refetchRecipients()}
+                    existingRecipientEmails={recipients.map((r) => r.email)}
+                    currentUserEmail={userEmail}
+                  />
+                ) : null
+              }
             />
           </div>
         </div>
 
-        {/* ── Dialogs ─────────────────────────────────────────────────────── */}
-        <AddRecipientDialog
-          organizationSlug={slug}
-          documentPublicId={documentPublicId}
-          slug={slug}
-          open={docState.addRecipientOpen}
-          onOpenChange={docState.setAddRecipientOpen}
-          onSuccess={() => refetchRecipients()}
-          existingRecipientEmails={recipients.map((r) => r.email)}
-          currentUserEmail={userEmail}
-        />
-
-        <AddMyselfDialog
-          open={docState.addMyselfOpen}
-          onOpenChange={docState.setAddMyselfOpen}
-          onConfirm={handleAddMyselfConfirm}
-          userEmail={user?.primaryEmailAddress?.emailAddress}
-          userName={user?.fullName || undefined}
-        />
-
-        <RemoveRecipientDialog
-          open={docState.removeRecipientOpen}
-          onOpenChange={(open) => {
-            docState.setRemoveRecipientOpen(open);
-            if (!open) docState.setRecipientToRemove(null);
-          }}
-          onConfirm={handleRemoveRecipientConfirm}
-          recipientEmail={docState.recipientToRemove?.email}
-          recipientName={docState.recipientToRemove?.name}
-          recipientRole={docState.recipientToRemove?.role}
-          fieldCount={docState.recipientToRemove?.fieldCount}
-        />
-
-        <RecipientSelectorDialog
-          open={fieldPlacement.showRecipientSelector}
-          onOpenChange={fieldPlacement.setShowRecipientSelector}
-          recipients={recipients}
-          selectedRecipientId={fieldPlacement.selectedRecipientId}
-          onRecipientSelect={fieldPlacement.setSelectedRecipientId}
-          onConfirm={fieldPlacement.handleConfirmFieldPlacement}
-          fieldType={fieldPlacement.pendingFieldData?.fieldType || "signature"}
-          pageNumber={fieldPlacement.pendingFieldData?.page || 1}
-        />
-
-        {fieldPlacement.pendingFieldData &&
-          (fieldPlacement.pendingFieldData.fieldType === "checkbox" ||
-            fieldPlacement.pendingFieldData.fieldType === "dropdown" ||
-            fieldPlacement.pendingFieldData.fieldType === "radio" ||
-            fieldPlacement.pendingFieldData.fieldType === "multi_select") && (
-            <FieldOptionsDialog
-              open={fieldPlacement.showFieldOptions}
-              onOpenChange={(open) => {
-                if (!open) fieldPlacement.handleFieldOptionsCancel();
-              }}
-              fieldType={fieldPlacement.pendingFieldData.fieldType}
-              onConfirm={fieldPlacement.handleFieldOptionsConfirm}
-              initialConfig={fieldPlacement.pendingFieldOptions ?? undefined}
-            />
-          )}
-
-        <FieldPropertiesDialog
-          organizationSlug={slug}
-          documentPublicId={documentPublicId}
-          open={fieldPlacement.showFieldProperties}
-          onOpenChange={(open) => {
-            fieldPlacement.setShowFieldProperties(open);
-            if (!open) fieldPlacement.setFieldPropertiesId(null);
-          }}
-          field={
-            fieldPlacement.fieldPropertiesId
-              ? (signatureFields.find(
-                  (f) => f._id === fieldPlacement.fieldPropertiesId
-                ) ?? null)
-              : null
-          }
-          recipients={recipients}
-          onSave={() => {
-            void refetchFields();
-          }}
-          onConfigurePayment={(fieldId) => {
-            fieldPlacement.setShowFieldProperties(false);
-            fieldPlacement.setPaymentConfigFieldId(fieldId);
-            fieldPlacement.setShowPaymentConfigModal(true);
-          }}
-        />
-
-        <PaymentConfigModal
-          organizationSlug={slug}
-          documentPublicId={documentPublicId}
-          open={fieldPlacement.showPaymentConfigModal}
-          onOpenChange={(open) => {
-            fieldPlacement.setShowPaymentConfigModal(open);
-            if (!open) fieldPlacement.setPaymentConfigFieldId(null);
-          }}
-          fieldPublicId={
-            fieldPlacement.paymentConfigFieldId
-              ? (signatureFields.find(
-                  (f) => f._id === fieldPlacement.paymentConfigFieldId
-                )?.publicId ?? null)
-              : null
-          }
-        />
-
-        <SendDocumentDialog
-          organizationSlug={slug}
-          documentPublicId={documentPublicId}
-          documentName={documentData.name}
-          recipients={recipients}
-          signatureFieldCount={signatureFieldCount}
-          fieldCountsByRecipient={fieldCountsByRecipient}
-          paymentConfigs={paymentConfigs}
-          open={docState.sendDocumentOpen}
-          onOpenChange={docState.setSendDocumentOpen}
-          defaultDeadlineDays={signingSettings?.defaultDeadlineDays}
-          onSuccess={() => {
-            void refetchDocument();
-            void refetchRecipients();
-          }}
-        />
-
-        <SaveAsTemplateDialog
-          organizationSlug={slug}
-          documentPublicId={documentPublicId}
-          documentName={documentData.name}
-          open={docState.saveAsTemplateOpen}
-          onOpenChange={docState.setSaveAsTemplateOpen}
-        />
-
-        <DeleteFieldDialog
-          open={fieldPlacement.showFieldDeleteDialog}
-          onOpenChange={fieldPlacement.setShowFieldDeleteDialog}
-          onConfirm={fieldPlacement.handleFieldDeleteConfirm}
-          fieldType={
-            fieldPlacement.selectedFieldId
-              ? fieldPlacement.placedFields.find(
-                  (f) => f.id === fieldPlacement.selectedFieldId
-                )?.fieldType
-              : undefined
-          }
-        />
-
-        <RecipientOptionsDialog
-          open={docState.recipientOptionsOpen}
-          onOpenChange={docState.setRecipientOptionsOpen}
-          recipient={docState.selectedRecipientForOptions}
-          documentStatus={documentData.workflowStatus}
-          canEdit={canEdit}
-          onResendEmail={handleResendEmail}
-          onRemove={(recipient) => {
-            openRemoveRecipientDialog(recipient);
-          }}
-        />
       </div>
     </PageWrapper>
   );

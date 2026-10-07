@@ -26,10 +26,7 @@ export class ShareDialogPage {
   constructor(page: Page) {
     this.page = page;
     this.dialogRoot = page.locator('[role="dialog"]');
-    this.closeButton = this.dialogRoot
-      .locator("button")
-      .filter({ has: page.locator("svg.lucide-x") })
-      .first();
+    this.closeButton = this.dialogRoot.getByRole("button", { name: "Close" });
     this.doneButton = this.dialogRoot.getByRole("button", { name: "Done" });
     this.privateModeButton = this.dialogRoot
       .locator("button", { hasText: "Private" })

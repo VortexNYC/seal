@@ -1,8 +1,9 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Label } from "@cloudflare/kumo/components/label";
 import { FileText, UploadSimple, X } from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
-import { type ChangeEvent, useState } from "react";
+import { type ChangeEvent, useRef, useState } from "react";
 
 import { uploadAttachment } from "@/lib/api-client";
 
@@ -28,6 +29,7 @@ export function AttachmentFieldInput({
   const [storageId, setStorageId] = useState(value);
   const [fileName, setFileName] = useState<string | undefined>();
   const [error, setError] = useState<string | undefined>();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   const uploadMutation = useMutation({
@@ -100,27 +102,25 @@ export function AttachmentFieldInput({
       {!storageId ? (
         <div className="border-kumo-hairline rounded-lg border-2 border-dashed p-6 text-center">
           <input
+            ref={fileInputRef}
             type="file"
-            id="attachment-field"
             className="hidden"
             onChange={handleFileChange}
             disabled={isUploading}
           />
-          <label
-            htmlFor="attachment-field"
-            className="flex cursor-pointer flex-col items-center gap-2"
+          <Button
+            type="button"
+            variant="outline"
+            className="h-auto w-full flex-col"
+            icon={UploadSimple}
+            disabled={isUploading}
+            onClick={() => fileInputRef.current?.click()}
           >
-            <UploadSimple className="text-kumo-secondary h-8 w-8" />
-            <div className="text-kumo-secondary text-sm">
-              <span className="text-kumo-primary font-medium">
-                Click to upload
-              </span>{" "}
-              or drag and drop
-            </div>
-            <div className="text-kumo-secondary text-xs">
-              Maximum file size: 10MB
-            </div>
-          </label>
+            {isUploading ? "Uploading…" : "Click to upload"}
+          </Button>
+          <Text as="p" variant="secondary" size="xs" className="mt-2">
+            Maximum file size: 10MB
+          </Text>
         </div>
       ) : (
         <div className="border-kumo-hairline flex items-center justify-between rounded-lg border p-4">
@@ -146,11 +146,11 @@ export function AttachmentFieldInput({
       )}
 
       {helpText && !error && (
-        <p className="text-kumo-secondary text-xs">{helpText}</p>
+        <Text as="p" variant="secondary" size="xs">{helpText}</Text>
       )}
-      {error && <p className="text-kumo-danger text-xs">{error}</p>}
+      {error && <Text as="p" variant="error" size="xs">{error}</Text>}
       {isUploading && (
-        <p className="text-kumo-secondary text-xs">Uploading...</p>
+        <Text as="p" variant="secondary" size="xs">Uploading...</Text>
       )}
     </div>
   );

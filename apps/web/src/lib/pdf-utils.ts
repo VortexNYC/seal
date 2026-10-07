@@ -8,6 +8,8 @@ import {
 } from "@embedpdf/engines/pdfium";
 import pdfiumWasmUrl from "@embedpdf/pdfium/pdfium.wasm?url";
 
+import { thumbnailPageRender } from "@/components/documents/document-surface";
+
 let engineSingleton: Promise<PdfEngine<Blob>> | null = null;
 
 /** SEA-74: direct engine — EmbedPDF worker boots from blob: (opaque origin); wasm fetch needs CORS. */
@@ -121,10 +123,14 @@ export async function extractPdfMetadata(file: File): Promise<{
       if (!page) return { pageCount, thumbnail: null };
       const scale = Math.min(200 / page.size.width, 300 / page.size.height);
       const blob = await engine
-        .renderPage(doc, page, {
-          scaleFactor: scale,
-          dpr: typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1,
-        })
+        .renderPage(
+          doc,
+          page,
+          thumbnailPageRender(
+            scale,
+            typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1
+          )
+        )
         .toPromise();
       const thumbnail = await blobToDataUrl(blob);
       return { pageCount, thumbnail };
@@ -180,11 +186,14 @@ export async function generatePageThumbnailsFromUrl(
           maxHeight / page.size.height
         );
         const blob = await engine
-          .renderPage(doc, page, {
-            scaleFactor: scale,
-            dpr:
-              typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1,
-          })
+          .renderPage(
+            doc,
+            page,
+            thumbnailPageRender(
+              scale,
+              typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1
+            )
+          )
           .toPromise();
         results.push({
           page: page.index + 1,

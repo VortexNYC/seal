@@ -10,7 +10,7 @@
 import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, FolderIcon, Home } from "lucide-react";
+import { CaretRight as ChevronRight, Folder as FolderIcon, House as Home } from "@phosphor-icons/react";
 import { useCallback, useMemo, useState } from "react";
 
 import { getAllFolders, type ApiFolder } from "@/lib/api-client";
@@ -184,19 +184,15 @@ export function MoveToFolderDialog({
 
         <div className="max-h-64 overflow-y-auto rounded-md border p-1">
           {/* Root option */}
-          <button
+          <Button
             type="button"
-            className={cn(
-              "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm",
-              selectedFolderId === undefined
-                ? "bg-kumo-tint text-kumo-link"
-                : "hover:bg-kumo-elevated/50"
-            )}
+            variant={selectedFolderId === undefined ? "primary" : "ghost"}
+            className="w-full justify-start"
+            icon={Home}
             onClick={() => setSelectedFolderId(undefined)}
           >
-            <Home className="size-4 shrink-0" />
-            <span>Root (No Folder)</span>
-          </button>
+            Root (No Folder)
+          </Button>
 
           {/* Folder tree */}
           {apiFolders === undefined ? (
@@ -257,43 +253,37 @@ function TreeNodeItem({
   return (
     <>
       <div
-        className={cn(
-          "flex w-full items-center gap-1 rounded-sm px-2 py-1.5 text-sm",
-          isSelected
-            ? "bg-kumo-tint text-kumo-link"
-            : "hover:bg-kumo-elevated/50"
-        )}
+        className="flex w-full items-center gap-1"
         style={{ paddingLeft: `${(depth + 1) * 12 + 8}px` }}
       >
         {/* Expand/collapse chevron */}
         {hasChildren ? (
-          <button
+          <Button
             type="button"
-            className="hover:bg-kumo-elevated shrink-0 rounded-sm p-0.5"
+            variant="ghost"
+            size="sm"
+            shape="square"
+            icon={ChevronRight}
+            className={cn(isExpanded && "[&_svg]:rotate-90")}
             onClick={(e) => {
               e.stopPropagation();
               onToggleExpand(node.folder._id);
             }}
             aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
-          >
-            <ChevronRight
-              className={cn(
-                "size-3.5 transition-transform",
-                isExpanded && "rotate-90"
-              )}
-            />
-          </button>
+          />
         ) : (
           <span className="size-4.5 shrink-0" />
         )}
-        <button
+        <Button
           type="button"
-          className="flex min-w-0 flex-1 items-center gap-1 text-left"
+          variant={isSelected ? "primary" : "ghost"}
+          size="sm"
+          className="min-w-0 flex-1 justify-start"
+          icon={FolderIcon}
           onClick={() => onSelect(node.folder._id)}
         >
-          <FolderIcon className="size-4 shrink-0" />
           <span className="truncate">{node.folder.name}</span>
-        </button>
+        </Button>
       </div>
 
       {/* Render children if expanded */}

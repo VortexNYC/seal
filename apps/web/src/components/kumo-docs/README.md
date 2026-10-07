@@ -29,7 +29,7 @@ Agents and humans share the same capabilities. Seal is a document platform
 
 ## Product modes (draft documents)
 
-- **PDF tools** (default) — EmbedPDF annotate / redact / forms / signatures / page organize / export → Save to Seal
+- **PDF tools** (default) — EmbedPDF draws the page. Pen, text, and shapes commit into the stored PDF. Fields stay records until completion.
 - **Fields** — signature field placement (PDFium page raster + Konva e-sign canvas)
 - **Edit original** — DOCX/XLSX/CSV editors (real OpenXML/CSV write-back + reconvert)
 - **Structure** — anydoc field candidates + annotation layout blocks + extraction schema

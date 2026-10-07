@@ -1,6 +1,7 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Sidebar } from "@cloudflare/kumo/components/sidebar";
-import type { LucideIcon } from "lucide-react";
+import { type Icon } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 
 import { ShellHeaderControls } from "@/components/shell-header-controls";
@@ -10,7 +11,7 @@ import { cn } from "@/lib/utils";
 interface PageAction {
   label: string;
   onClick: () => void;
-  icon?: LucideIcon;
+  icon?: Icon;
   variant?: "default" | "outline" | "ghost" | "destructive";
   disabled?: boolean;
 }
@@ -27,8 +28,10 @@ interface PageWrapperProps {
   headerCenter?: ReactNode;
   /** Optional extra classes applied to the outermost container (affects header + content) */
   className?: string;
-  /** Cap: document editor — no dead scroll pad under the canvas */
+  /** Document editor: the canvas fills the pane, with no reading column. */
   dense?: boolean;
+  /** Data grids that need the full pane. Header and body stay full width. */
+  bleed?: boolean;
 }
 
 export function PageWrapper({
@@ -41,13 +44,14 @@ export function PageWrapper({
   headerCenter,
   className,
   dense = false,
+  bleed = false,
 }: PageWrapperProps) {
   const allActions = action ? [action, ...(actions || [])] : actions || [];
 
   return (
     <div
       className={cn(
-        "bg-background flex h-full min-h-0 flex-col overscroll-contain",
+        "bg-kumo-canvas flex h-full min-h-0 flex-col overscroll-contain",
         /* Cap: document editor — page itself must not scroll into empty void */
         dense
           ? "scroll-pb-0 overflow-hidden"
@@ -55,10 +59,11 @@ export function PageWrapper({
         className
       )}
     >
-      <div className="bg-background/95 border-border sticky top-0 z-10 border-b backdrop-blur-sm">
+      <div className="bg-kumo-canvas/95 border-kumo-line sticky top-0 z-10 border-b backdrop-blur-sm">
         <div
           className={cn(
-            "flex min-h-16 flex-col gap-3 px-4 py-3 sm:px-6",
+            "mx-auto flex min-h-16 w-full flex-col gap-3 px-4 py-3 sm:px-6",
+            !dense && !bleed && "max-w-6xl",
             headerCenter
               ? "lg:grid-cols-center lg:grid lg:items-center lg:gap-4"
               : "sm:flex-row sm:items-center sm:gap-4 sm:py-0"
@@ -76,13 +81,9 @@ export function PageWrapper({
               className="shrink-0"
             />
             <div className="min-w-0 flex-1">
-              <h1 className="truncate text-base font-semibold sm:text-lg">
-                {title}
-              </h1>
+              <Text as="h1" variant="heading" truncate>{title}</Text>
               {description && (
-                <p className="text-muted-foreground truncate text-xs sm:text-sm">
-                  {description}
-                </p>
+                <Text as="p" variant="secondary" size="xs" truncate>{description}</Text>
               )}
             </div>
           </div>
@@ -112,8 +113,8 @@ export function PageWrapper({
                   size="sm"
                   className="flex-1 sm:flex-none"
                   disabled={actionItem.disabled}
+                  icon={Icon}
                 >
-                  {Icon && <Icon className="mr-2 h-4 w-4" />}
                   <span className="truncate">{actionItem.label}</span>
                 </Button>
               );
@@ -125,13 +126,25 @@ export function PageWrapper({
       <div
         className={cn(
           "min-h-0 flex-1",
-          dense ? "flex flex-col overflow-hidden p-3 sm:p-4" : "p-4 sm:p-6",
-          dense ? "pb-3 sm:pb-4" : "pb-12 sm:pb-16",
+          dense
+            ? "flex flex-col overflow-hidden p-3 sm:p-4"
+            : "pt-4 pb-12 sm:pt-6 sm:pb-16",
           MOTION_PAGE
         )}
       >
-        {children}
-        {dense ? null : <div className="h-6 sm:h-10" aria-hidden />}
+        {dense ? (
+          children
+        ) : (
+          <div
+            className={cn(
+              "mx-auto w-full px-4 sm:px-6",
+              !bleed && "max-w-6xl"
+            )}
+          >
+            {children}
+            <div className="h-6 sm:h-10" aria-hidden />
+          </div>
+        )}
       </div>
     </div>
   );

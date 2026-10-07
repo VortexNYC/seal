@@ -9,26 +9,18 @@ import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
 import { DatePicker } from "@cloudflare/kumo/components/date-picker";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Meter } from "@cloudflare/kumo/components/meter";
 import { Popover } from "@cloudflare/kumo/components/popover";
 import { Select } from "@cloudflare/kumo/components/select";
+import { Table } from "@cloudflare/kumo/components/table";
 import { Tabs } from "@cloudflare/kumo/components/tabs";
+import { Text } from "@cloudflare/kumo/components/text";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  BarChart3Icon,
-  CalendarIcon,
-  CheckCircle2Icon,
-  ClockIcon,
-  DownloadIcon,
-  FileTextIcon,
-  TrendingUpIcon,
-  UsersIcon,
-  XCircleIcon,
-} from "lucide-react";
+import { ArrowDown as ArrowDownIcon, ArrowUp as ArrowUpIcon, Calendar as CalendarIcon, ChartBar as BarChart3Icon, CheckCircle as CheckCircle2Icon, Clock as ClockIcon, DownloadSimple as DownloadIcon, FileText as FileTextIcon, TrendUp as TrendingUpIcon, Users as UsersIcon, XCircle as XCircleIcon } from "@phosphor-icons/react";
 import {
   type Dispatch,
+  type ReactElement,
   type SetStateAction,
   useCallback,
   useEffect,
@@ -36,19 +28,8 @@ import {
   useState,
 } from "react";
 import type { DateRange } from "react-day-picker";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+
+import { Chart, echarts, kumoPaint, TimeseriesChart } from "@/lib/kumo-charts";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import {
@@ -175,7 +156,7 @@ function AnalyticsContent({
   onCustomRangeChange: Dispatch<SetStateAction<DateRange | undefined>>;
 }) {
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
+    <div className="flex w-full flex-col gap-5">
       {isAdmin && (
         <div className="flex items-center justify-between">
           <Tabs
@@ -337,41 +318,27 @@ function StatCard({
   progress?: number;
 }) {
   return (
-    <div className="border-border bg-card flex flex-col rounded-lg border p-4">
+    <LayerCard className="flex flex-col p-4">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-          {title}
-        </h3>
-        <span className="text-muted-foreground">{icon}</span>
+        <Text as="h3" variant="heading">{title}</Text>
+        <span className="text-kumo-secondary">{icon}</span>
       </div>
       <div className="mt-2 flex items-center gap-2">
-        <span className="text-2xl font-semibold tracking-tight tabular-nums">
+        <Text as="p" size="lg" bold>
           {value}
-        </span>
-        {trend === "up" && <ArrowUpIcon className="text-success h-4 w-4" />}
+        </Text>
+        {trend === "up" && <ArrowUpIcon className="text-kumo-success h-4 w-4" />}
         {trend === "down" && (
-          <ArrowDownIcon className="text-destructive h-4 w-4" />
+          <ArrowDownIcon className="text-kumo-danger h-4 w-4" />
         )}
       </div>
       {progress !== undefined ? (
-        <div
-          className="bg-muted mt-2 h-1.5 w-full overflow-hidden rounded-full"
-          role="meter"
-          aria-label={title}
-          aria-valuenow={progress}
-          aria-valuemin={0}
-          aria-valuemax={100}
-        >
-          <div
-            className="bg-foreground h-full rounded-full"
-            style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
-          />
-        </div>
+        <Meter label={title} value={progress} />
       ) : null}
       {description ? (
-        <p className="text-muted-foreground mt-1 text-xs">{description}</p>
+        <Text as="p" variant="secondary" size="xs" DANGEROUS_className="mt-1">{description}</Text>
       ) : null}
-    </div>
+    </LayerCard>
   );
 }
 
@@ -465,108 +432,51 @@ function TrendChart({
     queryFn: () => getAnalyticsTrends(slug, queryArgs),
   });
 
-  const chartData = useMemo(() => {
-    return trends.map((item) => ({
-      ...item,
-      displayDate: new Date(item.date).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      }),
-    }));
-  }, [trends]);
+  const chartData = useMemo(() => trends, [trends]);
 
   const hasData = chartData.some((d) => d.created > 0 || d.completed > 0);
 
   return (
     <LayerCard>
       <LayerCard.Primary className="pb-2">
-        <h3 className="text-base">Document Trends</h3>
-        <p>Documents created and completed over the selected period</p>
+        <Text as="h3" variant="heading">Document Trends</Text>
+        <Text as="p" variant="secondary" size="sm">Documents created and completed over the selected period</Text>
       </LayerCard.Primary>
       <div className="pl-0 sm:pl-6">
         {hasData ? (
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={chartData} margin={{ left: 0, right: 8 }}>
-              <defs>
-                <linearGradient
-                  id="analyticsCreated"
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="1"
-                >
-                  <stop
-                    offset="5%"
-                    stopColor="var(--primary)"
-                    stopOpacity={0.3}
-                  />
-                  <stop
-                    offset="95%"
-                    stopColor="var(--primary)"
-                    stopOpacity={0}
-                  />
-                </linearGradient>
-                <linearGradient
-                  id="analyticsCompleted"
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="1"
-                >
-                  <stop
-                    offset="5%"
-                    stopColor="var(--success)"
-                    stopOpacity={0.3}
-                  />
-                  <stop
-                    offset="95%"
-                    stopColor="var(--success)"
-                    stopOpacity={0}
-                  />
-                </linearGradient>
-              </defs>
-              <XAxis
-                dataKey="displayDate"
-                tick={{ fontSize: 10 }}
-                tickLine={false}
-                axisLine={false}
-                interval="preserveStartEnd"
-              />
-              <YAxis
-                tick={{ fontSize: 10 }}
-                tickLine={false}
-                axisLine={false}
-                allowDecimals={false}
-                width={30}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "var(--background)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "6px",
-                  fontSize: "12px",
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="created"
-                stroke="var(--primary)"
-                fillOpacity={1}
-                fill="url(#analyticsCreated)"
-                name="Created"
-              />
-              <Area
-                type="monotone"
-                dataKey="completed"
-                stroke="var(--success)"
-                fillOpacity={1}
-                fill="url(#analyticsCompleted)"
-                name="Completed"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          <TimeseriesChart
+            echarts={echarts}
+            height={300}
+            gradient
+            yAxisMinInterval={1}
+            ariaDescription="Documents created and completed over the selected period"
+            xAxisTickFormat={(timestamp) =>
+              new Date(timestamp).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              })
+            }
+            data={[
+              {
+                name: "Created",
+                color: kumoPaint("--kumo-primary"),
+                data: chartData.map((item) => [
+                  Date.parse(item.date),
+                  item.created,
+                ]),
+              },
+              {
+                name: "Completed",
+                color: kumoPaint("--kumo-success"),
+                data: chartData.map((item) => [
+                  Date.parse(item.date),
+                  item.completed,
+                ]),
+              },
+            ]}
+          />
         ) : (
-          <div className="text-muted-foreground flex h-75 items-center justify-center text-sm">
+          <div className="text-kumo-secondary flex h-75 items-center justify-center text-sm">
             No document activity yet. Create your first document to see trends.
           </div>
         )}
@@ -575,15 +485,54 @@ function TrendChart({
   );
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  draft: "var(--muted-foreground)",
-  sent: "var(--info)",
-  in_progress: "var(--warning)",
-  completed: "var(--success)",
-  cancelled: "var(--destructive)",
-  declined: "var(--destructive)",
-  expired: "var(--expired)",
-};
+function statusColor(status: string): string {
+  switch (status) {
+    case "sent":
+      return kumoPaint("--kumo-info");
+    case "in_progress":
+      return kumoPaint("--kumo-warning");
+    case "completed":
+      return kumoPaint("--kumo-success");
+    case "cancelled":
+    case "declined":
+    case "expired":
+      return kumoPaint("--kumo-danger");
+    default:
+      return kumoPaint("--kumo-subtle");
+  }
+}
+
+function CategoryBars({
+  rows,
+}: {
+  rows: readonly { name: string; value: number; color: string }[];
+}): ReactElement {
+  return (
+    <Chart
+      echarts={echarts}
+      height={250}
+      options={{
+        grid: { left: 36, right: 12, top: 16, bottom: 32 },
+        tooltip: { trigger: "axis" },
+        xAxis: {
+          type: "category",
+          data: rows.map((row) => row.name),
+          axisTick: { show: false },
+        },
+        yAxis: { type: "value", minInterval: 1 },
+        series: [
+          {
+            type: "bar",
+            data: rows.map((row) => ({
+              value: row.value,
+              itemStyle: { color: row.color },
+            })),
+          },
+        ],
+      }}
+    />
+  );
+}
 
 function StatusPieChart({ scope }: { scope: "personal" | "team" }) {
   const { slug } = Route.useParams();
@@ -594,29 +543,29 @@ function StatusPieChart({ scope }: { scope: "personal" | "team" }) {
 
   const pieData = useMemo(() => {
     const items = [
-      { name: "Draft", value: stats.draft, color: STATUS_COLORS.draft },
-      { name: "Sent", value: stats.sent, color: STATUS_COLORS.sent },
+      { name: "Draft", value: stats.draft, color: statusColor("draft") },
+      { name: "Sent", value: stats.sent, color: statusColor("sent") },
       {
         name: "In Progress",
         value: stats.inProgress,
-        color: STATUS_COLORS.in_progress,
+        color: statusColor("in_progress"),
       },
       {
         name: "Completed",
         value: stats.completed,
-        color: STATUS_COLORS.completed,
+        color: statusColor("completed"),
       },
       {
         name: "Cancelled",
         value: stats.cancelled,
-        color: STATUS_COLORS.cancelled,
+        color: statusColor("cancelled"),
       },
       {
         name: "Declined",
         value: stats.declined,
-        color: STATUS_COLORS.declined,
+        color: statusColor("declined"),
       },
-      { name: "Expired", value: stats.expired, color: STATUS_COLORS.expired },
+      { name: "Expired", value: stats.expired, color: statusColor("expired") },
     ];
     return items.filter((item) => item.value > 0);
   }, [stats]);
@@ -625,10 +574,10 @@ function StatusPieChart({ scope }: { scope: "personal" | "team" }) {
     return (
       <LayerCard>
         <LayerCard.Primary>
-          <h3 className="text-base">Status Distribution</h3>
+          <Text as="h3" variant="heading">Status Distribution</Text>
         </LayerCard.Primary>
         <div>
-          <div className="text-muted-foreground flex h-62.5 items-center justify-center text-sm">
+          <div className="text-kumo-secondary flex h-62.5 items-center justify-center text-sm">
             No documents yet
           </div>
         </div>
@@ -639,35 +588,28 @@ function StatusPieChart({ scope }: { scope: "personal" | "team" }) {
   return (
     <LayerCard>
       <LayerCard.Primary className="pb-2">
-        <h3 className="text-base">Status Distribution</h3>
-        <p>Current document status breakdown</p>
+        <Text as="h3" variant="heading">Status Distribution</Text>
+        <Text as="p" variant="secondary" size="sm">Current document status breakdown</Text>
       </LayerCard.Primary>
       <div>
-        <ResponsiveContainer width="100%" height={250}>
-          <PieChart>
-            <Pie
-              data={pieData}
-              cx="50%"
-              cy="50%"
-              innerRadius={60}
-              outerRadius={90}
-              paddingAngle={2}
-              dataKey="value"
-            >
-              {pieData.map((entry) => (
-                <Cell key={entry.name} fill={entry.color} />
-              ))}
-            </Pie>
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "var(--background)",
-                border: "1px solid var(--border)",
-                borderRadius: "6px",
-                fontSize: "12px",
-              }}
-            />
-          </PieChart>
-        </ResponsiveContainer>
+        <Chart
+          echarts={echarts}
+          height={250}
+          options={{
+            tooltip: { trigger: "item" },
+            series: [
+              {
+                type: "pie",
+                radius: ["48%", "72%"],
+                data: pieData.map((entry) => ({
+                  name: entry.name,
+                  value: entry.value,
+                  itemStyle: { color: entry.color },
+                })),
+              },
+            ],
+          }}
+        />
         <div className="mt-2 flex flex-wrap justify-center gap-3">
           {pieData.map((entry) => (
             <div key={entry.name} className="flex items-center gap-1.5 text-xs">
@@ -675,7 +617,7 @@ function StatusPieChart({ scope }: { scope: "personal" | "team" }) {
                 className="size-2.5 rounded-full"
                 style={{ backgroundColor: entry.color }}
               />
-              <span className="text-muted-foreground">
+              <span className="text-kumo-secondary">
                 {entry.name} ({entry.value})
               </span>
             </div>
@@ -695,25 +637,25 @@ function StatusBarChart({ scope }: { scope: "personal" | "team" }) {
 
   const barData = useMemo(
     () => [
-      { name: "Draft", value: stats.draft, fill: STATUS_COLORS.draft },
-      { name: "Sent", value: stats.sent, fill: STATUS_COLORS.sent },
+      { name: "Draft", value: stats.draft, color: statusColor("draft") },
+      { name: "Sent", value: stats.sent, color: statusColor("sent") },
       {
         name: "In Progress",
         value: stats.inProgress,
-        fill: STATUS_COLORS.in_progress,
+        color: statusColor("in_progress"),
       },
       {
         name: "Completed",
         value: stats.completed,
-        fill: STATUS_COLORS.completed,
+        color: statusColor("completed"),
       },
       {
         name: "Cancelled",
         value: stats.cancelled,
-        fill: STATUS_COLORS.cancelled,
+        color: statusColor("cancelled"),
       },
-      { name: "Declined", value: stats.declined, fill: STATUS_COLORS.declined },
-      { name: "Expired", value: stats.expired, fill: STATUS_COLORS.expired },
+      { name: "Declined", value: stats.declined, color: statusColor("declined") },
+      { name: "Expired", value: stats.expired, color: statusColor("expired") },
     ],
     [stats]
   );
@@ -721,40 +663,11 @@ function StatusBarChart({ scope }: { scope: "personal" | "team" }) {
   return (
     <LayerCard>
       <LayerCard.Primary className="pb-2">
-        <h3 className="text-base">Status Counts</h3>
-        <p>Document count by workflow status</p>
+        <Text as="h3" variant="heading">Status Counts</Text>
+        <Text as="p" variant="secondary" size="sm">Document count by workflow status</Text>
       </LayerCard.Primary>
       <div>
-        <ResponsiveContainer width="100%" height={250}>
-          <BarChart data={barData} margin={{ left: 0, right: 8 }}>
-            <XAxis
-              dataKey="name"
-              tick={{ fontSize: 10 }}
-              tickLine={false}
-              axisLine={false}
-            />
-            <YAxis
-              tick={{ fontSize: 10 }}
-              tickLine={false}
-              axisLine={false}
-              allowDecimals={false}
-              width={30}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "var(--background)",
-                border: "1px solid var(--border)",
-                borderRadius: "6px",
-                fontSize: "12px",
-              }}
-            />
-            <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-              {barData.map((entry) => (
-                <Cell key={entry.name} fill={entry.fill} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        <CategoryBars rows={barData} />
       </div>
     </LayerCard>
   );
@@ -852,7 +765,7 @@ function RecentActivityFeed() {
     return (
       <LayerCard>
         <div className="py-8">
-          <div className="text-muted-foreground flex items-center justify-center text-sm">
+          <div className="text-kumo-secondary flex items-center justify-center text-sm">
             Loading activity...
           </div>
         </div>
@@ -864,10 +777,10 @@ function RecentActivityFeed() {
     return (
       <LayerCard>
         <LayerCard.Primary>
-          <h3 className="text-base">Recent Activity</h3>
+          <Text as="h3" variant="heading">Recent Activity</Text>
         </LayerCard.Primary>
         <div>
-          <div className="text-muted-foreground flex h-32 items-center justify-center text-sm">
+          <div className="text-kumo-secondary flex h-32 items-center justify-center text-sm">
             No activity recorded yet
           </div>
         </div>
@@ -878,8 +791,8 @@ function RecentActivityFeed() {
   return (
     <LayerCard>
       <LayerCard.Primary className="pb-2">
-        <h3 className="text-base">Recent Activity</h3>
-        <p>Latest actions across your workspace</p>
+        <Text as="h3" variant="heading">Recent Activity</Text>
+        <Text as="p" variant="secondary" size="sm">Latest actions across your workspace</Text>
       </LayerCard.Primary>
       <div>
         <div className="space-y-3">
@@ -890,7 +803,7 @@ function RecentActivityFeed() {
 
             return (
               <div key={item.id} className="flex items-start gap-3 py-1">
-                <div className="text-muted-foreground mt-0.5 shrink-0">
+                <div className="text-kumo-secondary mt-0.5 shrink-0">
                   {actionInfo?.icon ?? <BarChart3Icon className="h-3 w-3" />}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -900,18 +813,16 @@ function RecentActivityFeed() {
                     </span>
                     <Badge
                       variant={actionInfo?.variant ?? "secondary"}
-                      className="text-3xs shrink-0"
+                      className="text-xs shrink-0"
                     >
                       {actionLabel}
                     </Badge>
                   </div>
                   {typeof item.metadata?.description === "string" && (
-                    <p className="text-muted-foreground truncate text-xs">
-                      {item.metadata.description}
-                    </p>
+                    <Text as="p" variant="secondary" size="xs" truncate>{item.metadata.description}</Text>
                   )}
                 </div>
-                <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
+                <span className="text-kumo-secondary shrink-0 text-xs tabular-nums">
                   {formatRelativeTime(item.timestamp)}
                 </span>
               </div>
@@ -934,7 +845,7 @@ function MemberActivityTable() {
     return (
       <LayerCard>
         <div className="py-8">
-          <div className="text-muted-foreground flex items-center justify-center text-sm">
+          <div className="text-kumo-secondary flex items-center justify-center text-sm">
             Loading member activity...
           </div>
         </div>
@@ -946,10 +857,10 @@ function MemberActivityTable() {
     return (
       <LayerCard>
         <LayerCard.Primary>
-          <h3 className="text-base">Team Member Activity</h3>
+          <Text as="h3" variant="heading">Team Member Activity</Text>
         </LayerCard.Primary>
         <div>
-          <div className="text-muted-foreground flex h-32 items-center justify-center text-sm">
+          <div className="text-kumo-secondary flex h-32 items-center justify-center text-sm">
             No team members found
           </div>
         </div>
@@ -961,54 +872,52 @@ function MemberActivityTable() {
     <LayerCard>
       <LayerCard.Primary className="pb-4">
         <div className="flex items-center gap-2">
-          <UsersIcon className="text-muted-foreground h-4 w-4" />
-          <h3 className="text-base">Team Member Activity</h3>
+          <UsersIcon className="text-kumo-secondary h-4 w-4" />
+          <Text as="h3" variant="heading">Team Member Activity</Text>
         </div>
-        <p>Document activity breakdown by workspace member</p>
+        <Text as="p" variant="secondary" size="sm">Document activity breakdown by workspace member</Text>
       </LayerCard.Primary>
       <div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-muted-foreground border-b text-left text-xs">
-                <th className="pr-4 pb-2 font-medium">Member</th>
-                <th className="pr-4 pb-2 text-right font-medium">Created</th>
-                <th className="pr-4 pb-2 text-right font-medium">Completed</th>
-                <th className="pr-4 pb-2 text-right font-medium">Pending</th>
-                <th className="pr-4 pb-2 text-right font-medium">Rate</th>
-                <th className="pb-2 text-right font-medium">Avg. Time</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <Table.Header>
+              <Table.Row>
+                <Table.Head>Member</Table.Head>
+                <Table.Head className="text-right">Created</Table.Head>
+                <Table.Head className="text-right">Completed</Table.Head>
+                <Table.Head className="text-right">Pending</Table.Head>
+                <Table.Head className="text-right">Rate</Table.Head>
+                <Table.Head className="text-right">Avg. Time</Table.Head>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
               {memberActivity.map((member) => (
-                <tr key={member.userId} className="border-b last:border-0">
-                  <td className="py-2.5 pr-4">
-                    <div>
-                      <span className="font-medium">{member.name}</span>
-                      <span className="text-muted-foreground ml-2 text-xs">
-                        {member.email}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="py-2.5 pr-4 text-right tabular-nums">
+                <Table.Row key={member.userId}>
+                  <Table.Cell>
+                    <Text size="sm">{member.name}</Text>
+                    <Text variant="secondary" size="xs">
+                      {member.email}
+                    </Text>
+                  </Table.Cell>
+                  <Table.Cell className="text-right tabular-nums">
                     {member.created}
-                  </td>
-                  <td className="py-2.5 pr-4 text-right tabular-nums">
+                  </Table.Cell>
+                  <Table.Cell className="text-right tabular-nums">
                     {member.completed}
-                  </td>
-                  <td className="py-2.5 pr-4 text-right tabular-nums">
+                  </Table.Cell>
+                  <Table.Cell className="text-right tabular-nums">
                     {member.pending}
-                  </td>
-                  <td className="py-2.5 pr-4 text-right tabular-nums">
+                  </Table.Cell>
+                  <Table.Cell className="text-right tabular-nums">
                     {member.completionRate}%
-                  </td>
-                  <td className="py-2.5 text-right tabular-nums">
+                  </Table.Cell>
+                  <Table.Cell className="text-right tabular-nums">
                     {formatSigningTime(member.avgSigningTimeMs)}
-                  </td>
-                </tr>
+                  </Table.Cell>
+                </Table.Row>
               ))}
-            </tbody>
-          </table>
+            </Table.Body>
+          </Table>
         </div>
       </div>
     </LayerCard>
@@ -1219,8 +1128,8 @@ function ExportPanel() {
   return (
     <LayerCard>
       <LayerCard.Primary className="pb-4">
-        <h3 className="text-base">Export Documents</h3>
-        <p>Download document data as CSV or PDF for external analysis</p>
+        <Text as="h3" variant="heading">Export Documents</Text>
+        <Text as="p" variant="secondary" size="sm">Download document data as CSV or PDF for external analysis</Text>
       </LayerCard.Primary>
       <div className="space-y-4">
         <div className="flex flex-wrap items-end gap-4">
@@ -1269,25 +1178,21 @@ function ExportPanel() {
           <Button
             onClick={handleExportCsv}
             disabled={isExporting || !exportData || exportData.length === 0}
-          >
-            <DownloadIcon className="mr-2 h-4 w-4" />
+           icon={DownloadIcon}>
             CSV
           </Button>
           <Button
             variant="outline"
             onClick={() => void handleExportPdf()}
             disabled={isExporting || !exportData || exportData.length === 0}
-          >
-            <DownloadIcon className="mr-2 h-4 w-4" />
+           icon={DownloadIcon}>
             PDF
           </Button>
         </div>
 
-        <p className="text-muted-foreground text-xs">
-          {exportData === undefined
+        <Text as="p" variant="secondary" size="xs">{exportData === undefined
             ? "Loading documents..."
-            : `${exportData.length} document${exportData.length !== 1 ? "s" : ""} match your filters`}
-        </p>
+            : `${exportData.length} document${exportData.length !== 1 ? "s" : ""} match your filters`}</Text>
       </div>
     </LayerCard>
   );
@@ -1295,12 +1200,18 @@ function ExportPanel() {
 
 // ─── Email Engagement Tab ─────────────────────
 
-const EMAIL_FUNNEL_COLORS = {
-  sent: "var(--info)",
-  delivered: "var(--primary)",
-  opened: "var(--success)",
-  clicked: "var(--warning)",
-};
+function emailFunnelColor(stage: string): string {
+  switch (stage) {
+    case "delivered":
+      return kumoPaint("--kumo-primary");
+    case "opened":
+      return kumoPaint("--kumo-success");
+    case "clicked":
+      return kumoPaint("--kumo-warning");
+    default:
+      return kumoPaint("--kumo-info");
+  }
+}
 
 function EmailEngagementTab() {
   const { slug } = Route.useParams();
@@ -1317,20 +1228,22 @@ function EmailEngagementTab() {
     return (
       <LayerCard>
         <div className="flex h-50 items-center justify-center">
-          <p className="text-muted-foreground text-sm">
-            No email data available yet
-          </p>
+          <Text as="p" variant="secondary" size="sm">No email data available yet</Text>
         </div>
       </LayerCard>
     );
   }
 
   const funnelData = [
-    { name: "Sent", value: engagement.total, fill: EMAIL_FUNNEL_COLORS.sent },
+    {
+      name: "Sent",
+      value: engagement.total,
+      color: emailFunnelColor("sent"),
+    },
     {
       name: "Delivered",
       value: Math.round((engagement.deliveryRate / 100) * engagement.total),
-      fill: EMAIL_FUNNEL_COLORS.delivered,
+      color: emailFunnelColor("delivered"),
     },
     {
       name: "Opened",
@@ -1339,7 +1252,7 @@ function EmailEngagementTab() {
           (engagement.deliveryRate / 100) *
           engagement.total
       ),
-      fill: EMAIL_FUNNEL_COLORS.opened,
+      color: emailFunnelColor("opened"),
     },
     {
       name: "Clicked",
@@ -1349,7 +1262,7 @@ function EmailEngagementTab() {
           (engagement.deliveryRate / 100) *
           engagement.total
       ),
-      fill: EMAIL_FUNNEL_COLORS.clicked,
+      color: emailFunnelColor("clicked"),
     },
   ];
 
@@ -1394,40 +1307,11 @@ function EmailEngagementTab() {
 
       <LayerCard>
         <LayerCard.Primary className="pb-2">
-          <h3 className="text-base">Email Funnel</h3>
-          <p>Email engagement progression (last 30 days)</p>
+          <Text as="h3" variant="heading">Email Funnel</Text>
+          <Text as="p" variant="secondary" size="sm">Email engagement progression (last 30 days)</Text>
         </LayerCard.Primary>
         <div>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={funnelData} margin={{ left: 0, right: 8 }}>
-              <XAxis
-                dataKey="name"
-                tick={{ fontSize: 11 }}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                tick={{ fontSize: 10 }}
-                tickLine={false}
-                axisLine={false}
-                allowDecimals={false}
-                width={40}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "var(--background)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "6px",
-                  fontSize: "12px",
-                }}
-              />
-              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                {funnelData.map((entry) => (
-                  <Cell key={entry.name} fill={entry.fill} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <CategoryBars rows={funnelData} />
         </div>
       </LayerCard>
     </div>
@@ -1436,14 +1320,20 @@ function EmailEngagementTab() {
 
 // ─── Recipient Timing Tab ─────────────────────
 
-const TIMING_BUCKET_COLORS: Record<string, string> = {
-  "<1h": "var(--success)",
-  "1-6h": "var(--info)",
-  "6-24h": "var(--primary)",
-  "1-3d": "var(--warning)",
-  "3-7d": "var(--destructive)",
-  "7d+": "var(--expired)",
-};
+function timingBucketColor(bucket: string): string {
+  switch (bucket) {
+    case "<1h":
+      return kumoPaint("--kumo-success");
+    case "1-6h":
+      return kumoPaint("--kumo-info");
+    case "6-24h":
+      return kumoPaint("--kumo-primary");
+    case "1-3d":
+      return kumoPaint("--kumo-warning");
+    default:
+      return kumoPaint("--kumo-danger");
+  }
+}
 
 function RecipientTimingTab() {
   const { slug } = Route.useParams();
@@ -1460,9 +1350,7 @@ function RecipientTimingTab() {
     return (
       <LayerCard>
         <div className="flex h-50 items-center justify-center">
-          <p className="text-muted-foreground text-sm">
-            No signed documents in the last 30 days
-          </p>
+          <Text as="p" variant="secondary" size="sm">No signed documents in the last 30 days</Text>
         </div>
       </LayerCard>
     );
@@ -1471,7 +1359,7 @@ function RecipientTimingTab() {
   const distributionData = timing.distribution.map((d) => ({
     name: d.bucket,
     value: d.count,
-    fill: TIMING_BUCKET_COLORS[d.bucket] ?? "var(--muted-foreground)",
+    color: timingBucketColor(d.bucket),
   }));
 
   return (
@@ -1505,40 +1393,11 @@ function RecipientTimingTab() {
 
       <LayerCard>
         <LayerCard.Primary className="pb-2">
-          <h3 className="text-base">Signing Time Distribution</h3>
-          <p>How long recipients take to complete signing</p>
+          <Text as="h3" variant="heading">Signing Time Distribution</Text>
+          <Text as="p" variant="secondary" size="sm">How long recipients take to complete signing</Text>
         </LayerCard.Primary>
         <div>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={distributionData} margin={{ left: 0, right: 8 }}>
-              <XAxis
-                dataKey="name"
-                tick={{ fontSize: 11 }}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                tick={{ fontSize: 10 }}
-                tickLine={false}
-                axisLine={false}
-                allowDecimals={false}
-                width={30}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "var(--background)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "6px",
-                  fontSize: "12px",
-                }}
-              />
-              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                {distributionData.map((entry) => (
-                  <Cell key={entry.name} fill={entry.fill} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <CategoryBars rows={distributionData} />
           <div className="mt-2 flex flex-wrap justify-center gap-3">
             {distributionData.map((entry) => (
               <div
@@ -1547,9 +1406,9 @@ function RecipientTimingTab() {
               >
                 <div
                   className="size-2.5 rounded-full"
-                  style={{ backgroundColor: entry.fill }}
+                  style={{ backgroundColor: entry.color }}
                 />
-                <span className="text-muted-foreground">
+                <span className="text-kumo-secondary">
                   {entry.name} ({entry.value})
                 </span>
               </div>
@@ -1579,10 +1438,8 @@ function TemplatePerformanceTab() {
     return (
       <LayerCard>
         <div className="flex h-50 flex-col items-center justify-center gap-2">
-          <TrendingUpIcon className="text-muted-foreground h-8 w-8" />
-          <p className="text-muted-foreground text-sm">
-            Template Performance is available on the Professional plan
-          </p>
+          <TrendingUpIcon className="text-kumo-secondary h-8 w-8" />
+          <Text as="p" variant="secondary" size="sm">Template Performance is available on the Professional plan</Text>
         </div>
       </LayerCard>
     );
@@ -1592,9 +1449,7 @@ function TemplatePerformanceTab() {
     return (
       <LayerCard>
         <div className="flex h-50 items-center justify-center">
-          <p className="text-muted-foreground text-sm">
-            No template-based documents in the last 90 days
-          </p>
+          <Text as="p" variant="secondary" size="sm">No template-based documents in the last 90 days</Text>
         </div>
       </LayerCard>
     );
@@ -1604,8 +1459,8 @@ function TemplatePerformanceTab() {
     <div className="space-y-4">
       <LayerCard>
         <LayerCard.Primary className="pb-2">
-          <h3 className="text-base">Template Comparison</h3>
-          <p>Performance of templates over the last 90 days</p>
+          <Text as="h3" variant="heading">Template Comparison</Text>
+          <Text as="p" variant="secondary" size="sm">Performance of templates over the last 90 days</Text>
         </LayerCard.Primary>
         <div>
           <div className="space-y-3">
@@ -1615,28 +1470,20 @@ function TemplatePerformanceTab() {
                 className="flex items-center justify-between rounded-lg border p-3"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">
-                    {t.templateName}
-                  </p>
-                  <p className="text-muted-foreground text-xs">
-                    {t.docsSent} documents sent
-                  </p>
+                  <Text as="p" size="sm" bold truncate>{t.templateName}</Text>
+                  <Text as="p" variant="secondary" size="xs">{t.docsSent} documents sent</Text>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <p className="text-sm font-medium tabular-nums">
-                      {t.completionRate}%
-                    </p>
-                    <p className="text-muted-foreground text-xs">Completed</p>
+                    <Text as="p" size="sm" bold DANGEROUS_className="tabular-nums">{t.completionRate}%</Text>
+                    <Text as="p" variant="secondary" size="xs">Completed</Text>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium tabular-nums">
-                      {t.avgTurnaround ?? "—"}
-                    </p>
-                    <p className="text-muted-foreground text-xs">Avg time</p>
+                    <Text as="p" size="sm" bold DANGEROUS_className="tabular-nums">{t.avgTurnaround ?? "—"}</Text>
+                    <Text as="p" variant="secondary" size="xs">Avg time</Text>
                   </div>
                   {t.declineRate > 0 && (
-                    <Badge variant="error" className="text-xs">
+                    <Badge variant="error">
                       {t.declineRate}% declined
                     </Badge>
                   )}

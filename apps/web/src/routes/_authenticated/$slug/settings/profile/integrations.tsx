@@ -1,11 +1,12 @@
 import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
+import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
-import { AlertDialog } from "@cloudflare/kumo/primitives/alert-dialog";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Activity, Clock, Link2, Unplug } from "lucide-react";
+import { Clock, Link as Link2, Plugs as Unplug, Pulse as Activity } from "@phosphor-icons/react";
+import { useState } from "react";
 
 import { SettingsBody } from "@/components/settings-body";
 import { FormSkeleton } from "@/components/skeletons";
@@ -99,13 +100,16 @@ function IntegrationsSettings() {
 }
 
 function ConnectedAppsSection({ apps }: { apps: ApiConnectedApp[] }) {
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const pending = apps.find((app) => app.id === pendingId);
   const disconnectApp = useMutation({
     mutationFn: disconnectConnectedApp,
   });
 
-  const handleDisconnect = async (appId: string) => {
+  const handleDisconnect = async (appId: string): Promise<void> => {
     try {
       await disconnectApp.mutateAsync(appId);
+      setPendingId(null);
       toast.success("App disconnected");
     } catch (error) {
       toast.error(
@@ -130,20 +134,16 @@ function ConnectedAppsSection({ apps }: { apps: ApiConnectedApp[] }) {
       <LayerCard.Primary>
         {apps.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <Unplug className="text-muted-foreground/50 h-12 w-12" />
-            <p className="text-muted-foreground mt-4 text-sm">
-              No connected apps
-            </p>
-            <p className="text-muted-foreground text-xs">
-              Apps you authorize will appear here
-            </p>
+            <Unplug className="text-kumo-secondary/50 h-12 w-12" />
+            <Text as="p" variant="secondary" size="sm" DANGEROUS_className="mt-4">No connected apps</Text>
+            <Text as="p" variant="secondary" size="xs">Apps you authorize will appear here</Text>
           </div>
         ) : (
           <div className="space-y-4">
             {apps.map((app) => (
-              <div
+              <LayerCard
                 key={app.id}
-                className="flex flex-col justify-between gap-4 rounded-lg border p-4 sm:flex-row sm:items-center"
+                className="flex flex-col justify-between gap-4 p-4 sm:flex-row sm:items-center"
               >
                 <div className="min-w-0 flex-1 space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -154,7 +154,7 @@ function ConnectedAppsSection({ apps }: { apps: ApiConnectedApp[] }) {
                       <Badge variant="secondary">Inactive</Badge>
                     )}
                   </div>
-                  <div className="text-muted-foreground flex flex-col gap-1 text-sm sm:flex-row sm:items-center">
+                  <div className="text-kumo-secondary flex flex-col gap-1 text-sm sm:flex-row sm:items-center">
                     <span>Connected {formatDate(app.connectedAt)}</span>
                     {app.lastActivityAt && (
                       <>
@@ -173,42 +173,45 @@ function ConnectedAppsSection({ apps }: { apps: ApiConnectedApp[] }) {
                     ))}
                   </div>
                 </div>
-                <AlertDialog.Root>
-                  <AlertDialog.Trigger
-                    render={
-                      <Button variant="outline" size="sm">
-                        <Unplug className="mr-1 h-3 w-3" />
-                        Disconnect
-                      </Button>
-                    }
-                  />
-                  <AlertDialog.Portal>
-                    <AlertDialog.Backdrop />
-                    <AlertDialog.Popup>
-                      <AlertDialog.Title>
-                        Disconnect {app.appName}
-                      </AlertDialog.Title>
-                      <AlertDialog.Description>
-                        This will revoke {app.appName}'s access to your account.
-                        The app will no longer be able to access your data.
-                      </AlertDialog.Description>
-                      <div className="mt-4 flex justify-end gap-2">
-                        <AlertDialog.Close
-                          render={<Button variant="outline">Cancel</Button>}
-                        />
-                        <AlertDialog.Close
-                          onClick={() => handleDisconnect(app.id)}
-                          render={<Button>Disconnect</Button>}
-                        />
-                      </div>
-                    </AlertDialog.Popup>
-                  </AlertDialog.Portal>
-                </AlertDialog.Root>
-              </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  icon={Unplug}
+                  onClick={() => setPendingId(app.id)}
+                >
+                  Disconnect
+                </Button>
+              </LayerCard>
             ))}
           </div>
         )}
       </LayerCard.Primary>
+      <Dialog.Root
+        open={pending !== undefined}
+        onOpenChange={(open) => {
+          if (!open) setPendingId(null);
+        }}
+        role="alertdialog"
+      >
+        <Dialog className="p-6">
+          <Dialog.Title>Disconnect {pending?.appName}</Dialog.Title>
+          <Dialog.Description>
+            This will revoke {pending?.appName}&apos;s access to your account.
+            The app will no longer be able to access your data.
+          </Dialog.Description>
+          <div className="mt-4 flex justify-end gap-2">
+            <Dialog.Close render={<Button variant="outline">Cancel</Button>} />
+            <Button
+              loading={disconnectApp.isPending}
+              onClick={() => {
+                if (pendingId) void handleDisconnect(pendingId);
+              }}
+            >
+              Disconnect
+            </Button>
+          </div>
+        </Dialog>
+      </Dialog.Root>
     </LayerCard>
   );
 }
@@ -230,13 +233,9 @@ function ActivityLogsSection({ logs }: { logs: ApiIntegrationActivityLog[] }) {
       <LayerCard.Primary>
         {logs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <Clock className="text-muted-foreground/50 h-12 w-12" />
-            <p className="text-muted-foreground mt-4 text-sm">
-              No activity yet
-            </p>
-            <p className="text-muted-foreground text-xs">
-              Integration activity will appear here
-            </p>
+            <Clock className="text-kumo-secondary/50 h-12 w-12" />
+            <Text as="p" variant="secondary" size="sm" DANGEROUS_className="mt-4">No activity yet</Text>
+            <Text as="p" variant="secondary" size="xs">Integration activity will appear here</Text>
           </div>
         ) : (
           <div className="space-y-3">
@@ -254,12 +253,10 @@ function ActivityLogsSection({ logs }: { logs: ApiIntegrationActivityLog[] }) {
                     </Badge>
                     <span className="font-medium">{log.integrationName}</span>
                   </div>
-                  <p className="text-muted-foreground text-sm">
-                    {log.action}
-                    {log.details && ` - ${log.details}`}
-                  </p>
+                  <Text as="p" variant="secondary" size="sm">{log.action}
+                    {log.details && ` - ${log.details}`}</Text>
                 </div>
-                <span className="text-muted-foreground text-xs whitespace-nowrap">
+                <span className="text-kumo-secondary text-xs whitespace-nowrap">
                   {formatRelativeTime(log.createdAt)}
                 </span>
               </div>

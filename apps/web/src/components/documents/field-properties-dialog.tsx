@@ -1,8 +1,10 @@
 import { Dialog } from "@cloudflare/kumo/components/dialog";
+import { Text } from "@cloudflare/kumo/components/text";
 
 import { type Id } from "@/lib/ids";
 
 import { FieldPropertiesPanel } from "./field-properties-panel";
+import { RailBack } from "./rail-back";
 import type { FieldType } from "./field-toolbar";
 
 interface FieldData {
@@ -46,6 +48,7 @@ interface FieldPropertiesDialogProps {
   recipients: Recipient[];
   onSave?: () => void;
   onConfigurePayment?: (fieldId: Id<"signature_fields">) => void;
+  presentation?: "dialog" | "panel";
 }
 
 export function FieldPropertiesDialog({
@@ -57,8 +60,33 @@ export function FieldPropertiesDialog({
   recipients,
   onSave,
   onConfigurePayment,
+  presentation = "dialog",
 }: FieldPropertiesDialogProps) {
-  if (!field) return null;
+  if (!field || !open) return null;
+
+  const panel = (
+        <FieldPropertiesPanel
+          organizationSlug={organizationSlug}
+          documentPublicId={documentPublicId}
+          field={field}
+          recipients={recipients}
+          onClose={() => onOpenChange(false)}
+          onSave={onSave}
+          onConfigurePayment={onConfigurePayment}
+        />
+  );
+
+  if (presentation === "panel") {
+    return (
+      <div data-testid="field-properties-panel" className="flex flex-col gap-2">
+        <RailBack onBack={() => onOpenChange(false)} tip="Back to the fields" />
+        <Text as="p" size="sm" bold>
+          Field settings
+        </Text>
+        {panel}
+      </div>
+    );
+  }
 
   return (
     <Dialog.Root
@@ -70,15 +98,7 @@ export function FieldPropertiesDialog({
         <Dialog.Description className="sr-only">
           Edit field label, requirements, and configuration
         </Dialog.Description>
-        <FieldPropertiesPanel
-          organizationSlug={organizationSlug}
-          documentPublicId={documentPublicId}
-          field={field}
-          recipients={recipients}
-          onClose={() => onOpenChange(false)}
-          onSave={onSave}
-          onConfigurePayment={onConfigurePayment}
-        />
+        {panel}
       </Dialog>
     </Dialog.Root>
   );

@@ -9,6 +9,9 @@
  */
 
 import { SkeletonLine } from "@cloudflare/kumo/components/loader";
+import type { ReactElement } from "react";
+
+import { PageWrapper } from "@/components/page-wrapper";
 
 interface FormSkeletonProps {
   /** Number of form fields to show (default: 3) */
@@ -37,5 +40,18 @@ export function FormSkeleton({
         </div>
       )}
     </div>
+  );
+}
+
+/** Pending state that keeps the same header and column as the loaded page. */
+export function PageFormSkeleton({
+  title,
+}: {
+  title: string;
+}): ReactElement {
+  return (
+    <PageWrapper title={title}>
+      <FormSkeleton />
+    </PageWrapper>
   );
 }

@@ -1,8 +1,10 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
+import { calendarDate } from "@/lib/field-date";
 import { parseId } from "@/lib/ids";
 import { toast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
@@ -158,9 +160,7 @@ const FIELD_INPUT_RENDERERS: Record<
   ),
   payment: ({ fieldId, signingToken }) =>
     signingToken ? (
-      <p className="text-muted-foreground text-sm">
-        Payment is required to complete this document.
-      </p>
+      <Text as="p" variant="secondary" size="sm">Payment is required to complete this document.</Text>
     ) : (
       <PaymentFieldSummary
         fieldId={parseId("signature_fields", fieldId)}
@@ -189,12 +189,10 @@ const FIELD_INPUT_RENDERERS: Record<
   kba: ({ commonProps }) => <KbaFieldInput {...commonProps} />,
 };
 
-function getDialogClassName(fieldType: string): string {
-  if (fieldType === "signature" || fieldType === "free_signature") {
-    return "max-w-2xl";
-  }
-  if (fieldType === "payment") return "max-w-lg";
-  return "max-w-md";
+function dialogSize(fieldType: string): "base" | "lg" | "xl" {
+  if (fieldType === "signature" || fieldType === "free_signature") return "xl";
+  if (fieldType === "payment") return "lg";
+  return "base";
 }
 
 function getDialogText(fieldType: string, isRequired: boolean) {
@@ -309,7 +307,23 @@ function FieldInputFooter({
   );
 }
 
+/** Value and required-validity a signer field starts with before any keystroke. */
+export function signerFieldDraft(
+  fieldType: string,
+  currentValue: string | undefined,
+  defaultValue: string | undefined,
+  now: Date = new Date()
+): { value: string; validWhenRequired: boolean } {
+  const value =
+    currentValue ||
+    defaultValue ||
+    (fieldType === "date_signed" ? calendarDate(now) : "");
+  return { value, validWhenRequired: value.length > 0 };
+}
+
 interface UseFieldInputStateArgs {
+  fieldId: string;
+  fieldType: string;
   currentValue?: string;
   currentSignatureImageUrl?: string;
   defaultValue?: string;
@@ -319,6 +333,8 @@ interface UseFieldInputStateArgs {
 }
 
 function useFieldInputState({
+  fieldId,
+  fieldType,
   currentValue,
   currentSignatureImageUrl,
   defaultValue,
@@ -326,20 +342,31 @@ function useFieldInputState({
   onOpenChange,
   onSave,
 }: UseFieldInputStateArgs) {
-  const [value, setValue] = useState(currentValue || defaultValue || "");
+  const draft = signerFieldDraft(fieldType, currentValue, defaultValue);
+  const [value, setValue] = useState(draft.value);
   const [signatureImageUrl, setSignatureImageUrl] = useState(
     currentSignatureImageUrl
   );
-  const [isValid, setIsValid] = useState(!isRequired);
+  const [isValid, setIsValid] = useState(
+    !isRequired || draft.validWhenRequired
+  );
   const [validationError, setValidationError] = useState<string | undefined>();
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    setValue(currentValue || defaultValue || "");
+    const next = signerFieldDraft(fieldType, currentValue, defaultValue);
+    setValue(next.value);
     setSignatureImageUrl(currentSignatureImageUrl);
-    setIsValid(!isRequired);
+    setIsValid(!isRequired || next.validWhenRequired);
     setValidationError(undefined);
-  }, [currentValue, currentSignatureImageUrl, defaultValue, isRequired]);
+  }, [
+    fieldId,
+    fieldType,
+    currentValue,
+    currentSignatureImageUrl,
+    defaultValue,
+    isRequired,
+  ]);
 
   const handleValidationChange = (valid: boolean, error?: string) => {
     setIsValid(valid);
@@ -424,6 +451,8 @@ export function FieldInputManager({
 }: FieldInputManagerProps) {
   const dialogText = getDialogText(fieldType, isRequired);
   const fieldState = useFieldInputState({
+    fieldId,
+    fieldType,
     currentValue,
     currentSignatureImageUrl,
     defaultValue: properties?.defaultValue,
@@ -434,7 +463,7 @@ export function FieldInputManager({
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog className={getDialogClassName(fieldType)}>
+      <Dialog size={dialogSize(fieldType)} className="p-6">
         <Dialog.Title>{dialogText.title}</Dialog.Title>
         <Dialog.Description>{dialogText.description}</Dialog.Description>
 

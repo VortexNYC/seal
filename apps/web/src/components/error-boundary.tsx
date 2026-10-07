@@ -122,9 +122,11 @@ export function ErrorFallback({
         <LayerCard.Secondary className="space-y-3">
           {isDev && error && (
             <div className="bg-kumo-elevated rounded-lg p-4">
-              <Text as="p" size="sm" variant="error" DANGEROUS_className="mb-2">
-                Error Details (Development Only):
-              </Text>
+              <div className="mb-2">
+                <Text as="p" size="sm" variant="error">
+                  Error Details (Development Only):
+                </Text>
+              </div>
               <pre className="text-kumo-secondary overflow-auto text-xs">
                 {error.message}
               </pre>

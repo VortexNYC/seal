@@ -3,6 +3,8 @@
  * Route: /{slug}/home
  */
 
+import { Text } from "@cloudflare/kumo/components/text";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { SkeletonLine } from "@cloudflare/kumo/components/loader";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -35,13 +37,10 @@ function StatsCardsFallback(): React.ReactElement {
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {Array.from({ length: 4 }).map((_, i) => (
-        <div
-          key={i}
-          className="border-border bg-card flex flex-col gap-2 rounded-lg border p-4"
-        >
+        <LayerCard key={i} className="flex flex-col gap-2 p-4">
           <SkeletonLine className="h-3 w-1/2" />
           <SkeletonLine className="h-6 w-1/3" />
-        </div>
+        </LayerCard>
       ))}
     </div>
   );
@@ -49,11 +48,11 @@ function StatsCardsFallback(): React.ReactElement {
 
 function RecentDocsFallback(): React.ReactElement {
   return (
-    <div className="border-border bg-card flex flex-col gap-3 rounded-lg border p-4">
+    <LayerCard className="flex flex-col gap-3 p-4">
       {Array.from({ length: 5 }).map((_, i) => (
         <SkeletonLine key={i} className="h-10 w-full" />
       ))}
-    </div>
+    </LayerCard>
   );
 }
 
@@ -73,16 +72,12 @@ function WorkspaceHome(): React.ReactElement {
 
   return (
     <PageWrapper title="Dashboard">
-      <div className="mx-auto flex max-w-5xl flex-col gap-5" data-seal-stagger>
+      <div className="flex flex-col gap-5" data-seal-stagger>
         <div className="flex flex-col gap-1">
-          <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
-            {organization.name}
-          </h2>
-          <p className="text-muted-foreground text-sm">
-            {issueCount > 0
+          <Text as="h2" variant="heading">{organization.name}</Text>
+          <Text as="p" variant="secondary" size="sm">{issueCount > 0
               ? `${issueCount} item${issueCount === 1 ? "" : "s"} need you`
-              : "What needs you — and what agents already moved"}
-          </p>
+              : "What needs you — and what agents already moved"}</Text>
         </div>
 
         {attentionPending ? (
@@ -98,13 +93,11 @@ function WorkspaceHome(): React.ReactElement {
         </Suspense>
 
         <div className="flex items-baseline justify-between gap-3">
-          <p className="text-muted-foreground text-sm">
-            Trends and team activity
-          </p>
+          <Text as="p" variant="secondary" size="sm">Trends and team activity</Text>
           <Link
             to="/$slug/analytics"
             params={{ slug }}
-            className="text-primary text-sm font-medium underline-offset-4 hover:underline"
+            className="text-kumo-link text-sm font-medium underline-offset-4 hover:underline"
           >
             Open analytics
           </Link>

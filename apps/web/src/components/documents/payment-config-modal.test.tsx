@@ -63,8 +63,7 @@ describe("PaymentConfigModal", () => {
 
     // Should show spinner, not the full form
     expect(screen.queryByText("Configure Payment")).not.toBeInTheDocument();
-    const spinner = document.querySelector(".animate-spin");
-    expect(spinner).toBeTruthy();
+    expect(screen.getByRole("status", { name: "Loading" })).toBeInTheDocument();
   });
 
   test("renders full form when open with no existing config", () => {

@@ -125,6 +125,61 @@ describe("documents API", () => {
     expect(list[0]?.name).toBe("Contract A");
   });
 
+  it("omits deleted documents from the list, recent feed, and stats", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+
+    await db.insert(documents).values({
+      id: crypto.randomUUID(),
+      publicId: crypto.randomUUID(),
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Live contract",
+      status: "draft",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await db.insert(documents).values({
+      id: crypto.randomUUID(),
+      publicId: crypto.randomUUID(),
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Deleted contract",
+      status: "uploaded",
+      documentStatus: "deleted",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const listResponse = await app.fetch(
+      new Request("http://localhost:8787/api/documents/test-org"),
+      env
+    );
+    const list = documentListSchema.parse(await parseJson(listResponse));
+    expect(list.map((doc) => doc.name)).toEqual(["Live contract"]);
+
+    const recentResponse = await app.fetch(
+      new Request("http://localhost:8787/api/documents/test-org/recent"),
+      env
+    );
+    const recent = z
+      .array(z.object({ name: z.string() }))
+      .parse(await parseJson(recentResponse));
+    expect(recent.map((doc) => doc.name)).toEqual(["Live contract"]);
+
+    const statsResponse = await app.fetch(
+      new Request("http://localhost:8787/api/documents/test-org/stats"),
+      env
+    );
+    const stats = z
+      .object({ total: z.number(), pending: z.number() })
+      .parse(await parseJson(statsResponse));
+    expect(stats).toMatchObject({ total: 1, pending: 1 });
+  });
+
   it("filters documents by workflow status", async () => {
     const app = createApp("org_1");
     const db = createD1(env.D1);

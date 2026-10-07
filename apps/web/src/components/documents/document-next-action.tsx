@@ -4,13 +4,16 @@
  */
 
 import { Button } from "@cloudflare/kumo/components/button";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Text } from "@cloudflare/kumo/components/text";
 import {
   CheckCircle,
+  DownloadSimple,
   PaperPlaneTilt,
   Signature,
   UserPlus,
 } from "@phosphor-icons/react";
-import type { ReactElement } from "react";
+import { type ReactElement, useState } from "react";
 
 import { formatDate, getStatusLabel } from "@/lib/formatting";
 import { cn } from "@/lib/utils";
@@ -46,6 +49,7 @@ export type DocumentNextActionModel =
     }
   | {
       kind: "done";
+      onDownload: () => void;
     }
   | {
       kind: "status";
@@ -56,6 +60,7 @@ interface DocumentNextActionProps {
   workflowStatus: DocumentWorkflowStatus | undefined;
   createdAt: number;
   model: DocumentNextActionModel;
+  onVoid?: () => void;
   className?: string;
 }
 
@@ -97,7 +102,7 @@ function copyFor(
     case "done":
       return {
         title: "Complete",
-        body: "Everyone’s finished. Download the signed PDF anytime.",
+        body: "Everyone’s finished.",
       };
     case "status":
       return {
@@ -111,97 +116,130 @@ export function DocumentNextAction({
   workflowStatus,
   createdAt,
   model,
+  onVoid,
   className,
 }: DocumentNextActionProps): ReactElement {
+  const [confirmVoid, setConfirmVoid] = useState(false);
   const statusLabel = getStatusLabel(workflowStatus);
   const { title, body } = copyFor(model, statusLabel);
 
-  const surface =
-    model.kind === "done"
-      ? "bg-status-completed-surface border-status-completed-border"
-      : model.kind === "send" || model.kind === "sign_yourself"
-        ? "bg-status-sent-surface border-status-sent-border"
-        : "bg-card border-border";
-
   return (
-    <div
+    <LayerCard
       data-seal-enter
       data-testid="document-next-action"
-      className={cn(
-        "flex flex-col gap-3 rounded-xl border px-4 py-4 shadow-sm",
-        surface,
-        className
-      )}
+      className={cn("flex flex-col gap-3 p-4", className)}
       aria-live="polite"
     >
       <div className="flex flex-col gap-1">
-        <p className="text-muted-foreground m-0 text-sm">
+        <Text variant="secondary" size="sm">
           {statusLabel}
           {" · "}Created {formatDate(createdAt)}
-        </p>
-        <h2 className="text-foreground m-0 text-lg font-semibold tracking-tight">
+        </Text>
+        <Text as="h2" variant="heading">
           {title}
-        </h2>
-        <p className="text-muted-foreground m-0 text-sm text-pretty">{body}</p>
+        </Text>
+        <Text variant="secondary" size="sm">
+          {body}
+        </Text>
       </div>
 
       {model.kind === "add_people" ? (
+        <span title="Add who needs to sign" className="inline-flex w-full">
         <Button
           type="button"
           variant="primary"
           className="w-full"
-          icon={<UserPlus className="size-4" />}
+          icon={UserPlus}
           onClick={model.onAction}
         >
           Add people
         </Button>
+        </span>
       ) : null}
 
       {model.kind === "place_fields" || model.kind === "fix_fields" ? (
+        <span
+          title={
+            model.kind === "place_fields"
+              ? "Place the fields on the page"
+              : "Review the fields that still need attention"
+          }
+          className="inline-flex w-full"
+        >
         <Button
           type="button"
           variant="primary"
           className="w-full"
-          icon={<Signature className="size-4" />}
+          icon={Signature}
           onClick={model.onAction}
         >
           {model.kind === "place_fields" ? "Show fields" : "Review fields"}
         </Button>
+        </span>
       ) : null}
 
       {model.kind === "send" ? (
+        <span title="Send this document" className="inline-flex w-full">
         <Button
           type="button"
           variant="primary"
           className="w-full"
-          icon={<PaperPlaneTilt className="size-4" />}
+          icon={PaperPlaneTilt}
           onClick={model.onAction}
         >
           {model.label}
         </Button>
+        </span>
       ) : null}
 
       {model.kind === "sign_yourself" ? (
+        <span title="Continue signing this document" className="inline-flex w-full">
         <Button
           type="button"
           variant="primary"
           className="w-full"
-          icon={<Signature className="size-4" />}
+          icon={Signature}
           onClick={model.onAction}
         >
           Continue signing
         </Button>
+        </span>
+      ) : null}
+
+      {onVoid && model.kind !== "done" && model.kind !== "send" ? (
+        <Button
+          type="button"
+          variant={confirmVoid ? "destructive" : "outline"}
+          className="w-full"
+          onClick={() => {
+            if (!confirmVoid) {
+              setConfirmVoid(true);
+              return;
+            }
+            onVoid();
+          }}
+        >
+          {confirmVoid ? "Void this document" : "Void"}
+        </Button>
       ) : null}
 
       {model.kind === "done" ? (
-        <div
-          className="text-status-completed-text flex items-center gap-2 text-sm font-medium"
-          data-seal-success
-        >
-          <CheckCircle className="size-5" weight="fill" />
-          Nothing needed from you
-        </div>
+        <>
+          <Button
+            type="button"
+            variant="primary"
+            className="w-full"
+            icon={DownloadSimple}
+            onClick={model.onDownload}
+          >
+            Download PDF
+          </Button>
+          <Text variant="secondary" size="sm" DANGEROUS_className="flex items-center gap-2">
+            <CheckCircle className="size-5" />
+            Nothing needed from you
+          </Text>
+        </>
       ) : null}
-    </div>
+    </LayerCard>
   );
 }

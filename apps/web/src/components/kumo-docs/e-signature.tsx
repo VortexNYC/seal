@@ -1,3 +1,4 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Label } from "@cloudflare/kumo/components/label";
@@ -299,7 +300,7 @@ export function ESignature({
           <div
             ref={canvasContainerRef}
             // vortex-allow-color: signature capture pad represents white paper in both themes
-            className="border-border overflow-hidden rounded-lg border-2 border-dashed bg-white"
+            className="border-kumo-line overflow-hidden rounded-lg border-2 border-dashed bg-kumo-base"
           >
             <SignatureCanvas
               key={canvasWidth}
@@ -314,7 +315,7 @@ export function ESignature({
                 style: { touchAction: "none" },
               }}
               // Transparent pad — DocuSeal crops alpha=0 so burn-in can bottom-align ink.
-              // White paper look comes from the parent bg-white container.
+              // White paper look comes from the parent bg-kumo-base container.
               backgroundColor="rgba(0,0,0,0)"
               // vortex-allow-color: signature capture ink must stay physically black on white paper
               penColor="rgb(0, 0, 0)"
@@ -339,9 +340,7 @@ export function ESignature({
               </Button>
             ) : null}
           </div>
-          <p className="text-muted-foreground text-xs">
-            Use your mouse or finger to draw your signature above
-          </p>
+          <Text as="p" variant="secondary" size="xs">Use your mouse or finger to draw your signature above</Text>
         </div>
       ) : null}
 
@@ -386,16 +385,14 @@ export function ESignature({
           ) : null}
           <p
             // vortex-allow-color: signature preview represents white paper in both themes
-            className="border-border overflow-hidden rounded-lg border-2 bg-white p-4 text-center text-3xl sm:p-8 sm:text-5xl"
+            className="border-kumo-line overflow-hidden rounded-lg border-2 bg-kumo-base p-4 text-center text-3xl sm:p-8 sm:text-5xl"
             style={{ fontFamily: currentFontFamily }}
             aria-hidden
           >
             {typedName || "Your name"}
           </p>
-          <p className="text-muted-foreground text-sm">
-            Your typed name will be converted to a signature style using the
-            selected font
-          </p>
+          <Text as="p" variant="secondary" size="sm">Your typed name will be converted to a signature style using the
+            selected font</Text>
           {showActions ? (
             <Button type="button" size="sm" onClick={submitTyped}>
               Adopt signature
@@ -412,16 +409,23 @@ export function ESignature({
             id="esign-upload"
             type="file"
             accept=".png,.jpg,.jpeg,image/png,image/jpeg"
-            className="border-border text-muted-foreground w-full rounded border bg-transparent p-2 text-sm"
+            className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) handleUploadFile(file);
             }}
           />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => fileRef.current?.click()}
+          >
+            Choose image
+          </Button>
           {uploadedImage ? (
             <div
               // vortex-allow-color: uploaded signature preview represents white paper in both themes
-              className="border-border rounded-lg border-2 bg-white p-4"
+              className="border-kumo-line rounded-lg border-2 bg-kumo-base p-4"
             >
               <img
                 src={uploadedImage}
@@ -430,9 +434,7 @@ export function ESignature({
               />
             </div>
           ) : null}
-          <p className="text-muted-foreground text-sm">
-            Upload a PNG or JPG image file (max 5MB)
-          </p>
+          <Text as="p" variant="secondary" size="sm">Upload a PNG or JPG image file (max 5MB)</Text>
           {showActions ? (
             <Button
               type="button"

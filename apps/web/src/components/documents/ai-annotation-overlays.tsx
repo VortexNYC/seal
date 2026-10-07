@@ -1,3 +1,4 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Tooltip } from "@cloudflare/kumo/components/tooltip";
@@ -178,25 +179,23 @@ function HighlightOverlay({
             <config.icon className={cn("h-3 w-3", config.textColor)} />
             <span
               className={cn(
-                "text-3xs font-semibold tracking-wide uppercase",
+                "text-xs font-semibold tracking-wide uppercase",
                 config.textColor
               )}
             >
               {config.label}
             </span>
           </div>
-          <p className="text-kumo-primary text-xs leading-relaxed">
-            {annotation.summary}
-          </p>
+          <Text as="p" size="xs">{annotation.summary}</Text>
         </div>
       }
     >
-      <div
-        className={cn(
-          "absolute cursor-default rounded-sm transition-opacity",
-          config.bgColor
-        )}
+      <Button
+        type="button"
+        variant="outline"
+        className="absolute cursor-default p-0"
         style={{ left, top, width, height }}
+        aria-label={`${config.label}: ${annotation.summary}`}
       />
     </Tooltip>
   );
@@ -277,18 +276,14 @@ export function AIInsightsPanel({
           const isActive = enabledCategories.has(category);
 
           return (
-            <button
+            <Button
               key={category}
               type="button"
+              size="xs"
+              variant={isActive ? "secondary" : "ghost"}
               onClick={() => toggleCategory(category)}
               aria-pressed={isActive}
               aria-label={`${config.label} annotations (${count})`}
-              className={cn(
-                "text-2xs flex items-center gap-1 rounded-full px-2 py-0.5 font-medium transition-colors",
-                isActive
-                  ? cn(config.bgColor, config.textColor)
-                  : "bg-kumo-elevated text-kumo-secondary/60"
-              )}
             >
               <span
                 className={cn(
@@ -298,7 +293,7 @@ export function AIInsightsPanel({
               />
               {config.label}
               <span className="opacity-60">{count}</span>
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -308,12 +303,13 @@ export function AIInsightsPanel({
         {filtered.map((annotation, i) => {
           const config = CATEGORY_CONFIG[annotation.category];
           return (
-            <button
+            <Button
               key={`insight-${annotation.page}-${i}`}
               type="button"
+              variant="ghost"
+              className="h-auto w-full justify-start"
               onClick={() => onPageJump(annotation.page)}
               aria-label={`${config.label} insight on page ${annotation.page}: ${annotation.summary}`}
-              className="hover:bg-kumo-elevated flex items-start gap-2 rounded-lg px-2 py-1.5 text-left transition-colors"
             >
               <span
                 className={cn(
@@ -323,14 +319,12 @@ export function AIInsightsPanel({
                 )}
               />
               <div className="min-w-0 flex-1">
-                <p className="text-kumo-primary text-xs leading-snug">
-                  {annotation.summary}
-                </p>
+                <Text as="p" size="xs">{annotation.summary}</Text>
               </div>
-              <span className="text-kumo-secondary bg-kumo-elevated text-3xs shrink-0 rounded px-1.5 py-0.5 font-medium">
+              <span className="text-kumo-secondary bg-kumo-elevated text-xs shrink-0 rounded px-1.5 py-0.5 font-medium">
                 p.{annotation.page}
               </span>
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -345,7 +339,6 @@ export function AIInsightsPanel({
           type="button"
           variant="ghost"
           size="xs"
-          className="text-kumo-secondary/60 hover:text-kumo-secondary text-2xs"
           onClick={() => setDismissOpen(true)}
         >
           Dismiss all insights

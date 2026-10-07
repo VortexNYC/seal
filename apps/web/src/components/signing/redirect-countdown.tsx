@@ -65,11 +65,11 @@ export function RedirectCountdown({
   };
 
   return (
-    <div className="border-kumo-info-tint bg-kumo-info-tint/30 flex flex-col items-center gap-4 rounded-xl border p-4 text-center">
+    <div className="border-kumo-line bg-kumo-elevated flex flex-col items-center gap-4 rounded-xl border p-4 text-center">
       <div className="flex items-center gap-3" role="status" aria-live="polite">
         <div className="relative flex h-8 w-8 shrink-0 items-center justify-center">
-          <span className="bg-kumo-info/20 absolute inset-0 animate-ping rounded-full" />
-          <ArrowSquareOut className="text-kumo-info relative h-4 w-4" />
+          <span className="bg-kumo-line absolute inset-0 animate-ping rounded-full" />
+          <ArrowSquareOut className="text-kumo-default relative h-4 w-4" />
         </div>
         <span className="text-kumo-secondary text-sm">
           Redirecting to{" "}

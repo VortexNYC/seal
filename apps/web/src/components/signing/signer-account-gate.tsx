@@ -1,10 +1,12 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { buttonVariants } from "@cloudflare/kumo/components/button";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { IdentificationCard } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
-import { useEffect, type ReactElement } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { submitPublicSigning } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 export function SignerAccountGate({
@@ -17,6 +19,8 @@ export function SignerAccountGate({
   onReady: () => void;
 }): ReactElement {
   const { user, isLoaded, isSignedIn } = useCurrentUser();
+  const [confirmDecline, setConfirmDecline] = useState(false);
+  const [declineError, setDeclineError] = useState<string | null>(null);
   const returnPath = `/sign/${encodeURIComponent(token)}`;
   const emailMatches =
     isSignedIn &&
@@ -33,7 +37,7 @@ export function SignerAccountGate({
   if (!isLoaded) {
     return (
       <div className="px-safe py-safe flex min-h-dvh w-full items-center justify-center">
-        <p className="text-muted-foreground text-sm">Checking your account…</p>
+        <Text as="p" variant="secondary" size="sm">Checking your account…</Text>
       </div>
     );
   }
@@ -41,7 +45,7 @@ export function SignerAccountGate({
   if (emailMatches) {
     return (
       <div className="flex min-h-dvh w-full items-center justify-center px-4">
-        <p className="text-muted-foreground text-sm">Continuing…</p>
+        <Text as="p" variant="secondary" size="sm">Continuing…</Text>
       </div>
     );
   }
@@ -54,26 +58,20 @@ export function SignerAccountGate({
       <LayerCard className="p-fluid w-full max-w-lg">
         <div className="mb-4 flex items-center gap-2">
           <IdentificationCard className="size-6 shrink-0" weight="duotone" />
-          <h1 className="text-xl font-semibold tracking-tight text-balance">
-            Confirm who you are
-          </h1>
+          <Text as="h1" variant="heading">Confirm who you are</Text>
         </div>
-        <p className="text-muted-foreground mb-2 text-sm text-pretty">
+        <p className="text-kumo-secondary mb-2 text-sm text-pretty">
           Create a free Seal account (or sign in) with{" "}
-          <span className="text-foreground font-medium">{recipientEmail}</span>{" "}
+          <span className="text-kumo-default font-medium">{recipientEmail}</span>{" "}
           so this signing action is tied to a verified identity for the audit
           trail.
         </p>
         {wrongAccount ? (
-          <p className="text-kumo-warning mb-6 text-sm text-pretty">
-            You&apos;re signed in as{" "}
+          <Text as="p" size="sm" DANGEROUS_className="mb-6">You&apos;re signed in as{" "}
             {user?.primaryEmailAddress?.emailAddress ?? "another account"}. Sign
-            out and use the invited email, or switch accounts.
-          </p>
+            out and use the invited email, or switch accounts.</Text>
         ) : (
-          <p className="text-muted-foreground mb-6 text-sm text-pretty">
-            Takes under a minute. Same email as the invitation.
-          </p>
+          <Text as="p" variant="secondary" size="sm" DANGEROUS_className="mb-6">Takes under a minute. Same email as the invitation.</Text>
         )}
 
         <div className="flex w-full flex-col gap-3">
@@ -99,6 +97,43 @@ export function SignerAccountGate({
           >
             Sign in
           </Link>
+          <button
+            type="button"
+            className={cn(
+              buttonVariants({
+                variant: confirmDecline ? "destructive" : "outline",
+              }),
+              "flex min-h-12 w-full items-center justify-center text-base"
+            )}
+            data-testid="signer-account-decline"
+            onClick={() => {
+              if (!confirmDecline) {
+                setConfirmDecline(true);
+                return;
+              }
+              void submitPublicSigning(token, {
+                status: "declined",
+                declineReason: "Declined",
+                ipAddress: "",
+                userAgent: navigator.userAgent,
+              })
+                .then(() => {
+                  window.location.reload();
+                })
+                .catch((error: unknown) => {
+                  setDeclineError(
+                    error instanceof Error
+                      ? error.message
+                      : "Could not decline this document"
+                  );
+                });
+            }}
+          >
+            {confirmDecline ? "Decline this document" : "Decline to sign"}
+          </button>
+          {declineError ? (
+            <Text as="p" variant="error" size="sm">{declineError}</Text>
+          ) : null}
         </div>
       </LayerCard>
     </div>

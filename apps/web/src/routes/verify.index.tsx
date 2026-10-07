@@ -8,8 +8,11 @@
  */
 
 import { Button } from "@cloudflare/kumo/components/button";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Link } from "@cloudflare/kumo/components/link";
+import { Text } from "@cloudflare/kumo/components/text";
 import { createFileRoute } from "@tanstack/react-router";
-import { FileUpIcon } from "lucide-react";
+import { FileArrowUp as FileUpIcon } from "@phosphor-icons/react";
 import { useCallback, useRef, useState } from "react";
 
 import {
@@ -84,19 +87,17 @@ function VerifyUploadPage() {
 
   return (
     <VerifyPageShell>
-      <div className="border-border bg-card rounded-xl border p-8 text-center shadow-sm">
+      <LayerCard className="p-8 text-center">
         <div className="mb-4 flex justify-center">
-          <div className="bg-muted flex h-14 w-14 items-center justify-center rounded-full">
-            <FileUpIcon className="text-muted-foreground h-7 w-7" />
-          </div>
+          <FileUpIcon className="text-kumo-secondary h-7 w-7" />
         </div>
-        <h1 className="text-foreground mb-2 text-xl font-semibold">
+        <Text as="h1" variant="heading">
           Verify a signed document
-        </h1>
-        <p className="text-muted-foreground mb-6 text-sm">
+        </Text>
+        <Text variant="secondary" size="sm">
           Upload a completed Seal PDF — its contents are hashed and checked
           against the recorded document fingerprint. Altered files fail.
-        </p>
+        </Text>
         <input
           ref={fileInputRef}
           type="file"
@@ -107,16 +108,11 @@ function VerifyUploadPage() {
             if (file) void verify(file);
           }}
         />
-        <div
-          role="button"
-          tabIndex={0}
-          className="border-border hover:border-foreground/30 cursor-pointer rounded-xl border-2 border-dashed px-6 py-10 transition-colors"
+        <Button
+          type="button"
+          variant="outline"
+          className="h-auto w-full flex-col py-10"
           onClick={() => fileInputRef.current?.click()}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              fileInputRef.current?.click();
-            }
-          }}
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
             e.preventDefault();
@@ -124,22 +120,17 @@ function VerifyUploadPage() {
             if (file) void verify(file);
           }}
         >
-          <p className="text-foreground text-sm font-medium">
-            {verifying ? "Verifying…" : "Drop a PDF here or click to browse"}
-          </p>
-          <p className="text-muted-foreground mt-1 text-xs">
-            PDF only · up to 50 MB
-          </p>
-        </div>
-      </div>
+          {verifying ? "Verifying…" : "Drop a PDF here or click to browse"}
+        </Button>
+      </LayerCard>
 
-      <p className="text-muted-foreground mt-8 text-center text-xs">
+      <Text variant="secondary" size="xs">
         Verified by{" "}
-        <a href="https://seal.nyc" className="underline underline-offset-2">
+        <Link href="https://seal.nyc" target="_blank" rel="noreferrer">
           Seal
-        </a>{" "}
+        </Link>{" "}
         — Document Signing Platform
-      </p>
+      </Text>
     </VerifyPageShell>
   );
 }

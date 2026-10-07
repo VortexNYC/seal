@@ -4,6 +4,8 @@
  * and optional expiration period
  */
 
+import { Banner } from "@cloudflare/kumo/components/banner";
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Collapsible } from "@cloudflare/kumo/components/collapsible";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
@@ -11,16 +13,9 @@ import { Input, Textarea } from "@cloudflare/kumo/components/input";
 import { Label } from "@cloudflare/kumo/components/label";
 import { Select } from "@cloudflare/kumo/components/select";
 import { Switch } from "@cloudflare/kumo/components/switch";
+import { Tabs } from "@cloudflare/kumo/components/tabs";
 import { useMutation } from "@tanstack/react-query";
-import {
-  ChevronDownIcon,
-  ChevronUpIcon,
-  CreditCardIcon,
-  ListOrderedIcon,
-  Loader2Icon,
-  SendIcon,
-  UsersIcon,
-} from "lucide-react";
+import { CaretDown as ChevronDownIcon, CaretUp as ChevronUpIcon, CreditCard as CreditCardIcon, PaperPlaneTilt as SendIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { z } from "zod";
 
@@ -30,9 +25,10 @@ import { sendDocument } from "@/lib/api-client";
 import { type Id } from "@/lib/ids";
 import { formatMoney, money } from "@/lib/money";
 import { toast } from "@/lib/toast";
-import { cn, getErrorMessage } from "@/lib/utils";
+import { getErrorMessage } from "@/lib/utils";
 
 import { parseSelectValue } from "../../lib/select-values";
+import { RailBack } from "./rail-back";
 
 type ExpirationPreset = "none" | "7" | "14" | "30" | "60" | "90" | "custom";
 type CustomUnit = "day" | "week" | "month";
@@ -92,6 +88,8 @@ interface SendDocumentDialogProps {
     order?: number;
   }>;
   signatureFieldCount: number;
+  /** Signers need a signature or initials field. Approver-only documents do not. */
+  requiresSigningField?: boolean;
   /** Map of recipientId to field count */
   fieldCountsByRecipient?: Map<string, number>;
   paymentConfigs: DocumentDetailPaymentConfig[];
@@ -100,6 +98,7 @@ interface SendDocumentDialogProps {
   onSuccess?: () => void;
   /** Org default deadline in days. When set, pre-populates the deadline picker. */
   defaultDeadlineDays?: number;
+  presentation?: "dialog" | "panel";
 }
 
 export function SendDocumentDialog({
@@ -107,6 +106,7 @@ export function SendDocumentDialog({
   documentName,
   recipients,
   signatureFieldCount,
+  requiresSigningField = true,
   fieldCountsByRecipient,
   paymentConfigs,
   open,
@@ -114,7 +114,9 @@ export function SendDocumentDialog({
   onSuccess,
   defaultDeadlineDays,
   organizationSlug,
+  presentation = "dialog",
 }: SendDocumentDialogProps) {
+  const missingSigningField = requiresSigningField && signatureFieldCount === 0;
   const { track } = useAnalytics();
   const [customMessage, setCustomMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -155,6 +157,8 @@ export function SendDocumentDialog({
       customMessage?: string;
       recipientMessages?: Record<string, string>;
       expirationPeriod?: { amount: number; unit: "day" | "week" | "month" };
+      signingMode?: "parallel" | "sequential";
+      allowDictateNextSigner?: boolean;
     }) => sendDocument(organizationSlug, documentPublicId, input),
   });
 
@@ -231,6 +235,8 @@ export function SendDocumentDialog({
             ? perRecipientMessages
             : undefined,
         expirationPeriod,
+        signingMode,
+        allowDictateNextSigner,
       });
 
       track.documentSent({ documentId: documentPublicId });
@@ -258,35 +264,30 @@ export function SendDocumentDialog({
     }
   };
 
-  return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog className="max-h-vh-90 flex flex-col sm:max-w-150">
-        <Dialog.Title>Send for signature</Dialog.Title>
-        <Dialog.Description>
-          {pendingRecipients.length} recipient
-          {pendingRecipients.length !== 1 ? "s" : ""} get a link for &ldquo;
-          {documentName}&rdquo;. Optional extras stay under More options.
-        </Dialog.Description>
+  const sendDescription = `${pendingRecipients.length} recipient${
+    pendingRecipients.length === 1 ? "" : "s"
+  } get a link for “${documentName}”. Optional extras stay under More options.`;
+
+  const sendBody = (
+    <>
 
         <div className="-mx-6 flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-4">
           {/* Payment Fields Summary */}
           {paymentConfigs && paymentConfigs.length > 0 && (
-            <div className="border-field-payment-border bg-field-payment-surface rounded-md border p-4">
+            <div className="border-kumo-info bg-kumo-info-tint rounded-md border p-4">
               <div className="flex items-center gap-3">
-                <div className="bg-field-payment-surface text-field-payment flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+                <div className="bg-kumo-info-tint text-kumo-info flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
                   <CreditCardIcon className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-foreground text-sm font-medium">
-                    {paymentConfigs.length === 1
+                  <Text as="p" size="sm" bold>{paymentConfigs.length === 1
                       ? "Payment will be included"
-                      : `${paymentConfigs.length} payments will be included`}
-                  </p>
+                      : `${paymentConfigs.length} payments will be included`}</Text>
                   <div className="mt-1 flex flex-col gap-0.5">
                     {paymentConfigs.map((config) => (
                       <p
                         key={config.fieldId}
-                        className="text-field-payment text-xs"
+                        className="text-kumo-info text-xs"
                       >
                         {formatMoney(
                           money(
@@ -304,7 +305,7 @@ export function SendDocumentDialog({
           )}
 
           <div className="flex flex-col gap-2">
-            <Label className="text-sm font-medium">Recipients</Label>
+            <Label>Recipients</Label>
             <ul className="flex flex-col gap-1.5 rounded-md border p-3">
               {pendingRecipients.map((recipient) => (
                 <li
@@ -314,7 +315,7 @@ export function SendDocumentDialog({
                   <span className="min-w-0 truncate font-medium">
                     {recipient.name || recipient.email}
                   </span>
-                  <span className="text-muted-foreground shrink-0 text-xs capitalize">
+                  <span className="text-kumo-secondary shrink-0 text-xs capitalize">
                     {recipient.role}
                     {fieldCountsByRecipient
                       ? `· ${fieldCountsByRecipient.get(recipient._id) ?? 0} fields`
@@ -329,7 +330,7 @@ export function SendDocumentDialog({
             open={showMoreOptions}
             onOpenChange={setShowMoreOptions}
           >
-            <Collapsible.Trigger className="text-muted-foreground hover:text-foreground flex w-full items-center justify-between rounded-md border px-3 py-2 text-sm font-medium transition-colors">
+            <Collapsible.Trigger className="flex w-full items-center justify-between">
               More options
               {showMoreOptions ? (
                 <ChevronUpIcon className="size-4" />
@@ -339,7 +340,7 @@ export function SendDocumentDialog({
             </Collapsible.Trigger>
             <Collapsible.Panel className="mt-3 flex flex-col gap-4">
               <div className="flex flex-col gap-2">
-                <Label className="text-sm font-medium">
+                <Label>
                   Per-recipient messages
                 </Label>
                 {pendingRecipients.map((recipient) => (
@@ -351,14 +352,14 @@ export function SendDocumentDialog({
                     }
                   >
                     <div className="overflow-hidden rounded-md border">
-                      <Collapsible.Trigger className="bg-muted hover:bg-muted/80 flex w-full items-center justify-between p-3 transition-colors">
+                      <Collapsible.Trigger className="flex w-full items-center justify-between p-3">
                         <span className="truncate text-sm font-medium">
                           {recipient.name || recipient.email}
                         </span>
                         {expandedRecipient === recipient._id ? (
-                          <ChevronUpIcon className="text-muted-foreground size-4" />
+                          <ChevronUpIcon className="text-kumo-secondary size-4" />
                         ) : (
-                          <ChevronDownIcon className="text-muted-foreground size-4" />
+                          <ChevronDownIcon className="text-kumo-secondary size-4" />
                         )}
                       </Collapsible.Trigger>
                       <Collapsible.Panel>
@@ -381,7 +382,7 @@ export function SendDocumentDialog({
               </div>
 
               <div>
-                <Label htmlFor="message" className="text-sm font-medium">
+                <Label htmlFor="message">
                   Default message (optional)
                 </Label>
                 <Textarea
@@ -397,54 +398,34 @@ export function SendDocumentDialog({
 
               {recipients.length > 1 && (
                 <div>
-                  <Label className="text-sm font-medium">Signing order</Label>
-                  <div className="mt-2 grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setSigningMode("parallel")}
-                      className={cn(
-                        "flex items-center gap-2 rounded-md border p-3 text-left text-sm transition-colors",
-                        signingMode === "parallel"
-                          ? "border-primary bg-primary/5 ring-primary/20 ring-1"
-                          : "hover:bg-muted"
-                      )}
-                    >
-                      <UsersIcon className="text-muted-foreground size-4 shrink-0" />
-                      <div>
-                        <p className="font-medium">All at once</p>
-                        <p className="text-muted-foreground text-xs">
-                          Everyone signs simultaneously
-                        </p>
-                      </div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSigningMode("sequential")}
-                      className={cn(
-                        "flex items-center gap-2 rounded-md border p-3 text-left text-sm transition-colors",
-                        signingMode === "sequential"
-                          ? "border-primary bg-primary/5 ring-primary/20 ring-1"
-                          : "hover:bg-muted"
-                      )}
-                    >
-                      <ListOrderedIcon className="text-muted-foreground size-4 shrink-0" />
-                      <div>
-                        <p className="font-medium">In order</p>
-                        <p className="text-muted-foreground text-xs">
-                          One {hasOrderValues ? "group" : "person"} at a time
-                        </p>
-                      </div>
-                    </button>
+                  <Label>Signing order</Label>
+                  <div className="mt-2">
+                    <Tabs
+                      variant="segmented"
+                      value={signingMode}
+                      onValueChange={(value) => {
+                        if (value === "parallel" || value === "sequential") {
+                          setSigningMode(value);
+                        }
+                      }}
+                      tabs={[
+                        { value: "parallel", label: "All at once" },
+                        {
+                          value: "sequential",
+                          label: hasOrderValues
+                            ? "In order, one group at a time"
+                            : "In order, one person at a time",
+                        },
+                      ]}
+                    />
                   </div>
                   {signingMode === "sequential" && (
                     <div className="mt-3 flex items-start justify-between gap-4 rounded-md border p-3">
                       <div className="flex flex-col gap-0.5">
-                        <Label className="text-sm font-medium">
+                        <Label>
                           Signers choose next recipient
                         </Label>
-                        <p className="text-muted-foreground text-xs">
-                          Allow each signer to designate who signs after them.
-                        </p>
+                        <Text as="p" variant="secondary" size="xs">Allow each signer to designate who signs after them.</Text>
                       </div>
                       <Switch
                         checked={allowDictateNextSigner}
@@ -460,10 +441,8 @@ export function SendDocumentDialog({
 
           {/* Expiration Period */}
           <div>
-            <Label className="text-sm font-medium">Deadline (optional)</Label>
-            <p className="text-muted-foreground mb-2 text-xs">
-              How long recipients have to sign after send
-            </p>
+            <Label>Deadline (optional)</Label>
+            <Text as="p" variant="secondary" size="xs" DANGEROUS_className="mb-2">How long recipients have to sign after send</Text>
             <Select
               value={expirationPreset}
               onValueChange={(val) => {
@@ -520,39 +499,34 @@ export function SendDocumentDialog({
             )}
 
             {expirationError && (
-              <p className="text-destructive mt-1 text-sm">{expirationError}</p>
+              <Text as="p" variant="error" size="sm" DANGEROUS_className="mt-1">{expirationError}</Text>
             )}
             {getExpirationText() && (
-              <p className="text-muted-foreground mt-1.5 text-xs">
-                {getExpirationText()}
-              </p>
+              <Text as="p" variant="secondary" size="xs" DANGEROUS_className="mt-1.5">{getExpirationText()}</Text>
             )}
           </div>
 
           {/* Error box - No signature fields */}
-          {signatureFieldCount === 0 && (
-            <div className="border-destructive/30 bg-destructive/10 rounded-md border p-3">
-              <p className="text-foreground text-sm font-medium">
-                Cannot send document without signature fields.
-              </p>
-              <p className="text-muted-foreground mt-1 text-xs">
-                Please add at least one signature field before sending.
-              </p>
-            </div>
-          )}
+          {missingSigningField ? (
+            <Banner
+              variant="error"
+              size="sm"
+              title="Cannot send document without signature fields."
+              description="Add a signature or initials field before sending."
+            />
+          ) : null}
 
           {/* Info box */}
-          {signatureFieldCount > 0 && (
-            <div className="border-info/30 bg-info/10 rounded-md border p-3">
-              <p className="text-foreground text-sm">
-                Recipients will receive an email with a link to sign the
-                document.
-                {getExpirationText() && (
-                  <span className="mt-1 block">{getExpirationText()}</span>
-                )}
-              </p>
-            </div>
-          )}
+          {!missingSigningField ? (
+            <Banner
+              size="sm"
+              description={
+                getExpirationText()
+                  ? `Recipients will receive an email with a link to sign the document. ${getExpirationText()}`
+                  : "Recipients will receive an email with a link to sign the document."
+              }
+            />
+          ) : null}
         </div>
 
         <div className="mt-4 flex flex-col-reverse justify-end gap-2 sm:flex-row">
@@ -568,21 +542,40 @@ export function SendDocumentDialog({
             type="button"
             variant="primary"
             onClick={handleSend}
-            disabled={isSending || signatureFieldCount === 0}
+            disabled={isSending || missingSigningField}
+            loading={isSending}
+            icon={SendIcon}
           >
-            {isSending ? (
-              <>
-                <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                Sending...
-              </>
-            ) : (
-              <>
-                <SendIcon className="mr-2 h-4 w-4" />
-                Send Document
-              </>
-            )}
+            {isSending ? "Sending..." : "Send Document"}
           </Button>
         </div>
+    </>
+  );
+
+  if (presentation === "panel") {
+    if (!open) return null;
+    return (
+      <div data-testid="send-document-panel" className="flex flex-col gap-3">
+        <RailBack onBack={() => onOpenChange(false)} tip="Back to the document" />
+        <div>
+          <Text as="p" size="sm" bold>
+            Send for signature
+          </Text>
+          <Text as="p" variant="secondary" size="xs">
+            {sendDescription}
+          </Text>
+        </div>
+        {sendBody}
+      </div>
+    );
+  }
+
+  return (
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog size="xl" className="flex max-h-vh-90 flex-col">
+        <Dialog.Title>Send for signature</Dialog.Title>
+        <Dialog.Description>{sendDescription}</Dialog.Description>
+        {sendBody}
       </Dialog>
     </Dialog.Root>
   );

@@ -20,7 +20,7 @@ import { PageWrapper } from "@/components/page-wrapper";
 import { SettingsBody } from "@/components/settings-body";
 import { SettingsSection } from "@/components/settings-section";
 import { DeveloperNav } from "@/components/settings/developer-nav";
-import { FormSkeleton } from "@/components/skeletons";
+import { FormSkeleton, PageFormSkeleton } from "@/components/skeletons";
 import { useOrganization } from "@/hooks/use-organization";
 import {
   createWebhook,
@@ -35,7 +35,7 @@ export const Route = createFileRoute(
   "/_authenticated/$slug/settings/developer/webhooks"
 )({
   component: WebhooksPage,
-  pendingComponent: FormSkeleton,
+  pendingComponent: () => <PageFormSkeleton title="Developer" />,
 });
 
 function formatDate(iso: string): string {
@@ -126,7 +126,7 @@ function WebhooksPage() {
       description="Receive HTTPS events when documents move."
       title="Developer"
     >
-      <SettingsBody wide>
+      <SettingsBody>
         <DeveloperNav slug={slug} active="webhooks" />
         <SettingsSection
           title="Endpoints"

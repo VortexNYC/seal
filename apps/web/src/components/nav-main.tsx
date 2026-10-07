@@ -60,7 +60,7 @@ function NavGroup({ group }: { group: NavGroupItem }) {
               >
                 <span className="flex-1 truncate">{subItem.title}</span>
                 {subItem.locked ? (
-                  <Lock className="text-muted-foreground ml-auto h-3 w-3" />
+                  <Lock className="text-kumo-secondary ml-auto h-3 w-3" />
                 ) : null}
               </Sidebar.MenuSubButton>
             ))}

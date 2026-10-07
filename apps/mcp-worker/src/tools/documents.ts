@@ -197,11 +197,12 @@ function registerSendDocumentTool(
     "Send a document for signing. The document must be in draft status and have at least one recipient.",
     sendDocumentSchema.shape,
     async (args, extra) => {
-      const { id, message } = args as SendDocumentInput;
+      const { id, message, signing_mode, allow_dictate_next_signer } =
+        args as SendDocumentInput;
       const authToken = getAuthToken(extra);
       const response = await client.post<{ success: boolean }>(
         "/documents/send",
-        { message },
+        { message, signing_mode, allow_dictate_next_signer },
         { id },
         authToken
       );

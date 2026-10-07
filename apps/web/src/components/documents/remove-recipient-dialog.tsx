@@ -1,6 +1,9 @@
-import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
-import { AlertTriangleIcon, UserXIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Button } from "@cloudflare/kumo/components/button";
+import { Dialog } from "@cloudflare/kumo/components/dialog";
+import { Text } from "@cloudflare/kumo/components/text";
+import { useEffect, useState, type JSX } from "react";
+
+import { RailBack } from "./rail-back";
 
 interface RemoveRecipientDialogProps {
   open: boolean;
@@ -10,6 +13,7 @@ interface RemoveRecipientDialogProps {
   recipientName?: string;
   recipientRole?: string;
   fieldCount?: number;
+  presentation?: "dialog" | "panel";
 }
 
 function formatRole(role?: string): string {
@@ -28,104 +32,92 @@ export function RemoveRecipientDialog({
   recipientName,
   recipientRole,
   fieldCount = 0,
-}: RemoveRecipientDialogProps) {
+  presentation = "dialog",
+}: RemoveRecipientDialogProps): JSX.Element | null {
   const [isRemoving, setIsRemoving] = useState(false);
 
-  // Reset state when dialog closes
   useEffect(() => {
     if (!open) {
       setIsRemoving(false);
     }
   }, [open]);
 
-  const handleConfirm = () => {
+  const handleConfirm = (): void => {
     setIsRemoving(true);
     onConfirm();
   };
 
   const hasFields = fieldCount > 0;
 
+  const details = (
+    <>
+        <div className="mt-3">
+          {recipientName ? <Text>{recipientName}</Text> : null}
+          <Text variant="secondary">{recipientEmail}</Text>
+          {recipientRole ? (
+            <Text variant="secondary" size="xs">
+              {formatRole(recipientRole)}
+            </Text>
+          ) : null}
+        </div>
+        {hasFields ? (
+          <Text variant="error" size="sm" DANGEROUS_className="mt-3">
+            {fieldCount} {fieldCount === 1 ? "field" : "fields"} assigned to
+            this recipient will be permanently removed.
+          </Text>
+        ) : null}
+        <div className="mt-4 flex flex-col gap-2">
+          <Button
+            type="button"
+            variant="destructive"
+            className="w-full"
+            onClick={handleConfirm}
+            disabled={isRemoving}
+          >
+            {isRemoving
+              ? "Removing..."
+              : hasFields
+                ? "Remove with fields"
+                : "Remove"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => onOpenChange(false)}
+            disabled={isRemoving}
+          >
+            Cancel
+          </Button>
+        </div>
+    </>
+  );
+
+  if (presentation === "panel") {
+    if (!open) return null;
+    return (
+      <div data-testid="remove-recipient-panel" className="flex flex-col gap-2">
+        <RailBack onBack={() => onOpenChange(false)} tip="Back to recipients" />
+        <Text as="p" size="sm" bold>
+          Remove recipient?
+        </Text>
+        <Text as="p" variant="secondary" size="xs">
+          This recipient will no longer have access to this document.
+        </Text>
+        {details}
+      </div>
+    );
+  }
+
   return (
-    <AlertDialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
-      <AlertDialogPrimitive.Portal>
-        {/* vortex-allow-color: modal/dialog scrim needs fixed black opacity for backdrop contrast. */}
-        <AlertDialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/40 duration-150" />
-
-        <AlertDialogPrimitive.Content className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 w-edge fixed top-1/2 left-1/2 z-50 max-w-100 -translate-x-1/2 -translate-y-1/2 duration-200">
-          <div className="bg-card border-border rounded-lg border shadow-sm">
-            <div className="p-6">
-              <div className="mb-4 flex items-center gap-3">
-                <div className="bg-destructive/10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full">
-                  <UserXIcon className="text-destructive h-5 w-5" />
-                </div>
-                <AlertDialogPrimitive.Title className="text-foreground text-base font-semibold">
-                  Remove recipient?
-                </AlertDialogPrimitive.Title>
-              </div>
-
-              <AlertDialogPrimitive.Description className="text-muted-foreground text-sm">
-                This recipient will no longer have access to this document.
-              </AlertDialogPrimitive.Description>
-
-              <div className="bg-muted border-border mt-3 rounded-md border px-3 py-2">
-                {recipientName && (
-                  <div className="text-foreground text-sm font-medium">
-                    {recipientName}
-                  </div>
-                )}
-                <div className="text-muted-foreground text-sm">
-                  {recipientEmail}
-                </div>
-                {recipientRole && (
-                  <div className="text-muted-foreground mt-1 text-xs">
-                    {formatRole(recipientRole)}
-                  </div>
-                )}
-              </div>
-
-              {hasFields && (
-                <div className="bg-warning-surface border-warning/30 mt-3 flex items-start gap-2.5 rounded-md border p-3">
-                  <AlertTriangleIcon className="text-warning mt-0.5 h-4 w-4 shrink-0" />
-                  <div>
-                    <div className="text-warning text-sm font-medium">
-                      {fieldCount} {fieldCount === 1 ? "field" : "fields"} will
-                      be deleted
-                    </div>
-                    <div className="text-warning mt-0.5 text-xs opacity-80">
-                      All fields assigned to this recipient will be permanently
-                      removed from the document.
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="bg-muted border-border flex justify-end gap-3 rounded-b-lg border-t px-6 py-4">
-              <AlertDialogPrimitive.Cancel asChild>
-                <button
-                  type="button"
-                  className="border-border text-foreground hover:bg-muted/80 rounded-md border bg-transparent px-4 py-2 text-sm font-medium transition-colors"
-                >
-                  Cancel
-                </button>
-              </AlertDialogPrimitive.Cancel>
-
-              <button
-                type="button"
-                onClick={handleConfirm}
-                disabled={isRemoving}
-                className="bg-destructive hover:bg-destructive/90 text-primary-foreground rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isRemoving
-                  ? "Removing..."
-                  : hasFields
-                    ? "Remove with fields"
-                    : "Remove"}
-              </button>
-            </div>
-          </div>
-        </AlertDialogPrimitive.Content>
-      </AlertDialogPrimitive.Portal>
-    </AlertDialogPrimitive.Root>
+    <Dialog.Root open={open} onOpenChange={onOpenChange} role="alertdialog">
+      <Dialog className="p-6">
+        <Dialog.Title>Remove recipient?</Dialog.Title>
+        <Dialog.Description>
+          This recipient will no longer have access to this document.
+        </Dialog.Description>
+        {details}
+      </Dialog>
+    </Dialog.Root>
   );
 }

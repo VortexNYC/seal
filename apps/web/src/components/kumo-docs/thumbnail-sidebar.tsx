@@ -45,18 +45,18 @@ export function ThumbnailSidebar({
         : pages.map((page) => {
             const active = page.page === currentPage;
             return (
+              <span key={page.page} title={`Go to page ${page.page}`} className="inline-flex w-full">
               <Button
-                key={page.page}
                 type="button"
                 variant="ghost"
                 onClick={() => onSelectPage(page.page)}
                 className={cn(
                   "flex h-auto flex-col items-center gap-1 rounded-lg p-1.5",
-                  active && "bg-accent ring-ring ring-2"
+                  active && "bg-kumo-elevated ring-kumo-focus ring-2"
                 )}
                 aria-current={active ? "page" : undefined}
               >
-                <div className="border-border bg-background relative h-24 w-20 overflow-hidden rounded-md border shadow-xs">
+                <div className="border-kumo-line bg-kumo-canvas relative h-24 w-20 overflow-hidden rounded-md border shadow-xs">
                   {page.src ? (
                     <img
                       src={page.src}
@@ -64,15 +64,16 @@ export function ThumbnailSidebar({
                       className="h-full w-full object-cover object-top"
                     />
                   ) : (
-                    <div className="text-muted-foreground flex h-full items-center justify-center text-xs">
+                    <div className="text-kumo-secondary flex h-full items-center justify-center text-xs">
                       {page.page}
                     </div>
                   )}
                 </div>
-                <span className="text-muted-foreground text-2xs tabular-nums">
+                <span className="text-kumo-secondary text-xs tabular-nums">
                   {page.label ?? page.page}
                 </span>
               </Button>
+              </span>
             );
           })}
     </aside>

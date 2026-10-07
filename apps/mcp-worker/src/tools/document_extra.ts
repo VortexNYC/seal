@@ -106,7 +106,7 @@ export function registerDocumentExtraTools(
   // Bulk send
   server.tool(
     "seal_bulk_send_documents",
-    "Send multiple draft documents for signing at once. Maximum 50 documents per request. Each document must be in draft status and have at least one recipient — documents that don't meet these criteria will be reported as failures. An optional custom message can be included in all signing invitation emails. Returns per-document success/failure details.",
+    "Send multiple draft documents for signing at once. Maximum 50 documents per request. Each document is invited the same way as a single send, including sequential order. Each document must be in draft status and have at least one recipient — documents that don't meet these criteria will be reported as failures. An optional custom message can be included in the invitation emails. Returns per-document success/failure details.",
     bulkSendDocumentsSchema.shape,
     async (args, extra) => {
       const { document_ids, message } = args as BulkSendDocumentsInput;

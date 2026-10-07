@@ -257,7 +257,7 @@ export function useDocumentDetail(
     queryFn: () => getDocumentRecipients(organizationSlug, documentPublicId),
   });
 
-  const { data: apiProgress } = useSuspenseQuery({
+  const { data: apiProgress, refetch: refetchProgress } = useSuspenseQuery({
     queryKey: ["documents", documentPublicId, "recipients", "progress"],
     queryFn: () => getRecipientProgress(organizationSlug, documentPublicId),
   });
@@ -346,6 +346,7 @@ export function useDocumentDetail(
     currentUserFields,
     refetchDocument,
     refetchRecipients,
+    refetchProgress,
     refetchFields,
     refetchCurrentUserRecipient,
     refetchCurrentUserFields,

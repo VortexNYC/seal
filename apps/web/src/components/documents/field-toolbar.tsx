@@ -1,27 +1,6 @@
-import {
-  CalendarCheckIcon,
-  CalendarIcon,
-  CheckSquareIcon,
-  ChevronDownIcon,
-  ChevronDownSquareIcon,
-  CircleDotIcon,
-  Columns3Icon,
-  CreditCardIcon,
-  HashIcon,
-  HeadingIcon,
-  IdCardIcon,
-  ImageIcon,
-  ListChecksIcon,
-  PaperclipIcon,
-  PenLineIcon,
-  PenToolIcon,
-  PhoneIcon,
-  StampIcon,
-  StrikethroughIcon,
-  TypeIcon,
-  UserIcon,
-  ShieldCheckIcon,
-} from "lucide-react";
+import { Text } from "@cloudflare/kumo/components/text";
+import { Button } from "@cloudflare/kumo/components/button";
+import { Calendar as CalendarIcon, CalendarCheck as CalendarCheckIcon, CaretCircleDown as ChevronDownSquareIcon, CaretDown as ChevronDownIcon, CheckSquare as CheckSquareIcon, RadioButton as CircleDotIcon, Columns as Columns3Icon, CreditCard as CreditCardIcon, Hash as HashIcon, IdentificationCard as IdCardIcon, Image as ImageIcon, ListChecks as ListChecksIcon, Paperclip as PaperclipIcon, Pen as PenLineIcon, PenNib as PenToolIcon, Phone as PhoneIcon, ShieldCheck as ShieldCheckIcon, Stamp as StampIcon, TextH as HeadingIcon, TextStrikethrough as StrikethroughIcon, TextT as TypeIcon, User as UserIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import {
@@ -30,8 +9,6 @@ import {
   FIELD_TYPES,
   type FieldType,
 } from "@/lib/field-types";
-import { cn } from "@/lib/utils";
-
 export { FIELD_TYPES, type FieldType } from "@/lib/field-types";
 
 interface FieldToolbarProps {
@@ -82,7 +59,7 @@ const FIELD_ACCENT: Record<FieldType, string> = {
   multi_select: "var(--field-multi-select)",
   attachment: "var(--field-attachment)",
   image: "var(--field-image)",
-  payment: "var(--field-payment)",
+  payment: "var(--kumo-info)",
   phone: "var(--field-phone)",
   cells: "var(--field-cells)",
   stamp: "var(--field-stamp)",
@@ -127,7 +104,6 @@ function FieldButton({
   disabled,
   disabledReason,
 }: FieldButtonProps) {
-  const [isDragging, setIsDragging] = useState(false);
   const accentColor = FIELD_ACCENT[type];
 
   const handleDragStart = (e: React.DragEvent) => {
@@ -135,7 +111,6 @@ function FieldButton({
       e.preventDefault();
       return;
     }
-    setIsDragging(true);
     e.dataTransfer.effectAllowed = "copy";
     e.dataTransfer.setData("fieldType", type);
 
@@ -181,37 +156,23 @@ function FieldButton({
   };
 
   const handleDragEnd = () => {
-    setIsDragging(false);
     onDragEnd();
   };
 
   return (
-    <button
+    <Button
       type="button"
+      variant="secondary"
+      className="w-full cursor-grab justify-start active:cursor-grabbing"
       draggable={!disabled}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       disabled={disabled}
       title={disabled ? disabledReason : `Drag ${label} onto the document`}
-      className={cn(
-        "border-border bg-background text-foreground relative flex items-center gap-2 rounded-md border px-2.5 py-2 text-left transition-colors",
-        disabled
-          ? "cursor-not-allowed opacity-50"
-          : "hover:bg-muted/60 cursor-grab active:cursor-grabbing",
-        isDragging && "scale-95 border-dashed opacity-40"
-      )}
+      icon={icon}
     >
-      <span
-        className="flex h-6 w-6 shrink-0 items-center justify-center rounded"
-        style={{
-          backgroundColor: `color-mix(in oklab, ${accentColor} 18%, transparent)`,
-          color: accentColor,
-        }}
-      >
-        {icon}
-      </span>
-      <span className="truncate text-xs font-medium">{label}</span>
-    </button>
+      {label}
+    </Button>
   );
 }
 
@@ -286,9 +247,7 @@ export function FieldToolbar({
   return (
     <div className="flex flex-col gap-2">
       {disabled ? (
-        <p className="text-muted-foreground text-xs">
-          Add a recipient first, then drag fields onto the PDF.
-        </p>
+        <Text as="p" variant="secondary" size="xs">Add a recipient first, then drag fields onto the PDF.</Text>
       ) : null}
       <FieldGrid
         types={PRIMARY_FIELD_TYPES}
@@ -297,20 +256,17 @@ export function FieldToolbar({
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       />
-      <button
+      <Button
         type="button"
-        className="text-muted-foreground hover:text-foreground flex items-center gap-1 self-start text-xs font-medium"
+        variant="ghost"
+        size="sm"
+        className="self-start"
+        icon={ChevronDownIcon}
         onClick={() => setShowMore((open) => !open)}
         aria-expanded={showMore}
       >
-        <ChevronDownIcon
-          className={cn(
-            "h-3.5 w-3.5 transition-transform",
-            showMore && "rotate-180"
-          )}
-        />
         {showMore ? "Fewer fields" : "More fields"}
-      </button>
+      </Button>
       {showMore ? (
         <FieldGrid
           types={moreTypes}

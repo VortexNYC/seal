@@ -39,16 +39,17 @@ export const DEFAULT_FIELD_SIZE_PERCENT: Record<
   FieldType,
   { width: number; height: number }
 > = {
-  // Height kept short so the field bottom can sit on a printed signature rule.
-  signature: { width: 33, height: 5 },
-  free_signature: { width: 33, height: 5 },
-  initials: { width: 13, height: 4 },
-  name: { width: 30, height: 5 },
-  email: { width: 33, height: 5 },
-  text: { width: 30, height: 5 },
-  number: { width: 30, height: 5 },
-  date: { width: 23, height: 5 },
-  date_signed: { width: 23, height: 5 },
+  // Matches web pixel sizes on a letter page (612×792): icon plus the type name.
+  signature: { width: 17, height: 4 },
+  free_signature: { width: 23, height: 4 },
+  initials: { width: 16, height: 4 },
+  name: { width: 12, height: 4 },
+  // 34% of 612pt is 208px: a long address stays on one line at 12pt.
+  email: { width: 34, height: 4 },
+  text: { width: 11, height: 4 },
+  number: { width: 14, height: 4 },
+  date: { width: 11, height: 4 },
+  date_signed: { width: 19, height: 4 },
   checkbox: { width: 5, height: 4 },
   radio: { width: 23, height: 5 },
   dropdown: { width: 30, height: 5 },

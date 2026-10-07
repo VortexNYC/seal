@@ -31,15 +31,6 @@
   --color-kumo-tint: var(--kumo-tint);
   --color-kumo-subtle: var(--kumo-subtle);
 
-  /* Seal micro type scale — field overlays, badges, captions */
-  --text-2xs: 0.6875rem; /* 11px */
-  --text-3xs: 0.625rem; /* 10px */
-  --text-4xs: 0.5625rem; /* 9px */
-  --text-5xs: 0.5rem; /* 8px */
-  --text-6xs: 0.4375rem; /* 7px */
-  --text-label: 0.8125rem; /* 13px */
-  --text-lede: 0.9375rem; /* 15px */
-  --text-display: 1.75rem; /* 28px */
   --text-lead: 1.05rem; /* ~17px */
 
   --radius-card: 10px;
@@ -80,10 +71,10 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-kumo-line outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground m-0 font-sans;
+    @apply bg-kumo-canvas text-kumo-default m-0 font-sans;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -171,15 +162,15 @@
 @keyframes seal-field-focus {
   0%,
   100% {
-    outline-color: color-mix(in oklch, var(--primary) 35%, transparent);
+    outline-color: color-mix(in oklch, var(--kumo-primary) 35%, transparent);
   }
   50% {
-    outline-color: var(--primary);
+    outline-color: var(--kumo-primary);
   }
 }
 
 [data-seal-field-active="true"] {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--kumo-primary);
   outline-offset: 2px;
   animation: seal-field-focus 1.2s ease-in-out 2;
 }
@@ -233,9 +224,9 @@
 [data-auth-shell] [data-kumo-component="SensitiveInput"] input {
   border-radius: 0.5rem;
   min-height: 2.5rem;
-  background-color: var(--background);
-  color: var(--foreground);
-  box-shadow: inset 0 0 0 1px var(--border);
+  background-color: var(--kumo-background);
+  color: var(--kumo-default);
+  box-shadow: inset 0 0 0 1px var(--kumo-line);
 }
 
 [data-auth-shell] button[type="submit"] {
@@ -246,31 +237,31 @@
   justify-content: center;
   border-radius: 0.5rem;
   border: none;
-  background-color: var(--primary);
-  color: var(--primary-foreground);
+  background-color: var(--kumo-primary);
+  color: var(--kumo-primary-foreground);
   font-size: 0.9375rem;
   font-weight: 600;
   letter-spacing: 0.01em;
   box-shadow:
-    0 1px 2px color-mix(in oklch, var(--foreground) 12%, transparent),
-    0 0 0 1px color-mix(in oklch, var(--primary) 40%, transparent);
-  --kumo-button-foreground: var(--primary-foreground);
-  --color-kumo-primary-foreground: var(--primary-foreground);
+    0 1px 2px color-mix(in oklch, var(--kumo-default) 12%, transparent),
+    0 0 0 1px color-mix(in oklch, var(--kumo-primary) 40%, transparent);
+  --kumo-button-foreground: var(--kumo-primary-foreground);
+  --color-kumo-primary-foreground: var(--kumo-primary-foreground);
 }
 
 [data-auth-shell] button[type="submit"] *,
 [data-auth-shell] button[type="submit"] span {
-  color: var(--primary-foreground);
+  color: var(--kumo-primary-foreground);
   justify-content: center;
   text-align: center;
   width: 100%;
 }
 
 [data-auth-shell] button[type="submit"]:hover:not(:disabled) {
-  background-color: color-mix(in oklch, var(--primary) 88%, var(--foreground));
+  background-color: color-mix(in oklch, var(--kumo-primary) 88%, var(--kumo-default));
   box-shadow:
-    0 2px 6px color-mix(in oklch, var(--foreground) 16%, transparent),
-    0 0 0 1px color-mix(in oklch, var(--primary) 50%, transparent);
+    0 2px 6px color-mix(in oklch, var(--kumo-default) 16%, transparent),
+    0 0 0 1px color-mix(in oklch, var(--kumo-primary) 50%, transparent);
 }
 
 [data-auth-shell] button[type="submit"]:disabled {
@@ -283,21 +274,21 @@
 }
 
 [data-auth-shell] a:hover {
-  color: var(--foreground);
+  color: var(--kumo-default);
 }
 
 /* Brand mark — stay on foreground, not link taupe */
-[data-auth-shell] a.text-foreground {
-  color: var(--foreground);
+[data-auth-shell] a.text-kumo-default {
+  color: var(--kumo-default);
 }
 
-[data-auth-shell] a.text-foreground:hover {
-  color: var(--foreground);
+[data-auth-shell] a.text-kumo-default:hover {
+  color: var(--kumo-default);
 }
 
 [data-auth-shell] section {
-  border-color: color-mix(in oklch, var(--border) 80%, transparent);
-  background: color-mix(in oklch, var(--card) 88%, transparent);
+  border-color: color-mix(in oklch, var(--kumo-line) 80%, transparent);
+  background: color-mix(in oklch, var(--kumo-elevated) 88%, transparent);
   backdrop-filter: blur(10px);
 }
 
@@ -307,9 +298,9 @@
 }
 
 [data-auth-shell] [data-kumo-component="Banner"] {
-  color: var(--foreground);
-  background-color: color-mix(in oklch, var(--destructive) 18%, var(--card));
-  border-color: color-mix(in oklch, var(--destructive) 45%, transparent);
+  color: var(--kumo-default);
+  background-color: color-mix(in oklch, var(--kumo-danger) 18%, var(--kumo-elevated));
+  border-color: color-mix(in oklch, var(--kumo-danger) 45%, transparent);
 }
 
 [data-auth-shell] [data-kumo-component="Banner"] * {
@@ -345,7 +336,7 @@
 }
 
 [data-sidebar="group-label"] {
-  color: var(--muted-foreground) !important;
+  color: var(--kumo-subtle) !important;
 }
 
 [data-sidebar="menu-button"],
@@ -425,8 +416,8 @@
 .seal-settings-auth [data-kumo-component="Button"][data-variant="primary"],
 [data-auth-settings] button[type="submit"],
 [data-auth-settings] [data-kumo-component="Button"][data-variant="primary"] {
-  background-color: var(--primary) !important;
-  color: var(--primary-foreground) !important;
+  background-color: var(--kumo-primary) !important;
+  color: var(--kumo-primary-foreground) !important;
 }
 
 .dark .seal-settings-auth button[type="submit"] *,
@@ -439,26 +430,26 @@
   [data-auth-settings]
   [data-kumo-component="Button"][data-variant="primary"]
   * {
-  color: var(--primary-foreground) !important;
+  color: var(--kumo-primary-foreground) !important;
 }
 
 /* Cap: dark primary CTAs anywhere (Upload PDF, invite, etc.) stay ink-readable */
 .dark [data-kumo-component="Button"][data-variant="primary"] {
-  background-color: var(--primary) !important;
-  color: var(--primary-foreground) !important;
+  background-color: var(--kumo-primary) !important;
+  color: var(--kumo-primary-foreground) !important;
 }
 
 .dark [data-kumo-component="Button"][data-variant="primary"] * {
-  color: var(--primary-foreground) !important;
+  color: var(--kumo-primary-foreground) !important;
 }
 
 /* Logo / avatar / workspace file controls — no white flash in dark */
 .dark .seal-settings-auth input[type="file"],
 .dark [data-auth-settings] input[type="file"],
 .dark input[type="file"] {
-  color: var(--foreground);
-  background-color: var(--muted);
-  border-color: var(--border);
+  color: var(--kumo-default);
+  background-color: var(--kumo-elevated);
+  border-color: var(--kumo-line);
 }
 
 /* Kill Kumo rail hover ghost-line (collapse lives on header Trigger) */
@@ -470,7 +461,7 @@
 @layer base {
   * {
     scrollbar-width: thin;
-    scrollbar-color: var(--border) transparent;
+    scrollbar-color: var(--kumo-line) transparent;
   }
 
   ::-webkit-scrollbar {
@@ -484,20 +475,20 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: var(--border);
+    background: var(--kumo-line);
     border-radius: 4px;
     border: 2px solid transparent;
     background-clip: content-box;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--muted-foreground);
+    background: var(--kumo-subtle);
     border: 2px solid transparent;
     background-clip: content-box;
   }
 
   ::-webkit-scrollbar-thumb:not(:hover) {
-    background: color-mix(in oklch, var(--border) 60%, transparent);
+    background: color-mix(in oklch, var(--kumo-line) 60%, transparent);
     border: 2px solid transparent;
     background-clip: content-box;
   }
@@ -564,7 +555,7 @@
 }
 
 @utility bg-fade-muted {
-  background-image: linear-gradient(to top, var(--muted) 0%, transparent 100%);
+  background-image: linear-gradient(to top, var(--kumo-elevated) 0%, transparent 100%);
 }
 
 @utility transition-lift {

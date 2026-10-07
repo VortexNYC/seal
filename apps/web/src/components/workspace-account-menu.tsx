@@ -46,7 +46,7 @@ function Mark({
   return (
     <span
       className={cn(
-        "text-2xs grid size-full place-items-center rounded-md font-semibold uppercase",
+        "text-xs grid size-full place-items-center rounded-md font-semibold uppercase",
         className
       )}
       aria-hidden
@@ -102,21 +102,18 @@ export function WorkspaceAccountMenu({
               </div>
               <div
                 data-workspace-copy
-                className="grid min-w-0 flex-1 text-left text-sm leading-tight"
+                className="grid min-w-0 flex-1 text-left leading-tight"
               >
-                <span className="text-muted-foreground text-3xs truncate font-medium tracking-wide uppercase">
-                  Workspace
-                </span>
-                <span className="text-sidebar-foreground truncate font-medium">
+                <span className="text-sidebar-foreground truncate text-sm font-medium">
                   {active?.name ?? "Workspace"}
                 </span>
-                <span className="text-muted-foreground truncate text-xs">
-                  Signed in as {user.name}
+                <span className="text-kumo-secondary truncate text-xs">
+                  {user.email}
                 </span>
               </div>
               <CaretUpDown
                 data-workspace-caret
-                className="text-muted-foreground ml-auto size-4 shrink-0"
+                className="text-kumo-secondary ml-auto size-4 shrink-0"
               />
             </Sidebar.MenuButton>
           </DropdownMenu.Trigger>
@@ -147,7 +144,7 @@ export function WorkspaceAccountMenu({
                       <span className="truncate text-sm font-medium">
                         {team.name}
                       </span>
-                      <span className="text-muted-foreground truncate text-xs">
+                      <span className="text-kumo-secondary truncate text-xs">
                         {team.slug}
                       </span>
                     </div>
@@ -158,7 +155,6 @@ export function WorkspaceAccountMenu({
                 <DropdownMenu.Item
                   icon={Plus}
                   onClick={onCreateOrganization}
-                  className="text-muted-foreground"
                 >
                   New workspace
                 </DropdownMenu.Item>
@@ -167,7 +163,7 @@ export function WorkspaceAccountMenu({
             <DropdownMenu.Separator />
             <DropdownMenu.Group>
               <DropdownMenu.Label>Account</DropdownMenu.Label>
-              <DropdownMenu.Label className="p-0 font-normal">
+              <DropdownMenu.Label>
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                   <div className="bg-sidebar-accent overflow-hidden rounded-lg">
                     {user.avatar ? (
@@ -177,14 +173,14 @@ export function WorkspaceAccountMenu({
                         className="size-8 object-cover"
                       />
                     ) : (
-                      <div className="text-muted-foreground flex size-8 items-center justify-center text-xs font-medium">
+                      <div className="text-kumo-secondary flex size-8 items-center justify-center text-xs font-medium">
                         {user.initials ?? "U"}
                       </div>
                     )}
                   </div>
                   <div className="grid min-w-0 flex-1 leading-tight">
                     <span className="truncate font-medium">{user.name}</span>
-                    <span className="text-muted-foreground truncate text-xs">
+                    <span className="text-kumo-secondary truncate text-xs">
                       {user.email}
                     </span>
                   </div>

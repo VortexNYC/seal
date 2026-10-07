@@ -3,10 +3,11 @@
  * Shown before ESIGN consent so personal data processing is disclosed first.
  */
 
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
-import { CheckCircle2Icon } from "lucide-react";
+import { CheckCircle as CheckCircle2Icon } from "@phosphor-icons/react";
 import { useCallback, useState } from "react";
 
 import { SealLogo } from "@/components/seal-logo";
@@ -36,7 +37,7 @@ export function PrivacyNoticeDialog({
     return (
       <div
         data-seal-enter
-        className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8"
+        className="bg-kumo-canvas flex min-h-dvh flex-col items-center justify-center px-4 py-8"
       >
         <div className="flex w-full max-w-lg flex-col gap-6">
           <div className="flex justify-center">
@@ -44,20 +45,14 @@ export function PrivacyNoticeDialog({
           </div>
           <div className="flex flex-col gap-2 text-center">
             <div className="flex items-center justify-center gap-2">
-              <CheckCircle2Icon className="text-status-completed-text size-6" />
-              <h1 className="text-2xl font-bold text-balance">
-                Privacy notice acknowledged
-              </h1>
+              <CheckCircle2Icon className="text-kumo-default size-6" />
+              <Text as="h1" variant="heading">Privacy notice acknowledged</Text>
             </div>
-            <p className="text-muted-foreground text-sm text-pretty">
-              Continuing to electronic signature consent…
-            </p>
+            <Text as="p" variant="secondary" size="sm">Continuing to electronic signature consent…</Text>
           </div>
-          <LayerCard className="border-status-completed-border bg-status-completed-surface">
+          <LayerCard className="border-kumo-line">
             <LayerCard.Primary className="space-y-1 p-5 text-center">
-              <p className="text-status-completed-text text-sm font-medium">
-                {recipientEmail}
-              </p>
+              <Text as="p" size="sm">{recipientEmail}</Text>
             </LayerCard.Primary>
           </LayerCard>
         </div>
@@ -68,7 +63,7 @@ export function PrivacyNoticeDialog({
   return (
     <div
       data-seal-enter
-      className="bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8"
+      className="bg-kumo-canvas flex min-h-dvh flex-col items-center justify-center px-4 py-8"
     >
       <div className="flex w-full max-w-lg flex-col gap-6">
         <div className="flex justify-center">
@@ -76,13 +71,9 @@ export function PrivacyNoticeDialog({
         </div>
 
         <div className="flex flex-col gap-2 text-center">
-          <h1 className="text-2xl font-bold text-balance sm:text-3xl">
-            Privacy notice
-          </h1>
-          <p className="text-muted-foreground text-sm text-pretty">
-            Please review how your information is used for this signing
-            ceremony, including California privacy rights.
-          </p>
+          <Text as="h1" variant="heading">Privacy notice</Text>
+          <Text as="p" variant="secondary" size="sm">Please review how your information is used for this signing
+            ceremony, including California privacy rights.</Text>
         </div>
 
         <LayerCard>
@@ -93,7 +84,7 @@ export function PrivacyNoticeDialog({
               ) : (
                 <p
                   key={`${index}-${line.slice(0, 24)}`}
-                  className="text-muted-foreground text-sm leading-relaxed"
+                  className="text-kumo-secondary text-sm leading-relaxed"
                 >
                   {line}
                 </p>

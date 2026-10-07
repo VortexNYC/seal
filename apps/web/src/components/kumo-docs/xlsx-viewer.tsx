@@ -1,3 +1,5 @@
+import { Text } from "@cloudflare/kumo/components/text";
+import { Tabs } from "@cloudflare/kumo/components/tabs";
 import type { JSX } from "react";
 import { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
@@ -88,28 +90,23 @@ export function XlsxViewer({
       className={cn("flex flex-col", className)}
     >
       {sheets.length > 1 ? (
-        <div className="border-border flex gap-1 overflow-x-auto border-b px-2 py-1">
-          {sheets.map((sheet, index) => (
-            <button
-              key={sheet.name}
-              type="button"
-              className={cn(
-                "rounded-md px-2 py-1 text-xs whitespace-nowrap",
-                index === active ? "bg-accent font-medium" : "hover:bg-muted"
-              )}
-              onClick={() => setActive(index)}
-            >
-              {sheet.name}
-            </button>
-          ))}
-        </div>
+        <Tabs
+          variant="segmented"
+          size="sm"
+          value={String(active)}
+          onValueChange={(value) => setActive(Number(value))}
+          tabs={sheets.map((sheet, index) => ({
+            value: String(index),
+            label: sheet.name,
+          }))}
+        />
       ) : null}
       {loading ? (
-        <p className="text-muted-foreground p-4 text-sm">Loading workbook…</p>
+        <Text as="p" variant="secondary" size="sm" DANGEROUS_className="p-4">Loading workbook…</Text>
       ) : null}
-      {error ? <p className="text-destructive p-4 text-sm">{error}</p> : null}
+      {error ? <Text as="p" variant="error" size="sm" DANGEROUS_className="p-4">{error}</Text> : null}
       {!loading && !error && sheets.length === 0 ? (
-        <p className="text-muted-foreground p-4 text-sm">No workbook loaded.</p>
+        <Text as="p" variant="secondary" size="sm" DANGEROUS_className="p-4">No workbook loaded.</Text>
       ) : null}
       {csv ? <CsvViewer content={csv} className="max-h-128" /> : null}
     </div>

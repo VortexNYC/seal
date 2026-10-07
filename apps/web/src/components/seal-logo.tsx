@@ -19,7 +19,7 @@ export function SealLogo({
   variant = "color",
   withBackground = false,
 }: SealLogoProps) {
-  const colorClass = variant === "white" ? "text-white" : "text-foreground";
+  const colorClass = variant === "white" ? "text-white" : "text-kumo-default";
 
   const mark = (
     <svg
@@ -53,7 +53,7 @@ export function SealLogo({
   return (
     <span
       className={cn(
-        "bg-muted inline-flex items-center justify-center rounded-lg",
+        "bg-kumo-elevated inline-flex items-center justify-center rounded-lg",
         className
       )}
       style={{ width: size * 1.35, height: size * 1.35 }}

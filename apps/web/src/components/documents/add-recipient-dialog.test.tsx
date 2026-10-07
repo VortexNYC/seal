@@ -134,8 +134,7 @@ describe("AddRecipientDialog", () => {
     test("shows a loading spinner when members query returns undefined", () => {
       mockUseOrganizationMembers.mockReturnValue({ data: undefined });
       renderDialog();
-      const spinner = document.querySelector(".animate-spin");
-      expect(spinner).toBeTruthy();
+      expect(screen.getByRole("status", { name: "Loading" })).toBeInTheDocument();
     });
 
     test("does not show the member list while loading", () => {
@@ -316,7 +315,7 @@ describe("AddRecipientDialog", () => {
       const memberRow = screen.getByRole("button", { name: /Alice Smith/i });
       await user.click(memberRow);
 
-      expect(memberRow.className).toContain("bg-accent");
+      expect(memberRow.querySelector("svg")).toBeTruthy();
     });
   });
 

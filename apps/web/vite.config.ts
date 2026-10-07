@@ -19,13 +19,13 @@ const require = createRequire(import.meta.url);
 const codeSplitting = {
   groups: [
     { name: "pdf-viewer", test: /@embedpdf|pdfium/ },
-    { name: "canvas", test: /konva|react-zoom-pan-pinch/ },
-    { name: "charts", test: /recharts|d3-/ },
-    { name: "pdf-export", test: /jspdf|html2canvas/ },
+    { name: "canvas", test: /konva/ },
+    { name: "charts", test: /echarts/ },
+    { name: "pdf-export", test: /jspdf/ },
     { name: "date-utils", test: /date-fns/ },
     {
       name: "ui",
-      test: /@radix-ui|cmdk|sonner|react-day-picker/,
+      test: /@radix-ui|react-day-picker/,
     },
     { name: "vendor-analytics", test: /posthog/ },
     { name: "vendor-query", test: /@tanstack\/(react-)?query/ },

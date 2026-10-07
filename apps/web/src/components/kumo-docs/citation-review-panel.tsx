@@ -1,3 +1,4 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Crosshair, MapPin } from "@phosphor-icons/react";
@@ -48,7 +49,7 @@ export function CitationReviewPanel({
       data-kumo-docs="citation-review"
       className={cn("flex h-full flex-col", className)}
     >
-      <div className="border-border flex items-center justify-between gap-2 border-b px-3 py-2">
+      <div className="border-kumo-line flex items-center justify-between gap-2 border-b px-3 py-2">
         <span className="text-sm font-medium">Citations</span>
         {onDismiss ? (
           <Button type="button" variant="ghost" size="sm" onClick={onDismiss}>
@@ -59,27 +60,25 @@ export function CitationReviewPanel({
 
       <div className="flex-1 space-y-2 overflow-y-auto p-3">
         {fields.length === 0 ? (
-          <p className="text-muted-foreground text-sm">{emptyLabel}</p>
+          <Text as="p" variant="secondary" size="sm">{emptyLabel}</Text>
         ) : (
           fields.map((field) => {
             const active = field.id === activeId;
             return (
-              <button
+              <Button
                 key={field.id}
                 type="button"
+                variant={active ? "secondary" : "ghost"}
+                className="h-auto w-full justify-start"
                 onClick={() => onFocus?.(field)}
-                className={cn(
-                  "border-border hover:bg-accent/60 w-full rounded-lg border p-3 text-left transition-colors",
-                  active && "border-primary bg-accent"
-                )}
               >
                 <div className="mb-1 flex items-center justify-between gap-2">
-                  <span className="text-foreground text-sm font-medium">
+                  <span className="text-kumo-default text-sm font-medium">
                     {field.label}
                   </span>
                   <div className="flex items-center gap-1">
                     {field.category ? (
-                      <Badge variant="secondary" className="text-3xs">
+                      <Badge variant="secondary">
                         {field.category}
                       </Badge>
                     ) : null}
@@ -88,7 +87,6 @@ export function CitationReviewPanel({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="h-7 px-1.5"
                         onClick={(event) => {
                           event.stopPropagation();
                           onJumpToCitation?.(field);
@@ -96,19 +94,17 @@ export function CitationReviewPanel({
                         aria-label={`Jump to page ${field.bbox.page}`}
                       >
                         <MapPin className="size-3.5" />
-                        <span className="text-muted-foreground text-3xs tabular-nums">
+                        <span className="text-kumo-secondary text-xs tabular-nums">
                           p.{field.bbox.page}
                         </span>
                       </Button>
                     ) : (
-                      <Crosshair className="text-muted-foreground size-3.5 opacity-40" />
+                      <Crosshair className="text-kumo-secondary size-3.5 opacity-40" />
                     )}
                   </div>
                 </div>
-                <p className="text-muted-foreground line-clamp-3 text-xs text-pretty">
-                  {field.value}
-                </p>
-              </button>
+                <Text as="p" variant="secondary" size="xs" DANGEROUS_className="line-clamp-3">{field.value}</Text>
+              </Button>
             );
           })
         )}

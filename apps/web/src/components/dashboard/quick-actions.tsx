@@ -1,19 +1,16 @@
 /**
  * Dashboard Quick Actions — compact link list (SEA-96).
- * Neutral chrome; no rainbow tile grid.
  */
 
+import { Button } from "@cloudflare/kumo/components/button";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Text } from "@cloudflare/kumo/components/text";
 import { useRouter } from "@tanstack/react-router";
-import { FileTextIcon, LayoutTemplateIcon, UploadIcon } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-
-import { MOTION_PRESS } from "@/lib/motion";
-import { cn } from "@/lib/utils";
+import { FileText as FileTextIcon, type Icon, Layout as LayoutTemplateIcon, UploadSimple as UploadIcon } from "@phosphor-icons/react";
 
 interface QuickActionItem {
   label: string;
-  icon: LucideIcon;
+  icon: Icon;
   to: string;
   search?: Record<string, string | undefined>;
 }
@@ -49,32 +46,29 @@ export function QuickActions({ slug }: QuickActionsProps): React.ReactElement {
   return (
     <LayerCard>
       <LayerCard.Secondary className="px-4 pt-4 pb-2">
-        <h3 className="text-sm font-semibold">Start</h3>
+        <Text as="h3" size="sm">
+          Start
+        </Text>
       </LayerCard.Secondary>
-      <LayerCard.Primary className="mx-1.5 mb-1.5 flex flex-col gap-0.5 px-3 pb-3">
-        {actions.map((action) => {
-          const Icon = action.icon;
-          return (
-            <button
-              key={action.label}
-              type="button"
-              className={cn(
-                MOTION_PRESS,
-                "text-foreground hover:bg-secondary focus-visible:ring-ring flex items-center gap-2.5 rounded-md px-2 py-2 text-left text-sm focus-visible:ring-2 focus-visible:outline-none"
-              )}
-              onClick={() =>
-                router.navigate({
-                  to: action.to,
-                  params: { slug },
-                  search: action.search,
-                })
-              }
-            >
-              <Icon className="text-muted-foreground size-4 shrink-0" />
-              <span className="truncate font-medium">{action.label}</span>
-            </button>
-          );
-        })}
+      <LayerCard.Primary className="mx-1.5 mb-1.5 flex flex-col gap-1 px-3 pb-3">
+        {actions.map((action) => (
+          <Button
+            key={action.label}
+            type="button"
+            variant="ghost"
+            className="w-full justify-start"
+            icon={action.icon}
+            onClick={() =>
+              router.navigate({
+                to: action.to,
+                params: { slug },
+                search: action.search,
+              })
+            }
+          >
+            {action.label}
+          </Button>
+        ))}
       </LayerCard.Primary>
     </LayerCard>
   );
