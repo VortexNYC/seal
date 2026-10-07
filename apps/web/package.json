@@ -73,8 +73,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.54.11",
-    "@cloudflare/workers-types": "^5.20260916.1",
+    "@cloudflare/vite-plugin": "^1.62.4",
+    "@cloudflare/workers-types": "^5.20261002.1",
     "@playwright/test": "1.63.0",
     "@posthog/cli": "0.18.9",
     "@testing-library/react": "^16.3.3",
@@ -91,6 +91,6 @@
     "vite": "catalog:",
     "vitest": "catalog:",
     "vitest-dom": "^0.1.1",
-    "wrangler": "^4.133.0"
+    "wrangler": "^4.146.0"
   }
 }
