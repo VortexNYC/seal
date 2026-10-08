@@ -8,7 +8,7 @@ export const DEFAULT_ESIGN_CONSENT_TEXT = [
   "You acknowledge that:",
   "Electronic signatures have the same legal effect as handwritten signatures under the ESIGN Act.",
   "You can request paper copies at any time.",
-  "You can withdraw consent by contacting us.",
+  "You can withdraw consent by contacting the sender.",
   "Technical requirements: a modern web browser with JavaScript enabled, and email access to receive signed documents.",
 ].join("\n");
 

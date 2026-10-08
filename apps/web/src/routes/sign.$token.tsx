@@ -191,7 +191,7 @@ function SigningErrorComponent({ error }: ErrorComponentProps) {
                 ? "Signers can no longer finish it."
                 : isInvalidToken
                 ? "This signing link is invalid or has expired. Please check the link and try again, or contact the sender for a new link."
-                : "We encountered an error loading this document. Please try again or contact support."}</Text>
+                : "We encountered an error loading this document. Please try again or contact the sender."}</Text>
           </div>
           <div className="mt-6 flex justify-center gap-2">
             <Link
@@ -1128,7 +1128,6 @@ function SigningPage() {
     return (
       <EsignConsentDialog
         recipientEmail={recipient.email}
-        ownerEmail={doc.ownerEmail}
         onAccept={handleConsentAccept}
         onDecline={handleConsentDecline}
         onDownloadPdf={handleDownload}

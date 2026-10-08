@@ -1,12 +1,7 @@
-import { Button, LinkButton } from "@cloudflare/kumo/components/button";
+import { Button } from "@cloudflare/kumo/components/button";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
-import {
-  ArrowLeft,
-  EnvelopeSimple,
-  House,
-  MagnifyingGlass,
-} from "@phosphor-icons/react";
+import { ArrowLeft, House, MagnifyingGlass } from "@phosphor-icons/react";
 import { Link, useRouter } from "@tanstack/react-router";
 
 /**
@@ -57,16 +52,6 @@ export function NotFoundPage() {
                   View your dashboard
                 </Link>
               </li>
-              <li className="flex items-center gap-2">
-                <span className="bg-kumo-secondary size-1.5 rounded-full" />
-                <LinkButton
-                  href="mailto:support@seal.nyc"
-                  variant="ghost"
-                  className="text-kumo-secondary hover:text-kumo-primary h-auto p-0"
-                >
-                  Contact support
-                </LinkButton>
-              </li>
             </ul>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
@@ -85,14 +70,6 @@ export function NotFoundPage() {
             >
               Go Back
             </Button>
-            <LinkButton
-              href="mailto:support@seal.nyc"
-              variant="ghost"
-              className="w-full sm:w-auto"
-              icon={EnvelopeSimple}
-            >
-              Contact Support
-            </LinkButton>
           </div>
         </LayerCard.Secondary>
       </LayerCard>

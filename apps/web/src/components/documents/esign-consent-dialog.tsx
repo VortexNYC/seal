@@ -24,8 +24,6 @@ type ConsentState = "pending" | "accepted" | "declined";
 
 interface EsignConsentDialogProps {
   recipientEmail: string;
-  /** Document owner email — used for paper-path mailto links (SEA-58). */
-  ownerEmail?: string | null;
   onAccept: () => void;
   onDecline: () => void;
   onDownloadPdf?: () => void;
@@ -37,7 +35,6 @@ interface EsignConsentDialogProps {
 
 export function EsignConsentDialog({
   recipientEmail,
-  ownerEmail,
   onAccept,
   onDecline,
   onDownloadPdf,
@@ -47,7 +44,6 @@ export function EsignConsentDialog({
 }: EsignConsentDialogProps) {
   const [consentState, setConsentState] = useState<ConsentState>("pending");
   const [isChecked, setIsChecked] = useState(false);
-  const senderMail = ownerEmail?.trim() || "support@seal.nyc";
 
   const handleAccept = useCallback(() => {
     setConsentState("accepted");
@@ -108,7 +104,6 @@ export function EsignConsentDialog({
                   className="w-full justify-start"
                   onClick={() => {
                     onOptOut?.("paper_copy_request");
-                    window.location.href = `mailto:${encodeURIComponent(senderMail)}?subject=${encodeURIComponent("Paper copy request")}&body=${encodeURIComponent(`I would like a paper copy of the document to sign by hand.\n\nMy email: ${recipientEmail}`)}`;
                   }}
                 >
                   <FileTextIcon className="mr-2 size-4" />
@@ -119,7 +114,6 @@ export function EsignConsentDialog({
                   className="w-full justify-start"
                   onClick={() => {
                     onOptOut?.("contact_sender");
-                    window.location.href = `mailto:${encodeURIComponent(senderMail)}?subject=${encodeURIComponent("Document signing assistance")}&body=${encodeURIComponent(`I need a non-electronic way to sign this document.\n\nMy email: ${recipientEmail}`)}`;
                   }}
                 >
                   <MailIcon className="mr-2 size-4" />
@@ -140,30 +134,7 @@ export function EsignConsentDialog({
           </div>
 
           <p className="text-kumo-secondary text-center text-xs">
-            For assistance, contact the sender
-            {ownerEmail ? (
-              <>
-                :{" "}
-                <a
-                  href={`mailto:${encodeURIComponent(ownerEmail)}`}
-                  className="underline underline-offset-2"
-                >
-                  {ownerEmail}
-                </a>
-              </>
-            ) : (
-              <>
-                {" "}
-                or{" "}
-                <a
-                  href="mailto:support@seal.nyc"
-                  className="underline underline-offset-2"
-                >
-                  support@seal.nyc
-                </a>
-              </>
-            )}
-            .
+            The sender is notified. You do not need to send an email.
           </p>
         </div>
       </div>
@@ -244,7 +215,7 @@ export function EsignConsentDialog({
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="mt-1.5 block size-1 shrink-0 rounded-full bg-current" />
-                    You can withdraw consent by contacting us
+                    You can withdraw consent by contacting the sender
                   </li>
                 </ul>
               </div>
