@@ -4,8 +4,9 @@
 
 Please do not open a public GitHub issue for security reports.
 
-Email **security@vortex.nyc**, or use the contact in
-`/.well-known/security.txt` on seal.nyc / docs.seal.nyc.
+Report privately at
+https://github.com/VortexNYC/seal/security/advisories/new.
+`/.well-known/security.txt` on seal.nyc and docs.seal.nyc points there.
 
 Include: affected route/component, reproduction steps, and impact.
 
