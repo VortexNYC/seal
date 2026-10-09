@@ -1309,8 +1309,17 @@ app.openapi(submitRouteDef, async (c) => {
         metadata: { documentId: doc.id, publicId: doc.publicId },
       });
 
-      // Emit before PDF/certificate work so Agree.com / SIEM subscribers
-      // get document.completed even if flatten/seal is slow or fails.
+      // Sign and execute the linked Vortex order before document.completed.
+      // Vortex's Seal webhook signs an order form that has no execution mode,
+      // and that order cannot be executed. Once Seal has signed it, the
+      // webhook sees a finished form and stops.
+      await syncVortexOrderForm(db, c.env, {
+        documentId: doc.id,
+        phase: "completed",
+      });
+
+      // Emit before PDF/certificate work so subscribers get
+      // document.completed even if flatten/seal is slow or fails.
       await emitSigningWebhook(c.env, {
         organizationId: doc.organizationId,
         eventType: "document.completed",
@@ -1320,11 +1329,6 @@ app.openapi(submitRouteDef, async (c) => {
           name: doc.name,
           completedAt: nowDate.getTime(),
         },
-      });
-
-      await syncVortexOrderForm(db, c.env, {
-        documentId: doc.id,
-        phase: "completed",
       });
 
       const bucket = c.env.DOCUMENTS_BUCKET;

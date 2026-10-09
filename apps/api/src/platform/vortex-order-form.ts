@@ -29,8 +29,7 @@ async function vortexFetch(
   path: string,
   idempotencyKey: string,
   body: Record<string, unknown>,
-  fetchImpl: typeof fetch,
-  method: "POST" | "PATCH" = "POST"
+  fetchImpl: typeof fetch
 ): Promise<{ ok: boolean; status: number; body: unknown }> {
   const apiKey = env.VORTEX_API_KEY;
   if (!apiKey) {
@@ -38,7 +37,7 @@ async function vortexFetch(
   }
   const base = (env.VORTEX_API_BASE_URL ?? DEFAULT_BASE_URL).replace(/\/$/, "");
   const response = await fetchImpl(`${base}${path}`, {
-    method,
+    method: "POST",
     headers: {
       authorization: `Bearer ${apiKey}`,
       "content-type": "application/json",
@@ -124,18 +123,6 @@ export async function syncVortexOrderForm(
         .update(documents)
         .set({ vortexOrderId: orderId, updatedAt: new Date() })
         .where(eq(documents.id, doc.id));
-    }
-
-    const modeSet = await vortexFetch(
-      env,
-      `/v1/orders/${encodeURIComponent(orderId)}`,
-      `seal-mode-${doc.id}`,
-      { executionMode: "execute_in_vortex" },
-      fetchImpl,
-      "PATCH"
-    );
-    if (!modeSet.ok && modeSet.status !== 409) {
-      console.error("[vortex] execution mode failed:", doc.id, modeSet.status);
     }
 
     const executed = await vortexFetch(

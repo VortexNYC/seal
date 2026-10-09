@@ -109,13 +109,8 @@ describe("syncVortexOrderForm", () => {
     expect(updates).toEqual([
       expect.objectContaining({ vortexOrderId: "ordr_9" }),
     ]);
-    const modeCall = fetchImpl.mock.calls[1] as unknown as [
-      string,
-      RequestInit,
-    ];
-    expect(modeCall[0]).toBe("https://api.vortex.test/v1/orders/ordr_9");
-    expect(modeCall[1].method).toBe("PATCH");
-    const executeCall = fetchImpl.mock.calls[2] as unknown as [
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    const executeCall = fetchImpl.mock.calls[1] as unknown as [
       string,
       RequestInit,
     ];
