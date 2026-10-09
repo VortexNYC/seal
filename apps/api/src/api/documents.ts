@@ -31,6 +31,7 @@ import {
   user as userTable,
 } from "../global/schema.js";
 import { parseDocumentFromStorage } from "../platform/anydoc.js";
+import { syncVortexOrderForm } from "../platform/vortex-order-form.js";
 import {
   isEnvelopeClosed,
   presentedWorkflowStatus,
@@ -3903,6 +3904,11 @@ app.openapi(signRouteDef, async (c) => {
           updatedAt: now,
         })
         .where(eq(documents.id, doc.id));
+
+      await syncVortexOrderForm(db, c.env, {
+        documentId: doc.id,
+        phase: "completed",
+      });
 
       const bucket = c.env.DOCUMENTS_BUCKET;
       const appUrl = c.env.APP_URL;

@@ -146,8 +146,14 @@ function registerUpdateDocumentTool(
     "Update document metadata. Only works for documents in draft status.",
     updateDocumentSchema.shape,
     async (args, extra) => {
-      const { id, title, description, deadline, folder_id } =
-        args as UpdateDocumentInput;
+      const {
+        id,
+        title,
+        description,
+        deadline,
+        folder_id,
+        vortex_order_form_id,
+      } = args as UpdateDocumentInput;
       const authToken = getAuthToken(extra);
       const response = await client.put<{ success: boolean }>(
         "/documents/update",
@@ -156,6 +162,9 @@ function registerUpdateDocumentTool(
           description,
           deadline: deadline ? new Date(deadline).getTime() : undefined,
           folder_id,
+          ...(vortex_order_form_id !== undefined
+            ? { vortex_order_form_id }
+            : {}),
         },
         { id },
         authToken

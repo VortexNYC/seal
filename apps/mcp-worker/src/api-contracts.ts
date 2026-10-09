@@ -145,6 +145,13 @@ export const updateDocumentSchema = z.object({
     .nullable()
     .optional()
     .describe("Move into this folder, or null to unfile"),
+  vortex_order_form_id: z
+    .string()
+    .nullable()
+    .optional()
+    .describe(
+      "Vortex order form id to execute when this draft is signed, or null to clear"
+    ),
 });
 export type UpdateDocumentInput = z.infer<typeof updateDocumentSchema>;
 

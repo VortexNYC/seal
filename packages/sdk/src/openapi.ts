@@ -1322,6 +1322,8 @@ export interface components {
             download_url?: string;
             /** @description Public folder ID this document belongs to, or null if unfiled */
             folder_id?: string | null;
+            /** @description Vortex order form to execute when this document is signed, or null if unset */
+            vortex_order_form_id?: string | null;
             /** @description Recipient list (only included when include_recipients=true) */
             recipients?: components["schemas"]["Recipient"][];
         };
@@ -1910,6 +1912,8 @@ export interface operations {
                     deadline?: string;
                     /** @description Move document into this folder, or null to unfile */
                     folder_id?: string | null;
+                    /** @description Vortex order form to execute when this draft is signed. Null clears the link. */
+                    vortex_order_form_id?: string | null;
                 };
             };
         };

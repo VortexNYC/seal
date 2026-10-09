@@ -8,6 +8,10 @@ import {
   type EmailEnv,
   type EmailSendResult,
 } from "../platform/email.js";
+import {
+  syncVortexOrderForm,
+  type VortexOrderFormEnv,
+} from "../platform/vortex-order-form.js";
 
 const DEFAULT_EXPIRATION_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -177,7 +181,7 @@ export function invitationMessage(
 
 export async function sendDocumentForSigning(
   db: ReturnType<typeof createD1>,
-  env: EmailEnv,
+  env: EmailEnv & VortexOrderFormEnv,
   {
     documentId,
     documentName,
@@ -250,6 +254,8 @@ export async function sendDocumentForSigning(
     .update(documents)
     .set({ status: "sent", sentAt, deadline, updatedAt: sentAt })
     .where(eq(documents.id, documentId));
+
+  await syncVortexOrderForm(db, env, { documentId, phase: "sent" });
 
   if (!notify) {
     return { sentAt, deadline, recipients: results, failedEmails: 0 };

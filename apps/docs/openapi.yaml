@@ -151,6 +151,10 @@ components:
           type: string
           nullable: true
           description: Public folder ID this document belongs to, or null if unfiled
+        vortex_order_form_id:
+          type: string
+          nullable: true
+          description: Vortex order form to execute when this document is signed, or null if unset
         recipients:
           type: array
           items:
@@ -1216,6 +1220,10 @@ paths:
                   type: string
                   nullable: true
                   description: Move document into this folder, or null to unfile
+                vortex_order_form_id:
+                  type: string
+                  nullable: true
+                  description: Vortex order form to execute when this draft is signed. Null clears the link.
       responses:
         "200":
           description: Updated

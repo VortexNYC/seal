@@ -575,6 +575,10 @@ export const documents = sqliteTable(
       .notNull()
       .default(false),
     signingMode: text("signing_mode").notNull().default("parallel"),
+    /** Vortex order form this document executes when signing completes. */
+    vortexOrderFormId: text("vortex_order_form_id"),
+    /** Order created when that form is signed. Pointer only — billing stays in Vortex. */
+    vortexOrderId: text("vortex_order_id"),
     workflowStatus: text("workflow_status").notNull().default("draft"),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()

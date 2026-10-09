@@ -18,10 +18,6 @@ import { z } from "zod";
 
 import { createD1 } from "../../global/db.js";
 import {
-  isEnvelopeClosed,
-  presentedWorkflowStatus,
-} from "../../platform/workflow-status.js";
-import {
   aiFieldSuggestions,
   documents,
   folders,
@@ -59,6 +55,10 @@ import { buildSigningInteraction } from "../../platform/interaction-session.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import { recordUsageEvent } from "../../platform/usage-events.js";
 import { emitWebhookEvent } from "../../platform/webhook-events.js";
+import {
+  isEnvelopeClosed,
+  presentedWorkflowStatus,
+} from "../../platform/workflow-status.js";
 import {
   bulkSendDocumentIds,
   documentSigningPatch,
@@ -100,6 +100,7 @@ type ApiDocument = {
   parsed_format?: string;
   pdf_type?: string;
   folder_id?: string | null;
+  vortex_order_form_id?: string | null;
 };
 
 type ApiRecipient = {
@@ -256,6 +257,7 @@ function toApiDocument(
     updatedAt: Date;
     deadline: Date | null;
     storageKey: string | null;
+    vortexOrderFormId?: string | null;
     pageCount?: number | null;
     ocrRequired?: boolean;
     pagesNeedingOcr?: string | null;
@@ -278,6 +280,9 @@ function toApiDocument(
     ...(row.deadline ? { deadline: row.deadline.toISOString() } : {}),
     ...(row.storageKey
       ? { download_url: `/api/v1/documents/download?id=${row.id}` }
+      : {}),
+    ...(row.vortexOrderFormId !== undefined
+      ? { vortex_order_form_id: row.vortexOrderFormId }
       : {}),
     ...(row.pageCount !== null && row.pageCount !== undefined
       ? { page_count: row.pageCount }
@@ -454,6 +459,7 @@ app.get("/get", async (c) => {
       updatedAt: documents.updatedAt,
       deadline: documents.deadline,
       storageKey: documents.storageKey,
+      vortexOrderFormId: documents.vortexOrderFormId,
       documentStatus: documents.documentStatus,
       folderId: documents.folderId,
     })
@@ -812,6 +818,7 @@ const updateDocumentSchema = z.object({
   description: z.string().optional(),
   deadline: deadlineSchema.optional(),
   folder_id: z.string().nullable().optional(),
+  vortex_order_form_id: z.string().min(1).max(128).nullable().optional(),
 });
 
 async function handleUpdateDocument(
@@ -849,7 +856,8 @@ async function handleUpdateDocument(
     return c.json({ error: "validation_error" }, 400);
   }
 
-  const { title, description, deadline, folder_id } = parsed.data;
+  const { title, description, deadline, folder_id, vortex_order_form_id } =
+    parsed.data;
 
   const db = createD1(c.env.D1);
   const updateValues: {
@@ -857,6 +865,7 @@ async function handleUpdateDocument(
     description?: string | null;
     deadline?: Date | null;
     folderId?: string | null;
+    vortexOrderFormId?: string | null;
   } = {};
   if (title !== undefined) updateValues.name = title;
   if (description !== undefined) updateValues.description = description ?? null;
@@ -876,6 +885,22 @@ async function handleUpdateDocument(
     }
     updateValues.folderId = folderInternalId;
     folderPublicId = folder_id;
+  }
+  if (vortex_order_form_id !== undefined) {
+    const existing = await db
+      .select({ status: documents.status })
+      .from(documents)
+      .where(
+        and(eq(documents.id, id), eq(documents.organizationId, organizationId))
+      )
+      .limit(1);
+    if (!existing[0]) {
+      return c.json({ error: "not_found" }, 404);
+    }
+    if (existing[0].status !== "draft") {
+      return c.json({ error: "document_not_in_draft_status" }, 400);
+    }
+    updateValues.vortexOrderFormId = vortex_order_form_id;
   }
 
   await db
@@ -900,6 +925,7 @@ async function handleUpdateDocument(
       updatedAt: documents.updatedAt,
       deadline: documents.deadline,
       storageKey: documents.storageKey,
+      vortexOrderFormId: documents.vortexOrderFormId,
       documentStatus: documents.documentStatus,
       folderId: documents.folderId,
     })

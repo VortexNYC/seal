@@ -32,6 +32,14 @@ declare interface CloudflareBindings {
   ALLOWED_ORIGINS: string;
   EMAIL_FROM: string;
   APP_URL: string;
+  /**
+   * Optional. Seal's Vortex merchant key. When a document stores
+   * `vortex_order_form_id`, send registers the signature request and
+   * completion signs and executes the order. Absent → signing is unchanged.
+   */
+  VORTEX_API_KEY?: string;
+  /** Defaults to https://api.vortex.nyc */
+  VORTEX_API_BASE_URL?: string;
   INTERNAL_API_KEY: string;
   TEST_MIGRATIONS?: D1Migration[];
 }

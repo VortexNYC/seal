@@ -13,6 +13,7 @@ import {
   user as userTable,
 } from "../global/schema.js";
 import { writeAuditLog } from "../platform/audit-log.js";
+import { syncVortexOrderForm } from "../platform/vortex-order-form.js";
 import { presentedWorkflowStatus } from "../platform/workflow-status.js";
 import { autoStampRecipientFields } from "../platform/auto-sign-fields.js";
 import { certificateStorageKey } from "../platform/certificate-of-completion.js";
@@ -1319,6 +1320,11 @@ app.openapi(submitRouteDef, async (c) => {
           name: doc.name,
           completedAt: nowDate.getTime(),
         },
+      });
+
+      await syncVortexOrderForm(db, c.env, {
+        documentId: doc.id,
+        phase: "completed",
       });
 
       const bucket = c.env.DOCUMENTS_BUCKET;
