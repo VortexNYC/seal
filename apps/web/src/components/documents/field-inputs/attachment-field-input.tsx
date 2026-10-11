@@ -118,9 +118,11 @@ export function AttachmentFieldInput({
           >
             {isUploading ? "Uploading…" : "Click to upload"}
           </Button>
-          <Text as="p" variant="secondary" size="xs" className="mt-2">
-            Maximum file size: 10MB
-          </Text>
+          <div className="mt-2">
+            <Text as="p" variant="secondary" size="xs">
+              Maximum file size: 10MB
+            </Text>
+          </div>
         </div>
       ) : (
         <div className="border-kumo-hairline flex items-center justify-between rounded-lg border p-4">
