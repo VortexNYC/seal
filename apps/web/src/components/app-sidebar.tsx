@@ -183,6 +183,11 @@ function buildNav({
       visible: canView(permissionFlags?.canViewSettings),
     },
     {
+      title: "Payments",
+      url: buildOrganizationPath(slug, "/settings/payments"),
+      visible: canView(permissionFlags?.canViewSettings),
+    },
+    {
       title: "Notifications",
       url: buildOrganizationPath(slug, "/settings/notifications"),
       visible: true,

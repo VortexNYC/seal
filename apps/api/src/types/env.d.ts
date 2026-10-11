@@ -40,6 +40,10 @@ declare interface CloudflareBindings {
   VORTEX_API_KEY?: string;
   /** Defaults to https://api.vortex.nyc */
   VORTEX_API_BASE_URL?: string;
+  /** Defaults to Seal's production platform merchant. */
+  VORTEX_PLATFORM_MERCHANT_ACCOUNT_ID?: string;
+  /** Defaults to seal_fleet_standard. */
+  VORTEX_CONNECT_RATE_PLAN_ID?: string;
   INTERNAL_API_KEY: string;
   TEST_MIGRATIONS?: D1Migration[];
 }

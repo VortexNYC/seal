@@ -560,6 +560,44 @@ const signingSettingsSchema = z.object({
   defaultRecipientAuthMethod: z.enum(["email_otp", "access_code"]),
 });
 export type ApiSigningSettings = z.infer<typeof signingSettingsSchema>;
+const paymentsConnectSchema = z.object({
+  connected: z.boolean(),
+  processor: z.literal("vortex"),
+  merchantAccountId: z.string().nullable(),
+  claimUrl: z.string().nullable(),
+  claimExpiresAt: z.string().nullable(),
+  status: z.string().nullable(),
+  onboardingSessionId: z.string().nullable(),
+  chargesApproved: z.boolean(),
+  summary: z.string(),
+});
+export type ApiPaymentsConnect = z.infer<typeof paymentsConnectSchema>;
+export async function getPaymentsConnect(
+  organizationSlug: string
+): Promise<ApiPaymentsConnect> {
+  return apiFetch(
+    `/api/organizations/${encodeURIComponent(organizationSlug)}/payments`,
+    paymentsConnectSchema
+  );
+}
+export async function connectPayments(
+  organizationSlug: string,
+  input: {
+    displayName: string;
+    legalEntityType: "INDIVIDUAL" | "CORPORATION" | "LLC" | "PARTNERSHIP";
+    country: string;
+    defaultCurrency: string;
+  }
+): Promise<ApiPaymentsConnect> {
+  return apiFetch(
+    `/api/organizations/${encodeURIComponent(organizationSlug)}/payments`,
+    paymentsConnectSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
 export async function getSigningSettings(
   organizationSlug: string
 ): Promise<ApiSigningSettings> {
