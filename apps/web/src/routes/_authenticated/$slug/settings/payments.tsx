@@ -83,16 +83,14 @@ function PaymentsSettings() {
               <Text size="sm">
                 {account.status ?? "draft"} · {account.merchantAccountId}
               </Text>
+              <Text variant="secondary" size="sm">
+                {account.summary}
+              </Text>
               {account.claimUrl ? (
                 <a href={account.claimUrl} rel="noreferrer" target="_blank">
                   Finish setup on Vortex
                 </a>
-              ) : (
-                <Text variant="secondary" size="sm">
-                  The claim link is not available. Open the account in Vortex
-                  with the id above.
-                </Text>
-              )}
+              ) : null}
             </div>
           ) : (
             <form

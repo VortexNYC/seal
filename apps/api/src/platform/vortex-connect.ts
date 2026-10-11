@@ -33,6 +33,8 @@ export type VortexConnectView = {
   claimExpiresAt: string | null;
   status: string | null;
   onboardingSessionId: string | null;
+  chargesApproved: boolean;
+  summary: string;
 };
 
 export class VortexConnectError extends Error {
@@ -71,32 +73,49 @@ export function connectIdempotencyKey(organizationId: string): string {
   return `seal-connect-${organizationId}`;
 }
 
+function disconnectedView(): VortexConnectView {
+  return {
+    connected: false,
+    processor: "vortex",
+    merchantAccountId: null,
+    claimUrl: null,
+    claimExpiresAt: null,
+    status: null,
+    onboardingSessionId: null,
+    chargesApproved: false,
+    summary: "No connected account yet.",
+  };
+}
+
+function withSummary(
+  view: Omit<VortexConnectView, "summary">
+): VortexConnectView {
+  if (!view.connected) {
+    return { ...view, summary: "No connected account yet." };
+  }
+  if (view.chargesApproved) {
+    return { ...view, summary: "Vortex can charge on this account." };
+  }
+  const status = view.status ?? "draft";
+  if (view.claimUrl) {
+    return { ...view, summary: `${status}. Finish setup on Vortex.` };
+  }
+  return {
+    ...view,
+    summary: `${status}. Finix has not approved this account for charges.`,
+  };
+}
+
 export function readVortexConnect(metadata: string | null): VortexConnectView {
   const stored = parseMetadata(metadata).vortexConnect;
   if (!isRecord(stored)) {
-    return {
-      connected: false,
-      processor: "vortex",
-      merchantAccountId: null,
-      claimUrl: null,
-      claimExpiresAt: null,
-      status: null,
-      onboardingSessionId: null,
-    };
+    return disconnectedView();
   }
   const merchantAccountId = stringField(stored, "merchantAccountId");
   if (!merchantAccountId) {
-    return {
-      connected: false,
-      processor: "vortex",
-      merchantAccountId: null,
-      claimUrl: null,
-      claimExpiresAt: null,
-      status: null,
-      onboardingSessionId: null,
-    };
+    return disconnectedView();
   }
-  return {
+  return withSummary({
     connected: true,
     processor: "vortex",
     merchantAccountId,
@@ -104,7 +123,8 @@ export function readVortexConnect(metadata: string | null): VortexConnectView {
     claimExpiresAt: stringField(stored, "claimExpiresAt"),
     status: stringField(stored, "status"),
     onboardingSessionId: stringField(stored, "onboardingSessionId"),
-  };
+    chargesApproved: false,
+  });
 }
 
 export function withVortexConnect(
@@ -113,6 +133,105 @@ export function withVortexConnect(
 ): string {
   const current = parseMetadata(metadata);
   return JSON.stringify({ ...current, vortexConnect: record });
+}
+
+function claimLocation(
+  claimUrl: string
+): { organizationId: string; token: string } | null {
+  let url: URL;
+  try {
+    url = new URL(claimUrl);
+  } catch {
+    return null;
+  }
+  const organizationId = url.pathname.split("/").filter(Boolean).at(-1);
+  if (!organizationId) return null;
+  const token =
+    new URLSearchParams(url.hash.replace(/^#/u, "")).get("token") ??
+    url.searchParams.get("token");
+  if (!token) return null;
+  return { organizationId, token };
+}
+
+async function claimLinkUsable(
+  claimUrl: string,
+  fetchImpl: typeof fetch
+): Promise<boolean | null> {
+  const location = claimLocation(claimUrl);
+  if (!location) return false;
+  try {
+    const response = await fetchImpl(
+      "https://api.vortex.nyc/v1/signup/claim/lookup",
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: "https://app.vortex.nyc",
+        },
+        body: JSON.stringify(location),
+      }
+    );
+    return response.ok;
+  } catch {
+    return null;
+  }
+}
+
+async function vortexGet(
+  env: VortexConnectEnv,
+  path: string,
+  fetchImpl: typeof fetch
+): Promise<Record<string, unknown> | null> {
+  const apiKey = env.VORTEX_API_KEY;
+  if (!apiKey) return null;
+  const base = (env.VORTEX_API_BASE_URL ?? DEFAULT_BASE_URL).replace(/\/$/, "");
+  const response = await fetchImpl(`${base}${path}`, {
+    headers: { authorization: `Bearer ${apiKey}` },
+  });
+  if (!response.ok) return null;
+  const text = await response.text();
+  if (text.length === 0) return null;
+  try {
+    return unwrapData(JSON.parse(text) as unknown);
+  } catch {
+    return null;
+  }
+}
+
+export async function presentVortexConnect(
+  env: VortexConnectEnv,
+  metadata: string | null,
+  fetchImpl: typeof fetch = fetch
+): Promise<VortexConnectView> {
+  const stored = readVortexConnect(metadata);
+  if (!stored.connected || !stored.merchantAccountId) {
+    return stored;
+  }
+  const merchant = await vortexGet(
+    env,
+    `/v1/merchant-accounts/${encodeURIComponent(stored.merchantAccountId)}?environment=production`,
+    fetchImpl
+  );
+  const status = merchant
+    ? (stringField(merchant, "status") ?? stored.status)
+    : stored.status;
+  const chargesApproved =
+    merchant !== null && stringField(merchant, "capabilityStatus") === "enabled";
+  let claimUrl = stored.claimUrl;
+  if (claimUrl) {
+    const usable = await claimLinkUsable(claimUrl, fetchImpl);
+    if (usable === false) claimUrl = null;
+  }
+  return withSummary({
+    connected: true,
+    processor: "vortex",
+    merchantAccountId: stored.merchantAccountId,
+    claimUrl,
+    claimExpiresAt: stored.claimExpiresAt,
+    status,
+    onboardingSessionId: stored.onboardingSessionId,
+    chargesApproved,
+  });
 }
 
 function unwrapData(body: unknown): Record<string, unknown> | null {

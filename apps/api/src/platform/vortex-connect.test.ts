@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   connectIdempotencyKey,
+  presentVortexConnect,
   provisionConnectedAccount,
   readVortexConnect,
   SEAL_CONNECT_RATE_PLAN_ID,
@@ -38,6 +39,40 @@ describe("readVortexConnect", () => {
     expect(view.connected).toBe(true);
     expect(view.merchantAccountId).toBe("ma_sub");
     expect(JSON.parse(metadata)).toMatchObject({ timezone: "UTC" });
+  });
+});
+
+describe("presentVortexConnect", () => {
+  it("hides a used claim link and says Finix has not approved charges", async () => {
+    const metadata = withVortexConnect(null, {
+      merchantAccountId: "ma_sub",
+      claimUrl: "https://app.vortex.nyc/claim/org_1#token=secret",
+      claimExpiresAt: "2026-10-18T00:00:00.000Z",
+      status: "draft",
+      environment: "production",
+      ratePlanId: SEAL_CONNECT_RATE_PLAN_ID,
+      onboardingSessionId: null,
+    });
+    const fetchImpl: typeof fetch = async (input) => {
+      const url = String(input);
+      if (url.includes("/signup/claim/lookup")) {
+        return new Response(JSON.stringify({ code: "claim_invalid" }), {
+          status: 400,
+        });
+      }
+      return new Response(
+        JSON.stringify({
+          data: { status: "draft", capabilityStatus: "unknown" },
+        }),
+        { status: 200 }
+      );
+    };
+    const view = await presentVortexConnect(env, metadata, fetchImpl);
+    expect(view.claimUrl).toBeNull();
+    expect(view.chargesApproved).toBe(false);
+    expect(view.summary).toBe(
+      "draft. Finix has not approved this account for charges."
+    );
   });
 });
 

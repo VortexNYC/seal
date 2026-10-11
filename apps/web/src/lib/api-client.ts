@@ -568,6 +568,8 @@ const paymentsConnectSchema = z.object({
   claimExpiresAt: z.string().nullable(),
   status: z.string().nullable(),
   onboardingSessionId: z.string().nullable(),
+  chargesApproved: z.boolean(),
+  summary: z.string(),
 });
 export type ApiPaymentsConnect = z.infer<typeof paymentsConnectSchema>;
 export async function getPaymentsConnect(

@@ -17,6 +17,7 @@ import {
 } from "../platform/sso-enforcement.js";
 import type { Variables } from "../platform/types.js";
 import {
+  presentVortexConnect,
   provisionConnectedAccount,
   readVortexConnect,
   VortexConnectError,
@@ -1323,6 +1324,8 @@ const PaymentsConnectSchema = z
     claimExpiresAt: z.string().nullable(),
     status: z.string().nullable(),
     onboardingSessionId: z.string().nullable(),
+    chargesApproved: z.boolean(),
+    summary: z.string(),
   })
   .openapi("PaymentsConnect");
 
@@ -1365,7 +1368,7 @@ app.openapi(paymentsRouteDef, async (c) => {
   if (!org) {
     return c.json({ error: "Organization not found" }, 404);
   }
-  return c.json(readVortexConnect(org.metadata));
+  return c.json(await presentVortexConnect(c.env, org.metadata));
 });
 
 const connectPaymentsRouteDef = createRoute({
@@ -1408,7 +1411,7 @@ app.openapi(connectPaymentsRouteDef, async (c) => {
 
   const existing = readVortexConnect(org.metadata);
   if (existing.connected) {
-    return c.json(existing);
+    return c.json(await presentVortexConnect(c.env, org.metadata));
   }
 
   const body = c.req.valid("json");
@@ -1428,7 +1431,12 @@ app.openapi(connectPaymentsRouteDef, async (c) => {
         updatedAt: new Date(),
       })
       .where(eq(organization.id, org.id));
-    return c.json(readVortexConnect(withVortexConnect(org.metadata, record)));
+    return c.json(
+      await presentVortexConnect(
+        c.env,
+        withVortexConnect(org.metadata, record)
+      )
+    );
   } catch (error) {
     if (error instanceof VortexConnectError && error.status === 503) {
       return c.json({ error: "payments_not_configured" }, 503);
