@@ -43,6 +43,7 @@ import { Route as AuthenticatedSlugSettingsAiRouteImport } from './routes/_authe
 import { Route as AuthenticatedSlugSettingsAuditLogRouteImport } from './routes/_authenticated/$slug/settings/audit-log'
 import { Route as AuthenticatedSlugSettingsBrandingRouteImport } from './routes/_authenticated/$slug/settings/branding'
 import { Route as AuthenticatedSlugSettingsNotificationsRouteImport } from './routes/_authenticated/$slug/settings/notifications'
+import { Route as AuthenticatedSlugSettingsPaymentsRouteImport } from './routes/_authenticated/$slug/settings/payments'
 import { Route as AuthenticatedSlugSettingsProfileRouteImport } from './routes/_authenticated/$slug/settings/profile'
 import { Route as AuthenticatedSlugSettingsSecurityRouteImport } from './routes/_authenticated/$slug/settings/security'
 import { Route as AuthenticatedSlugSettingsSigningRouteImport } from './routes/_authenticated/$slug/settings/signing'
@@ -242,6 +243,12 @@ const AuthenticatedSlugSettingsNotificationsRoute =
     path: '/settings/notifications',
     getParentRoute: () => AuthenticatedSlugRoute,
   } as any)
+const AuthenticatedSlugSettingsPaymentsRoute =
+  AuthenticatedSlugSettingsPaymentsRouteImport.update({
+    id: '/settings/payments',
+    path: '/settings/payments',
+    getParentRoute: () => AuthenticatedSlugRoute,
+  } as any)
 const AuthenticatedSlugSettingsProfileRoute =
   AuthenticatedSlugSettingsProfileRouteImport.update({
     id: '/settings/profile',
@@ -356,6 +363,7 @@ export interface FileRoutesByFullPath {
   '/$slug/settings/audit-log': typeof AuthenticatedSlugSettingsAuditLogRoute
   '/$slug/settings/branding': typeof AuthenticatedSlugSettingsBrandingRoute
   '/$slug/settings/notifications': typeof AuthenticatedSlugSettingsNotificationsRoute
+  '/$slug/settings/payments': typeof AuthenticatedSlugSettingsPaymentsRoute
   '/$slug/settings/profile': typeof AuthenticatedSlugSettingsProfileRouteWithChildren
   '/$slug/settings/security': typeof AuthenticatedSlugSettingsSecurityRoute
   '/$slug/settings/signing': typeof AuthenticatedSlugSettingsSigningRoute
@@ -401,6 +409,7 @@ export interface FileRoutesByTo {
   '/$slug/settings/audit-log': typeof AuthenticatedSlugSettingsAuditLogRoute
   '/$slug/settings/branding': typeof AuthenticatedSlugSettingsBrandingRoute
   '/$slug/settings/notifications': typeof AuthenticatedSlugSettingsNotificationsRoute
+  '/$slug/settings/payments': typeof AuthenticatedSlugSettingsPaymentsRoute
   '/$slug/settings/security': typeof AuthenticatedSlugSettingsSecurityRoute
   '/$slug/settings/signing': typeof AuthenticatedSlugSettingsSigningRoute
   '/$slug/contacts': typeof AuthenticatedSlugContactsIndexRoute
@@ -450,6 +459,7 @@ export interface FileRoutesById {
   '/_authenticated/$slug/settings/audit-log': typeof AuthenticatedSlugSettingsAuditLogRoute
   '/_authenticated/$slug/settings/branding': typeof AuthenticatedSlugSettingsBrandingRoute
   '/_authenticated/$slug/settings/notifications': typeof AuthenticatedSlugSettingsNotificationsRoute
+  '/_authenticated/$slug/settings/payments': typeof AuthenticatedSlugSettingsPaymentsRoute
   '/_authenticated/$slug/settings/profile': typeof AuthenticatedSlugSettingsProfileRouteWithChildren
   '/_authenticated/$slug/settings/security': typeof AuthenticatedSlugSettingsSecurityRoute
   '/_authenticated/$slug/settings/signing': typeof AuthenticatedSlugSettingsSigningRoute
@@ -500,6 +510,7 @@ export interface FileRouteTypes {
     | '/$slug/settings/audit-log'
     | '/$slug/settings/branding'
     | '/$slug/settings/notifications'
+    | '/$slug/settings/payments'
     | '/$slug/settings/profile'
     | '/$slug/settings/security'
     | '/$slug/settings/signing'
@@ -545,6 +556,7 @@ export interface FileRouteTypes {
     | '/$slug/settings/audit-log'
     | '/$slug/settings/branding'
     | '/$slug/settings/notifications'
+    | '/$slug/settings/payments'
     | '/$slug/settings/security'
     | '/$slug/settings/signing'
     | '/$slug/contacts'
@@ -593,6 +605,7 @@ export interface FileRouteTypes {
     | '/_authenticated/$slug/settings/audit-log'
     | '/_authenticated/$slug/settings/branding'
     | '/_authenticated/$slug/settings/notifications'
+    | '/_authenticated/$slug/settings/payments'
     | '/_authenticated/$slug/settings/profile'
     | '/_authenticated/$slug/settings/security'
     | '/_authenticated/$slug/settings/signing'
@@ -863,6 +876,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSlugSettingsNotificationsRouteImport
       parentRoute: typeof AuthenticatedSlugRoute
     }
+    '/_authenticated/$slug/settings/payments': {
+      id: '/_authenticated/$slug/settings/payments'
+      path: '/settings/payments'
+      fullPath: '/$slug/settings/payments'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsPaymentsRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
+    }
     '/_authenticated/$slug/settings/profile': {
       id: '/_authenticated/$slug/settings/profile'
       path: '/settings/profile'
@@ -1074,6 +1094,7 @@ interface AuthenticatedSlugRouteChildren {
   AuthenticatedSlugSettingsAuditLogRoute: typeof AuthenticatedSlugSettingsAuditLogRoute
   AuthenticatedSlugSettingsBrandingRoute: typeof AuthenticatedSlugSettingsBrandingRoute
   AuthenticatedSlugSettingsNotificationsRoute: typeof AuthenticatedSlugSettingsNotificationsRoute
+  AuthenticatedSlugSettingsPaymentsRoute: typeof AuthenticatedSlugSettingsPaymentsRoute
   AuthenticatedSlugSettingsProfileRoute: typeof AuthenticatedSlugSettingsProfileRouteWithChildren
   AuthenticatedSlugSettingsSecurityRoute: typeof AuthenticatedSlugSettingsSecurityRoute
   AuthenticatedSlugSettingsSigningRoute: typeof AuthenticatedSlugSettingsSigningRoute
@@ -1103,6 +1124,8 @@ const AuthenticatedSlugRouteChildren: AuthenticatedSlugRouteChildren = {
     AuthenticatedSlugSettingsBrandingRoute,
   AuthenticatedSlugSettingsNotificationsRoute:
     AuthenticatedSlugSettingsNotificationsRoute,
+  AuthenticatedSlugSettingsPaymentsRoute:
+    AuthenticatedSlugSettingsPaymentsRoute,
   AuthenticatedSlugSettingsProfileRoute:
     AuthenticatedSlugSettingsProfileRouteWithChildren,
   AuthenticatedSlugSettingsSecurityRoute:

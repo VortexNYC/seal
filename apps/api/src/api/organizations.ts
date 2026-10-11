@@ -16,6 +16,12 @@ import {
   withSSOEnforcedMetadata,
 } from "../platform/sso-enforcement.js";
 import type { Variables } from "../platform/types.js";
+import {
+  provisionConnectedAccount,
+  readVortexConnect,
+  VortexConnectError,
+  withVortexConnect,
+} from "../platform/vortex-connect.js";
 
 const TemplateListItemSchema = z
   .object({
@@ -1306,6 +1312,133 @@ app.openapi(moveTemplateRouteDef, async (c) => {
     .where(eq(templatesTable.id, templateId));
 
   return c.body(null, 204);
+});
+
+const PaymentsConnectSchema = z
+  .object({
+    connected: z.boolean(),
+    processor: z.literal("vortex"),
+    merchantAccountId: z.string().nullable(),
+    claimUrl: z.string().nullable(),
+    claimExpiresAt: z.string().nullable(),
+    status: z.string().nullable(),
+    onboardingSessionId: z.string().nullable(),
+  })
+  .openapi("PaymentsConnect");
+
+const connectPaymentsBodySchema = z.object({
+  displayName: z.string().trim().min(1).max(200),
+  legalEntityType: z.enum(["INDIVIDUAL", "CORPORATION", "LLC", "PARTNERSHIP"]),
+  country: z
+    .string()
+    .trim()
+    .length(3)
+    .transform((value) => value.toUpperCase()),
+  defaultCurrency: z
+    .string()
+    .trim()
+    .length(3)
+    .transform((value) => value.toUpperCase()),
+});
+
+const paymentsRouteDef = createRoute({
+  method: "get",
+  path: "/{slug}/payments",
+  request: {
+    params: z.object({ slug: z.string() }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: PaymentsConnectSchema },
+      },
+      description: "Vortex Connect account stored for this workspace",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Organization not found" },
+  },
+});
+
+app.openapi(paymentsRouteDef, async (c) => {
+  const org = c.get("organization");
+  if (!org) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+  return c.json(readVortexConnect(org.metadata));
+});
+
+const connectPaymentsRouteDef = createRoute({
+  method: "post",
+  path: "/{slug}/payments",
+  request: {
+    params: z.object({ slug: z.string() }),
+    body: {
+      content: {
+        "application/json": { schema: connectPaymentsBodySchema },
+      },
+      description: "Workspace identity for the Vortex connected account",
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: PaymentsConnectSchema },
+      },
+      description: "Existing or newly created Vortex connected account",
+    },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Organization not found" },
+    502: { description: "Vortex rejected the create" },
+    503: { description: "Vortex is not configured" },
+  },
+});
+
+app.openapi(connectPaymentsRouteDef, async (c) => {
+  const org = c.get("organization");
+  const membership = c.get("membership");
+  if (!org) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+  const role = membership?.role;
+  if (role !== "owner" && role !== "admin") {
+    return c.json({ error: "Forbidden" }, 403);
+  }
+
+  const existing = readVortexConnect(org.metadata);
+  if (existing.connected) {
+    return c.json(existing);
+  }
+
+  const body = c.req.valid("json");
+  try {
+    const record = await provisionConnectedAccount(c.env, {
+      organizationId: org.id,
+      displayName: body.displayName,
+      legalEntityType: body.legalEntityType,
+      country: body.country,
+      defaultCurrency: body.defaultCurrency,
+    });
+    const db = createD1(c.env.D1);
+    await db
+      .update(organization)
+      .set({
+        metadata: withVortexConnect(org.metadata, record),
+        updatedAt: new Date(),
+      })
+      .where(eq(organization.id, org.id));
+    return c.json(readVortexConnect(withVortexConnect(org.metadata, record)));
+  } catch (error) {
+    if (error instanceof VortexConnectError && error.status === 503) {
+      return c.json({ error: "payments_not_configured" }, 503);
+    }
+    const message =
+      error instanceof VortexConnectError
+        ? error.message
+        : "vortex_connect_failed";
+    return c.json({ error: "vortex_connect_failed", message }, 502);
+  }
 });
 
 declare module "hono" {
