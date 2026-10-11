@@ -78,6 +78,11 @@ function PaymentsSettings() {
               Loading
             </Text>
           ) : null}
+          {payments.isError ? (
+            <Text variant="secondary" size="sm">
+              {getErrorMessage(payments.error)}
+            </Text>
+          ) : null}
           {account?.connected ? (
             <div className="flex flex-col gap-2">
               <Text size="sm">
@@ -92,7 +97,8 @@ function PaymentsSettings() {
                 </a>
               ) : null}
             </div>
-          ) : (
+          ) : null}
+          {payments.isSuccess && account && !account.connected ? (
             <form
               className="flex max-w-md flex-col gap-3"
               onSubmit={(event) => {
@@ -144,7 +150,7 @@ function PaymentsSettings() {
                 {connect.isPending ? "Creating…" : "Create connected account"}
               </Button>
             </form>
-          )}
+          ) : null}
         </SettingsSection>
       </SettingsBody>
     </PageWrapper>
