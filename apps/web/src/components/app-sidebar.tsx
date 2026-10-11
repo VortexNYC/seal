@@ -27,6 +27,7 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import {
   getContacts,
+  getDocumentAttention,
   getDocuments,
   getFolders,
   getOrganizationTemplates,
@@ -108,11 +109,13 @@ function buildNav({
   currentPath,
   permissions,
   isPro,
+  needsYou,
 }: {
   slug: string;
   currentPath: string;
   permissions: PermissionSet | undefined;
   isPro: boolean;
+  needsYou: number;
 }): BuiltNav {
   const permissionFlags = permissions?.permissions;
 
@@ -154,6 +157,7 @@ function buildNav({
       url,
       icon,
       isActive: isPathActive(currentPath, url, title === "Dashboard"),
+      ...(title === "Documents" && needsYou > 0 ? { badge: needsYou } : {}),
     }));
 
   const settingsItems = [
@@ -359,6 +363,10 @@ export function AppSidebar({
     },
   });
   const { isPro } = useSubscriptionLimits();
+  const { data: attention } = useQuery({
+    queryKey: ["api", "documents", "attention", slug],
+    queryFn: () => getDocumentAttention(slug),
+  });
 
   const handleSignOut = React.useCallback(async () => {
     resetAnalytics();
@@ -385,8 +393,9 @@ export function AppSidebar({
         currentPath: location.pathname,
         permissions,
         isPro,
+        needsYou: attention?.totalIssues ?? 0,
       }),
-    [slug, location.pathname, permissions, isPro]
+    [slug, location.pathname, permissions, isPro, attention?.totalIssues]
   );
 
   const activeTeamSlug = slug;

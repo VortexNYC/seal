@@ -34,6 +34,7 @@ import {
 } from "react";
 import type { DateRange } from "react-day-picker";
 
+import { DocumentOversightRail } from "@/components/documents/document-oversight-rail";
 import { DocumentThumbnail } from "@/components/documents/document-thumbnail";
 import { ShareDocumentDialog } from "@/components/documents/share-document-dialog";
 import { TransferOwnershipDialog } from "@/components/documents/transfer-ownership-dialog";
@@ -110,15 +111,13 @@ function DocumentsSkeleton(): JSX.Element {
 type FilterType = "all" | "owned" | "shared";
 type WorkflowStatusFilter =
   | "all"
+  | "needs_you"
   | "draft"
-  | "sent"
-  | "in_progress"
-  | "completed"
-  | "cancelled"
-  | "expired";
+  | "outgoing"
+  | "done";
 
 type ViewMode = "grid" | "table" | "finder";
-type SortField = "name" | "createdAt" | "workflowStatus";
+type SortField = "attention" | "name" | "createdAt" | "workflowStatus";
 type SortDirection = "asc" | "desc";
 
 // SEA-73: Fuse.js options for fuzzy search
@@ -332,11 +331,64 @@ function filterDocumentsByStatusAndDate(
   dateRange: DateRange | undefined
 ): readonly DocumentListItem[] {
   return documents.filter((doc) => {
-    const workflowStatusMatches =
-      workflowStatusFilter === "all" ||
-      (doc.workflowStatus ?? "draft") === workflowStatusFilter;
-    return workflowStatusMatches && documentMatchesDateRange(doc, dateRange);
+    return (
+      documentMatchesFolder(doc.workflowStatus ?? "draft", workflowStatusFilter) &&
+      documentMatchesDateRange(doc, dateRange)
+    );
   });
+}
+
+function documentMatchesFolder(
+  status: DocumentWorkflowStatus,
+  filter: WorkflowStatusFilter
+): boolean {
+  if (filter === "all") return true;
+  if (filter === "needs_you") {
+    return (
+      status === "sent" ||
+      status === "in_progress" ||
+      status === "waiting_for_payment" ||
+      status === "expired"
+    );
+  }
+  if (filter === "outgoing") {
+    return (
+      status === "sent" ||
+      status === "in_progress" ||
+      status === "waiting_for_payment" ||
+      status === "completed"
+    );
+  }
+  if (filter === "done") {
+    return (
+      status === "completed" ||
+      status === "cancelled" ||
+      status === "declined"
+    );
+  }
+  return status === filter;
+}
+
+function attentionRank(status: DocumentWorkflowStatus | undefined): number {
+  if (
+    status === "sent" ||
+    status === "in_progress" ||
+    status === "waiting_for_payment" ||
+    status === "expired"
+  ) {
+    return 0;
+  }
+  if (status === "draft") return 1;
+  if (status === "completed") return 2;
+  return 3;
+}
+
+function folderLabel(filter: WorkflowStatusFilter): string {
+  if (filter === "needs_you") return "Needs you";
+  if (filter === "outgoing") return "Sent";
+  if (filter === "done") return "Done";
+  if (filter === "draft") return "Drafts";
+  return "Any status";
 }
 
 function documentMatchesDateRange(
@@ -371,7 +423,20 @@ function sortDocuments(
   sortField: SortField,
   sortDirection: SortDirection
 ): readonly DocumentListItem[] {
-  if (searchQuery.trim() && sortField === "createdAt") return documents;
+  if (
+    searchQuery.trim() &&
+    (sortField === "createdAt" || sortField === "attention")
+  ) {
+    return documents;
+  }
+  if (sortField === "attention") {
+    return [...documents].toSorted((a, b) => {
+      const rank =
+        attentionRank(a.workflowStatus) - attentionRank(b.workflowStatus);
+      if (rank !== 0) return rank;
+      return b.activityAt - a.activityAt;
+    });
+  }
   return [...documents].toSorted((a, b) =>
     documentSortComparison(a, b, sortField, sortDirection)
   );
@@ -464,51 +529,36 @@ function DocumentTableRow({
   delegateOwnership,
   doc,
   matches,
+  selected,
+  onInspect,
 }: {
   readonly actions: DocumentListActions;
   readonly delegateOwnership: boolean;
   readonly doc: DocumentListItem;
   readonly matches: readonly FuseResultMatch[] | undefined;
+  readonly selected: boolean;
+  readonly onInspect: (documentId: string) => void;
 }) {
-  const { slug } = Route.useParams();
   return (
     <Table.Row
       key={doc._id}
       data-testid="document-row"
+      variant={selected ? "selected" : "default"}
       className="hover:bg-kumo-elevated/50 relative cursor-pointer"
+      onClick={() => onInspect(doc._id)}
     >
       <Table.Cell className="relative">
-        <Link
-          to="/$slug/documents/$documentId"
-          params={{ slug, documentId: doc._id }}
-          className="absolute inset-0 z-0"
-          aria-label={`Open ${doc.name}`}
-        />
-        <div className="pointer-events-none relative z-1">
+        <div className="relative z-1">
           <DocumentSummary doc={doc} matches={matches} />
         </div>
       </Table.Cell>
       <Table.Cell className="relative hidden whitespace-nowrap sm:table-cell">
-        <Link
-          to="/$slug/documents/$documentId"
-          params={{ slug, documentId: doc._id }}
-          className="absolute inset-0 z-0"
-          tabIndex={-1}
-          aria-hidden
-        />
-        <div className="pointer-events-none relative z-1 text-sm">
+        <div className="relative z-1 text-sm">
           <DocumentListDate doc={doc} />
         </div>
       </Table.Cell>
       <Table.Cell className="relative whitespace-nowrap">
-        <Link
-          to="/$slug/documents/$documentId"
-          params={{ slug, documentId: doc._id }}
-          className="absolute inset-0 z-0"
-          tabIndex={-1}
-          aria-hidden
-        />
-        <div className="pointer-events-none relative z-1 flex items-center gap-2">
+        <div className="relative z-1 flex items-center gap-2">
           <WorkflowStatusBadge status={doc.workflowStatus} />
           <DocumentAiStatus status={doc.aiProcessingStatus} tooltip />
         </div>
@@ -1009,7 +1059,9 @@ function DocumentsListContent({
   data,
   delegateOwnership,
   documentActions,
+  inspected,
   onFolderNavigate,
+  onInspect,
   onSortChange,
   onUploadClick,
   searchQuery,
@@ -1020,7 +1072,9 @@ function DocumentsListContent({
   readonly data: DocumentsListData;
   readonly delegateOwnership: boolean;
   readonly documentActions: DocumentListActions;
+  readonly inspected: DocumentListItem | null;
   readonly onFolderNavigate: (folderId?: string) => void;
+  readonly onInspect: (documentId: string | null) => void;
   readonly onSortChange: (field: SortField) => void;
   readonly onUploadClick: () => void;
   readonly searchQuery: string;
@@ -1028,6 +1082,7 @@ function DocumentsListContent({
   readonly sortField: SortField;
   readonly viewMode: ViewMode;
 }) {
+  const { slug } = Route.useParams();
   if (
     data.sortedDocuments.length === 0 &&
     (!data.subfolders || data.subfolders.length === 0)
@@ -1041,13 +1096,16 @@ function DocumentsListContent({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex items-stretch gap-0">
+      <div className="min-w-0 flex-1 space-y-4">
       {viewMode === "table" ? (
         <DocumentsTable
           data={data}
           delegateOwnership={delegateOwnership}
           documentActions={documentActions}
+          inspectedId={inspected?._id ?? null}
           onFolderNavigate={onFolderNavigate}
+          onInspect={onInspect}
           onSortChange={onSortChange}
           searchQuery={searchQuery}
           sortDirection={sortDirection}
@@ -1069,6 +1127,17 @@ function DocumentsListContent({
         />
       )}
       <DocumentsPagination data={data} />
+      </div>
+      {inspected ? (
+        <DocumentOversightRail
+          organizationSlug={slug}
+          documentId={inspected._id}
+          name={inspected.name}
+          workflowStatus={inspected.workflowStatus}
+          progress={inspected.progress}
+          onClose={() => onInspect(null)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -1115,7 +1184,9 @@ function DocumentsTable({
   data,
   delegateOwnership,
   documentActions,
+  inspectedId,
   onFolderNavigate,
+  onInspect,
   onSortChange,
   searchQuery,
   sortDirection,
@@ -1124,7 +1195,9 @@ function DocumentsTable({
   readonly data: DocumentsListData;
   readonly delegateOwnership: boolean;
   readonly documentActions: DocumentListActions;
+  readonly inspectedId: string | null;
   readonly onFolderNavigate: (folderId?: string) => void;
+  readonly onInspect: (documentId: string | null) => void;
   readonly onSortChange: (field: SortField) => void;
   readonly searchQuery: string;
   readonly sortDirection: SortDirection;
@@ -1183,6 +1256,8 @@ function DocumentsTable({
               delegateOwnership={delegateOwnership}
               doc={doc}
               matches={data.matchesMap.get(doc._id)}
+              selected={inspectedId === doc._id}
+              onInspect={onInspect}
             />
           ))}
         </Table.Body>
@@ -1532,6 +1607,18 @@ function DocumentsList({
     onTransferOwnership,
     refetch: data.refetch,
   });
+  const [inspectedId, setInspectedId] = useState<string | null>(null);
+  const inspected =
+    data.sortedDocuments.find((doc) => doc._id === inspectedId) ?? null;
+
+  useEffect(() => {
+    if (
+      inspectedId !== null &&
+      !data.sortedDocuments.some((doc) => doc._id === inspectedId)
+    ) {
+      setInspectedId(null);
+    }
+  }, [data.sortedDocuments, inspectedId]);
 
   return (
     <>
@@ -1539,7 +1626,9 @@ function DocumentsList({
         data={data}
         delegateOwnership={delegateOwnership}
         documentActions={documentActions}
+        inspected={inspected}
         onFolderNavigate={onFolderNavigate}
+        onInspect={setInspectedId}
         onSortChange={onSortChange}
         onUploadClick={onUploadClick}
         searchQuery={searchQuery}
@@ -1580,7 +1669,7 @@ function DocumentsPage() {
 
   // SEA-68: View mode, sorting state
   const [viewMode, setViewMode] = useState<ViewMode>("table");
-  const [sortField, setSortField] = useState<SortField>("createdAt");
+  const [sortField, setSortField] = useState<SortField>("attention");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   // SEA-73: Fuzzy search state
@@ -1791,13 +1880,11 @@ function DocumentsPage() {
             </span>
             {(
               [
-                ["all", "All"],
+                ["needs_you", "Needs you"],
                 ["draft", "Drafts"],
-                ["sent", "Sent"],
-                ["in_progress", "In Progress"],
-                ["completed", "Completed"],
-                ["cancelled", "Cancelled"],
-                ["expired", "Expired"],
+                ["outgoing", "Sent"],
+                ["done", "Done"],
+                ["all", "Any status"],
               ] as const
             ).map(([value, label]) => (
               <Button
@@ -1913,11 +2000,8 @@ function DocumentsPage() {
                 </Badge>
               )}
               {workflowStatusFilter !== "all" && (
-                <Badge variant="secondary" className="gap-1 pl-2 capitalize">
-                  Status:{" "}
-                  {workflowStatusFilter === "in_progress"
-                    ? "In Progress"
-                    : workflowStatusFilter}
+                <Badge variant="secondary" className="gap-1 pl-2">
+                  {folderLabel(workflowStatusFilter)}
                   <Button
                     type="button"
                     variant="ghost"

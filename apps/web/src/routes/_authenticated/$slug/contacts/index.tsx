@@ -33,6 +33,7 @@ import {
   type ReactElement,
 } from "react";
 
+import { ContactOversightPanel } from "@/components/contacts/contact-oversight-panel";
 import { ContactStatusBadge } from "@/components/contacts/contact-status-badge";
 import { CreateContactDialog } from "@/components/contacts/create-contact-dialog";
 import { EditContactDialog } from "@/components/contacts/edit-contact-dialog";
@@ -159,6 +160,9 @@ function ContactsTableContent({
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   const [editContact, setEditContact] = useState<ApiContact | null>(null);
+  const [inspectedId, setInspectedId] = useState<string | null>(null);
+  const inspected =
+    contacts.find((contact) => contact._id === inspectedId) ?? null;
 
   const handleDelete = (contactId: string, contactName: string) => {
     setDeleteDialog({ open: true, contactId, contactName });
@@ -268,7 +272,8 @@ function ContactsTableContent({
     selectedIds.size > 0 && selectedIds.size < contacts.length;
 
   return (
-    <>
+    <div className="flex items-stretch">
+    <div className="flex min-w-0 flex-1 flex-col gap-4">
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
         <div className="bg-kumo-elevated/50 flex items-center justify-between gap-2 rounded-lg border p-2">
@@ -310,8 +315,12 @@ function ContactsTableContent({
               <Table.Row
                 key={contact._id}
                 className="cursor-pointer"
-                variant={selectedIds.has(contact._id) ? "selected" : "default"}
-                onClick={() => handleOpenContact(contact._id)}
+                variant={
+                  inspectedId === contact._id || selectedIds.has(contact._id)
+                    ? "selected"
+                    : "default"
+                }
+                onClick={() => setInspectedId(contact._id)}
               >
                 <Table.CheckCell
                   checked={selectedIds.has(contact._id)}
@@ -477,7 +486,15 @@ function ContactsTableContent({
           }
         />
       )}
-    </>
+    </div>
+    {inspected ? (
+      <ContactOversightPanel
+        organizationSlug={slug}
+        contact={inspected}
+        onClose={() => setInspectedId(null)}
+      />
+    ) : null}
+    </div>
   );
 }
 

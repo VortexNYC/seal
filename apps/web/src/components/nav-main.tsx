@@ -7,6 +7,8 @@ export type NavPrimaryItem = {
   url: string;
   icon: Icon;
   isActive: boolean;
+  /** Envelopes that still need a person. Omitted when zero. */
+  badge?: number;
 };
 
 export type NavGroupItem = {
@@ -91,6 +93,9 @@ export function NavMain({
               href={item.url}
             >
               {item.title}
+              {item.badge !== undefined && item.badge > 0 ? (
+                <Sidebar.MenuBadge>{item.badge}</Sidebar.MenuBadge>
+              ) : null}
             </Sidebar.MenuButton>
           ))}
         </Sidebar.Menu>

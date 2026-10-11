@@ -263,6 +263,7 @@ export class DocumentsListPage {
         : this.documentRows.first();
     await row.waitFor({ state: "visible", timeout: 10000 });
     await row.click();
+    await this.page.getByRole("button", { name: "Open document" }).click();
     await this.page.waitForLoadState("domcontentloaded");
   }
 
@@ -271,6 +272,7 @@ export class DocumentsListPage {
       .first()
       .waitFor({ state: "visible", timeout: 10000 });
     await this.documentRows.first().click();
+    await this.page.getByRole("button", { name: "Open document" }).click();
     await this.page.waitForLoadState("domcontentloaded");
   }
 
