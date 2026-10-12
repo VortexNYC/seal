@@ -6,6 +6,7 @@ import {
   fieldBurnText,
   finalPdfStorageKey,
   signatureInkBox,
+  signatureStamp,
   isTruthyCheckbox,
   flattenFieldsIntoPdf,
   layoutFieldText,
@@ -187,7 +188,7 @@ describe("final-pdf (SEA-49 L1a)", () => {
     expect(fieldBurnText("text", "Alice")).toBe("Alice");
   });
 
-  it("gives a short signature chip a readable mark on the rule", () => {
+  it("widens a short signature along the rule without covering the label", () => {
     const box = signatureInkBox({
       x: 49,
       y: 620,
@@ -196,10 +197,13 @@ describe("final-pdf (SEA-49 L1a)", () => {
       pageWidth: 612,
       pageHeight: 792,
     });
-    expect(box.width).toBeGreaterThanOrEqual(168);
-    expect(box.height).toBeGreaterThanOrEqual(36);
+    expect(box.width).toBeGreaterThanOrEqual(140);
+    expect(box.height).toBe(13);
     expect(box.x).toBe(49);
     expect(box.y).toBe(620);
+    expect(signatureStamp("bb91c6f9-dd96-4540-9148-f36033570dd2")).toBe(
+      "BB91C6F9DD96"
+    );
   });
 
   it("skips empty fields without failing", async () => {
