@@ -57,7 +57,9 @@ export async function generateAndStoreFinalPdf(params: {
   const sourceBytes = new Uint8Array(await object.arrayBuffer());
 
   const fields = await fieldsForFinalPdf(db, documentId);
-  const flattened = await flattenFieldsIntoPdf(sourceBytes, fields);
+  const flattened = await flattenFieldsIntoPdf(sourceBytes, fields, {
+    documentRef: doc.publicId,
+  });
   let finalBytes = flattened.bytes;
   let sealed = false;
 
@@ -146,12 +148,15 @@ export async function renderFilledPdfBytes(params: {
   bucket: R2Bucket;
   documentId: string;
   sourceKey: string;
+  documentRef: string;
 }): Promise<Uint8Array | null> {
   const object = await params.bucket.get(params.sourceKey);
   if (!object) return null;
   const sourceBytes = new Uint8Array(await object.arrayBuffer());
   const fields = await fieldsForFinalPdf(params.db, params.documentId);
-  const flattened = await flattenFieldsIntoPdf(sourceBytes, fields);
+  const flattened = await flattenFieldsIntoPdf(sourceBytes, fields, {
+    documentRef: params.documentRef,
+  });
   if (flattened.burnedFields === 0) return null;
   return flattened.bytes;
 }

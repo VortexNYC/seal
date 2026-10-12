@@ -26,6 +26,18 @@ function formatTs(value: Date | null | undefined): string | null {
   return value.toISOString();
 }
 
+function formatStamp(value: Date | null | undefined): string | null {
+  if (!value) return null;
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(value);
+}
+
 export async function generateAndStoreCertificateOfCompletion(params: {
   db: D1Client;
   bucket: R2Bucket;
@@ -83,6 +95,9 @@ export async function generateAndStoreCertificateOfCompletion(params: {
         formatTs(r.approvedAt) ??
         formatTs(r.declinedAt) ??
         formatTs(r.viewedAt),
+      viewedAt: formatStamp(r.viewedAt),
+      signedAt: formatStamp(r.signedAt ?? r.approvedAt),
+      signatureImageUrl: sig?.signatureImageUrl ?? null,
       ipAddress: sig?.ipAddress ?? r.esignConsentIp ?? null,
       authMethod: r.authMethod ?? "none",
       consentAt: formatTs(r.esignConsentAt),
@@ -154,7 +169,8 @@ export async function generateAndStoreCertificateOfCompletion(params: {
     documentPublicId: doc.publicId,
     documentId: doc.id,
     organizationName: org?.name ?? "Organization",
-    completedAt: formatTs(doc.completedAt) ?? formatTs(doc.updatedAt) ?? "",
+    completedAt: formatStamp(doc.completedAt) ?? formatTs(doc.updatedAt) ?? "",
+    sentAt: formatStamp(doc.sentAt),
     documentHash: doc.documentHash,
     verificationUrl,
     parties,

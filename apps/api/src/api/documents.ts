@@ -1461,6 +1461,7 @@ app.openapi(downloadRouteDef, async (c) => {
         bucket,
         documentId: doc.id,
         sourceKey: doc.originalStorageKey ?? doc.storageKey,
+        documentRef: doc.publicId,
       });
       if (filled) {
         const body = new Uint8Array(filled);
