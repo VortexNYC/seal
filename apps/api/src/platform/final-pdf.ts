@@ -152,7 +152,16 @@ function decodeBase64(value: string): Uint8Array {
   return bytes;
 }
 
-/** A signature mark has to be readable on the rule, even when the placed chip is short. */
+/** Twelve characters of the document id, so the stamp fits under the name. */
+export function signatureStamp(documentRef: string): string {
+  const compact = documentRef.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  return compact.slice(0, 12);
+}
+
+/**
+ * Widen a short signature along the rule. Do not grow it upward:
+ * the placed box is the line, and the form label sits just above it.
+ */
 export function signatureInkBox(input: {
   x: number;
   y: number;
@@ -162,15 +171,15 @@ export function signatureInkBox(input: {
   pageHeight: number;
 }): { x: number; y: number; width: number; height: number } {
   const width = Math.min(
-    Math.max(input.width, 168),
-    Math.max(24, input.pageWidth - input.x - 8)
+    Math.max(input.width, 140),
+    Math.max(input.width, input.pageWidth - input.x - 8)
   );
-  const height = Math.min(Math.max(input.height, 36), 52);
-  let y = input.y;
-  if (y + height > input.pageHeight - 16) {
-    y = Math.max(8, input.pageHeight - 16 - height);
-  }
-  return { x: input.x, y, width, height };
+  return {
+    x: input.x,
+    y: input.y,
+    width,
+    height: input.height,
+  };
 }
 
 export function parseDataUrl(
@@ -286,13 +295,20 @@ export async function flattenFieldsIntoPdf(
                 pageHeight: ph,
               })
             : rect;
-        const scale = Math.min(box.width / image.width, box.height / image.height);
+        const stamp =
+          type === "signature" && options?.documentRef
+            ? signatureStamp(options.documentRef)
+            : "";
+        const roomForStamp = stamp ? 46 : 0;
+        const scale = Math.min(
+          Math.max(box.width - roomForStamp, 8) / image.width,
+          box.height / image.height
+        );
         const drawW = image.width * scale;
         const drawH = image.height * scale;
-        if (type === "signature") {
-          const caption = "Signed by:";
+        if (type === "signature" && box.height >= 24) {
           const captionY = Math.min(box.y + box.height + 2, ph - 10);
-          page.drawText(caption, {
+          page.drawText("Signed by:", {
             x: box.x,
             y: captionY,
             size: 7,
@@ -306,11 +322,12 @@ export async function flattenFieldsIntoPdf(
           width: drawW,
           height: drawH,
         });
-        const stamp = options?.documentRef?.trim();
-        if (type === "signature" && stamp && box.y > 14) {
+        if (stamp) {
+          const stampY =
+            box.height >= 24 && box.y > 14 ? box.y - 8 : box.y + 1;
           page.drawText(textForEmbeddedFont(font, stamp), {
-            x: box.x,
-            y: box.y - 8,
+            x: box.x + drawW + 3,
+            y: stampY,
             size: 6,
             font,
             color: rgb(0.35, 0.35, 0.38),

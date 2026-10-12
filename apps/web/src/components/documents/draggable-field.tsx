@@ -9,7 +9,11 @@ import {
   Transformer,
 } from "react-konva";
 
-import { filledFieldText, signatureMarkFrame } from "@/lib/field-appearance";
+import {
+  filledFieldText,
+  signatureMarkFrame,
+  signatureStamp,
+} from "@/lib/field-appearance";
 
 import {
   FIELD_ICON_SIZE,
@@ -712,25 +716,29 @@ function FilledFieldStamp({
       width: pageWidth,
       height: pageHeight,
     });
+    const stamp = documentRef ? signatureStamp(documentRef) : "";
+    const roomForStamp = stamp ? 52 : 0;
     const scale = Math.min(
-      frame.width / image.naturalWidth,
+      Math.max(frame.width - roomForStamp, 8) / image.naturalWidth,
       frame.height / image.naturalHeight
     );
     const drawW = image.naturalWidth * scale;
     const drawH = image.naturalHeight * scale;
-    const stamp = documentRef?.trim();
+    const caption = frame.height >= 24;
     return (
       <>
-        <Text
-          x={frame.x}
-          y={frame.y - 11}
-          width={frame.width}
-          text="Signed by:"
-          fontSize={8}
-          fontFamily={FIELD_FONT}
-          fill={SIGNATURE_CAPTION}
-          listening={false}
-        />
+        {caption ? (
+          <Text
+            x={frame.x}
+            y={frame.y - 11}
+            width={frame.width}
+            text="Signed by:"
+            fontSize={8}
+            fontFamily={FIELD_FONT}
+            fill={SIGNATURE_CAPTION}
+            listening={false}
+          />
+        ) : null}
         <KonvaImage
           image={image}
           x={frame.x}
@@ -741,9 +749,9 @@ function FilledFieldStamp({
         />
         {stamp ? (
           <Text
-            x={frame.x}
-            y={frame.y + frame.height + 1}
-            width={frame.width}
+            x={frame.x + drawW + 3}
+            y={caption ? frame.y + frame.height + 1 : frame.y + frame.height - 8}
+            width={Math.max(roomForStamp, 8)}
             text={stamp}
             fontSize={7}
             fontFamily={FIELD_FONT}

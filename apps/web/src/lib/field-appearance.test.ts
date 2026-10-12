@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { filledFieldText, signatureMarkFrame } from "./field-appearance";
+import {
+  filledFieldText,
+  signatureMarkFrame,
+  signatureStamp,
+} from "./field-appearance";
 
 describe("filled field text", () => {
   it("shows a calendar day instead of a timestamp", () => {
@@ -18,13 +22,19 @@ describe("filled field text", () => {
     expect(filledFieldText("text", "Agreed")).toBe("Agreed");
   });
 
-  it("grows a short signature chip up from the rule", () => {
+  it("widens a short signature along the rule and keeps its height", () => {
     const frame = signatureMarkFrame(
       { width: 46, height: 13 },
       { width: 612, height: 792 }
     );
-    expect(frame.width).toBeGreaterThanOrEqual(168);
-    expect(frame.height).toBeGreaterThanOrEqual(36);
-    expect(frame.y).toBeLessThan(0);
+    expect(frame.width).toBeGreaterThanOrEqual(140);
+    expect(frame.height).toBe(13);
+    expect(frame.y).toBe(0);
+  });
+
+  it("stamps a short document id under the name", () => {
+    expect(signatureStamp("bb91c6f9-dd96-4540-9148-f36033570dd2")).toBe(
+      "BB91C6F9DD96"
+    );
   });
 });

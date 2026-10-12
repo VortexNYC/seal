@@ -35,20 +35,22 @@ function calendarLabel(value: string): string {
   return `${match[2]}/${match[3]}/${match[1]}`;
 }
 
-/** A short placed signature still has to be readable on the rule. */
+/** Twelve characters of the document id, so the stamp fits on the rule. */
+export function signatureStamp(documentRef: string): string {
+  const compact = documentRef.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  return compact.slice(0, 12);
+}
+
+/** Widen a short signature along the rule. Keep the placed height so the mark stays on the line. */
 export function signatureMarkFrame(
   field: { width: number; height: number },
   page: { width: number; height: number }
 ): { x: number; y: number; width: number; height: number } {
   const width = Math.min(
-    Math.max(field.width, page.width * (168 / 612)),
-    Math.max(24, page.width - 8)
+    Math.max(field.width, page.width * (140 / 612)),
+    Math.max(field.width, page.width - 8)
   );
-  const height = Math.min(
-    Math.max(field.height, page.height * (36 / 792)),
-    page.height * (52 / 792)
-  );
-  return { x: 0, y: field.height - height, width, height };
+  return { x: 0, y: 0, width, height: field.height };
 }
 
 function checkboxChecked(value: string): boolean {

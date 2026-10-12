@@ -357,6 +357,17 @@ function pinPageToTop(
   });
 }
 
+/** The uploaded form is paper. Its widgets stay in the page bitmap, not as inputs. */
+function showSourceFormAsPaper(frame: HTMLElement | null): void {
+  const root = frame?.querySelector("embedpdf-container")?.shadowRoot;
+  if (!root || root.querySelector("[data-seal-paper]")) return;
+  const style = document.createElement("style");
+  style.dataset.sealPaper = "true";
+  style.textContent =
+    "input, textarea, select { opacity: 0 !important; pointer-events: none !important; caret-color: transparent !important; }";
+  root.appendChild(style);
+}
+
 function pdfScroller(frame: HTMLElement | null): HTMLElement | null {
   const root = frame?.querySelector("embedpdf-container")?.shadowRoot;
   if (!root) return null;
@@ -625,6 +636,7 @@ export function DocumentCanvas({
     (registry: unknown) => {
       registryRef.current = registry;
       setReady(true);
+      showSourceFormAsPaper(viewerFrameRef.current);
       const scroll = getScrollCapability(registry);
       if (!scroll) return;
       const page = scroll.getCurrentPage?.() ?? 1;
@@ -648,6 +660,7 @@ export function DocumentCanvas({
           // Scroll viewport mounts after document-opened — defer the zoom
           // request so it lands on a live viewport and forces first paint.
           window.setTimeout(() => {
+            showSourceFormAsPaper(viewerFrameRef.current);
             getZoomCapability(registry)?.requestZoom?.(1);
             window.setTimeout(() => {
               pinPageToTop(getScrollCapability(registry), 1);
@@ -1068,6 +1081,7 @@ export function DocumentCanvas({
         minZoom: 0.5,
         maxZoom: 8,
       },
+      render: { withForms: true },
       annotations: {
         tools: markupInkTools().map((tool) => {
           // The override type only lists shared behavior fields. commitDelay is

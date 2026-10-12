@@ -1,9 +1,13 @@
 import { canvas } from "@seal/tokens/theme";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Calendar as CalendarIcon, CaretDown as ChevronDownIcon, CheckSquare as CheckSquareIcon, RadioButton as CircleDotIcon, CreditCard as CreditCardIcon, File as FileIcon, Hash as HashIcon, PenNib as PenToolIcon, Star as StarIcon, TextT as TypeIcon } from "@phosphor-icons/react";
-import { forwardRef } from "react";
+import { forwardRef, type ReactElement } from "react";
 
-import { filledFieldText, signatureMarkFrame } from "@/lib/field-appearance";
+import {
+  filledFieldText,
+  signatureMarkFrame,
+  signatureStamp,
+} from "@/lib/field-appearance";
 import { FIELD_TYPE_LABELS, isFieldType } from "@/lib/field-types";
 import { formatMoney, money } from "@/lib/money";
 
@@ -129,6 +133,55 @@ function SealFieldIcon({
   );
 }
 
+function SignatureOnRule({
+  frame,
+  imageUrl,
+  documentRef,
+}: {
+  frame: { x: number; y: number; width: number; height: number };
+  imageUrl: string;
+  documentRef?: string;
+}): ReactElement {
+  const stamp = documentRef ? signatureStamp(documentRef) : "";
+  const roomForStamp = stamp ? 52 : 0;
+  const caption = frame.height >= 24;
+  return (
+    <>
+      {caption ? (
+        <span
+          className="absolute text-[8px] leading-none"
+          style={{ left: frame.x, top: frame.y - 11, color: "#595961" }}
+        >
+          Signed by:
+        </span>
+      ) : null}
+      <img
+        src={imageUrl}
+        alt=""
+        className="absolute object-contain object-left-bottom"
+        style={{
+          left: frame.x,
+          top: frame.y,
+          width: Math.max(frame.width - roomForStamp, 8),
+          height: frame.height,
+        }}
+      />
+      {stamp ? (
+        <span
+          className="absolute text-[7px] leading-none"
+          style={{
+            left: frame.x + Math.max(frame.width - roomForStamp, 8) + 3,
+            top: caption ? frame.y + frame.height + 1 : frame.y + frame.height - 8,
+            color: "#595961",
+          }}
+        >
+          {stamp}
+        </span>
+      ) : null}
+    </>
+  );
+}
+
 export const FillableFieldOverlay = forwardRef<
   HTMLButtonElement,
   FillableFieldOverlayProps
@@ -194,41 +247,11 @@ export const FillableFieldOverlay = forwardRef<
         }}
       >
         {frame && currentSignatureImageUrl ? (
-          <>
-            <span
-              className="absolute text-[8px] leading-none"
-              style={{
-                left: frame.x,
-                top: frame.y - 11,
-                color: "#595961",
-              }}
-            >
-              Signed by:
-            </span>
-            <img
-              src={currentSignatureImageUrl}
-              alt=""
-              className="absolute object-contain object-left-bottom"
-              style={{
-                left: frame.x,
-                top: frame.y,
-                width: frame.width,
-                height: frame.height,
-              }}
-            />
-            {documentRef ? (
-              <span
-                className="absolute text-[7px] leading-none"
-                style={{
-                  left: frame.x,
-                  top: frame.y + frame.height + 1,
-                  color: "#595961",
-                }}
-              >
-                {documentRef}
-              </span>
-            ) : null}
-          </>
+          <SignatureOnRule
+            frame={frame}
+            imageUrl={currentSignatureImageUrl}
+            documentRef={documentRef}
+          />
         ) : currentSignatureImageUrl ? (
           <img
             src={currentSignatureImageUrl}
