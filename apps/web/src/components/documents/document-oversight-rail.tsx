@@ -6,8 +6,9 @@ import type { ReactElement } from "react";
 
 import { OversightFrame } from "@/components/oversight-frame";
 import { WorkflowStatusBadge } from "@/components/documents/workflow-status-badge";
-import { getDocumentSharing } from "@/lib/api-client";
+import { getDocumentRecipients, getDocumentSharing } from "@/lib/api-client";
 import {
+  recipientFacingStatus,
   signerProgressLine,
   type DocumentWorkflowStatus,
   type SigningProgress,
@@ -31,6 +32,10 @@ export function DocumentOversightRail({
   const sharing = useQuery({
     queryKey: ["api", "documents", "sharing", organizationSlug, documentId],
     queryFn: () => getDocumentSharing(organizationSlug, documentId),
+  });
+  const recipients = useQuery({
+    queryKey: ["documents", documentId, "recipients"],
+    queryFn: () => getDocumentRecipients(organizationSlug, documentId),
   });
   const navigate = useNavigate();
   const waiting = signerProgressLine(workflowStatus, progress);
@@ -64,6 +69,27 @@ export function DocumentOversightRail({
               {sharing.data.owner.email}
             </Text>
           ) : null}
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Text as="p" variant="secondary" size="xs">
+            Recipients
+          </Text>
+          {recipients.data && recipients.data.length === 0 ? (
+            <Text as="p" size="sm">
+              No recipients yet
+            </Text>
+          ) : null}
+          {recipients.data?.map((recipient) => (
+            <div key={recipient.id} className="flex flex-col gap-0.5">
+              <Text as="p" size="sm">
+                {recipient.name ?? recipient.email}
+              </Text>
+              <Text as="p" variant="secondary" size="xs">
+                {recipientFacingStatus(workflowStatus, recipient.status)}
+              </Text>
+            </div>
+          ))}
         </div>
 
         <div className="flex flex-col gap-1">

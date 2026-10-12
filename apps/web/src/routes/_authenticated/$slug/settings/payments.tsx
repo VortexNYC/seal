@@ -22,6 +22,13 @@ import { getErrorMessage } from "@/lib/utils";
 
 type LegalEntityType = "INDIVIDUAL" | "CORPORATION" | "LLC" | "PARTNERSHIP";
 
+const STANDARD_RATES: readonly { rail: string; price: string }[] = [
+  { rail: "Card", price: "2.9% + 30¢" },
+  { rail: "Card present", price: "2.6% + 15¢" },
+  { rail: "ACH", price: "0.8% + 25¢, capped at $10" },
+  { rail: "Dispute", price: "$30" },
+];
+
 const LEGAL_ENTITIES: { value: LegalEntityType; label: string }[] = [
   { value: "CORPORATION", label: "Corporation" },
   { value: "LLC", label: "LLC" },
@@ -71,8 +78,15 @@ function PaymentsSettings() {
       <SettingsBody>
         <SettingsSection
           title="Vortex"
-          description="Payments run on Vortex. Seal keeps the connected account for this workspace."
+          description="Payments run on Vortex. This workspace inherits Vortex standard rates."
         >
+          <div className="mb-4 flex flex-col gap-1">
+            {STANDARD_RATES.map((rate) => (
+              <Text as="p" size="sm" key={rate.rail}>
+                {rate.rail} · {rate.price}
+              </Text>
+            ))}
+          </div>
           {payments.isPending ? (
             <Text variant="secondary" size="sm">
               Loading
@@ -90,6 +104,11 @@ function PaymentsSettings() {
               </Text>
               <Text variant="secondary" size="sm">
                 {account.summary}
+              </Text>
+              <Text variant="secondary" size="sm">
+                {account.chargesApproved
+                  ? "Charges are enabled."
+                  : "This account cannot take charges yet."}
               </Text>
               {account.claimUrl ? (
                 <a href={account.claimUrl} rel="noreferrer" target="_blank">
