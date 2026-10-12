@@ -129,7 +129,9 @@ export function fieldTextOffset(hasIcon: boolean): number {
 
 export function fieldRowWidth(label: string): number {
   return (
-    fieldTextOffset(true) + Math.ceil(label.length * FIELD_CHAR_PX) + FIELD_PAD_X
+    fieldTextOffset(true) +
+    Math.ceil(label.length * FIELD_CHAR_PX) +
+    FIELD_PAD_X
   );
 }
 
@@ -144,6 +146,16 @@ export function fieldDisplayLabel(
 
 export function pagePercent(px: number, natural: number): number {
   return (px / natural) * 100;
+}
+
+/** Signature-like fields sit on the rule under the cursor. */
+export function fieldPlacementAnchor(fieldType: string): "center" | "bottom" {
+  return fieldType === "signature" ||
+    fieldType === "free_signature" ||
+    fieldType === "initials" ||
+    fieldType === "stamp"
+    ? "bottom"
+    : "center";
 }
 
 /**

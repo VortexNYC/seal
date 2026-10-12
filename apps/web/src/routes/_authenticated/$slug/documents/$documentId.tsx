@@ -12,7 +12,12 @@ import { ArrowLeft as ArrowLeftIcon, DownloadSimple as DownloadIcon, FloppyDisk 
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 
 import { DocumentToolRow } from "@/components/documents/document-tool-row";
-import type { FieldType } from "@/lib/field-types";
+import { fieldPlacementAnchor } from "@/components/documents/document-surface";
+import {
+  FIELD_DIMENSIONS,
+  FIELD_TYPE_LABELS,
+  type FieldType,
+} from "@/lib/field-types";
 import { NotFoundPage } from "@/components/not-found-page";
 import { PageWrapper } from "@/components/page-wrapper";
 import { RouteErrorComponent } from "@/components/route-error-component";
@@ -737,13 +742,23 @@ function DocumentDetailPage() {
                                   docState.setAddRecipientOpen(true);
                                   return;
                                 }
-                                void fieldPlacement.placeFieldAt(
-                                  armedField,
-                                  clientX,
-                                  clientY
-                                );
+                                void fieldPlacement
+                                  .placeFieldAt(armedField, clientX, clientY)
+                                  .then((placed) => {
+                                    if (placed) setArmedField(null);
+                                  });
                               }
                             : undefined
+                        }
+                        placementGhost={
+                          canEdit && armedField
+                            ? {
+                                label: FIELD_TYPE_LABELS[armedField],
+                                width: FIELD_DIMENSIONS[armedField].width,
+                                height: FIELD_DIMENSIONS[armedField].height,
+                                anchor: fieldPlacementAnchor(armedField),
+                              }
+                            : null
                         }
                         toolbarExtras={
                           canEdit ? (

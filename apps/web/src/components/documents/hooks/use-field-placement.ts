@@ -26,7 +26,11 @@ import {
   signerForPlacement,
   signerRecipients,
 } from "../document-rail";
-import { fieldPlacementBox, pagePercent } from "../document-surface";
+import {
+  fieldPlacementAnchor,
+  fieldPlacementBox,
+  pagePercent,
+} from "../document-surface";
 import { FIELD_DIMENSIONS, type PlacedField } from "../draggable-field";
 import { type FieldOptionsConfig } from "../field-options-dialog";
 
@@ -282,7 +286,7 @@ export function useFieldPlacement({
     fieldType: FieldType,
     clientX: number,
     clientY: number
-  ): Promise<void> => {
+  ): Promise<boolean> => {
     if (
       isFieldSetupOpen({
         showFieldOptions,
@@ -291,7 +295,7 @@ export function useFieldPlacement({
     ) {
       toast.info(FINISH_FIELD_MESSAGE);
       setDraggingFieldType(null);
-      return;
+      return false;
     }
     const signers = signerRecipients(recipients);
     if (signers.length === 0) {
@@ -299,11 +303,11 @@ export function useFieldPlacement({
         "Please add at least one signer before placing fields. Approvers and viewers cannot have fields assigned."
       );
       setDraggingFieldType(null);
-      return;
+      return false;
     }
 
     const container = containerRef.current;
-    if (!container) return;
+    if (!container) return false;
 
     const targetPageNumber = currentPage;
     // The container may BE the page element (single-page overlay) or a
@@ -321,19 +325,13 @@ export function useFieldPlacement({
     if (!targetPageElement) {
       toast.error("Could not determine drop location");
       setDraggingFieldType(null);
-      return;
+      return false;
     }
 
     const pageRect = targetPageElement.getBoundingClientRect();
     const { width: widthPixels, height: heightPixels } =
       FIELD_DIMENSIONS[fieldType];
 
-    // Signature-like fields: cursor marks the rule (field bottom). Others: center.
-    const bottomAnchored =
-      fieldType === "signature" ||
-      fieldType === "free_signature" ||
-      fieldType === "initials" ||
-      fieldType === "stamp";
     const pending = {
       fieldType,
       ...fieldPlacementBox({
@@ -347,7 +345,7 @@ export function useFieldPlacement({
         clientY,
         widthPx: widthPixels,
         heightPx: heightPixels,
-        anchor: bottomAnchored ? "bottom" : "center",
+        anchor: fieldPlacementAnchor(fieldType),
       }),
       page: targetPageNumber,
     };
@@ -355,14 +353,14 @@ export function useFieldPlacement({
     setDraggingFieldType(null);
 
     const signer = signerForPlacement(signers, selectedRecipientId);
-    if (!signer) return;
+    if (!signer) return false;
     if (selectedRecipientId !== signer._id) {
       setSelectedRecipientId(signer._id);
     }
 
     if (fieldTypeNeedsOptions(fieldType)) {
       setShowFieldOptions(true);
-      return;
+      return true;
     }
     try {
       const label = formatFieldTypeLabel(fieldType);
@@ -391,11 +389,13 @@ export function useFieldPlacement({
         setPaymentConfigFieldId(created.publicId);
         setShowPaymentConfigModal(true);
       }
+      return true;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to create field";
       toast.error(errorMessage);
       setPendingFieldData(null);
+      return false;
     }
   };
 
@@ -576,12 +576,15 @@ export function useFieldPlacement({
     setShowFieldDeleteDialog(false);
   }, [handleFieldDelete]);
 
-  const openExistingPaymentConfig = useCallback((fieldPublicId: string | null): void => {
-    paymentCommittedRef.current = false;
-    setProvisionalPaymentFieldPublicId(null);
-    setPaymentConfigFieldId(fieldPublicId);
-    setShowPaymentConfigModal(true);
-  }, []);
+  const openExistingPaymentConfig = useCallback(
+    (fieldPublicId: string | null): void => {
+      paymentCommittedRef.current = false;
+      setProvisionalPaymentFieldPublicId(null);
+      setPaymentConfigFieldId(fieldPublicId);
+      setShowPaymentConfigModal(true);
+    },
+    []
+  );
 
   const commitPaymentConfig = useCallback((): void => {
     paymentCommittedRef.current = true;
@@ -608,7 +611,9 @@ export function useFieldPlacement({
       toast.info("Payment field removed.");
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to remove payment field";
+        error instanceof Error
+          ? error.message
+          : "Failed to remove payment field";
       toast.error(errorMessage);
     }
   }, [
