@@ -7,6 +7,7 @@ import {
   centeredPageShift,
   fieldChrome,
   fieldDisplayLabel,
+  fieldPlacementAnchor,
   fieldPlacementBox,
   fieldRowWidth,
   markupClearsBecauseFieldArmed,
@@ -138,7 +139,15 @@ describe("field spacing", () => {
     const at139 = placed(850);
     expect(at100.width).toBeCloseTo(at139.width, 5);
     expect(at100.height).toBeCloseTo(at139.height, 5);
-    expect(at100.width).toBeCloseTo((FIELD_DIMENSIONS.initials.width / 612) * 100, 5);
+    expect(at100.width).toBeCloseTo(
+      (FIELD_DIMENSIONS.initials.width / 612) * 100,
+      5
+    );
+  });
+
+  it("anchors a signature on the line under the cursor", () => {
+    expect(fieldPlacementAnchor("signature")).toBe("bottom");
+    expect(fieldPlacementAnchor("text")).toBe("center");
   });
 });
 
@@ -163,9 +172,15 @@ describe("markup commit", () => {
     const tools = markupInkTools();
     expect(tools.map((tool) => tool.id)).toEqual(["ink", "inkHighlighter"]);
     expect(tools.every((tool) => tool.behavior.commitDelay === 0)).toBe(true);
-    expect(markupLeaveSave("pagehide")).toEqual({ flush: true, keepalive: true });
+    expect(markupLeaveSave("pagehide")).toEqual({
+      flush: true,
+      keepalive: true,
+    });
     expect(markupLeaveSave("hidden")).toEqual({ flush: true, keepalive: true });
-    expect(markupLeaveSave("unmount")).toEqual({ flush: true, keepalive: false });
+    expect(markupLeaveSave("unmount")).toEqual({
+      flush: true,
+      keepalive: false,
+    });
   });
 });
 

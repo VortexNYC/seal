@@ -1,12 +1,4 @@
 import { canvas } from "@seal/tokens/theme";
-
-import {
-  FIELD_ICON_SIZE,
-  FIELD_PAD_X,
-  fieldChrome,
-  fieldDisplayLabel,
-  fieldTextOffset,
-} from "./document-surface";
 import type Konva from "konva";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -19,15 +11,20 @@ import {
 
 import { filledFieldText } from "@/lib/field-appearance";
 
+import {
+  FIELD_ICON_SIZE,
+  FIELD_PAD_X,
+  fieldChrome,
+  fieldDisplayLabel,
+  fieldTextOffset,
+} from "./document-surface";
+
 /** Same face as the rest of the product, and as the burned PDF. */
 const FIELD_FONT = "'Hedvig Letters Sans', ui-sans-serif, sans-serif";
 import { FIELD_TYPE_LABELS, type FieldType } from "@/lib/field-types";
 import { formatMoney, money } from "@/lib/money";
 
-import {
-  getRecipientColorById,
-  UNASSIGNED_COLOR,
-} from "./recipient-colors";
+import { getRecipientColorById, UNASSIGNED_COLOR } from "./recipient-colors";
 
 function useSealIcon(): HTMLImageElement | null {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -73,6 +70,8 @@ export interface PlacedField {
 interface DraggableFieldProps {
   field: PlacedField;
   isSelected: boolean;
+  /** The page can be dragged as soon as it is placed, before a second click. */
+  draggable?: boolean;
   onSelect: () => void;
   onDragEnd: (x: number, y: number) => void;
   onTransformEnd: (x: number, y: number, width: number, height: number) => void;
@@ -133,6 +132,7 @@ export { FIELD_DIMENSIONS } from "@/lib/field-types";
 export function DraggableField({
   field,
   isSelected,
+  draggable = false,
   onSelect,
   onDragEnd,
   onTransformEnd,
@@ -141,12 +141,22 @@ export function DraggableField({
 }: DraggableFieldProps) {
   const shapeRef = useRef<Konva.Group>(null);
   const trRef = useRef<Konva.Transformer>(null);
+  const draggingRef = useRef(false);
   const sealIcon = useSealIcon();
   const renderState = getFieldRenderState(
     field,
     recipientIndexMap,
     useRecipientColors
   );
+  const [pos, setPos] = useState({
+    x: field.x,
+    y: field.y,
+  });
+
+  useEffect(() => {
+    if (draggingRef.current) return;
+    setPos({ x: field.x, y: field.y });
+  }, [field.x, field.y]);
 
   // Update transformer when selection changes
   useEffect(() => {
@@ -156,9 +166,18 @@ export function DraggableField({
     }
   }, [isSelected]);
 
-  const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
-    const node = e.target;
-    onDragEnd(node.x(), node.y());
+  const groupPoint = (): { x: number; y: number } | null => {
+    const node = shapeRef.current;
+    if (!node) return null;
+    return { x: node.x(), y: node.y() };
+  };
+
+  const handleDragEnd = () => {
+    draggingRef.current = false;
+    const point = groupPoint();
+    if (!point) return;
+    setPos(point);
+    onDragEnd(point.x, point.y);
   };
 
   const handleTransformEnd = () => {
@@ -183,13 +202,21 @@ export function DraggableField({
     <>
       <Group
         ref={shapeRef}
-        x={field.x}
-        y={field.y}
+        x={pos.x}
+        y={pos.y}
         width={field.width}
         height={field.height}
-        draggable={isSelected}
+        draggable={draggable}
         onClick={onSelect}
         onTap={onSelect}
+        onDragStart={() => {
+          draggingRef.current = true;
+          onSelect();
+        }}
+        onDragMove={() => {
+          const point = groupPoint();
+          if (point) setPos(point);
+        }}
         onDragEnd={handleDragEnd}
         onTransformEnd={handleTransformEnd}
       >
@@ -215,12 +242,8 @@ export function DraggableField({
           }}
           enabledAnchors={[
             "top-left",
-            "top-center",
             "top-right",
-            "middle-left",
-            "middle-right",
             "bottom-left",
-            "bottom-center",
             "bottom-right",
           ]}
           rotateEnabled={false}
@@ -250,10 +273,7 @@ function getFieldRenderState(
     isUnassigned:
       useRecipientColors &&
       (!field.recipientId || recipientColor === UNASSIGNED_COLOR),
-    label: fieldDisplayLabel(
-      FIELD_LABELS[field.fieldType],
-      field.label
-    ),
+    label: fieldDisplayLabel(FIELD_LABELS[field.fieldType], field.label),
   };
 }
 
@@ -523,9 +543,7 @@ function FieldBackground({
       width={field.width}
       height={field.height}
       fill={canvas.chrome.background}
-      stroke={
-        isSelected ? canvas.chrome.ink : canvas.chrome.borderUnselected
-      }
+      stroke={isSelected ? canvas.chrome.ink : canvas.chrome.borderUnselected}
       strokeWidth={isSelected ? 2 : 1}
       cornerRadius={6}
       shadowColor={isSelected ? colors.glow : canvas.chrome.shadowCheckbox}

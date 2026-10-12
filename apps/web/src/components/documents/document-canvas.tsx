@@ -496,6 +496,13 @@ export type DocumentCanvasProps = {
   onMarkupToolChange?: (toolId: string | null) => void;
   onClearTool?: () => void;
   onEmptyClick?: (clientX: number, clientY: number) => void;
+  /** Follows the pointer while a field tool is armed. Release drops the field. */
+  placementGhost?: {
+    label: string;
+    width: number;
+    height: number;
+    anchor: "center" | "bottom";
+  } | null;
   className?: string;
   currentPage: number;
   onPageChange: (page: number) => void;
@@ -540,6 +547,7 @@ export function DocumentCanvas({
   onMarkupToolChange,
   onClearTool,
   onEmptyClick,
+  placementGhost = null,
   className,
   currentPage,
   onPageChange,
@@ -582,6 +590,9 @@ export function DocumentCanvas({
   const markup = editing;
 
   const viewerFrameRef = useRef<HTMLDivElement>(null);
+  const [ghostPoint, setGhostPoint] = useState<{ x: number; y: number } | null>(
+    null
+  );
 
   const refreshPageBox = useCallback((pageNumber: number) => {
     const scroll = getScrollCapability(registryRef.current);
@@ -1419,6 +1430,25 @@ export function DocumentCanvas({
             data-page-number={currentPage}
             onDragOver={fieldsInteractive ? onFieldDragOver : undefined}
             onDrop={fieldsInteractive ? onFieldDrop : undefined}
+            onPointerDown={(event) => {
+              if (!fieldsInteractive) return;
+              event.stopPropagation();
+            }}
+            onPointerMove={(event) => {
+              if (!placementGhost) return;
+              const bounds = event.currentTarget.getBoundingClientRect();
+              setGhostPoint({
+                x: event.clientX - bounds.left,
+                y: event.clientY - bounds.top,
+              });
+            }}
+            onPointerLeave={() => {
+              setGhostPoint(null);
+            }}
+            onPointerUp={(event) => {
+              if (!placementGhost || !onEmptyClick || event.button !== 0) return;
+              onEmptyClick(event.clientX, event.clientY);
+            }}
             className={cn(
               "absolute z-20 overflow-hidden",
               fieldsInteractive && fieldDragging && "ring-kumo-focus ring-2",
@@ -1441,9 +1471,43 @@ export function DocumentCanvas({
               onFieldSelect={fieldsInteractive ? onFieldSelect : undefined}
               onFieldUpdate={fieldsInteractive ? onFieldUpdate : undefined}
               onEmptyClick={
-                fieldsInteractive && onEmptyClick ? onEmptyClick : undefined
+                fieldsInteractive && onEmptyClick && !placementGhost
+                  ? onEmptyClick
+                  : undefined
               }
             />
+            {placementGhost && ghostPoint && pageBox ? (
+              <div
+                data-testid="field-placement-ghost"
+                className="border-kumo-line bg-kumo-elevated/80 text-kumo-default pointer-events-none absolute rounded-md border text-xs font-medium"
+                style={{
+                  width:
+                    placementGhost.width *
+                    (pageBox.width / pageBox.naturalWidth),
+                  height:
+                    placementGhost.height *
+                    (pageBox.height / pageBox.naturalHeight),
+                  left:
+                    ghostPoint.x -
+                    (placementGhost.width *
+                      (pageBox.width / pageBox.naturalWidth)) /
+                      2,
+                  top:
+                    placementGhost.anchor === "bottom"
+                      ? ghostPoint.y -
+                        placementGhost.height *
+                          (pageBox.height / pageBox.naturalHeight)
+                      : ghostPoint.y -
+                        (placementGhost.height *
+                          (pageBox.height / pageBox.naturalHeight)) /
+                          2,
+                }}
+              >
+                <span className="block truncate px-2 leading-7">
+                  {placementGhost.label}
+                </span>
+              </div>
+            ) : null}
             {fieldOverlayExtra}
           </div>
         ) : null}

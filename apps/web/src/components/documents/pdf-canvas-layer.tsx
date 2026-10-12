@@ -114,6 +114,7 @@ export function PdfCanvasLayer({
             <DraggableField
               key={field.id}
               field={field}
+              draggable={interactive}
               isSelected={interactive && selectedFieldId === field.id}
               onSelect={() => {
                 if (interactive) onFieldSelect?.(field.id);
