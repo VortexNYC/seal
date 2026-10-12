@@ -51,6 +51,25 @@ export function documentHeaderAction(
   return status === "completed" ? "download" : "send";
 }
 
+const LIVE_DOCUMENT_STATUSES = new Set([
+  "sent",
+  "in_progress",
+  "waiting_for_payment",
+]);
+
+/** How often an open envelope should re-read status, recipients, and ink. */
+export const LIVE_DOCUMENT_REFRESH_MS = 5_000;
+
+export function liveDocumentRefreshMs(
+  statuses: readonly (string | undefined)[]
+): number | false {
+  return statuses.some(
+    (status) => status !== undefined && LIVE_DOCUMENT_STATUSES.has(status)
+  )
+    ? LIVE_DOCUMENT_REFRESH_MS
+    : false;
+}
+
 /** Download name for the stored PDF. */
 export function signedPdfFilename(name: string | null | undefined): string {
   const trimmed = name?.trim() || "document";

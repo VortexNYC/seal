@@ -252,7 +252,11 @@ function DocumentDetailPage() {
   const [armedField, setArmedField] = useState<FieldType | null>(null);
   const [pdfReloadKey, setPdfReloadKey] = useState(0);
   const [openFieldsToken, setOpenFieldsToken] = useState(0);
-  const pdfViewer = usePdfViewer(slug, documentPublicId, pdfReloadKey);
+  const pdfViewer = usePdfViewer(
+    slug,
+    documentPublicId,
+    pdfReloadKey + documentData.updatedAt
+  );
 
   // ?hl=page,x,y,w,h — citation/deep-link highlight (percent-of-page)
   const [hlRect, setHlRect] = useState<{
@@ -689,7 +693,20 @@ function DocumentDetailPage() {
               </Button>
             </div>
           ) : (
-            sendDocumentButton
+            <>
+              <div key="download-current" className="flex-1 sm:flex-none">
+                <Button
+                  onClick={downloadSignedPdf}
+                  size="sm"
+                  variant="secondary"
+                  className="w-full"
+                  icon={DownloadIcon}
+                >
+                  <span className="truncate">Download</span>
+                </Button>
+              </div>
+              {sendDocumentButton}
+            </>
           )}
           {saveAsTemplateButton}
         </div>

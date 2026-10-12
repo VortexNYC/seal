@@ -20,6 +20,7 @@ import {
   type ApiSignature,
   type ApiPaymentConfig,
 } from "@/lib/api-client";
+import { liveDocumentRefreshMs } from "@/lib/document-status";
 import { type Id, parseId } from "@/lib/ids";
 import { parseSelectValue } from "@/lib/select-values";
 
@@ -250,16 +251,27 @@ export function useDocumentDetail(
   const { data: documentData, refetch: refetchDocument } = useSuspenseQuery({
     queryKey: ["documents", documentPublicId],
     queryFn: () => getDocument(organizationSlug, documentPublicId),
+    refetchInterval: (query) =>
+      liveDocumentRefreshMs([query.state.data?.workflowStatus]),
+    refetchOnWindowFocus: true,
   });
+
+  const refreshMs = liveDocumentRefreshMs([documentData.workflowStatus]);
+  const liveEnvelope = {
+    refetchInterval: refreshMs,
+    refetchOnWindowFocus: true as const,
+  };
 
   const { data: apiRecipients, refetch: refetchRecipients } = useSuspenseQuery({
     queryKey: ["documents", documentPublicId, "recipients"],
     queryFn: () => getDocumentRecipients(organizationSlug, documentPublicId),
+    ...liveEnvelope,
   });
 
   const { data: apiProgress, refetch: refetchProgress } = useSuspenseQuery({
     queryKey: ["documents", documentPublicId, "recipients", "progress"],
     queryFn: () => getRecipientProgress(organizationSlug, documentPublicId),
+    ...liveEnvelope,
   });
 
   const progress: DocumentDetailProgress | null = apiProgress
@@ -279,12 +291,14 @@ export function useDocumentDetail(
       queryKey: ["documents", documentPublicId, "signature-fields"],
       queryFn: () =>
         getDocumentSignatureFields(organizationSlug, documentPublicId),
+      ...liveEnvelope,
     }
   );
 
   const { data: apiSignatures } = useSuspenseQuery({
     queryKey: ["documents", documentPublicId, "signatures"],
     queryFn: () => getDocumentSignatures(organizationSlug, documentPublicId),
+    ...liveEnvelope,
   });
 
   const { data: apiPaymentConfigs } = useSuspenseQuery({
