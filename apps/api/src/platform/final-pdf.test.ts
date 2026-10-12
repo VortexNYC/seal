@@ -5,6 +5,7 @@ import {
   downloadShouldBurnInk,
   fieldBurnText,
   finalPdfStorageKey,
+  signatureInkBox,
   isTruthyCheckbox,
   flattenFieldsIntoPdf,
   layoutFieldText,
@@ -178,12 +179,27 @@ describe("final-pdf (SEA-49 L1a)", () => {
     expect(isTruthyCheckbox(null)).toBe(false);
   });
 
-  it("formats a stored timestamp as a calendar day", () => {
+  it("formats a stored timestamp as mm/dd/yyyy", () => {
     expect(fieldBurnText("date", "2026-10-06T04:00:00.000Z")).toBe(
-      "Oct 6, 2026"
+      "10/06/2026"
     );
-    expect(fieldBurnText("date_signed", "2026-10-06")).toBe("Oct 6, 2026");
+    expect(fieldBurnText("date_signed", "2026-10-12")).toBe("10/12/2026");
     expect(fieldBurnText("text", "Alice")).toBe("Alice");
+  });
+
+  it("gives a short signature chip a readable mark on the rule", () => {
+    const box = signatureInkBox({
+      x: 49,
+      y: 620,
+      width: 46,
+      height: 13,
+      pageWidth: 612,
+      pageHeight: 792,
+    });
+    expect(box.width).toBeGreaterThanOrEqual(168);
+    expect(box.height).toBeGreaterThanOrEqual(36);
+    expect(box.x).toBe(49);
+    expect(box.y).toBe(620);
   });
 
   it("skips empty fields without failing", async () => {

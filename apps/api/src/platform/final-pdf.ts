@@ -55,29 +55,14 @@ export function finalPdfStorageKey(
   return `signed/${organizationId}/${documentId}.pdf`;
 }
 
-const BURNED_MONTHS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-] as const;
-
-/** Date prefix of a stored value, as a short calendar label. */
+/** Date prefix of a stored value, as mm/dd/yyyy on the form blank. */
 export function formatBurnedDate(value: string): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value.trim());
   if (!match) return value.trim();
-  const month = BURNED_MONTHS[Number(match[2]) - 1];
+  const month = Number(match[2]);
   const day = Number(match[3]);
-  if (!month || day < 1 || day > 31) return value.trim();
-  return `${month} ${day}, ${match[1]}`;
+  if (month < 1 || month > 12 || day < 1 || day > 31) return value.trim();
+  return `${match[2]}/${match[3]}/${match[1]}`;
 }
 
 /** Text actually drawn for a filled field. Dates are calendar days, not timestamps. */
@@ -167,7 +152,28 @@ function decodeBase64(value: string): Uint8Array {
   return bytes;
 }
 
-function parseDataUrl(
+/** A signature mark has to be readable on the rule, even when the placed chip is short. */
+export function signatureInkBox(input: {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  pageWidth: number;
+  pageHeight: number;
+}): { x: number; y: number; width: number; height: number } {
+  const width = Math.min(
+    Math.max(input.width, 168),
+    Math.max(24, input.pageWidth - input.x - 8)
+  );
+  const height = Math.min(Math.max(input.height, 36), 52);
+  let y = input.y;
+  if (y + height > input.pageHeight - 16) {
+    y = Math.max(8, input.pageHeight - 16 - height);
+  }
+  return { x: input.x, y, width, height };
+}
+
+export function parseDataUrl(
   dataUrl: string
 ): { kind: "png" | "jpg"; bytes: Uint8Array } | null {
   const match = /^data:image\/(png|jpeg|jpg);base64,(.+)$/i.exec(
@@ -221,7 +227,8 @@ export function isTruthyCheckbox(value: string | null): boolean {
  */
 export async function flattenFieldsIntoPdf(
   pdfBytes: ArrayBuffer | Uint8Array,
-  fields: FinalPdfField[]
+  fields: FinalPdfField[],
+  options?: { documentRef?: string }
 ): Promise<FlattenFinalPdfResult> {
   const doc = await PDFDocument.load(pdfBytes);
   doc.registerFontkit(fontkit);
@@ -268,20 +275,47 @@ export async function flattenFieldsIntoPdf(
           parsed.kind === "png"
             ? await doc.embedPng(imageBytes)
             : await doc.embedJpg(imageBytes);
-        cover();
-        const scale = Math.min(
-          rect.width / image.width,
-          rect.height / image.height
-        );
+        const box =
+          type === "signature"
+            ? signatureInkBox({
+                x: rect.x,
+                y: rect.y,
+                width: rect.width,
+                height: rect.height,
+                pageWidth: pw,
+                pageHeight: ph,
+              })
+            : rect;
+        const scale = Math.min(box.width / image.width, box.height / image.height);
         const drawW = image.width * scale;
         const drawH = image.height * scale;
-        // Center horizontally; bottom-align so ink sits on the signature line.
+        if (type === "signature") {
+          const caption = "Signed by:";
+          const captionY = Math.min(box.y + box.height + 2, ph - 10);
+          page.drawText(caption, {
+            x: box.x,
+            y: captionY,
+            size: 7,
+            font,
+            color: rgb(0.35, 0.35, 0.38),
+          });
+        }
         page.drawImage(image, {
-          x: rect.x + Math.max(0, (rect.width - drawW) / 2),
-          y: rect.y,
+          x: box.x,
+          y: box.y,
           width: drawW,
           height: drawH,
         });
+        const stamp = options?.documentRef?.trim();
+        if (type === "signature" && stamp && box.y > 14) {
+          page.drawText(textForEmbeddedFont(font, stamp), {
+            x: box.x,
+            y: box.y - 8,
+            size: 6,
+            font,
+            color: rgb(0.35, 0.35, 0.38),
+          });
+        }
         burnedFields += 1;
         continue;
       }
