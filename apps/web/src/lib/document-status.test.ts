@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   documentHeaderAction,
+  liveDocumentRefreshMs,
+  LIVE_DOCUMENT_REFRESH_MS,
   listRowDate,
   recipientFacingStatus,
   recipientMarkClass,
@@ -33,6 +35,19 @@ describe("workflow status", () => {
     expect(signedPdfFilename("seal-markup.pdf")).toBe("seal-markup.pdf");
     expect(signedPdfFilename("Offer")).toBe("Offer.pdf");
     expect(signedPdfFilename("  ")).toBe("document.pdf");
+  });
+
+  it("keeps reading an envelope until it leaves the signer", () => {
+    expect(liveDocumentRefreshMs(["sent"])).toBe(LIVE_DOCUMENT_REFRESH_MS);
+    expect(liveDocumentRefreshMs(["in_progress", "completed"])).toBe(
+      LIVE_DOCUMENT_REFRESH_MS
+    );
+    expect(liveDocumentRefreshMs(["waiting_for_payment"])).toBe(
+      LIVE_DOCUMENT_REFRESH_MS
+    );
+    expect(liveDocumentRefreshMs(["completed"])).toBe(false);
+    expect(liveDocumentRefreshMs(["draft", "cancelled"])).toBe(false);
+    expect(liveDocumentRefreshMs([undefined])).toBe(false);
   });
 
   it("says who the list row is waiting on", () => {

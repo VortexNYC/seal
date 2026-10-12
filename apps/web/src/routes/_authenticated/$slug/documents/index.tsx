@@ -64,6 +64,7 @@ import {
 } from "@/lib/api-client";
 import {
   listRowDate,
+  liveDocumentRefreshMs,
   signerProgressLine,
   toWorkflowStatus,
   type DocumentWorkflowStatus,
@@ -519,7 +520,7 @@ function FolderTableRow({
           Folder
         </Badge>
       </Table.Cell>
-      <Table.Cell className="w-14" />
+      <Table.Cell className="w-40" />
     </Table.Row>
   );
 }
@@ -563,8 +564,20 @@ function DocumentTableRow({
           <DocumentAiStatus status={doc.aiProcessingStatus} tooltip />
         </div>
       </Table.Cell>
-      <Table.Cell className="relative z-1 w-14">
-        <div className="flex justify-end">
+      <Table.Cell className="relative z-1 w-40">
+        <div className="flex items-center justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="shrink-0"
+            icon={DownloadIcon}
+            onClick={(event) => {
+              event.stopPropagation();
+              actions.downloadDocument(doc._id);
+            }}
+          >
+            Download
+          </Button>
           <DocumentActionsMenu
             actions={actions}
             delegateOwnership={delegateOwnership}
@@ -965,6 +978,11 @@ function useDocumentsListData({
         folderId,
         rootOnly: !folderId,
       }),
+    refetchInterval: (query) =>
+      liveDocumentRefreshMs(
+        (query.state.data ?? []).map((doc) => doc.workflowStatus)
+      ),
+    refetchOnWindowFocus: true,
   });
   const { data: apiFolders, refetch: refetchFolders } = useSuspenseQuery({
     queryKey: ["api", "folders", "document", folderId, slug],
@@ -1205,10 +1223,10 @@ function DocumentsTable({
 }) {
   return (
     <div className="max-w-4xl overflow-x-auto rounded-lg border">
-      <Table className="table-fixed">
+      <Table>
         <Table.Header>
           <Table.Row>
-            <Table.Head className="w-[28rem]">
+            <Table.Head>
               <SortHeader
                 field="name"
                 label="Title"
@@ -1217,7 +1235,7 @@ function DocumentsTable({
                 sortField={sortField}
               />
             </Table.Head>
-            <Table.Head className="hidden w-[16rem] sm:table-cell">
+            <Table.Head className="hidden w-44 sm:table-cell">
               <SortHeader
                 field="createdAt"
                 label="Date"
@@ -1226,7 +1244,7 @@ function DocumentsTable({
                 sortField={sortField}
               />
             </Table.Head>
-            <Table.Head className="w-40">
+            <Table.Head className="w-28">
               <SortHeader
                 field="workflowStatus"
                 label="Status"
@@ -1235,8 +1253,8 @@ function DocumentsTable({
                 sortField={sortField}
               />
             </Table.Head>
-            <Table.Head className="w-14">
-              <span className="sr-only">Menu</span>
+            <Table.Head className="w-40">
+              <span className="sr-only">Download</span>
             </Table.Head>
           </Table.Row>
         </Table.Header>
