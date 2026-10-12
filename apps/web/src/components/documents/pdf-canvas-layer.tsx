@@ -23,6 +23,7 @@ interface PdfCanvasLayerProps {
     height: number
   ) => void;
   onEmptyClick?: (clientX: number, clientY: number) => void;
+  documentRef?: string;
 }
 
 /**
@@ -41,6 +42,7 @@ export function PdfCanvasLayer({
   onFieldSelect,
   onFieldUpdate,
   onEmptyClick,
+  documentRef,
 }: PdfCanvasLayerProps) {
   const stageRef = useRef<Konva.Stage>(null);
   const [dimensions, setDimensions] = useState({
@@ -114,6 +116,9 @@ export function PdfCanvasLayer({
             <DraggableField
               key={field.id}
               field={field}
+              pageWidth={pdfWidth}
+              pageHeight={pdfHeight}
+              documentRef={documentRef}
               draggable={interactive}
               isSelected={interactive && selectedFieldId === field.id}
               onSelect={() => {
