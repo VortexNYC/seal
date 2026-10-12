@@ -34,6 +34,8 @@ import {
   getAuditRequestMeta,
   writeAuditLog,
 } from "../../platform/audit-log.js";
+import { copyDocument } from "../../platform/document-copy.js";
+import { forwardCompletedDocument } from "../../platform/document-forward.js";
 import { certificateStorageKey } from "../../platform/certificate-of-completion.js";
 import { generateAndStoreCertificateOfCompletion } from "../../platform/certificate-store.js";
 import { buildSigningUrl } from "../../platform/email.js";
@@ -1679,6 +1681,101 @@ app.post("/bulk-send", async (c) => {
     total_requested: results.length,
     results,
   });
+});
+
+async function findOrgDocument(
+  db: ReturnType<typeof createD1>,
+  organizationId: string,
+  id: string
+) {
+  const rows = await db
+    .select({ publicId: documents.publicId })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.organizationId, organizationId),
+        or(eq(documents.id, id), eq(documents.publicId, id)),
+        ne(documents.documentStatus, "deleted")
+      )
+    )
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+app.post("/copy", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+  const id = c.req.query("id");
+  if (!id) return c.json({ error: "missing_document_id" }, 400);
+  const bucket = c.env.DOCUMENTS_BUCKET;
+  if (!bucket) return c.json({ error: "storage_unavailable" }, 503);
+  const db = createD1(c.env.D1);
+  const found = await findOrgDocument(db, organizationId, id);
+  if (!found) return c.json({ error: "not_found" }, 404);
+  const copied = await copyDocument({
+    db,
+    bucket,
+    organizationId,
+    ownerId: mcp.sub,
+    sourcePublicId: found.publicId,
+  });
+  if (!copied) return c.json({ error: "not_found" }, 404);
+  const actor = getAuditActor({ mcp });
+  if (actor) {
+    await writeAuditLog(db, {
+      organizationId,
+      actor,
+      action: "document.created",
+      resourceType: "document",
+      resourceId: copied.id,
+      metadata: { publicId: copied.publicId, copiedFrom: found.publicId },
+      ...getAuditRequestMeta(c),
+    });
+  }
+  return c.json({ id: copied.id, public_id: copied.publicId }, 201);
+});
+
+app.post("/forward", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+  const rawBody: unknown = await c.req.json();
+  const parsed = z
+    .object({
+      id: z.string().optional(),
+      email: z.string().email(),
+    })
+    .safeParse(rawBody);
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+  const id = c.req.query("id") ?? parsed.data.id;
+  if (!id) return c.json({ error: "missing_document_id" }, 400);
+  const bucket = c.env.DOCUMENTS_BUCKET;
+  if (!bucket) return c.json({ error: "storage_unavailable" }, 503);
+  const db = createD1(c.env.D1);
+  const found = await findOrgDocument(db, organizationId, id);
+  if (!found) return c.json({ error: "not_found" }, 404);
+  const result = await forwardCompletedDocument({
+    db,
+    bucket,
+    env: c.env,
+    organizationId,
+    sourcePublicId: found.publicId,
+    to: parsed.data.email,
+    senderName: "your team",
+  });
+  if (result === "not_found" || result === "no_file") {
+    return c.json({ error: result }, 404);
+  }
+  if (result === "not_completed") return c.json({ error: result }, 409);
+  if (result === "email_failed") return c.json({ error: result }, 502);
+  return c.json({ sent: true });
 });
 
 app.get("/download", async (c) => {

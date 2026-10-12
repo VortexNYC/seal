@@ -42,6 +42,7 @@ import { UploadDialog } from "@/components/documents/upload-dialog";
 import { WorkflowStatusBadge } from "@/components/documents/workflow-status-badge";
 import { CreateFolderDialog } from "@/components/folders/create-folder-dialog";
 import { FolderBreadcrumbs } from "@/components/folders/folder-breadcrumbs";
+import { BulkSendDialog } from "@/components/documents/bulk-send-dialog";
 import { MoveToFolderDialog } from "@/components/folders/move-to-folder-dialog";
 import {
   FileSystem,
@@ -1700,6 +1701,7 @@ function DocumentsPage() {
 
   // Folder: move-to-folder dialog state
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [bulkSendOpen, setBulkSendOpen] = useState(false);
   const [moveDocumentId, setMoveDocumentId] = useState<string | null>(null);
   const moveDocumentsToFolderMutation = useMutation({
     mutationFn: (options: { documentIds: string[]; folderId?: string }) =>
@@ -1797,11 +1799,22 @@ function DocumentsPage() {
         variant: "default",
       }}
       headerActions={
-        <CreateFolderDialog
-          organizationSlug={slug}
-          type="document"
-          parentId={folderId}
-        />
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            icon={SendIcon}
+            onClick={() => setBulkSendOpen(true)}
+          >
+            Bulk send
+          </Button>
+          <CreateFolderDialog
+            organizationSlug={slug}
+            type="document"
+            parentId={folderId}
+          />
+        </div>
       }
       headerCenter={
         <FolderBreadcrumbs
@@ -2125,6 +2138,12 @@ function DocumentsPage() {
           onOpenChange={setShareDialogOpen}
         />
       )}
+
+      <BulkSendDialog
+        open={bulkSendOpen}
+        onOpenChange={setBulkSendOpen}
+        organizationSlug={slug}
+      />
 
       <MoveToFolderDialog
         open={moveDialogOpen}

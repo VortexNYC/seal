@@ -1145,6 +1145,20 @@ export const bulkSendDocumentsSchema = z.object({
 });
 export type BulkSendDocumentsInput = z.infer<typeof bulkSendDocumentsSchema>;
 
+export const copyDocumentSchema = z.object({
+  id: z.string().describe("Document id to copy into a new draft"),
+});
+export type CopyDocumentInput = z.infer<typeof copyDocumentSchema>;
+
+export const forwardDocumentSchema = z.object({
+  id: z.string().describe("Completed document id"),
+  email: z
+    .string()
+    .email()
+    .describe("Recipient of the completed PDF. They are not added as a signer."),
+});
+export type ForwardDocumentInput = z.infer<typeof forwardDocumentSchema>;
+
 /** Result of a single operation in a bulk request */
 export interface BulkOperationResult {
   id: string;
