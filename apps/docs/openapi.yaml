@@ -5037,6 +5037,71 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /documents/copy:
+    post:
+      tags: [Documents]
+      operationId: copyDocument
+      summary: Copy a document into a new draft
+      description: |
+        Copies the file, recipients, and fields into a new draft.
+        Signatures and completion state are not copied.
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "201":
+          description: Draft created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, public_id]
+                properties:
+                  id: { type: string }
+                  public_id: { type: string }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /documents/forward:
+    post:
+      tags: [Documents]
+      operationId: forwardDocument
+      summary: Email a completed PDF to someone who is not a signer
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        "200":
+          description: Email sent
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sent]
+                properties:
+                  sent: { type: boolean }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Document is not completed
+
   /documents/bulk-void:
     post:
       tags: [Documents]

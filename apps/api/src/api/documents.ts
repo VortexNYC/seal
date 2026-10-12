@@ -31,6 +31,8 @@ import {
   user as userTable,
 } from "../global/schema.js";
 import { parseDocumentFromStorage } from "../platform/anydoc.js";
+import { recordUsageEvent } from "../platform/usage-events.js";
+import { emitWebhookEvent } from "../platform/webhook-events.js";
 import { syncVortexOrderForm } from "../platform/vortex-order-form.js";
 import {
   isEnvelopeClosed,
@@ -61,6 +63,8 @@ import { ensureContactsFromRecipients } from "../platform/ensure-contacts.js";
 import { ZFieldPropertiesFlat } from "../platform/field-meta.js";
 import { materializeSuggestionsFromCandidates } from "../platform/field-suggestions.js";
 import { FieldTypeEnum } from "../platform/field-types.js";
+import { copyDocument } from "../platform/document-copy.js";
+import { forwardCompletedDocument } from "../platform/document-forward.js";
 import { downloadShouldBurnInk } from "../platform/final-pdf.js";
 import {
   generateAndStoreFinalPdf,
@@ -4691,6 +4695,296 @@ app.openapi(moveDocumentsRouteDef, async (c) => {
   }
 
   return c.json({ moved: matchedIds.length });
+});
+
+const copyRouteDef = createRoute({
+  method: "post",
+  path: "/{slug}/{publicId}/copy",
+  request: {
+    params: z.object({ publicId: z.string() }),
+  },
+  responses: {
+    201: {
+      content: {
+        "application/json": {
+          schema: z.object({ publicId: z.string() }),
+        },
+      },
+      description: "Draft copy created",
+    },
+    404: { description: "Document not found" },
+    503: { description: "Object storage not configured" },
+  },
+});
+
+app.openapi(copyRouteDef, async (c) => {
+  const bucket = c.env.DOCUMENTS_BUCKET;
+  if (!bucket) return c.json({ error: "storage_unavailable" }, 503);
+  const user = c.get("user");
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+  const db = createD1(c.env.D1);
+  const sourcePublicId = c.req.valid("param").publicId;
+  const copied = await copyDocument({
+    db,
+    bucket,
+    organizationId: c.get("organization").id,
+    ownerId: user.user.id,
+    sourcePublicId,
+  });
+  if (!copied) return c.json({ error: "not_found" }, 404);
+  const actor = getAuditActor({ user });
+  if (actor) {
+    await writeAuditLog(db, {
+      organizationId: c.get("organization").id,
+      actor,
+      action: "document.created",
+      resourceType: "document",
+      resourceId: copied.id,
+      metadata: { publicId: copied.publicId, copiedFrom: sourcePublicId },
+      ...getAuditRequestMeta(c),
+    });
+  }
+  return c.json({ publicId: copied.publicId }, 201);
+});
+
+const forwardBodySchema = z.object({
+  email: z.string().email(),
+});
+
+const forwardRouteDef = createRoute({
+  method: "post",
+  path: "/{slug}/{publicId}/forward",
+  request: {
+    params: z.object({ publicId: z.string() }),
+    body: {
+      content: { "application/json": { schema: forwardBodySchema } },
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.object({ sent: z.boolean() }) },
+      },
+      description: "Completed PDF forwarded",
+    },
+    404: { description: "Document not found" },
+    409: { description: "Document is not completed" },
+  },
+});
+
+app.openapi(forwardRouteDef, async (c) => {
+  const bucket = c.env.DOCUMENTS_BUCKET;
+  if (!bucket) return c.json({ error: "storage_unavailable" }, 503);
+  const user = c.get("user");
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+  const db = createD1(c.env.D1);
+  const organizationId = c.get("organization").id;
+  const sourcePublicId = c.req.valid("param").publicId;
+  const to = c.req.valid("json").email;
+  const senderName = user.user.name ?? user.user.email ?? "Someone";
+  const result = await forwardCompletedDocument({
+    db,
+    bucket,
+    env: c.env,
+    organizationId,
+    sourcePublicId,
+    to,
+    senderName,
+  });
+  if (result === "not_found" || result === "no_file") {
+    return c.json({ error: result }, 404);
+  }
+  if (result === "not_completed") return c.json({ error: result }, 409);
+  if (result === "email_failed") return c.json({ error: result }, 502);
+  const actor = getAuditActor({ user });
+  if (actor) {
+    const rows = await db
+      .select({ id: documents.id })
+      .from(documents)
+      .where(
+        and(
+          eq(documents.publicId, sourcePublicId),
+          eq(documents.organizationId, organizationId)
+        )
+      )
+      .limit(1);
+    const row = rows[0];
+    if (row) {
+      await writeAuditLog(db, {
+        organizationId,
+        actor,
+        action: "document.forwarded",
+        resourceType: "document",
+        resourceId: row.id,
+        metadata: { publicId: sourcePublicId, to },
+        ...getAuditRequestMeta(c),
+      });
+    }
+  }
+  return c.json({ sent: true });
+});
+
+const bulkSendBodySchema = z.object({
+  documentIds: z.array(z.string()).min(1).max(50),
+  message: z.string().optional(),
+});
+
+const bulkSendRouteDef = createRoute({
+  method: "post",
+  path: "/{slug}/bulk-send",
+  request: {
+    body: {
+      content: { "application/json": { schema: bulkSendBodySchema } },
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            succeeded: z.number().int(),
+            failed: z.number().int(),
+            results: z.array(
+              z.object({
+                id: z.string(),
+                success: z.boolean(),
+                error: z.string().optional(),
+              })
+            ),
+          }),
+        },
+      },
+      description: "Drafts sent",
+    },
+  },
+});
+
+app.openapi(bulkSendRouteDef, async (c) => {
+  const { documentIds, message } = c.req.valid("json");
+  const db = createD1(c.env.D1);
+  const organizationId = c.get("organization").id;
+  const user = c.get("user");
+  const senderName = user?.user.name ?? user?.user.email ?? "your team";
+  const actor = getAuditActor({ user });
+  const compliance = readOrgSigningCompliance(c.get("organization").metadata);
+  const results = await Promise.all(
+    documentIds.map(async (publicId) => {
+      const rows = await db
+        .select({
+          id: documents.id,
+          publicId: documents.publicId,
+          name: documents.name,
+          status: documents.status,
+        })
+        .from(documents)
+        .where(
+          and(
+            eq(documents.publicId, publicId),
+            eq(documents.organizationId, organizationId),
+            eq(documents.documentStatus, "active")
+          )
+        )
+        .limit(1);
+      const row = rows[0];
+      if (!row) return { id: publicId, success: false, error: "Document not found" };
+      if (row.status !== "draft") {
+        return {
+          id: publicId,
+          success: false,
+          error: `Document is not a draft (current: ${row.status})`,
+        };
+      }
+      const recipientRows = await db
+        .select({
+          id: recipients.id,
+          role: recipients.role,
+          authMethod: recipients.authMethod,
+        })
+        .from(recipients)
+        .where(eq(recipients.documentId, row.id));
+      if (recipientRows.length === 0) {
+        return { id: publicId, success: false, error: "Document has no recipients" };
+      }
+      if (compliance.requireRecipientAuth) {
+        const unauthenticated = recipientRows.filter(
+          (recipient) =>
+            (recipient.role === "signer" || recipient.role === "approver") &&
+            normalizeAuthMethod(recipient.authMethod) === "none"
+        );
+        if (unauthenticated.length > 0) {
+          return {
+            id: publicId,
+            success: false,
+            error:
+              "Every signer and approver must use email OTP or an access code",
+          };
+        }
+      }
+      try {
+        const { sentAt, recipients: sentRecipients } =
+          await sendDocumentForSigning(db, c.env, {
+            documentId: row.id,
+            documentName: row.name,
+            senderName,
+            defaultMessage: message,
+          });
+        await db.insert(activity).values({
+          id: crypto.randomUUID(),
+          organizationId,
+          action: "document.sent",
+          actorName: senderName,
+          targetName: row.name,
+          metadata: JSON.stringify({
+            documentId: row.id,
+            publicId: row.publicId,
+            recipientCount: sentRecipients.length,
+          }),
+          createdAt: sentAt,
+        });
+        await recordUsageEvent(db, {
+          organizationId,
+          eventType: "document.sent",
+          metadata: { documentId: row.id, publicId: row.publicId },
+        });
+        if (actor) {
+          await writeAuditLog(db, {
+            organizationId,
+            actor,
+            action: "document.sent",
+            resourceType: "document",
+            resourceId: row.id,
+            metadata: {
+              publicId: row.publicId,
+              recipientCount: sentRecipients.length,
+            },
+            ...getAuditRequestMeta(c),
+          });
+        }
+        await emitWebhookEvent(c.env, {
+          organizationId,
+          eventType: "document.sent",
+          payload: {
+            documentId: row.id,
+            publicId: row.publicId,
+            name: row.name,
+            sentAt: sentAt.getTime(),
+          },
+        }).catch((err: unknown) => {
+          console.error("[webhooks] document.sent emit failed:", err);
+        });
+        return { id: publicId, success: true };
+      } catch (err) {
+        console.error("[documents/bulk-send] failed:", err);
+        return { id: publicId, success: false, error: "Could not send this document" };
+      }
+    })
+  );
+  const succeeded = results.filter((result) => result.success).length;
+  return c.json({
+    succeeded,
+    failed: results.length - succeeded,
+    results,
+  });
 });
 
 const updateThumbnailBodySchema = z.object({

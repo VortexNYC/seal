@@ -1267,6 +1267,54 @@ export async function downloadDocument(
   }
   return response.blob();
 }
+export async function copyDocument(
+  organizationSlug: string,
+  publicId: string
+): Promise<{ publicId: string }> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/copy`,
+    z.object({ publicId: z.string() }),
+    { method: "POST" }
+  );
+}
+
+export async function forwardDocument(
+  organizationSlug: string,
+  publicId: string,
+  email: string
+): Promise<{ sent: boolean }> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/forward`,
+    z.object({ sent: z.boolean() }),
+    { method: "POST", body: JSON.stringify({ email }) }
+  );
+}
+
+export async function bulkSendDocuments(
+  organizationSlug: string,
+  documentIds: string[]
+): Promise<{
+  succeeded: number;
+  failed: number;
+  results: { id: string; success: boolean; error?: string }[];
+}> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/bulk-send`,
+    z.object({
+      succeeded: z.number().int(),
+      failed: z.number().int(),
+      results: z.array(
+        z.object({
+          id: z.string(),
+          success: z.boolean(),
+          error: z.string().optional(),
+        })
+      ),
+    }),
+    { method: "POST", body: JSON.stringify({ documentIds }) }
+  );
+}
+
 export async function moveDocumentsToFolder(
   organizationSlug: string,
   options: {

@@ -1,4 +1,5 @@
 import { Button } from "@cloudflare/kumo/components/button";
+import { DropdownMenu } from "@cloudflare/kumo/components/dropdown";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Loader } from "@cloudflare/kumo/components/loader";
 import { Text } from "@cloudflare/kumo/components/text";
@@ -8,7 +9,7 @@ import {
   createFileRoute,
   useRouter,
 } from "@tanstack/react-router";
-import { ArrowLeft as ArrowLeftIcon, DownloadSimple as DownloadIcon, FloppyDisk as SaveIcon, PaperPlaneTilt as SendIcon } from "@phosphor-icons/react";
+import { ArrowLeft as ArrowLeftIcon, Copy as CopyIcon, DownloadSimple as DownloadIcon, DotsThree as MoreIcon, FloppyDisk as SaveIcon, Folder as FolderIcon, PaperPlaneTilt as SendIcon, Printer as PrinterIcon, ShareFat as ForwardIcon } from "@phosphor-icons/react";
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 
 import { DocumentToolRow } from "@/components/documents/document-tool-row";
@@ -28,8 +29,10 @@ import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import {
   addRecipients as addRecipientsApi,
   cancelDocument,
+  copyDocument,
   downloadDocument,
   getSigningSettings,
+  moveDocumentsToFolder,
   removeRecipient as removeRecipientApi,
   replaceDocumentPdf,
   resendRecipientEmail as resendRecipientEmailApi,
@@ -43,9 +46,12 @@ import {
 import { parseId } from "@/lib/ids";
 import { toast } from "@/lib/toast";
 
+import { MoveToFolderDialog } from "@/components/folders/move-to-folder-dialog";
+
 import { AddMyselfDialog } from "../../../../components/documents/add-myself-dialog";
 import { AddRecipientDialog } from "../../../../components/documents/add-recipient-dialog";
 import { DeleteFieldDialog } from "../../../../components/documents/delete-field-dialog";
+import { ForwardDocumentDialog } from "../../../../components/documents/forward-document-dialog";
 import { DocumentCanvas } from "../../../../components/documents/document-canvas";
 import { DocumentPresence } from "../../../../components/documents/document-presence";
 import { DocumentSidebar } from "../../../../components/documents/document-sidebar";
@@ -326,6 +332,8 @@ function DocumentDetailPage() {
   });
 
   const docState = useDocumentState(documentData.redirectUrl ?? "");
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [forwardOpen, setForwardOpen] = useState(false);
 
   const { openSections, toggleSection } = useSectionState();
 
@@ -709,6 +717,80 @@ function DocumentDetailPage() {
             </>
           )}
           {saveAsTemplateButton}
+          <DropdownMenu>
+            <DropdownMenu.Trigger>
+              <Button
+                variant="ghost"
+                shape="square"
+                size="sm"
+                aria-label="Document actions"
+                icon={MoreIcon}
+              />
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align="end">
+              <DropdownMenu.Item
+                icon={PrinterIcon}
+                onClick={() => {
+                  void downloadDocument(slug, documentPublicId, { ink: true })
+                    .then((blob) => {
+                      const url = URL.createObjectURL(blob);
+                      const frame = document.createElement("iframe");
+                      frame.style.position = "fixed";
+                      frame.style.inset = "0";
+                      frame.style.width = "100%";
+                      frame.style.height = "100%";
+                      frame.style.border = "0";
+                      frame.style.opacity = "0";
+                      frame.style.pointerEvents = "none";
+                      frame.src = url;
+                      frame.onload = () => {
+                        frame.contentWindow?.focus();
+                        frame.contentWindow?.print();
+                        window.setTimeout(() => {
+                          frame.remove();
+                          URL.revokeObjectURL(url);
+                        }, 60_000);
+                      };
+                      document.body.appendChild(frame);
+                    })
+                    .catch(() => {
+                      toast.error("Could not print the PDF");
+                    });
+                }}
+              >
+                Print
+              </DropdownMenu.Item>
+              <DropdownMenu.Item icon={FolderIcon} onClick={() => setMoveOpen(true)}>
+                Move
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                icon={CopyIcon}
+                onClick={() => {
+                  void copyDocument(slug, documentPublicId)
+                    .then((copied) => {
+                      toast.success("Draft copy created");
+                      void router.navigate({
+                        to: "/$slug/documents/$documentId",
+                        params: { slug, documentId: copied.publicId },
+                      });
+                    })
+                    .catch(() => {
+                      toast.error("Could not copy the document");
+                    });
+                }}
+              >
+                Copy
+              </DropdownMenu.Item>
+              {documentData.workflowStatus === "completed" ? (
+                <DropdownMenu.Item
+                  icon={ForwardIcon}
+                  onClick={() => setForwardOpen(true)}
+                >
+                  Forward
+                </DropdownMenu.Item>
+              ) : null}
+            </DropdownMenu.Content>
+          </DropdownMenu>
         </div>
       }
     >
@@ -1181,6 +1263,32 @@ function DocumentDetailPage() {
         </div>
 
       </div>
+      <MoveToFolderDialog
+        open={moveOpen}
+        onOpenChange={setMoveOpen}
+        organizationSlug={slug}
+        type="document"
+        onMove={(folderId) => {
+          void moveDocumentsToFolder(slug, {
+            documentIds: [documentPublicId],
+            folderId,
+          })
+            .then(() => {
+              toast.success("Document moved");
+              setMoveOpen(false);
+            })
+            .catch(() => {
+              toast.error("Could not move the document");
+            });
+        }}
+      />
+      <ForwardDocumentDialog
+        open={forwardOpen}
+        onOpenChange={setForwardOpen}
+        organizationSlug={slug}
+        documentId={documentPublicId}
+        documentName={documentData.name}
+      />
     </PageWrapper>
   );
 }
