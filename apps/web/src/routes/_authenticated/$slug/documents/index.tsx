@@ -1533,7 +1533,7 @@ function useDocumentListActions({
   };
   const handleDownload = async (documentId: string) => {
     try {
-      const blob = await downloadDocument(slug, documentId);
+      const blob = await downloadDocument(slug, documentId, { ink: true });
       const url = window.URL.createObjectURL(blob);
       track.documentDownloaded({ documentId });
       window.open(url, "_blank");

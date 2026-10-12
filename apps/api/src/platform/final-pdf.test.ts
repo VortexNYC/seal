@@ -2,6 +2,7 @@ import { PDFDocument, PDFDict, PDFName, rgb } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 
 import {
+  downloadShouldBurnInk,
   fieldBurnText,
   finalPdfStorageKey,
   isTruthyCheckbox,
@@ -23,6 +24,13 @@ const TINY_PNG =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
 
 describe("final-pdf (SEA-49 L1a)", () => {
+  it("burns ink into a download until the envelope is completed", () => {
+    expect(downloadShouldBurnInk(true, "sent")).toBe(true);
+    expect(downloadShouldBurnInk(true, "in_progress")).toBe(true);
+    expect(downloadShouldBurnInk(true, "completed")).toBe(false);
+    expect(downloadShouldBurnInk(false, "sent")).toBe(false);
+  });
+
   it("builds a stable signed storage key", () => {
     expect(finalPdfStorageKey("org_1", "doc_2")).toBe("signed/org_1/doc_2.pdf");
   });
