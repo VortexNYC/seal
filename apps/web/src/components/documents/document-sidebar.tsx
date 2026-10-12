@@ -3,12 +3,10 @@ import { Button } from "@cloudflare/kumo/components/button";
 import { Collapsible } from "@cloudflare/kumo/components/collapsible";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Select } from "@cloudflare/kumo/components/select";
-import { Loader } from "@cloudflare/kumo/components/loader";
 import { Text } from "@cloudflare/kumo/components/text";
 import { CaretDown as ChevronDownIcon, Check as CheckIcon, Eye as EyeIcon, Gear as SettingsIcon, PaperPlaneTilt as SendIcon, Plus as PlusIcon, Pulse as ActivityIcon, Signature as FileSignatureIcon, User as UserIcon, UserPlus as UserPlusIcon, Users as UsersIcon, X as XIcon } from "@phosphor-icons/react";
 import { useEffect, useState, type ReactNode } from "react";
 
-import { CitationReviewPanel } from "@/components/kumo-docs";
 import type { ActivityEvent, ActivityEventType } from "@/lib/document-activity";
 import {
   recipientFacingStatus,
@@ -23,8 +21,6 @@ import {
 import { parseId } from "@/lib/ids";
 import { cn } from "@/lib/utils";
 
-import { AIInsightsPanel } from "./ai-annotation-overlays";
-import type { useDocumentAnnotations } from "./ai-annotation-overlays";
 import {
   DocumentNextAction,
   type DocumentNextActionModel,
@@ -39,8 +35,6 @@ import { placementFieldChooser } from "./document-rail";
 import { FieldList } from "./field-list";
 import { InAppSigningSection } from "./in-app-signing-section";
 import type { DocumentWorkflowStatus } from "./workflow-status-badge";
-
-type AIAnnotationsState = ReturnType<typeof useDocumentAnnotations>;
 
 // Derive child-component prop types from their signatures to avoid duplication
 type InAppRecipient = Parameters<typeof InAppSigningSection>[0]["recipient"];
@@ -79,11 +73,6 @@ interface DocumentSidebarProps {
   openSections: Set<string>;
   toggleSection: (section: string) => void;
 
-  // AI state
-  aiEnabled: boolean;
-  documentAnnotations: AIAnnotationsState;
-  aiProcessingStatus?: string | null;
-
   // Field placement callbacks (from useFieldPlacement)
   selectedFieldId: string | null;
   onFieldSelect: (fieldId: string | null) => void;
@@ -118,9 +107,6 @@ interface DocumentSidebarProps {
 
   // Activity
   activityEvents: ActivityEvent[];
-
-  // Page navigation from insights panel
-  onPageJump: (page: number) => void;
 
   /** Current PDF page (for rotate-current-page). */
   currentPage?: number;
@@ -338,95 +324,6 @@ function RecipientsSection({
             </span>
           </div>
         ) : null}
-      </Collapsible.Panel>
-      </Collapsible.Root>
-    </LayerCard>
-  );
-}
-
-function AIInsightsSection({
-  canEdit,
-  aiEnabled,
-  documentAnnotations,
-  aiProcessingStatus,
-  open,
-  onOpenChange,
-  onPageJump,
-}: {
-  canEdit: boolean;
-  aiEnabled: boolean;
-  documentAnnotations: AIAnnotationsState;
-  aiProcessingStatus?: string | null;
-  open: boolean;
-  onOpenChange: () => void;
-  onPageJump: (page: number) => void;
-}) {
-  if (!canEdit || !aiEnabled) return null;
-  if (!documentAnnotations.annotations && aiProcessingStatus === "processing") {
-    return (
-      <LayerCard className="flex items-center gap-3 p-4">
-        <Loader size="sm" />
-        <Text size="sm" bold>
-          Scanning for insights...
-        </Text>
-      </LayerCard>
-    );
-  }
-  if (!documentAnnotations.annotations) return null;
-
-  return (
-    <LayerCard>
-      <Collapsible.Root open={open} onOpenChange={onOpenChange}>
-      <Collapsible.Trigger title="Show or hide insights" className="flex w-full items-center justify-between gap-2 p-4 text-left">
-        <div className="flex items-center gap-3">
-          <span className="font-medium">
-            Insights
-          </span>
-          <Badge variant="secondary">{documentAnnotations.annotations.annotations.length}</Badge>
-        </div>
-        <ChevronDownIcon
-          className={cn(
-            "text-kumo-secondary h-4 w-4 transition-transform duration-200",
-            open && "rotate-180"
-          )}
-        />
-      </Collapsible.Trigger>
-      <Collapsible.Panel className="px-4 pb-4">
-        <div className="mt-3 space-y-4">
-          <AIInsightsPanel
-            annotations={documentAnnotations.annotations}
-            enabledCategories={documentAnnotations.enabledCategories}
-            toggleCategory={documentAnnotations.toggleCategory}
-            onDismiss={documentAnnotations.handleDismiss}
-            onPageJump={onPageJump}
-          />
-          <CitationReviewPanel
-            className="border-kumo-line max-h-80 overflow-hidden rounded-lg border"
-            fields={documentAnnotations.annotations.annotations.map(
-              (annotation, index) => ({
-                id: `${annotation.page}-${index}`,
-                label: annotation.summary || annotation.category,
-                value: annotation.text,
-                category: annotation.category,
-                severity: annotation.severity,
-                bbox: {
-                  page: annotation.page,
-                  x: annotation.x,
-                  y: annotation.y,
-                  width: annotation.width,
-                  height: annotation.height,
-                },
-              })
-            )}
-            onJumpToCitation={(field) => {
-              if (field.bbox) onPageJump(field.bbox.page);
-            }}
-            onFocus={(field) => {
-              if (field.bbox) onPageJump(field.bbox.page);
-            }}
-            onDismiss={documentAnnotations.handleDismiss}
-          />
-        </div>
       </Collapsible.Panel>
       </Collapsible.Root>
     </LayerCard>
@@ -905,15 +802,6 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
         placementSigners={placementSigners}
         placementSignerId={props.placementSignerId}
         onPlacementSignerChange={props.onPlacementSignerChange}
-      />
-      <AIInsightsSection
-        canEdit={props.canEdit}
-        aiEnabled={props.aiEnabled}
-        documentAnnotations={props.documentAnnotations}
-        aiProcessingStatus={props.aiProcessingStatus}
-        open={props.openSections.has("insights")}
-        onOpenChange={() => props.toggleSection("insights")}
-        onPageJump={props.onPageJump}
       />
       {isOversight && (
         <DocumentDetailsSection

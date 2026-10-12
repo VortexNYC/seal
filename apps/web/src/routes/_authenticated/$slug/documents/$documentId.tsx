@@ -24,7 +24,6 @@ import {
   addRecipients as addRecipientsApi,
   cancelDocument,
   downloadDocument,
-  getAiSettings,
   getSigningSettings,
   removeRecipient as removeRecipientApi,
   replaceDocumentPdf,
@@ -41,15 +40,6 @@ import { toast } from "@/lib/toast";
 
 import { AddMyselfDialog } from "../../../../components/documents/add-myself-dialog";
 import { AddRecipientDialog } from "../../../../components/documents/add-recipient-dialog";
-import {
-  AIAnnotationOverlays,
-  useDocumentAnnotations,
-} from "../../../../components/documents/ai-annotation-overlays";
-import {
-  AIFieldOverlays,
-  AIFieldReviewBar,
-  useAIFieldSuggestions,
-} from "../../../../components/documents/ai-field-suggestions";
 import { DeleteFieldDialog } from "../../../../components/documents/delete-field-dialog";
 import { DocumentCanvas } from "../../../../components/documents/document-canvas";
 import { DocumentPresence } from "../../../../components/documents/document-presence";
@@ -173,16 +163,6 @@ function DocumentDetailPage() {
   } = useDocumentDetail(slug, documentPublicId);
 
   const signatureFieldCount = countSigningFields(signatureFields);
-
-  const { data: aiSettings } = useQuery({
-    queryKey: ["organization", slug, "ai-settings"],
-    queryFn: () => getAiSettings(slug),
-  });
-  const aiEnabled = aiSettings?.aiEnabled !== false;
-  const isScannedOrImageDocument =
-    documentData.pdf_type === "Scanned" ||
-    documentData.pdf_type === "ImageBased";
-  const showAiFeatures = aiEnabled && !isScannedOrImageDocument;
 
   const { data: signingSettings } = useQuery({
     queryKey: ["organization", slug, "signing-settings"],
@@ -338,10 +318,7 @@ function DocumentDetailPage() {
 
   const docState = useDocumentState(documentData.redirectUrl ?? "");
 
-  const documentAnnotations = useDocumentAnnotations(documentPublicId);
-  const { openSections, toggleSection } = useSectionState(
-    documentAnnotations.annotations !== null
-  );
+  const { openSections, toggleSection } = useSectionState();
 
   const focusAppliedRef = useRef(false);
   useEffect(() => {
@@ -366,14 +343,6 @@ function DocumentDetailPage() {
     prepStatuses.has(documentData.workflowStatus);
 
   const canEdit = documentData.status === "active" && isPrepStatus;
-
-  // SEA-85: OCR/detect field_candidates → one-tap Accept on Fields canvas.
-  const fieldSuggestions = useAIFieldSuggestions(documentPublicId, {
-    enabled: canEdit && showAiFeatures,
-    onApplied: () => {
-      void refetchFields();
-    },
-  });
 
   const sharedPdfCanvas = Boolean(pdfViewer.pdfUrl);
 
@@ -415,25 +384,6 @@ function DocumentDetailPage() {
     () => recipients.map((r) => ({ ...r, name: r.name ?? undefined })),
     [recipients]
   );
-
-  // ── Effects ─────────────────────────────────────────────────────────────
-  // Toast when AI pipeline completes or fails
-  const prevAiStatus = useRef(documentData.aiProcessingStatus);
-  useEffect(() => {
-    const prev = prevAiStatus.current;
-    const current = documentData.aiProcessingStatus;
-    prevAiStatus.current = current;
-
-    if (prev === "processing" && current === "completed") {
-      toast.success("Analysis complete", {
-        description: "Field suggestions and insights are ready to review.",
-      });
-    } else if (prev === "processing" && current === "failed") {
-      toast.error("Analysis failed", {
-        description: "The document could not be analyzed. You can retry later.",
-      });
-    }
-  }, [documentData.aiProcessingStatus]);
 
   // ── Handlers ────────────────────────────────────────────────────────────
   const handleRemoveRecipientConfirm = async () => {
@@ -760,31 +710,6 @@ function DocumentDetailPage() {
                 >
                   {sharedPdfCanvas && pdfViewer.pdfUrl ? (
                     <>
-                      {canEdit && isScannedOrImageDocument ? (
-                        <div className="border-kumo-warning/30 bg-kumo-warning-tint/40 text-kumo-warning rounded-lg border px-3 py-2 text-xs">
-                          This is a scanned or image-only PDF. Field detection
-                          is not available — choose a field, then click the page.
-                        </div>
-                      ) : null}
-                      {canEdit &&
-                      fieldSuggestions.suggestions &&
-                      fieldSuggestions.suggestions.fields.length > 0 ? (
-                        <AIFieldReviewBar
-                          suggestions={fieldSuggestions.suggestions}
-                          selectedIndices={fieldSuggestions.selectedIndices}
-                          isApplying={fieldSuggestions.isApplying}
-                          selectAll={fieldSuggestions.selectAll}
-                          selectHighConfidence={
-                            fieldSuggestions.selectHighConfidence
-                          }
-                          handleApply={() => {
-                            void fieldSuggestions.handleApply();
-                          }}
-                          handleDismiss={() => {
-                            void fieldSuggestions.handleDismiss();
-                          }}
-                        />
-                      ) : null}
                       <DocumentCanvas
                         src={pdfViewer.pdfUrl}
                         interaction={canEdit ? "fields" : "view"}
@@ -921,32 +846,6 @@ function DocumentDetailPage() {
                                 }}
                               />
                             ) : null}
-                            {canEdit &&
-                            fieldSuggestions.suggestions &&
-                            fieldSuggestions.suggestions.fields.length > 0 ? (
-                              <AIFieldOverlays
-                                suggestions={fieldSuggestions.suggestions}
-                                selectedIndices={
-                                  fieldSuggestions.selectedIndices
-                                }
-                                toggleField={fieldSuggestions.toggleField}
-                                currentPage={pdfViewer.currentPage}
-                                pdfPageWidth={pdfViewer.pdfWidth}
-                                pdfPageHeight={pdfViewer.pdfHeight}
-                              />
-                            ) : null}
-                            {showAiFeatures &&
-                            documentAnnotations.annotations ? (
-                              <AIAnnotationOverlays
-                                annotations={documentAnnotations.annotations}
-                                enabledCategories={
-                                  documentAnnotations.enabledCategories
-                                }
-                                currentPage={pdfViewer.currentPage}
-                                pdfPageWidth={pdfViewer.pdfWidth}
-                                pdfPageHeight={pdfViewer.pdfHeight}
-                              />
-                            ) : null}
                           </>
                         }
                         onSaveMarkup={
@@ -1027,9 +926,6 @@ function DocumentDetailPage() {
               isUserAlreadyRecipient={isUserAlreadyRecipient}
               openSections={openSections}
               toggleSection={toggleSection}
-              aiEnabled={showAiFeatures}
-              documentAnnotations={documentAnnotations}
-              aiProcessingStatus={documentData.aiProcessingStatus}
               selectedFieldId={fieldPlacement.selectedFieldId}
               onFieldSelect={fieldPlacement.handleFieldSelect}
               onFieldDelete={fieldPlacement.requestFieldDelete}
@@ -1061,7 +957,6 @@ function DocumentDetailPage() {
                 docState.setRecipientOptionsOpen(true);
               }}
               activityEvents={activityEvents}
-              onPageJump={pdfViewer.setCurrentPage}
               currentPage={pdfViewer.currentPage}
               onPdfChanged={() => {
                 setPdfReloadKey((key) => key + 1);
