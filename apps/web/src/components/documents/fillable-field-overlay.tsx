@@ -1,3 +1,4 @@
+import { canvas } from "@seal/tokens/theme";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Calendar as CalendarIcon, CaretDown as ChevronDownIcon, CheckSquare as CheckSquareIcon, RadioButton as CircleDotIcon, CreditCard as CreditCardIcon, File as FileIcon, Hash as HashIcon, PenNib as PenToolIcon, Star as StarIcon, TextT as TypeIcon } from "@phosphor-icons/react";
 import { forwardRef } from "react";
@@ -189,7 +190,10 @@ export const FillableFieldOverlay = forwardRef<
             className="h-full w-full object-contain object-bottom"
           />
         ) : (
-          <div className="text-kumo-default flex h-full items-center px-1 font-sans text-[11px] leading-tight break-all">
+          <div
+            className="flex h-full items-center px-1 font-sans text-[11px] leading-tight font-medium"
+            style={{ color: canvas.filled.titleText }}
+          >
             {appearance}
           </div>
         )}
