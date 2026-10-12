@@ -575,7 +575,7 @@ function DocumentDetailPage() {
   };
 
   const downloadSignedPdf = (): void => {
-    void downloadDocument(slug, documentPublicId)
+    void downloadDocument(slug, documentPublicId, { ink: true })
       .then((blob) => {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");

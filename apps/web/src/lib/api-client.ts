@@ -1253,10 +1253,12 @@ export async function cancelDocument(
 }
 export async function downloadDocument(
   organizationSlug: string,
-  publicId: string
+  publicId: string,
+  options: { ink?: boolean } = {}
 ): Promise<Blob> {
+  const ink = options.ink ? "?ink=1" : "";
   const response = await fetch(
-    `${getBaseUrl()}/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/download`,
+    `${getBaseUrl()}/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/download${ink}`,
     { credentials: "include" }
   );
   if (!response.ok) {

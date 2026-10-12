@@ -43,6 +43,11 @@ export async function sha256PdfBytes(bytes: Uint8Array): Promise<string> {
   return `sha256:${hex}`;
 }
 
+/** A session download burns current ink until the stored file is the completed PDF. */
+export function downloadShouldBurnInk(ink: boolean, status: string): boolean {
+  return ink && status !== "completed";
+}
+
 export function finalPdfStorageKey(
   organizationId: string,
   documentId: string

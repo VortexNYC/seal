@@ -61,7 +61,11 @@ import { ensureContactsFromRecipients } from "../platform/ensure-contacts.js";
 import { ZFieldPropertiesFlat } from "../platform/field-meta.js";
 import { materializeSuggestionsFromCandidates } from "../platform/field-suggestions.js";
 import { FieldTypeEnum } from "../platform/field-types.js";
-import { generateAndStoreFinalPdf } from "../platform/final-pdf-store.js";
+import { downloadShouldBurnInk } from "../platform/final-pdf.js";
+import {
+  generateAndStoreFinalPdf,
+  renderFilledPdfBytes,
+} from "../platform/final-pdf-store.js";
 import {
   FeatureDisabledError,
   assertConvertEnabled,
@@ -1391,6 +1395,9 @@ const downloadRouteDef = createRoute({
   path: "/{slug}/{publicId}/download",
   request: {
     params: z.object({ publicId: z.string() }),
+    query: z.object({
+      ink: z.enum(["0", "1"]).optional(),
+    }),
   },
   responses: {
     200: { description: "Document file" },
@@ -1402,6 +1409,7 @@ const downloadRouteDef = createRoute({
 app.openapi(downloadRouteDef, async (c) => {
   const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
+  const { ink } = c.req.valid("query");
 
   const bucket = c.env.DOCUMENTS_BUCKET;
   if (!bucket) {
@@ -1444,6 +1452,28 @@ app.openapi(downloadRouteDef, async (c) => {
       },
       "session-download"
     );
+  }
+
+  if (downloadShouldBurnInk(ink === "1", doc.status) && doc.storageKey) {
+    try {
+      const filled = await renderFilledPdfBytes({
+        db,
+        bucket,
+        documentId: doc.id,
+        sourceKey: doc.originalStorageKey ?? doc.storageKey,
+      });
+      if (filled) {
+        const body = new Uint8Array(filled);
+        return c.body(body, {
+          headers: {
+            "content-type": "application/pdf",
+            "content-length": String(body.byteLength),
+          },
+        });
+      }
+    } catch (err) {
+      console.error("[documents/download] filled PDF failed:", err);
+    }
   }
 
   const headers: Record<string, string> = {
