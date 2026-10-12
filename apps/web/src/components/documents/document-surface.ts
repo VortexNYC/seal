@@ -158,9 +158,14 @@ export function fieldPlacementAnchor(fieldType: string): "center" | "bottom" {
     : "center";
 }
 
+/** Chip sizes in FIELD_DIMENSIONS are pixels on a letter page, not the zoomed canvas. */
+export const DESIGN_PAGE_WIDTH = 612;
+export const DESIGN_PAGE_HEIGHT = 792;
+
 /**
- * Field size is a fraction of the PDF page. Zoom changes the rendered
- * page, not the stored percent.
+ * Field size is a fraction of a letter page. Zoom changes where the chip
+ * is drawn, not the stored percent. The canvas reports its zoomed pixel
+ * size as the page size, so sizing against that shrinks the field.
  */
 export function fieldPlacementBox(input: {
   naturalWidth: number;
@@ -177,8 +182,8 @@ export function fieldPlacementBox(input: {
 }): { x: number; y: number; width: number; height: number } {
   const scaleX = input.renderedWidth / input.naturalWidth;
   const scaleY = input.renderedHeight / input.naturalHeight;
-  const renderedW = input.widthPx * scaleX;
-  const renderedH = input.heightPx * scaleY;
+  const renderedW = (input.widthPx / DESIGN_PAGE_WIDTH) * input.renderedWidth;
+  const renderedH = (input.heightPx / DESIGN_PAGE_HEIGHT) * input.renderedHeight;
   const localX = input.clientX - input.pageLeft - renderedW / 2;
   const localY =
     input.anchor === "bottom"
@@ -187,8 +192,8 @@ export function fieldPlacementBox(input: {
   return {
     x: pagePercent(localX / scaleX, input.naturalWidth),
     y: pagePercent(localY / scaleY, input.naturalHeight),
-    width: pagePercent(input.widthPx, input.naturalWidth),
-    height: pagePercent(input.heightPx, input.naturalHeight),
+    width: pagePercent(input.widthPx, DESIGN_PAGE_WIDTH),
+    height: pagePercent(input.heightPx, DESIGN_PAGE_HEIGHT),
   };
 }
 

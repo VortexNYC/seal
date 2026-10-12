@@ -41,6 +41,8 @@ import { cn } from "@/lib/utils";
 
 import type { PlacedField } from "./draggable-field";
 import {
+  DESIGN_PAGE_HEIGHT,
+  DESIGN_PAGE_WIDTH,
   centeredPageShift,
   markupClearsBecauseFieldArmed,
   markupExport,
@@ -1482,24 +1484,23 @@ export function DocumentCanvas({
                 className="border-kumo-line bg-kumo-elevated/80 text-kumo-default pointer-events-none absolute rounded-md border text-xs font-medium"
                 style={{
                   width:
-                    placementGhost.width *
-                    (pageBox.width / pageBox.naturalWidth),
+                    (placementGhost.width / DESIGN_PAGE_WIDTH) * pageBox.width,
                   height:
-                    placementGhost.height *
-                    (pageBox.height / pageBox.naturalHeight),
+                    (placementGhost.height / DESIGN_PAGE_HEIGHT) *
+                    pageBox.height,
                   left:
                     ghostPoint.x -
-                    (placementGhost.width *
-                      (pageBox.width / pageBox.naturalWidth)) /
+                    ((placementGhost.width / DESIGN_PAGE_WIDTH) *
+                      pageBox.width) /
                       2,
                   top:
                     placementGhost.anchor === "bottom"
                       ? ghostPoint.y -
-                        placementGhost.height *
-                          (pageBox.height / pageBox.naturalHeight)
+                        (placementGhost.height / DESIGN_PAGE_HEIGHT) *
+                          pageBox.height
                       : ghostPoint.y -
-                        (placementGhost.height *
-                          (pageBox.height / pageBox.naturalHeight)) /
+                        ((placementGhost.height / DESIGN_PAGE_HEIGHT) *
+                          pageBox.height) /
                           2,
                 }}
               >
