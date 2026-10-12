@@ -145,6 +145,28 @@ describe("field spacing", () => {
     );
   });
 
+  it("keeps a date readable when the canvas reports zoomed pixels as the page size", () => {
+    const placed = fieldPlacementBox({
+      naturalWidth: 1300,
+      naturalHeight: 1680,
+      renderedWidth: 1300,
+      renderedHeight: 1680,
+      pageLeft: 0,
+      pageTop: 0,
+      clientX: 1100,
+      clientY: 300,
+      widthPx: FIELD_DIMENSIONS.date.width,
+      heightPx: FIELD_DIMENSIONS.date.height,
+      anchor: "center",
+    });
+    expect(placed.width).toBeCloseTo((FIELD_DIMENSIONS.date.width / 612) * 100, 5);
+    expect(placed.height).toBeCloseTo(
+      (FIELD_DIMENSIONS.date.height / 792) * 100,
+      5
+    );
+    expect(placed.x + placed.width).toBeLessThanOrEqual(100);
+  });
+
   it("anchors a signature on the line under the cursor", () => {
     expect(fieldPlacementAnchor("signature")).toBe("bottom");
     expect(fieldPlacementAnchor("text")).toBe("center");
