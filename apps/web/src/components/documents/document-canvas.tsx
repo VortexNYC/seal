@@ -515,6 +515,7 @@ export type DocumentCanvasProps = {
   }) => void;
   onZoomChange?: (zoom: number) => void;
   enableKeyboardShortcuts?: boolean;
+  documentRef?: string;
   fields?: PlacedField[];
   selectedFieldId?: string | null;
   onFieldSelect?: (fieldId: string | null) => void;
@@ -556,6 +557,7 @@ export function DocumentCanvas({
   onDocumentMeta,
   onZoomChange,
   enableKeyboardShortcuts = true,
+  documentRef,
   fields = [],
   selectedFieldId = null,
   onFieldSelect,
@@ -1467,6 +1469,7 @@ export function DocumentCanvas({
               pageNumber={currentPage}
               pdfWidth={pageBox.width}
               pdfHeight={pageBox.height}
+              documentRef={documentRef}
               interactive={fieldsInteractive}
               fields={fields}
               selectedFieldId={fieldsInteractive ? selectedFieldId : null}

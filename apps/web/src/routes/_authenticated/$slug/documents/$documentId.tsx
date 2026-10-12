@@ -734,6 +734,7 @@ function DocumentDetailPage() {
                     <>
                       <DocumentCanvas
                         src={pdfViewer.pdfUrl}
+                        documentRef={documentPublicId}
                         interaction={canEdit ? "fields" : "view"}
                         suspendMarkup={canEdit && armedField !== null}
                         onClearTool={() => {
@@ -939,6 +940,7 @@ function DocumentDetailPage() {
                   : undefined
               }
               createdAt={documentData.createdAt}
+              sentAt={documentData.sentAt}
               description={documentData.description}
               fileSize={documentData.fileSize ?? 0}
               pageCount={documentData.pageCount}

@@ -41,6 +41,7 @@ export type DocumentNextActionModel =
     }
   | {
       kind: "sign_yourself";
+      ready: boolean;
       onAction: () => void;
     }
   | {
@@ -90,10 +91,15 @@ function copyFor(
         body: "Recipients get an email with their signing link.",
       };
     case "sign_yourself":
-      return {
-        title: "Your turn",
-        body: "You're on this document — complete your fields.",
-      };
+      return model.ready
+        ? {
+            title: "Ready to submit",
+            body: "The signature is on the page. Submit it to finish.",
+          }
+        : {
+            title: "Your turn",
+            body: "You're on this document — complete your fields.",
+          };
     case "waiting":
       return {
         title: statusLabel,
@@ -201,7 +207,7 @@ export function DocumentNextAction({
           icon={Signature}
           onClick={model.onAction}
         >
-          Continue signing
+          {model.ready ? "Submit signature" : "Continue signing"}
         </Button>
         </span>
       ) : null}

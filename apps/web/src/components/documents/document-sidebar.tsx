@@ -50,6 +50,7 @@ interface DocumentSidebarProps {
   // Document metadata
   workflowStatus: DocumentWorkflowStatus | null | undefined;
   createdAt: number;
+  sentAt?: number | null;
   description?: string | null;
   fileSize: number;
   pageCount?: number | null;
@@ -455,6 +456,8 @@ function DocumentDetailsSection({
   pageCount,
   numPages,
   createdAt,
+  sentAt,
+  documentPublicId,
   signatureFields,
   description,
 }: {
@@ -464,6 +467,8 @@ function DocumentDetailsSection({
   pageCount?: number | null;
   numPages: number | null;
   createdAt: number;
+  sentAt?: number | null;
+  documentPublicId: string;
   signatureFields: FieldListField[];
   description?: string | null;
 }) {
@@ -489,6 +494,19 @@ function DocumentDetailsSection({
           <DetailMetric label="Pages" value={pageCount || numPages || "—"} />
           <DetailMetric label="Uploaded" value={formatDate(createdAt)} />
           <DetailMetric label="Fields" value={signatureFields.length} />
+          <DetailMetric label="Document ID" value={documentPublicId} />
+          {sentAt ? (
+            <DetailMetric
+              label="Sent"
+              value={new Intl.DateTimeFormat("en-US", {
+                month: "2-digit",
+                day: "2-digit",
+                year: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+              }).format(sentAt)}
+            />
+          ) : null}
         </div>
         {description && (
           <LayerCard className="col-span-2 mt-4 p-3">
@@ -590,6 +608,7 @@ function buildNextActionModel(input: {
   isDraftBuilder: boolean;
   isCompleted: boolean;
   signingRecipient: InAppRecipient | null;
+  signatureSaved: boolean;
   recipients: FieldListRecipient[];
   signatureFields: FieldListField[];
   canSend: boolean;
@@ -616,6 +635,7 @@ function buildNextActionModel(input: {
   if (input.signingRecipient) {
     return {
       kind: "sign_yourself",
+      ready: input.signatureSaved,
       onAction: () => input.onEnsureSection("your-signature"),
     };
   }
@@ -686,10 +706,15 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
       ? `${pendingRecipients} recipient${pendingRecipients === 1 ? "" : "s"} still need to act.`
       : "Waiting on the next step in this envelope.";
 
+  const requiredMine = props.currentUserFields.filter((field) => field.isRequired);
+  const signatureSaved =
+    requiredMine.length > 0 && requiredMine.every((field) => field.isFilled);
+
   const nextAction = buildNextActionModel({
     isDraftBuilder,
     isCompleted: normalizedWorkflowStatus === "completed",
     signingRecipient,
+    signatureSaved,
     recipients: props.recipients,
     signatureFields: props.signatureFields,
     canSend: props.canSend,
@@ -811,6 +836,8 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
           pageCount={props.pageCount}
           numPages={props.numPages}
           createdAt={props.createdAt}
+          sentAt={props.sentAt}
+          documentPublicId={props.documentPublicId}
           signatureFields={props.signatureFields}
           description={props.description}
         />

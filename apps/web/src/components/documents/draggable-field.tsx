@@ -9,7 +9,7 @@ import {
   Transformer,
 } from "react-konva";
 
-import { filledFieldText } from "@/lib/field-appearance";
+import { filledFieldText, signatureMarkFrame } from "@/lib/field-appearance";
 
 import {
   FIELD_ICON_SIZE,
@@ -75,6 +75,9 @@ interface DraggableFieldProps {
   onSelect: () => void;
   onDragEnd: (x: number, y: number) => void;
   onTransformEnd: (x: number, y: number, width: number, height: number) => void;
+  pageWidth: number;
+  pageHeight: number;
+  documentRef?: string;
   /** Map of recipientId to index for color assignment */
   recipientIndexMap?: Map<string, number>;
   /** If true, use recipient colors instead of field type colors */
@@ -107,6 +110,12 @@ type StandardFieldProps = FieldRendererProps & {
   readonly sealIcon: HTMLImageElement | null;
 };
 
+type FieldContentProps = StandardFieldProps & {
+  readonly pageWidth: number;
+  readonly pageHeight: number;
+  readonly documentRef?: string;
+};
+
 type SidebarMetrics = {
   readonly iconSize: number;
   readonly sidebarWidth: number;
@@ -136,6 +145,9 @@ export function DraggableField({
   onSelect,
   onDragEnd,
   onTransformEnd,
+  pageWidth,
+  pageHeight,
+  documentRef,
   recipientIndexMap,
   useRecipientColors = false,
 }: DraggableFieldProps) {
@@ -227,6 +239,9 @@ export function DraggableField({
           isUnassigned={renderState.isUnassigned}
           label={renderState.label}
           sealIcon={sealIcon}
+          pageWidth={pageWidth}
+          pageHeight={pageHeight}
+          documentRef={documentRef}
         />
       </Group>
 
@@ -284,7 +299,10 @@ function FieldContent({
   isUnassigned,
   label,
   sealIcon,
-}: StandardFieldProps) {
+  pageWidth,
+  pageHeight,
+  documentRef,
+}: FieldContentProps) {
   if (field.signatureData?.signedAt) {
     return (
       <FilledFieldStamp
@@ -292,6 +310,9 @@ function FieldContent({
         field={field}
         isSelected={isSelected}
         sealIcon={sealIcon}
+        pageWidth={pageWidth}
+        pageHeight={pageHeight}
+        documentRef={documentRef}
       />
     );
   }
@@ -669,13 +690,70 @@ function PaymentFieldLabel({
   );
 }
 
+const SIGNATURE_CAPTION = "#595961";
+
 function FilledFieldStamp({
   field,
+  pageWidth,
+  pageHeight,
+  documentRef,
 }: FieldRendererProps & {
   readonly sealIcon: HTMLImageElement | null;
+  readonly pageWidth: number;
+  readonly pageHeight: number;
+  readonly documentRef?: string;
 }) {
   const image = useLoadedImage(field.signatureData?.signatureImageUrl);
   const text = filledFieldText(field.fieldType, field.signatureData?.value);
+  const isSignature =
+    field.fieldType === "signature" || field.fieldType === "free_signature";
+  if (image && isSignature && pageWidth > 0 && pageHeight > 0) {
+    const frame = signatureMarkFrame(field, {
+      width: pageWidth,
+      height: pageHeight,
+    });
+    const scale = Math.min(
+      frame.width / image.naturalWidth,
+      frame.height / image.naturalHeight
+    );
+    const drawW = image.naturalWidth * scale;
+    const drawH = image.naturalHeight * scale;
+    const stamp = documentRef?.trim();
+    return (
+      <>
+        <Text
+          x={frame.x}
+          y={frame.y - 11}
+          width={frame.width}
+          text="Signed by:"
+          fontSize={8}
+          fontFamily={FIELD_FONT}
+          fill={SIGNATURE_CAPTION}
+          listening={false}
+        />
+        <KonvaImage
+          image={image}
+          x={frame.x}
+          y={frame.y + frame.height - drawH}
+          width={drawW}
+          height={drawH}
+          listening={false}
+        />
+        {stamp ? (
+          <Text
+            x={frame.x}
+            y={frame.y + frame.height + 1}
+            width={frame.width}
+            text={stamp}
+            fontSize={7}
+            fontFamily={FIELD_FONT}
+            fill={SIGNATURE_CAPTION}
+            listening={false}
+          />
+        ) : null}
+      </>
+    );
+  }
   return (
     <>
       <Rect

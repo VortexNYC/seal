@@ -29,7 +29,8 @@ describe("workflow status", () => {
 
   it("offers the signed file once the envelope is finished", () => {
     expect(documentHeaderAction("completed")).toBe("download");
-    expect(documentHeaderAction("sent")).toBe("send");
+    expect(documentHeaderAction("sent")).toBe("download");
+    expect(documentHeaderAction("in_progress")).toBe("download");
     expect(documentHeaderAction("draft")).toBe("send");
     expect(documentHeaderAction(undefined)).toBe("send");
     expect(signedPdfFilename("seal-markup.pdf")).toBe("seal-markup.pdf");

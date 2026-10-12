@@ -92,6 +92,17 @@ export function InAppSigningSection({
         label: "Declined",
       };
     }
+    if (
+      requiredFields.length > 0 &&
+      filledRequiredFields.length >= requiredFields.length
+    ) {
+      return {
+        bgColor: "bg-kumo-elevated",
+        textColor: "text-kumo-default",
+        icon: CheckCircleIcon,
+        label: "Ready to submit",
+      };
+    }
     return {
       bgColor: "bg-kumo-elevated",
       textColor: "text-kumo-secondary",
@@ -156,8 +167,12 @@ export function InAppSigningSection({
           <div className="mt-4 space-y-2">
             {signingHref ? (
               <>
-                <Text as="p" variant="secondary" size="sm">Open the secure signing page to review and complete your
-                  fields.</Text>
+                <Text as="p" variant="secondary" size="sm">
+                  {filledRequiredFields.length >= requiredFields.length &&
+                  requiredFields.length > 0
+                    ? "The signature is on the page. Submit it to finish."
+                    : "Open the secure signing page to review and complete your fields."}
+                </Text>
                 <Button
                   className="w-full"
                   size="lg"

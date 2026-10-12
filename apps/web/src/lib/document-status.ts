@@ -44,11 +44,19 @@ export function recipientFacingStatus(
   return recipientStatus;
 }
 
-/** A finished envelope offers the signed file. Every other state can still send. */
+/** A sent envelope is already out. Download it. Send stays for drafts. */
 export function documentHeaderAction(
   status: string | undefined
 ): "download" | "send" {
-  return status === "completed" ? "download" : "send";
+  if (
+    status === "completed" ||
+    status === "sent" ||
+    status === "in_progress" ||
+    status === "waiting_for_payment"
+  ) {
+    return "download";
+  }
+  return "send";
 }
 
 const LIVE_DOCUMENT_STATUSES = new Set([

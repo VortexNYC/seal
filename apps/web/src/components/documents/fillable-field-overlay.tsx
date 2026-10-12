@@ -3,7 +3,7 @@ import { Button } from "@cloudflare/kumo/components/button";
 import { Calendar as CalendarIcon, CaretDown as ChevronDownIcon, CheckSquare as CheckSquareIcon, RadioButton as CircleDotIcon, CreditCard as CreditCardIcon, File as FileIcon, Hash as HashIcon, PenNib as PenToolIcon, Star as StarIcon, TextT as TypeIcon } from "@phosphor-icons/react";
 import { forwardRef } from "react";
 
-import { filledFieldText } from "@/lib/field-appearance";
+import { filledFieldText, signatureMarkFrame } from "@/lib/field-appearance";
 import { FIELD_TYPE_LABELS, isFieldType } from "@/lib/field-types";
 import { formatMoney, money } from "@/lib/money";
 
@@ -37,6 +37,7 @@ interface FillableFieldOverlayProps {
   isFilled: boolean;
   currentValue?: string | null;
   currentSignatureImageUrl?: string | null;
+  documentRef?: string;
   isActive?: boolean;
   validationError?: string;
   signatureDetails?: SignatureDetails;
@@ -149,6 +150,7 @@ export const FillableFieldOverlay = forwardRef<
     isFilled,
     currentValue,
     currentSignatureImageUrl,
+    documentRef,
     isActive = false,
     validationError,
     signatureDetails,
@@ -173,9 +175,17 @@ export const FillableFieldOverlay = forwardRef<
 
   if (isFilledField && signatureDetails) {
     const appearance = filledFieldText(fieldType, currentValue);
+    const isSignature = fieldType === "signature" || fieldType === "free_signature";
+    const frame =
+      currentSignatureImageUrl && isSignature
+        ? signatureMarkFrame(
+            { width: absoluteWidth, height: absoluteHeight },
+            { width: pdfPageWidth, height: pdfPageHeight }
+          )
+        : null;
     return (
       <div
-        className="absolute overflow-hidden bg-white"
+        className={frame ? "absolute overflow-visible" : "absolute overflow-hidden bg-white"}
         style={{
           left: `${absoluteX}px`,
           top: `${absoluteY}px`,
@@ -183,7 +193,43 @@ export const FillableFieldOverlay = forwardRef<
           height: `${absoluteHeight}px`,
         }}
       >
-        {currentSignatureImageUrl ? (
+        {frame && currentSignatureImageUrl ? (
+          <>
+            <span
+              className="absolute text-[8px] leading-none"
+              style={{
+                left: frame.x,
+                top: frame.y - 11,
+                color: "#595961",
+              }}
+            >
+              Signed by:
+            </span>
+            <img
+              src={currentSignatureImageUrl}
+              alt=""
+              className="absolute object-contain object-left-bottom"
+              style={{
+                left: frame.x,
+                top: frame.y,
+                width: frame.width,
+                height: frame.height,
+              }}
+            />
+            {documentRef ? (
+              <span
+                className="absolute text-[7px] leading-none"
+                style={{
+                  left: frame.x,
+                  top: frame.y + frame.height + 1,
+                  color: "#595961",
+                }}
+              >
+                {documentRef}
+              </span>
+            ) : null}
+          </>
+        ) : currentSignatureImageUrl ? (
           <img
             src={currentSignatureImageUrl}
             alt=""

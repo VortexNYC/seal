@@ -1,18 +1,3 @@
-const MONTHS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-] as const;
-
 /** What a filled field shows: the value, not a signature certificate. */
 export function filledFieldText(
   fieldType: string,
@@ -44,10 +29,26 @@ export function filledFieldText(
 function calendarLabel(value: string): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
   if (!match) return value;
-  const month = MONTHS[Number(match[2]) - 1];
+  const month = Number(match[2]);
   const day = Number(match[3]);
-  if (!month || day < 1 || day > 31) return value;
-  return `${month} ${day}, ${match[1]}`;
+  if (month < 1 || month > 12 || day < 1 || day > 31) return value;
+  return `${match[2]}/${match[3]}/${match[1]}`;
+}
+
+/** A short placed signature still has to be readable on the rule. */
+export function signatureMarkFrame(
+  field: { width: number; height: number },
+  page: { width: number; height: number }
+): { x: number; y: number; width: number; height: number } {
+  const width = Math.min(
+    Math.max(field.width, page.width * (168 / 612)),
+    Math.max(24, page.width - 8)
+  );
+  const height = Math.min(
+    Math.max(field.height, page.height * (36 / 792)),
+    page.height * (52 / 792)
+  );
+  return { x: 0, y: field.height - height, width, height };
 }
 
 function checkboxChecked(value: string): boolean {
