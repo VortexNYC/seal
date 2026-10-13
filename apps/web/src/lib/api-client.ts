@@ -1267,6 +1267,22 @@ export async function downloadDocument(
   }
   return response.blob();
 }
+
+export async function downloadCertificate(
+  organizationSlug: string,
+  publicId: string
+): Promise<Blob> {
+  const response = await fetch(
+    `${getBaseUrl()}/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/certificate`,
+    { credentials: "include" }
+  );
+  if (!response.ok) {
+    const text = await response.text().catch(() => "Unknown error");
+    throw new Error(`API error ${response.status}: ${text}`);
+  }
+  return response.blob();
+}
+
 export async function copyDocument(
   organizationSlug: string,
   publicId: string

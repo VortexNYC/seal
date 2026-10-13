@@ -43,6 +43,7 @@ import {
   getAuditRequestMeta,
   writeAuditLog,
 } from "../platform/audit-log.js";
+import { certificateStorageKey } from "../platform/certificate-of-completion.js";
 import { generateAndStoreCertificateOfCompletion } from "../platform/certificate-store.js";
 import {
   auditMetaFromContext,
@@ -1562,6 +1563,86 @@ const recipientResponse = (recipient: {
   hasAccessCode: !!recipient.accessCodeHash,
   createdAt: recipient.createdAt.getTime(),
   updatedAt: recipient.updatedAt.getTime(),
+});
+
+const certificateRouteDef = createRoute({
+  method: "get",
+  path: "/{slug}/{publicId}/certificate",
+  request: {
+    params: z.object({ publicId: z.string() }),
+  },
+  responses: {
+    200: { description: "Certificate of Completion PDF" },
+    404: { description: "Certificate not available" },
+    503: { description: "Object storage not configured" },
+  },
+});
+
+app.openapi(certificateRouteDef, async (c) => {
+  const organizationId = c.get("organization").id;
+  const { publicId } = c.req.valid("param");
+  const bucket = c.env.DOCUMENTS_BUCKET;
+  if (!bucket) {
+    return c.json({ error: "Object storage not configured" }, 503);
+  }
+
+  const db = createD1(c.env.D1);
+  const rows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+  const doc = rows[0];
+  if (!doc || doc.status !== "completed") {
+    return c.json({ error: "Certificate not available until completed" }, 404);
+  }
+
+  const key = certificateStorageKey(doc.organizationId, doc.id);
+  let object = await bucket.get(key);
+  if ((!object || !object.body) && c.env.APP_URL) {
+    await generateAndStoreCertificateOfCompletion({
+      db,
+      bucket,
+      documentId: doc.id,
+      appUrl: c.env.APP_URL,
+    });
+    object = await bucket.get(key);
+  }
+  if (!object || !object.body) {
+    return c.json({ error: "Certificate not found" }, 404);
+  }
+
+  const sessionUser = c.get("user");
+  if (sessionUser?.user?.id) {
+    await tryAuditDocumentByteAccess(
+      db,
+      {
+        organizationId,
+        actor: { type: "user", id: sessionUser.user.id },
+        documentId: doc.id,
+        via: "session-certificate",
+        metadata: {
+          publicId: doc.publicId,
+          artifact: "certificate_of_completion",
+        },
+        ...auditMetaFromContext(c),
+      },
+      "session-certificate"
+    );
+  }
+
+  const filename = `${(doc.name || "document").replace(/["\r\n]/g, "")}-certificate.pdf`;
+  const headers: Record<string, string> = {
+    "content-type": "application/pdf",
+    "content-disposition": `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+  };
+  if (object.size) headers["content-length"] = String(object.size);
+  return c.body(object.body, { headers });
 });
 
 const addRecipientsBodySchema = z.object({
