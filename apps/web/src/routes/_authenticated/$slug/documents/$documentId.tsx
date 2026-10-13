@@ -9,7 +9,19 @@ import {
   createFileRoute,
   useRouter,
 } from "@tanstack/react-router";
-import { ArrowLeft as ArrowLeftIcon, Copy as CopyIcon, DownloadSimple as DownloadIcon, DotsThree as MoreIcon, FloppyDisk as SaveIcon, Folder as FolderIcon, PaperPlaneTilt as SendIcon, Printer as PrinterIcon, ShareFat as ForwardIcon } from "@phosphor-icons/react";
+import {
+  ArrowLeft as ArrowLeftIcon,
+  ClockCounterClockwise as HistoryIcon,
+  Copy as CopyIcon,
+  DownloadSimple as DownloadIcon,
+  DotsThree as MoreIcon,
+  FloppyDisk as SaveIcon,
+  Folder as FolderIcon,
+  PaperPlaneTilt as SendIcon,
+  Printer as PrinterIcon,
+  ShareFat as ForwardIcon,
+  Trash as TrashIcon,
+} from "@phosphor-icons/react";
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 
 import { DocumentToolRow } from "@/components/documents/document-tool-row";
@@ -30,6 +42,8 @@ import {
   addRecipients as addRecipientsApi,
   cancelDocument,
   copyDocument,
+  deleteDocument,
+  downloadCertificate,
   downloadDocument,
   getSigningSettings,
   moveDocumentsToFolder,
@@ -51,6 +65,8 @@ import { MoveToFolderDialog } from "@/components/folders/move-to-folder-dialog";
 import { AddMyselfDialog } from "../../../../components/documents/add-myself-dialog";
 import { AddRecipientDialog } from "../../../../components/documents/add-recipient-dialog";
 import { DeleteFieldDialog } from "../../../../components/documents/delete-field-dialog";
+import { DeleteEnvelopeDialog } from "../../../../components/documents/delete-envelope-dialog";
+import { EnvelopeHistoryDialog } from "../../../../components/documents/envelope-history-dialog";
 import { ForwardDocumentDialog } from "../../../../components/documents/forward-document-dialog";
 import { DocumentCanvas } from "../../../../components/documents/document-canvas";
 import { DocumentPresence } from "../../../../components/documents/document-presence";
@@ -334,6 +350,8 @@ function DocumentDetailPage() {
   const docState = useDocumentState(documentData.redirectUrl ?? "");
   const [moveOpen, setMoveOpen] = useState(false);
   const [forwardOpen, setForwardOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const { openSections, toggleSection } = useSectionState();
 
@@ -789,6 +807,18 @@ function DocumentDetailPage() {
                   Forward
                 </DropdownMenu.Item>
               ) : null}
+              <DropdownMenu.Item
+                icon={HistoryIcon}
+                onClick={() => setHistoryOpen(true)}
+              >
+                History
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                icon={TrashIcon}
+                onClick={() => setDeleteOpen(true)}
+              >
+                Delete
+              </DropdownMenu.Item>
             </DropdownMenu.Content>
           </DropdownMenu>
         </div>
@@ -1288,6 +1318,48 @@ function DocumentDetailPage() {
         organizationSlug={slug}
         documentId={documentPublicId}
         documentName={documentData.name}
+      />
+      <EnvelopeHistoryDialog
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        documentName={documentData.name}
+        events={activityEvents}
+        completed={documentData.workflowStatus === "completed"}
+        onDownloadCertificate={() => {
+          void downloadCertificate(slug, documentPublicId)
+            .then((blob) => {
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement("a");
+              link.href = url;
+              link.download = `${documentData.name}-certificate.pdf`;
+              document.body.appendChild(link);
+              link.click();
+              link.remove();
+              setTimeout(() => URL.revokeObjectURL(url), 60_000);
+            })
+            .catch(() => {
+              toast.error("Could not download the certificate");
+            });
+        }}
+      />
+      <DeleteEnvelopeDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        documentName={documentData.name}
+        onDelete={async () => {
+          try {
+            await deleteDocument(slug, documentPublicId);
+            toast.success("Document deleted");
+            setDeleteOpen(false);
+            await router.navigate({
+              to: "/$slug/documents",
+              params: { slug },
+              search: { folderId: undefined },
+            });
+          } catch {
+            toast.error("Could not delete the document");
+          }
+        }}
       />
     </PageWrapper>
   );
