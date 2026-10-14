@@ -5,6 +5,7 @@ import {
   downloadShouldBurnInk,
   fieldBurnText,
   finalPdfStorageKey,
+  signatureCaptionY,
   signatureInkBox,
   signatureStamp,
   isTruthyCheckbox,
@@ -204,6 +205,9 @@ describe("final-pdf (SEA-49 L1a)", () => {
     expect(signatureStamp("bb91c6f9-dd96-4540-9148-f36033570dd2")).toBe(
       "BB91C6F9DD96"
     );
+    const captionY = signatureCaptionY(box, 792);
+    expect(captionY).toBeGreaterThanOrEqual(box.y);
+    expect(captionY).toBeLessThan(box.y + box.height);
   });
 
   it("skips empty fields without failing", async () => {

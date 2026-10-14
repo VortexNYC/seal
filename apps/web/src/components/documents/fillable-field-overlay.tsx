@@ -5,6 +5,7 @@ import { forwardRef, type ReactElement } from "react";
 
 import {
   filledFieldText,
+  signatureCaptionOffset,
   signatureMarkFrame,
   signatureStamp,
 } from "@/lib/field-appearance";
@@ -144,17 +145,15 @@ function SignatureOnRule({
 }): ReactElement {
   const stamp = documentRef ? signatureStamp(documentRef) : "";
   const roomForStamp = stamp ? 52 : 0;
-  const caption = frame.height >= 24;
+  const captionOffset = signatureCaptionOffset(frame.height);
   return (
     <>
-      {caption ? (
-        <span
-          className="absolute text-[8px] leading-none"
-          style={{ left: frame.x, top: frame.y - 11, color: "#595961" }}
-        >
-          Signed by:
-        </span>
-      ) : null}
+      <span
+        className="absolute text-[8px] leading-none"
+        style={{ left: frame.x, top: frame.y + captionOffset, color: "#595961" }}
+      >
+        Signed by:
+      </span>
       <img
         src={imageUrl}
         alt=""
@@ -171,7 +170,10 @@ function SignatureOnRule({
           className="absolute text-[7px] leading-none"
           style={{
             left: frame.x + Math.max(frame.width - roomForStamp, 8) + 3,
-            top: caption ? frame.y + frame.height + 1 : frame.y + frame.height - 8,
+            top:
+              captionOffset === 0
+                ? frame.y + frame.height - 8
+                : frame.y + frame.height + 1,
             color: "#595961",
           }}
         >

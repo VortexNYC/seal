@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   filledFieldText,
+  signatureCaptionOffset,
   signatureMarkFrame,
   signatureStamp,
 } from "./field-appearance";
@@ -30,6 +31,8 @@ describe("filled field text", () => {
     expect(frame.width).toBeGreaterThanOrEqual(140);
     expect(frame.height).toBe(13);
     expect(frame.y).toBe(0);
+    expect(signatureCaptionOffset(frame.height)).toBe(0);
+    expect(signatureCaptionOffset(24)).toBe(-11);
   });
 
   it("stamps a short document id under the name", () => {
