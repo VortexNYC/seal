@@ -25,7 +25,7 @@ traces = { enabled = true, head_sampling_rate = 0.1 }
 [[d1_databases]]
 binding = "D1"
 database_name = "seal-dev"
-database_id = "87e149a4-908f-4380-a70f-cc2f02f68a07"
+database_id = "712fe47b-6d6c-4d00-a05e-2df5b3bcb683"
 migrations_dir = "migrations"
 
 [[send_email]]
@@ -80,7 +80,7 @@ traces = { enabled = true, head_sampling_rate = 0.1 }
 [[env.production.d1_databases]]
 binding = "D1"
 database_name = "seal-global"
-database_id = "b49f3f65-510b-4b15-849e-8b64258a3d8e"
+database_id = "05d96228-f9cb-4486-8f6f-9f2c3de4ce4a"
 migrations_dir = "migrations"
 
 [[env.production.send_email]]

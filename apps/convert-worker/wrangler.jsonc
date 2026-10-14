@@ -22,7 +22,7 @@
     },
     {
       "class_name": "PdfTools",
-      "image": "registry.cloudflare.com/31bfc2c14a28e0a39e8b9e3c556a18be/seal-pdf-tools:v3",
+      "image": "registry.cloudflare.com/953346ce1b4f27fa04a76d83aeccab28/seal-pdf-tools:v3",
       "max_instances": 5,
       "instance_type": "basic",
     },
@@ -61,7 +61,7 @@
         },
         {
           "class_name": "PdfTools",
-          "image": "registry.cloudflare.com/31bfc2c14a28e0a39e8b9e3c556a18be/seal-pdf-tools:v3",
+          "image": "registry.cloudflare.com/953346ce1b4f27fa04a76d83aeccab28/seal-pdf-tools:v3",
           "max_instances": 5,
           "instance_type": "basic",
         },
