@@ -41,6 +41,14 @@ export function signatureStamp(documentRef: string): string {
   return compact.slice(0, 12);
 }
 
+/**
+ * Tall marks lift "Signed by:" above the box. A short line keeps it at the
+ * top of the box, on the ink, so the form label above the rule stays.
+ */
+export function signatureCaptionOffset(height: number): number {
+  return height >= 24 ? -11 : 0;
+}
+
 /** Widen a short signature along the rule. Keep the placed height so the mark stays on the line. */
 export function signatureMarkFrame(
   field: { width: number; height: number },

@@ -11,6 +11,7 @@ import {
 
 import {
   filledFieldText,
+  signatureCaptionOffset,
   signatureMarkFrame,
   signatureStamp,
 } from "@/lib/field-appearance";
@@ -724,21 +725,19 @@ function FilledFieldStamp({
     );
     const drawW = image.naturalWidth * scale;
     const drawH = image.naturalHeight * scale;
-    const caption = frame.height >= 24;
+    const captionOffset = signatureCaptionOffset(frame.height);
     return (
       <>
-        {caption ? (
-          <Text
-            x={frame.x}
-            y={frame.y - 11}
-            width={frame.width}
-            text="Signed by:"
-            fontSize={8}
-            fontFamily={FIELD_FONT}
-            fill={SIGNATURE_CAPTION}
-            listening={false}
-          />
-        ) : null}
+        <Text
+          x={frame.x}
+          y={frame.y + captionOffset}
+          width={frame.width}
+          text="Signed by:"
+          fontSize={8}
+          fontFamily={FIELD_FONT}
+          fill={SIGNATURE_CAPTION}
+          listening={false}
+        />
         <KonvaImage
           image={image}
           x={frame.x}
@@ -750,7 +749,11 @@ function FilledFieldStamp({
         {stamp ? (
           <Text
             x={frame.x + drawW + 3}
-            y={caption ? frame.y + frame.height + 1 : frame.y + frame.height - 8}
+            y={
+              captionOffset === 0
+                ? frame.y + frame.height - 8
+                : frame.y + frame.height + 1
+            }
             width={Math.max(roomForStamp, 8)}
             text={stamp}
             fontSize={7}

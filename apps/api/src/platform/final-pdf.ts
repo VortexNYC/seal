@@ -162,6 +162,20 @@ export function signatureStamp(documentRef: string): string {
  * Widen a short signature along the rule. Do not grow it upward:
  * the placed box is the line, and the form label sits just above it.
  */
+/**
+ * Tall marks get "Signed by:" above the box. A short line keeps the
+ * caption inside the box, on the ink, so the form label above the rule stays.
+ */
+export function signatureCaptionY(
+  box: { y: number; height: number },
+  pageHeight: number
+): number {
+  if (box.height >= 24) {
+    return Math.min(box.y + box.height + 2, pageHeight - 10);
+  }
+  return box.y + Math.max(box.height - 7, 0);
+}
+
 export function signatureInkBox(input: {
   x: number;
   y: number;
@@ -306,11 +320,10 @@ export async function flattenFieldsIntoPdf(
         );
         const drawW = image.width * scale;
         const drawH = image.height * scale;
-        if (type === "signature" && box.height >= 24) {
-          const captionY = Math.min(box.y + box.height + 2, ph - 10);
+        if (type === "signature") {
           page.drawText("Signed by:", {
             x: box.x,
-            y: captionY,
+            y: signatureCaptionY(box, ph),
             size: 7,
             font,
             color: rgb(0.35, 0.35, 0.38),
