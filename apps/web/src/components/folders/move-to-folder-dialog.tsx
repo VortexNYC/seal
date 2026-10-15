@@ -9,11 +9,13 @@
 
 import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
-import { useQuery } from "@tanstack/react-query";
-import { CaretRight as ChevronRight, Folder as FolderIcon, House as Home } from "@phosphor-icons/react";
+import { Input } from "@cloudflare/kumo/components/input";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CaretRight as ChevronRight, Folder as FolderIcon, FolderPlus, House as Home } from "@phosphor-icons/react";
 import { useCallback, useMemo, useState } from "react";
 
-import { getAllFolders, type ApiFolder } from "@/lib/api-client";
+import { createFolder, getAllFolders, type ApiFolder } from "@/lib/api-client";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 interface MoveToFolderDialogProps {
@@ -126,10 +128,21 @@ export function MoveToFolderDialog({
     [apiFolders]
   );
 
+  const queryClient = useQueryClient();
   const [selectedFolderId, setSelectedFolderId] = useState<string | undefined>(
     undefined
   );
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [namingFolder, setNamingFolder] = useState(false);
+  const [folderName, setFolderName] = useState("");
+  const createFolderMutation = useMutation({
+    mutationFn: (name: string) =>
+      createFolder(organizationSlug, {
+        name,
+        type,
+        parentId: selectedFolderId,
+      }),
+  });
 
   const excludedSet = useMemo(
     () =>
@@ -162,11 +175,33 @@ export function MoveToFolderDialog({
   }, [onMove, selectedFolderId, onOpenChange]);
 
   // Reset selection when dialog opens
+  const createNamedFolder = useCallback(async () => {
+    const trimmed = folderName.trim();
+    if (!trimmed || trimmed.length > 100) return;
+    try {
+      const created = await createFolderMutation.mutateAsync(trimmed);
+      if (selectedFolderId) {
+        setExpandedIds((prev) => new Set(prev).add(selectedFolderId));
+      }
+      setSelectedFolderId(created.publicId);
+      setFolderName("");
+      setNamingFolder(false);
+      toast.success(`Folder "${trimmed}" created`);
+      void queryClient.invalidateQueries({ queryKey: ["api", "folders"] });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to create folder";
+      toast.error(message);
+    }
+  }, [createFolderMutation, folderName, queryClient, selectedFolderId]);
+
   const handleOpenChange = useCallback(
     (nextOpen: boolean) => {
       if (nextOpen) {
         setSelectedFolderId(undefined);
         setExpandedIds(new Set());
+        setNamingFolder(false);
+        setFolderName("");
       }
       onOpenChange(nextOpen);
     },
@@ -217,6 +252,42 @@ export function MoveToFolderDialog({
             ))
           )}
         </div>
+
+        {namingFolder ? (
+          <div className="mt-3 flex items-end gap-2">
+            <div className="min-w-0 flex-1">
+              <Input
+                label="Folder name"
+                value={folderName}
+                onChange={(event) => setFolderName(event.target.value.slice(0, 100))}
+                placeholder="e.g. Contracts"
+                maxLength={100}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    void createNamedFolder();
+                  }
+                }}
+              />
+            </div>
+            <Button
+              onClick={() => void createNamedFolder()}
+              disabled={!folderName.trim() || createFolderMutation.isPending}
+              loading={createFolderMutation.isPending}
+            >
+              Create
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="ghost"
+            className="mt-3"
+            icon={FolderPlus}
+            onClick={() => setNamingFolder(true)}
+          >
+            New Folder
+          </Button>
+        )}
 
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
