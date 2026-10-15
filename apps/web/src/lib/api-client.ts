@@ -1206,6 +1206,16 @@ export async function uploadDocument(
     }
   );
 }
+export async function restoreDocument(
+  organizationSlug: string,
+  publicId: string
+): Promise<void> {
+  await apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/restore`,
+    z.object({ success: z.boolean() }),
+    { method: "POST" }
+  );
+}
 export async function deleteDocument(
   organizationSlug: string,
   publicId: string

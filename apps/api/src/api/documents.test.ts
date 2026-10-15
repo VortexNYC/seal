@@ -347,6 +347,48 @@ describe("documents API", () => {
       .from(documents)
       .where(eq(documents.publicId, publicId));
     expect(rows[0]?.documentStatus).toBe("deleted");
+
+    const hidden = documentListSchema.parse(
+      await parseJson(
+        await app.fetch(
+          new Request("http://localhost:8787/api/documents/test-org"),
+          env
+        )
+      )
+    );
+    expect(hidden.map((doc) => doc.name)).not.toContain("Delete Me");
+
+    const bin = documentListSchema.parse(
+      await parseJson(
+        await app.fetch(
+          new Request(
+            "http://localhost:8787/api/documents/test-org?workflowStatus=deleted"
+          ),
+          env
+        )
+      )
+    );
+    expect(bin.map((doc) => doc.name)).toEqual(["Delete Me"]);
+
+    const restored = z
+      .object({ success: z.boolean() })
+      .parse(
+        await parseJson(
+          await app.fetch(
+            new Request(
+              `http://localhost:8787/api/documents/test-org/${publicId}/restore`,
+              { method: "POST" }
+            ),
+            env
+          )
+        )
+      );
+    expect(restored.success).toBe(true);
+    const after = await db
+      .select({ documentStatus: documents.documentStatus })
+      .from(documents)
+      .where(eq(documents.publicId, publicId));
+    expect(after[0]?.documentStatus).toBe("active");
   });
 
   it("sends a draft document", async () => {

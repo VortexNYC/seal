@@ -55,6 +55,7 @@ import { useSuspenseOrganization } from "@/hooks/use-organization";
 import {
   cancelDocument as cancelDocumentApi,
   deleteDocument as deleteDocumentApi,
+  restoreDocument as restoreDocumentApi,
   downloadDocument,
   getDocuments,
   getFolders,
@@ -116,7 +117,8 @@ type WorkflowStatusFilter =
   | "needs_you"
   | "draft"
   | "outgoing"
-  | "done";
+  | "done"
+  | "deleted";
 
 type ViewMode = "grid" | "table" | "finder";
 type SortField = "attention" | "name" | "createdAt" | "workflowStatus";
@@ -240,6 +242,8 @@ type DocumentListActions = {
   readonly shareDocument: (documentId: string, documentName: string) => void;
   readonly moveToFolder: (documentId: string) => void;
   readonly deleteDocument: (documentId: string) => void;
+  readonly restoreDocument: (documentId: string) => void;
+  readonly inBin: boolean;
   readonly transferOwnership: (doc: {
     _id: string;
     name: string;
@@ -290,7 +294,7 @@ function confirmDialogContent(
       return {
         title: "Delete Document",
         description:
-          "Are you sure you want to delete this document? This action cannot be undone.",
+          "This document leaves the list. Open Deleted to put it back.",
       };
     case "send":
       return {
@@ -344,7 +348,7 @@ function documentMatchesFolder(
   status: DocumentWorkflowStatus,
   filter: WorkflowStatusFilter
 ): boolean {
-  if (filter === "all") return true;
+  if (filter === "all" || filter === "deleted") return true;
   if (filter === "needs_you") {
     return (
       status === "sent" ||
@@ -390,6 +394,7 @@ function folderLabel(filter: WorkflowStatusFilter): string {
   if (filter === "outgoing") return "Sent";
   if (filter === "done") return "Done";
   if (filter === "draft") return "Drafts";
+  if (filter === "deleted") return "Deleted";
   return "Any status";
 }
 
@@ -863,14 +868,19 @@ function DocumentActionsMenu({
         <DropdownMenu.Item onClick={() => actions.openDocument(doc._id)} icon={FileTextIcon}>
           Open
         </DropdownMenu.Item>
-        {canSend && (
+        {actions.inBin ? (
+          <DropdownMenu.Item onClick={() => actions.restoreDocument(doc._id)}>
+            Restore
+          </DropdownMenu.Item>
+        ) : null}
+        {!actions.inBin && canSend && (
           <DropdownMenu.Item onClick={() => actions.sendDocument(doc._id)} icon={SendIcon}>
             {workflowStatus === "expired"
               ? "Re-send Document"
               : "Send Document"}
           </DropdownMenu.Item>
         )}
-        {canCancel && (
+        {!actions.inBin && canCancel && (
           <DropdownMenu.Item
             onClick={() => actions.cancelDocument(doc._id)}
             variant="danger"
@@ -878,28 +888,36 @@ function DocumentActionsMenu({
             Cancel Document
           </DropdownMenu.Item>
         )}
-        <DropdownMenu.Item onClick={() => actions.downloadDocument(doc._id)} icon={DownloadIcon}>
-          Download
-        </DropdownMenu.Item>
-        <DropdownMenu.Item
-          onClick={() => actions.shareDocument(doc._id, doc.name)}
-         icon={Share2Icon}>
-          Share
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onClick={() => actions.moveToFolder(doc._id)} icon={FolderInputIcon}>
-          Move to Folder
-        </DropdownMenu.Item>
-        {includeTransferOwnership && delegateOwnership && (
+        {!actions.inBin ? (
+          <DropdownMenu.Item onClick={() => actions.downloadDocument(doc._id)} icon={DownloadIcon}>
+            Download
+          </DropdownMenu.Item>
+        ) : null}
+        {!actions.inBin ? (
+          <DropdownMenu.Item
+            onClick={() => actions.shareDocument(doc._id, doc.name)}
+           icon={Share2Icon}>
+            Share
+          </DropdownMenu.Item>
+        ) : null}
+        {!actions.inBin ? (
+          <DropdownMenu.Item onClick={() => actions.moveToFolder(doc._id)} icon={FolderInputIcon}>
+            Move to Folder
+          </DropdownMenu.Item>
+        ) : null}
+        {!actions.inBin && includeTransferOwnership && delegateOwnership && (
           <DropdownMenu.Item onClick={() => actions.transferOwnership(doc)} icon={ArrowRightLeftIcon}>
             Transfer Ownership
           </DropdownMenu.Item>
         )}
-        <DropdownMenu.Item
-          onClick={() => actions.deleteDocument(doc._id)}
-          variant="danger"
-         icon={TrashIcon}>
-          Delete
-        </DropdownMenu.Item>
+        {!actions.inBin ? (
+          <DropdownMenu.Item
+            onClick={() => actions.deleteDocument(doc._id)}
+            variant="danger"
+           icon={TrashIcon}>
+            Delete
+          </DropdownMenu.Item>
+        ) : null}
       </DropdownMenu.Content>
     </DropdownMenu>
   );
@@ -976,8 +994,8 @@ function useDocumentsListData({
         filter,
         workflowStatus:
           workflowStatusFilter === "all" ? undefined : workflowStatusFilter,
-        folderId,
-        rootOnly: !folderId,
+        folderId: workflowStatusFilter === "deleted" ? undefined : folderId,
+        rootOnly: workflowStatusFilter === "deleted" ? false : !folderId,
       }),
     refetchInterval: (query) =>
       liveDocumentRefreshMs(
@@ -995,8 +1013,11 @@ function useDocumentsListData({
     [apiDocuments]
   );
   const subfolders = useMemo(
-    () => apiFolders?.map(toFolderListItem),
-    [apiFolders]
+    () =>
+      workflowStatusFilter === "deleted"
+        ? []
+        : apiFolders?.map(toFolderListItem),
+    [apiFolders, workflowStatusFilter]
   );
 
   const filteredByStatus = useMemo(
@@ -1487,6 +1508,7 @@ function DocumentConfirmationDialog({
 }
 
 function useDocumentListActions({
+  inBin,
   onMoveToFolder,
   onShareClick,
   onTransferOwnership,
@@ -1495,6 +1517,7 @@ function useDocumentListActions({
   DocumentsListProps,
   "onMoveToFolder" | "onShareClick" | "onTransferOwnership"
 > & {
+  readonly inBin: boolean;
   readonly refetch: () => void;
 }): {
   readonly confirmDialog: ConfirmDialogState;
@@ -1509,6 +1532,9 @@ function useDocumentListActions({
   const { track } = useAnalytics();
   const deleteDocument = useMutation({
     mutationFn: (publicId: string) => deleteDocumentApi(slug, publicId),
+  });
+  const restoreDocument = useMutation({
+    mutationFn: (publicId: string) => restoreDocumentApi(slug, publicId),
   });
   const sendDocument = useMutation({
     mutationFn: (publicId: string) => sendDocumentApi(slug, publicId),
@@ -1531,6 +1557,15 @@ function useDocumentListActions({
       to: "/$slug/documents/$documentId",
       params: { slug, documentId },
     });
+  };
+  const handleRestore = async (documentId: string) => {
+    try {
+      await restoreDocument.mutateAsync(documentId);
+      toast.success("Document restored");
+      refetch();
+    } catch {
+      toast.error("Failed to restore document");
+    }
   };
   const handleDownload = async (documentId: string) => {
     try {
@@ -1582,6 +1617,10 @@ function useDocumentListActions({
       shareDocument: onShareClick,
       moveToFolder: onMoveToFolder,
       deleteDocument: (documentId) => openConfirmDialog("delete", documentId),
+      restoreDocument: (documentId) => {
+        void handleRestore(documentId);
+      },
+      inBin,
       transferOwnership: onTransferOwnership,
     },
     handleConfirmAction,
@@ -1621,6 +1660,7 @@ function DocumentsList({
     handleConfirmAction,
     setConfirmDialog,
   } = useDocumentListActions({
+    inBin: workflowStatusFilter === "deleted",
     onMoveToFolder,
     onShareClick,
     onTransferOwnership,
@@ -1915,6 +1955,7 @@ function DocumentsPage() {
                 ["draft", "Drafts"],
                 ["outgoing", "Sent"],
                 ["done", "Done"],
+                ["deleted", "Deleted"],
                 ["all", "Any status"],
               ] as const
             ).map(([value, label]) => (
