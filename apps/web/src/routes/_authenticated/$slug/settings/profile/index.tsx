@@ -45,6 +45,7 @@ function ProfileSettings() {
         <AccountSettings
           className="w-full"
           emailCallbackURL={verifyCallbackUrl}
+          includeSecurityForms={false}
           onProfileSaved={() => {
             toast.success("Profile updated");
           }}

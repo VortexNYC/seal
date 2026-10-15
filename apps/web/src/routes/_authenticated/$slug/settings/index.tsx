@@ -7,7 +7,9 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   AuthProvider,
   isOrganizationAdminRole,
+  OrganizationBrandForm,
   OrganizationProfile,
+  OrganizationSecurityForm,
   useAuth,
 } from "@vortex-api/better-auth-ui";
 import { useEffect, useState } from "react";
@@ -175,6 +177,27 @@ function GeneralSettingsContent() {
               }}
             />
           )}
+
+          <OrganizationSecurityForm
+            className="w-full max-w-none"
+            disabled={!isAdmin}
+            onSaved={() => {
+              toast.success("Security policy saved");
+              void queryClient.invalidateQueries({
+                queryKey: ["organization", slug],
+              });
+            }}
+          />
+          <OrganizationBrandForm
+            className="w-full max-w-none"
+            disabled={!isAdmin}
+            onSaved={() => {
+              toast.success("Brand saved");
+              void queryClient.invalidateQueries({
+                queryKey: ["organization", slug],
+              });
+            }}
+          />
 
           <section className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
