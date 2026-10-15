@@ -441,15 +441,17 @@ app.openapi(listRouteDef, async (c) => {
 
   const db = createD1(c.env.D1);
 
-  const conditions: SQL[] = [
-    eq(documents.organizationId, organizationId),
-    eq(documents.documentStatus, "active"),
-  ];
+  const conditions: SQL[] = [eq(documents.organizationId, organizationId)];
 
-  if (workflowStatus === "cancelled") {
-    conditions.push(inArray(documents.status, ["cancelled", "voided"]));
-  } else if (workflowStatus) {
-    conditions.push(eq(documents.status, workflowStatus));
+  if (workflowStatus === "deleted") {
+    conditions.push(eq(documents.documentStatus, "deleted"));
+  } else {
+    conditions.push(eq(documents.documentStatus, "active"));
+    if (workflowStatus === "cancelled") {
+      conditions.push(inArray(documents.status, ["cancelled", "voided"]));
+    } else if (workflowStatus) {
+      conditions.push(eq(documents.status, workflowStatus));
+    }
   }
 
   if (folderId) {
@@ -4446,6 +4448,66 @@ app.openapi(deleteRouteDef, async (c) => {
     .update(documents)
     .set({ documentStatus: "deleted", updatedAt: new Date() })
     .where(eq(documents.id, ownerCheck.docId));
+
+  return c.json({ success: true });
+});
+
+const restoreRouteDef = createRoute({
+  method: "post",
+  path: "/{slug}/{publicId}/restore",
+  request: {
+    params: z.object({ publicId: z.string() }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.object({ success: z.boolean() }) },
+      },
+      description: "Document restored to the documents list",
+    },
+    400: { description: "Document is not deleted" },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Not found" },
+  },
+});
+
+app.openapi(restoreRouteDef, async (c) => {
+  const organizationId = c.get("organization").id;
+  const userId = c.get("user")!.user.id;
+  const { publicId } = c.req.valid("param");
+
+  const db = createD1(c.env.D1);
+  const rows = await db
+    .select({
+      id: documents.id,
+      ownerId: documents.ownerId,
+      documentStatus: documents.documentStatus,
+    })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = rows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+  if (doc.ownerId !== userId) {
+    return c.json({ error: "Forbidden" }, 403);
+  }
+  if (doc.documentStatus !== "deleted") {
+    return c.json({ error: "Document is not deleted" }, 400);
+  }
+
+  await db
+    .update(documents)
+    .set({ documentStatus: "active", updatedAt: new Date() })
+    .where(eq(documents.id, doc.id));
 
   return c.json({ success: true });
 });

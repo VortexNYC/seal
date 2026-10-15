@@ -20,8 +20,8 @@ export function DeleteEnvelopeDialog({
       <Dialog size="sm" className="p-6">
         <Dialog.Title>Delete envelope</Dialog.Title>
         <Dialog.Description>
-          {documentName} leaves the documents list. This does not unsend a copy
-          someone already downloaded.
+          {documentName} leaves the documents list. Open Deleted to put it
+          back. This does not unsend a copy someone already downloaded.
         </Dialog.Description>
         <div className="flex justify-end gap-2">
           <Button
