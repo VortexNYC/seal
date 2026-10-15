@@ -21,7 +21,7 @@ import {
   type NavPrimaryItem,
 } from "@/components/nav-main";
 import { SealLogo } from "@/components/seal-logo";
-import { WorkspaceAccountMenu } from "@/components/workspace-account-menu";
+import { WorkspaceAccountMenu } from "@vortex-api/better-auth-ui";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
@@ -483,6 +483,7 @@ export function AppSidebar({
       <Sidebar.Footer>
         {currentUser ? (
           <WorkspaceAccountMenu
+            workspaceLabel="Seal"
             teams={teamOptions}
             activeSlug={activeTeamSlug}
             user={currentUser}

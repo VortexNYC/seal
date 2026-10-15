@@ -1,16 +1,10 @@
 import { Banner } from "@cloudflare/kumo/components/banner";
-import { Textarea } from "@cloudflare/kumo";
-import { Button } from "@cloudflare/kumo/components/button";
-import { Checkbox } from "@cloudflare/kumo/components/checkbox";
-import { Label } from "@cloudflare/kumo/components/label";
 import { Text } from "@cloudflare/kumo/components/text";
-import { ArrowsLeftRight, FloppyDisk, Shield } from "@phosphor-icons/react";
 /**
  * Security Settings Page
  *
- * Seal-owned: API access, IP allowlist (enforced in api/context.ts), document
- * ownership transfer. Org MFA + session timeout live on workspace General /
- * Account Security.
+ * API access, IP allowlist, and ownership transfer. The form is shared.
+ * Seal enforces the allowlist. Org MFA and session timeout are on General.
  *
  * Product document audit → audit-log.
  * Route: /{slug}/settings/security
@@ -20,13 +14,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   AuthProvider,
   isOrganizationAdminRole,
+  OrganizationAccessForm,
   useAuth,
 } from "@vortex-api/better-auth-ui";
 import { useEffect, useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { SettingsBody } from "@/components/settings-body";
-import { SettingsSection } from "@/components/settings-section";
 import { FormSkeleton, PageFormSkeleton } from "@/components/skeletons";
 import { useOrganization } from "@/hooks/use-organization";
 import { getSecuritySettings, updateSecuritySettings } from "@/lib/api-client";
@@ -149,8 +143,7 @@ function SecuritySettingsContent() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setIsSubmitting(true);
 
     try {
@@ -187,102 +180,61 @@ function SecuritySettingsContent() {
   return (
     <PageWrapper title="Security Settings">
       <SettingsBody>
-        <form onSubmit={handleSubmit} className="grid gap-5 lg:grid-cols-2">
-          {!isOwner && (
-            <Banner
-              className="lg:col-span-2"
-              variant="alert"
-              size="sm"
-              description="Only workspace owners can change these settings."
-            />
-          )}
-
-          <p className="text-kumo-secondary text-sm lg:col-span-2">
-            Personal 2FA is under{" "}
-            <Link
-              className="text-kumo-default underline-offset-4 hover:underline"
-              params={{ slug }}
-              to="/$slug/settings/profile/security"
-            >
-              Account → Security
-            </Link>
-            . Document activity is in the{" "}
-            <Link
-              className="text-kumo-default underline-offset-4 hover:underline"
-              params={{ slug }}
-              to="/$slug/settings/audit-log"
-            >
-              audit log
-            </Link>
-            .
-          </p>
-
-          <SettingsSection
-            className="lg:col-span-2"
-            icon={<Shield className="size-4" />}
-            title="API access"
-            description="Programmatic access via API keys and SSO."
-          >
-            <Checkbox
-              label="Allow API access"
-              checked={formData.allowApiAccess}
-              disabled={!isOwner}
-              onCheckedChange={(checked) =>
-                setFormData({ ...formData, allowApiAccess: checked })
-              }
-            />
-            <Checkbox
-              label="Require company SSO"
-              checked={formData.ssoEnforced}
-              disabled={!isOwner}
-              onCheckedChange={(checked) =>
-                setFormData({ ...formData, ssoEnforced: checked })
-              }
-            />
-            <Text variant="secondary" size="sm">
-              SSO needs an IdP registered via the SSO API first. Owners can
-              always turn this off.
-            </Text>
-          </SettingsSection>
-
-          <SettingsSection
-            title="IP allowlist"
-            description="Restrict API access. One CIDR per line; empty = no limit."
-          >
-            <Label htmlFor="ip-allowlist">Allowed CIDR ranges</Label>
-            <Textarea
-              id="ip-allowlist"
-              value={formData.ipAllowlistText}
-              disabled={!isOwner}
-              onChange={(e) =>
-                setFormData({ ...formData, ipAllowlistText: e.target.value })
-              }
-              placeholder={"192.168.1.0/24\n10.0.0.0/8"}
-              rows={4}
-            />
-          </SettingsSection>
-
-          <SettingsSection
-            icon={<ArrowsLeftRight className="size-4" />}
-            title="Ownership transfer"
-            description="Let owners reassign documents to other members."
-          >
-            <Checkbox
-              label="Enable ownership transfer"
-              checked={delegateOwnership}
-              disabled={!isAdmin || isDelegateOwnershipUpdating}
-              onCheckedChange={(checked) =>
-                void handleDelegateOwnershipChange(checked)
-              }
-            />
-          </SettingsSection>
-
-          <div className="flex justify-end lg:col-span-2">
-            <Button type="submit" disabled={isSubmitting || !isOwner} icon={FloppyDisk}>
-              {isSubmitting ? "Saving…" : "Save changes"}
-            </Button>
-          </div>
-        </form>
+        <OrganizationAccessForm
+          value={{
+            allowApiAccess: formData.allowApiAccess,
+            ssoEnforced: formData.ssoEnforced,
+            ipAllowlist: formData.ipAllowlistText,
+            delegateOwnership,
+          }}
+          canEdit={isOwner}
+          canEditOwnership={isAdmin}
+          pending={isSubmitting}
+          ownershipPending={isDelegateOwnershipUpdating}
+          notice={
+            <>
+              {!isOwner ? (
+                <Banner
+                  variant="alert"
+                  size="sm"
+                  description="Only workspace owners can change these settings."
+                />
+              ) : null}
+              <Text as="p" variant="secondary" size="sm">
+                Personal 2FA is under{" "}
+                <Link
+                  className="text-kumo-default underline-offset-4 hover:underline"
+                  params={{ slug }}
+                  to="/$slug/settings/profile/security"
+                >
+                  Account → Security
+                </Link>
+                . Document activity is in the{" "}
+                <Link
+                  className="text-kumo-default underline-offset-4 hover:underline"
+                  params={{ slug }}
+                  to="/$slug/settings/audit-log"
+                >
+                  audit log
+                </Link>
+                .
+              </Text>
+            </>
+          }
+          onChange={(next) => {
+            setFormData({
+              allowApiAccess: next.allowApiAccess,
+              ssoEnforced: next.ssoEnforced,
+              ipAllowlistText: next.ipAllowlist,
+            });
+          }}
+          onDelegateOwnershipChange={(checked) => {
+            void handleDelegateOwnershipChange(checked);
+          }}
+          onSubmit={() => {
+            void handleSubmit();
+          }}
+        />
       </SettingsBody>
     </PageWrapper>
   );
