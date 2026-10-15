@@ -25,6 +25,7 @@ import {
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 
 import { DocumentToolRow } from "@/components/documents/document-tool-row";
+import { paymentFieldBlockedReason } from "@/components/documents/field-toolbar";
 import { fieldPlacementAnchor } from "@/components/documents/document-surface";
 import {
   FIELD_DIMENSIONS,
@@ -45,6 +46,7 @@ import {
   deleteDocument,
   downloadCertificate,
   downloadDocument,
+  getPaymentsConnect,
   getSigningSettings,
   moveDocumentsToFolder,
   removeRecipient as removeRecipientApi,
@@ -190,6 +192,11 @@ function DocumentDetailPage() {
   } = useDocumentDetail(slug, documentPublicId);
 
   const signatureFieldCount = countSigningFields(signatureFields);
+
+  const { data: paymentsConnect } = useQuery({
+    queryKey: ["payments", slug],
+    queryFn: () => getPaymentsConnect(slug),
+  });
 
   const { data: signingSettings } = useQuery({
     queryKey: ["organization", slug, "signing-settings"],
@@ -916,7 +923,21 @@ function DocumentDetailPage() {
                               pageCount={pdfViewer.numPages ?? 0}
                               currentPage={pdfViewer.currentPage}
                               armedField={armedField}
+                              chargesApproved={
+                                paymentsConnect?.chargesApproved === true
+                              }
                               onArmField={(fieldType) => {
+                                const paymentBlocked =
+                                  fieldType === "payment"
+                                    ? paymentFieldBlockedReason(
+                                        paymentsConnect?.chargesApproved ===
+                                          true
+                                      )
+                                    : null;
+                                if (paymentBlocked) {
+                                  toast.info(paymentBlocked);
+                                  return;
+                                }
                                 if (!canLeaveFieldSetup(fieldPlacement.fieldSetupOpen)) {
                                   toast.info(FINISH_FIELD_MESSAGE);
                                   return;

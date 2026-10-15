@@ -66,6 +66,7 @@ import { ZFieldPropertiesFlat } from "../platform/field-meta.js";
 import { materializeSuggestionsFromCandidates } from "../platform/field-suggestions.js";
 import { FieldTypeEnum } from "../platform/field-types.js";
 import { copyDocument } from "../platform/document-copy.js";
+import { presentVortexConnect } from "../platform/vortex-connect.js";
 import {
   forwardCompletedDocument,
   startEnvelopeFromCompleted,
@@ -2559,6 +2560,19 @@ app.openapi(createSignatureFieldRouteDef, async (c) => {
   );
   if (!typeValidation.valid) {
     return c.json({ error: typeValidation.error }, 400);
+  }
+
+  if (input.fieldType === "payment") {
+    const connect = await presentVortexConnect(
+      c.env,
+      c.get("organization").metadata
+    );
+    if (!connect.chargesApproved) {
+      return c.json(
+        { error: "Charges are not approved for this workspace" },
+        403
+      );
+    }
   }
 
   let recipientId: string | null = null;
