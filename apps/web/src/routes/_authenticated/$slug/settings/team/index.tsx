@@ -2,6 +2,7 @@ import { Text } from "@cloudflare/kumo/components/text";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   AuthProvider,
+  invitationAcceptHref,
   InviteMemberForm,
   isOrganizationAdminRole,
   OrganizationMembers,
@@ -51,6 +52,13 @@ function TeamSettings() {
                 className="w-full max-w-none"
                 title="Invite member"
                 description="Add a teammate to this workspace."
+                buildInvitationHref={(invitation) =>
+                  invitationAcceptHref({
+                    origin: window.location.origin,
+                    path: "/accept-invite",
+                    invitationId: invitation.id,
+                  })
+                }
               />
             )}
 
