@@ -1,9 +1,10 @@
 import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Input } from "@cloudflare/kumo/components/input";
+import { useRouter } from "@tanstack/react-router";
 import { useState, type ReactElement } from "react";
 
-import { forwardDocument } from "@/lib/api-client";
+import { forwardDocument, forwardEnvelope } from "@/lib/api-client";
 import { toast } from "@/lib/toast";
 
 export function ForwardDocumentDialog({
@@ -19,8 +20,11 @@ export function ForwardDocumentDialog({
   documentId: string;
   documentName: string;
 }): ReactElement {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const busy = sending || starting;
 
   return (
     <Dialog.Root
@@ -33,8 +37,8 @@ export function ForwardDocumentDialog({
       <Dialog size="sm" className="p-6">
         <Dialog.Title>Forward completed PDF</Dialog.Title>
         <Dialog.Description>
-          Email {documentName} to someone who is not a signer. They get the
-          file. They are not asked to sign.
+          Email {documentName}, or start a new envelope from the executed file.
+          A new envelope has no signers yet.
         </Dialog.Description>
         <Input
           type="email"
@@ -52,8 +56,8 @@ export function ForwardDocumentDialog({
           </Button>
           <Button
             type="button"
-            variant="primary"
-            disabled={sending || !email.includes("@")}
+            variant="outline"
+            disabled={busy || !email.includes("@")}
             onClick={() => {
               setSending(true);
               void forwardDocument(organizationSlug, documentId, email.trim())
@@ -68,6 +72,32 @@ export function ForwardDocumentDialog({
             }}
           >
             Send copy
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            disabled={busy}
+            onClick={() => {
+              setStarting(true);
+              void forwardEnvelope(organizationSlug, documentId)
+                .then((created) => {
+                  toast.success("New envelope started");
+                  onOpenChange(false);
+                  void router.navigate({
+                    to: "/$slug/documents/$documentId",
+                    params: {
+                      slug: organizationSlug,
+                      documentId: created.publicId,
+                    },
+                  });
+                })
+                .catch(() => {
+                  toast.error("Could not start a new envelope");
+                })
+                .finally(() => setStarting(false));
+            }}
+          >
+            New envelope
           </Button>
         </div>
       </Dialog>

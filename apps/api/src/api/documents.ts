@@ -66,7 +66,10 @@ import { ZFieldPropertiesFlat } from "../platform/field-meta.js";
 import { materializeSuggestionsFromCandidates } from "../platform/field-suggestions.js";
 import { FieldTypeEnum } from "../platform/field-types.js";
 import { copyDocument } from "../platform/document-copy.js";
-import { forwardCompletedDocument } from "../platform/document-forward.js";
+import {
+  forwardCompletedDocument,
+  startEnvelopeFromCompleted,
+} from "../platform/document-forward.js";
 import { downloadShouldBurnInk } from "../platform/final-pdf.js";
 import {
   generateAndStoreFinalPdf,
@@ -4966,6 +4969,61 @@ app.openapi(forwardRouteDef, async (c) => {
     }
   }
   return c.json({ sent: true });
+});
+
+const forwardEnvelopeRouteDef = createRoute({
+  method: "post",
+  path: "/{slug}/{publicId}/forward-envelope",
+  request: {
+    params: z.object({ publicId: z.string() }),
+  },
+  responses: {
+    201: {
+      content: {
+        "application/json": {
+          schema: z.object({ publicId: z.string() }),
+        },
+      },
+      description: "Draft envelope created from the executed PDF",
+    },
+    404: { description: "Document not found" },
+    409: { description: "Document is not completed" },
+    503: { description: "Object storage not configured" },
+  },
+});
+
+app.openapi(forwardEnvelopeRouteDef, async (c) => {
+  const bucket = c.env.DOCUMENTS_BUCKET;
+  if (!bucket) return c.json({ error: "storage_unavailable" }, 503);
+  const user = c.get("user");
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+  const db = createD1(c.env.D1);
+  const organizationId = c.get("organization").id;
+  const sourcePublicId = c.req.valid("param").publicId;
+  const created = await startEnvelopeFromCompleted({
+    db,
+    bucket,
+    organizationId,
+    ownerId: user.user.id,
+    sourcePublicId,
+  });
+  if (created === "not_found" || created === "no_file") {
+    return c.json({ error: created }, 404);
+  }
+  if (created === "not_completed") return c.json({ error: created }, 409);
+  const actor = getAuditActor({ user });
+  if (actor) {
+    await writeAuditLog(db, {
+      organizationId,
+      actor,
+      action: "document.created",
+      resourceType: "document",
+      resourceId: created.id,
+      metadata: { publicId: created.publicId, forwardedFrom: sourcePublicId },
+      ...getAuditRequestMeta(c),
+    });
+  }
+  return c.json({ publicId: created.publicId }, 201);
 });
 
 const bulkSendBodySchema = z.object({

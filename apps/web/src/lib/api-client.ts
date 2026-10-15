@@ -1304,6 +1304,17 @@ export async function copyDocument(
   );
 }
 
+export async function forwardEnvelope(
+  organizationSlug: string,
+  publicId: string
+): Promise<{ publicId: string }> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/forward-envelope`,
+    z.object({ publicId: z.string() }),
+    { method: "POST" }
+  );
+}
+
 export async function forwardDocument(
   organizationSlug: string,
   publicId: string,

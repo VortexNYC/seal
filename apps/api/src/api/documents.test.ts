@@ -391,6 +391,91 @@ describe("documents API", () => {
     expect(after[0]?.documentStatus).toBe("active");
   });
 
+  it("starts a draft envelope from the executed PDF", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+    const sourceId = crypto.randomUUID();
+    const publicId = crypto.randomUUID();
+    const signedKey = `org_1/final/${sourceId}`;
+    const originalKey = `org_1/originals/${sourceId}`;
+    const signedBytes = new TextEncoder().encode("executed-pdf");
+    const originalBytes = new TextEncoder().encode("unsigned-pdf");
+    await env.DOCUMENTS_BUCKET.put(signedKey, signedBytes);
+    await env.DOCUMENTS_BUCKET.put(originalKey, originalBytes);
+    await db.insert(documents).values({
+      id: sourceId,
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "GOF-TERM.pdf",
+      status: "completed",
+      documentStatus: "active",
+      sharingMode: "private",
+      storageKey: signedKey,
+      originalStorageKey: originalKey,
+      contentType: "application/pdf",
+      size: signedBytes.byteLength,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await db.insert(recipients).values({
+      id: crypto.randomUUID(),
+      publicId: crypto.randomUUID(),
+      documentId: sourceId,
+      email: "signer@example.com",
+      name: "Signer",
+      role: "signer",
+      order: 1,
+      status: "signed",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/test-org/${publicId}/forward-envelope`,
+        { method: "POST" }
+      ),
+      env
+    );
+    expect(response.status).toBe(201);
+    const created = z
+      .object({ publicId: z.string() })
+      .parse(await parseJson(response));
+    const rows = await db
+      .select()
+      .from(documents)
+      .where(eq(documents.publicId, created.publicId));
+    const draft = rows[0];
+    expect(draft?.status).toBe("draft");
+    expect(draft?.name).toBe("Forward of GOF-TERM.pdf");
+    expect(draft?.parentDocumentId).toBe(sourceId);
+    expect(draft?.storageKey).toBeTruthy();
+    expect(draft?.storageKey).not.toBe(signedKey);
+    const stored = await env.DOCUMENTS_BUCKET.get(draft!.storageKey!);
+    expect(new Uint8Array(await stored!.arrayBuffer())).toEqual(signedBytes);
+    const copiedRecipients = await db
+      .select({ id: recipients.id })
+      .from(recipients)
+      .where(eq(recipients.documentId, draft!.id));
+    expect(copiedRecipients).toEqual([]);
+
+    const source = await db
+      .select({ status: documents.status })
+      .from(documents)
+      .where(eq(documents.id, sourceId));
+    expect(source[0]?.status).toBe("completed");
+
+    const draftResponse = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/test-org/${created.publicId}/forward-envelope`,
+        { method: "POST" }
+      ),
+      env
+    );
+    expect(draftResponse.status).toBe(409);
+  });
+
   it("sends a draft document", async () => {
     const app = createApp("org_1");
     const db = createD1(env.D1);
