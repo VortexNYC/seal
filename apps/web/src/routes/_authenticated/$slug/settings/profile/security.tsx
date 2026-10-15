@@ -1,20 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-/**
- * Profile Settings Page - Security
- *
- * Sessions, two-factor enrollment, and password change via @vortex-api/better-auth-ui.
- * Route: /{slug}/settings/profile/security
- */
-import {
-  AuthProvider,
-  ChangePasswordForm,
-  DisableTwoFactorForm,
-  EnableTwoFactorForm,
-  GenerateBackupCodesForm,
-  SessionList,
-  SetPasswordForm,
-  SettingsStack,
-} from "@vortex-api/better-auth-ui";
+import { AccountSecurity, AuthProvider } from "@vortex-api/better-auth-ui";
 
 import { SettingsBody } from "@/components/settings-body";
 import { FormSkeleton } from "@/components/skeletons";
@@ -38,46 +23,28 @@ function SecuritySettings() {
   return (
     <AuthProvider client={client}>
       <SettingsBody className="items-stretch">
-        <SettingsStack className="w-full">
-          <SessionList
-            className="w-full"
-            showRevokeOthersAction
-            onRevoke={() => {
-              toast.success("Session revoked");
-            }}
-          />
-          <EnableTwoFactorForm
-            className="w-full"
-            issuer="Seal"
-            onSuccess={() => {
-              toast.success("Two-factor authentication enabled");
-            }}
-          />
-          <GenerateBackupCodesForm
-            className="w-full"
-            onSuccess={() => {
-              toast.success("Backup codes regenerated");
-            }}
-          />
-          <DisableTwoFactorForm
-            className="w-full"
-            onSuccess={() => {
-              toast.success("Two-factor authentication disabled");
-            }}
-          />
-          <ChangePasswordForm
-            className="w-full"
-            onSuccess={() => {
-              toast.success("Password changed");
-            }}
-          />
-          <SetPasswordForm
-            className="w-full"
-            onSuccess={() => {
-              toast.success("Password set");
-            }}
-          />
-        </SettingsStack>
+        <AccountSecurity
+          className="w-full"
+          issuer="Seal"
+          onSessionRevoked={() => {
+            toast.success("Session revoked");
+          }}
+          onTwoFactorEnabled={() => {
+            toast.success("Two-factor authentication enabled");
+          }}
+          onBackupCodesGenerated={() => {
+            toast.success("Backup codes regenerated");
+          }}
+          onTwoFactorDisabled={() => {
+            toast.success("Two-factor authentication disabled");
+          }}
+          onPasswordChanged={() => {
+            toast.success("Password changed");
+          }}
+          onPasswordSet={() => {
+            toast.success("Password set");
+          }}
+        />
       </SettingsBody>
     </AuthProvider>
   );
