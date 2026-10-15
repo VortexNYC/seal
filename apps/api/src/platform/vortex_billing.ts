@@ -277,7 +277,11 @@ async function finalizeDocumentIfPaymentComplete(
     .limit(1)
     .then((rows) => rows[0]);
 
-  if (!document || document.workflowStatus !== "waiting_for_payment") {
+  if (
+    !document ||
+    (document.status !== "waiting_for_payment" &&
+      document.workflowStatus !== "waiting_for_payment")
+  ) {
     return;
   }
 
@@ -294,6 +298,7 @@ async function finalizeDocumentIfPaymentComplete(
     await db
       .update(documents)
       .set({
+        status: "completed",
         workflowStatus: "completed",
         completedAt: now,
         updatedAt: now,
