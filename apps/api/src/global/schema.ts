@@ -1481,6 +1481,7 @@ export const apiTokens = sqliteTable(
     name: text("name").notNull(),
     tokenHash: text("token_hash").notNull().unique(),
     scopes: text("scopes").notNull().default("[]"),
+    allowedIpRanges: text("allowed_ip_ranges").notNull().default("[]"),
     lastUsedAt: integer("last_used_at", { mode: "timestamp_ms" }),
     revokedAt: integer("revoked_at", { mode: "timestamp_ms" }),
     createdAt: integer("created_at", { mode: "timestamp_ms" })

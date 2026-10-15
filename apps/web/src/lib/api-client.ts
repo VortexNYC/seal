@@ -3038,6 +3038,7 @@ export const apiTokenSchema = z.object({
   publicId: z.string(),
   name: z.string(),
   scopes: z.array(z.string()),
+  allowedIpRanges: z.array(z.string()).default([]),
   lastUsedAt: z.string().nullish(),
   revokedAt: z.string().nullish(),
   createdAt: z.string(),
@@ -3060,7 +3061,7 @@ export async function getApiTokens(
 
 export async function createApiToken(
   organizationSlug: string,
-  input: { name: string; scopes: string[] }
+  input: { name: string; scopes: string[]; allowedIpRanges: string[] }
 ): Promise<CreatedApiToken> {
   return apiFetch(
     `/api/v1/organizations/${encodeURIComponent(organizationSlug)}/tokens`,

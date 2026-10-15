@@ -902,6 +902,10 @@ components:
         scopes:
           type: array
           items: { $ref: "#/components/schemas/ApiTokenScope" }
+        allowedIpRanges:
+          type: array
+          items: { type: string }
+          description: CIDRs or addresses. Empty means the key is not limited by IP.
         lastUsedAt: { type: string, format: date-time, nullable: true }
         revokedAt: { type: string, format: date-time, nullable: true }
         createdAt: { type: string, format: date-time }
@@ -5297,6 +5301,10 @@ paths:
                   type: array
                   items: { $ref: "#/components/schemas/ApiTokenScope" }
                   minItems: 1
+                allowedIpRanges:
+                  type: array
+                  items: { type: string }
+                  description: Optional. One CIDR or address per entry. Empty means any address.
       responses:
         "201":
           description: Created

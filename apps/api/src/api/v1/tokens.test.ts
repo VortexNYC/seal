@@ -293,4 +293,66 @@ describe("api v1 tokens", () => {
     );
     expect(res.status).toBe(401);
   });
+
+  it("rejects a token used from outside its allowed IP range", async () => {
+    const { slug, plaintext } = await seedTokenContext();
+    const createRes = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/v1/organizations/${encodeURIComponent(
+          slug
+        )}/tokens`,
+        {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${plaintext}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            name: "Office",
+            scopes: ["admin"],
+            allowedIpRanges: ["203.0.113.0/24"],
+          }),
+        }
+      ),
+      env
+    );
+    expect(createRes.status).toBe(201);
+    const created = (await createRes.json()) as {
+      token: string;
+      allowedIpRanges: string[];
+    };
+    expect(created.allowedIpRanges).toEqual(["203.0.113.0/24"]);
+
+    const blocked = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/v1/organizations/${encodeURIComponent(
+          slug
+        )}/tokens`,
+        {
+          headers: {
+            authorization: `Bearer ${created.token}`,
+            "cf-connecting-ip": "198.51.100.8",
+          },
+        }
+      ),
+      env
+    );
+    expect(blocked.status).toBe(401);
+
+    const allowed = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/v1/organizations/${encodeURIComponent(
+          slug
+        )}/tokens`,
+        {
+          headers: {
+            authorization: `Bearer ${created.token}`,
+            "cf-connecting-ip": "203.0.113.9",
+          },
+        }
+      ),
+      env
+    );
+    expect(allowed.status).toBe(200);
+  });
 });

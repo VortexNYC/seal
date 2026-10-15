@@ -5,6 +5,7 @@ import { createMiddleware } from "hono/factory";
 import { createD1 } from "../global/db.js";
 import { apiTokens, organization, user } from "../global/schema.js";
 import { writeAuditLog } from "./audit-log.js";
+import { ipMatchesAllowlist, requestClientIp } from "./ip-allowlist.js";
 import type { McpAccessToken } from "./mcp-auth.js";
 import type { Variables } from "./types.js";
 
@@ -25,7 +26,7 @@ export async function hashToken(value: string): Promise<string> {
   return hex;
 }
 
-export function parseApiTokenScopes(raw: string | null): string[] {
+function parseJsonStringArray(raw: string | null): string[] {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw) as unknown;
@@ -36,6 +37,14 @@ export function parseApiTokenScopes(raw: string | null): string[] {
     // fall through
   }
   return [];
+}
+
+export function parseApiTokenScopes(raw: string | null): string[] {
+  return parseJsonStringArray(raw);
+}
+
+export function parseApiTokenIpRanges(raw: string | null): string[] {
+  return parseJsonStringArray(raw);
 }
 
 export function hasApiTokenScope(
@@ -65,6 +74,15 @@ export async function loadApiTokenContext<E extends CloudflareBindings>(
 
   const token = rows[0];
   if (!token) {
+    return false;
+  }
+
+  if (
+    !ipMatchesAllowlist(
+      requestClientIp(c.req.raw.headers),
+      parseApiTokenIpRanges(token.allowedIpRanges)
+    )
+  ) {
     return false;
   }
 
