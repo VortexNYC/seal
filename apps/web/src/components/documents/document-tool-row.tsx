@@ -5,6 +5,7 @@ import {
   Calendar,
   CalendarCheck,
   CheckSquare,
+  CreditCard,
   Envelope,
   PenNib,
   TextT,
@@ -15,6 +16,7 @@ import { useMutation } from "@tanstack/react-query";
 import type { JSX } from "react";
 import { useEffect, useState } from "react";
 
+import { paymentFieldBlockedReason } from "@/components/documents/field-toolbar";
 import { rotateDocumentPdf } from "@/lib/api-client";
 import { FIELD_TYPE_LABELS, type FieldType } from "@/lib/field-types";
 import { toast } from "@/lib/toast";
@@ -36,6 +38,7 @@ export type DocumentToolRowProps = {
   pageCount: number;
   currentPage: number;
   armedField: FieldType | null;
+  chargesApproved?: boolean;
   onArmField: (fieldType: FieldType) => void;
   onClearField: () => void;
   onPdfChanged: () => void;
@@ -43,12 +46,51 @@ export type DocumentToolRowProps = {
   openFieldsToken?: number;
 };
 
+function FieldToolButton({
+  icon,
+  label,
+  selected,
+  disabledReason,
+  onClick,
+}: {
+  icon: Icon;
+  label: string;
+  selected: boolean;
+  disabledReason?: string | null;
+  onClick: () => void;
+}): JSX.Element {
+  const blocked = disabledReason != null;
+  return (
+    <span
+      title={
+        blocked
+          ? disabledReason
+          : `Place a ${label.toLowerCase()} field. Then click the page.`
+      }
+      className="inline-flex"
+    >
+      <Button
+        type="button"
+        size="sm"
+        variant={selected ? "primary" : "ghost"}
+        className="w-full justify-start"
+        icon={icon}
+        disabled={blocked}
+        onClick={onClick}
+      >
+        {label}
+      </Button>
+    </span>
+  );
+}
+
 export function DocumentToolRow({
   organizationSlug,
   documentPublicId,
   pageCount,
   currentPage,
   armedField,
+  chargesApproved = false,
   onArmField,
   onClearField,
   onPdfChanged,
@@ -56,6 +98,7 @@ export function DocumentToolRow({
 }: DocumentToolRowProps): JSX.Element {
   const [fieldsOpen, setFieldsOpen] = useState(false);
   const armed = FIELD_TOOLS.find((tool) => tool.id === armedField);
+  const armedIcon = armedField === "payment" ? CreditCard : armed?.icon;
 
   useEffect(() => {
     if (openFieldsToken < 1) return;
@@ -93,8 +136,8 @@ export function DocumentToolRow({
             <Button
               type="button"
               size="sm"
-              variant={armed ? "primary" : "ghost"}
-              icon={armed?.icon ?? PenNib}
+              variant={armedField ? "primary" : "ghost"}
+              icon={armedIcon ?? PenNib}
             >
               Fields
             </Button>
@@ -105,27 +148,28 @@ export function DocumentToolRow({
           align="start"
         >
           {FIELD_TOOLS.map((tool) => (
-            <span
+            <FieldToolButton
               key={tool.id}
-              title={`Place a ${FIELD_TYPE_LABELS[tool.id].toLowerCase()} field. Then click the page.`}
-              className="inline-flex"
-            >
-            <Button
-              type="button"
-              size="sm"
-              variant={armedField === tool.id ? "primary" : "ghost"}
-              className="w-full justify-start"
               icon={tool.icon}
+              label={FIELD_TYPE_LABELS[tool.id]}
+              selected={armedField === tool.id}
               onClick={() => {
                 onArmField(tool.id);
                 setFieldsOpen(false);
               }}
-            >
-              {FIELD_TYPE_LABELS[tool.id]}
-            </Button>
-            </span>
+            />
           ))}
-          {armed ? (
+          <FieldToolButton
+            icon={CreditCard}
+            label={FIELD_TYPE_LABELS.payment}
+            selected={armedField === "payment"}
+            disabledReason={paymentFieldBlockedReason(chargesApproved)}
+            onClick={() => {
+              onArmField("payment");
+              setFieldsOpen(false);
+            }}
+          />
+          {armedField ? (
             <span title="Stop placing a field" className="inline-flex">
               <Button
                 type="button"

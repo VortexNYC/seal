@@ -176,10 +176,12 @@ function FieldButton({
   );
 }
 
-function getPaymentDisabledReason(merchantPaymentsReady: boolean): string {
-  return merchantPaymentsReady
-    ? "Payment fields are temporarily disabled while payments are migrated to the Worker backend."
-    : "Connect a merchant account to add payment fields.";
+export function paymentFieldBlockedReason(
+  chargesApproved: boolean
+): string | null {
+  return chargesApproved
+    ? null
+    : "Vortex has to approve charges before a payment field can be placed.";
 }
 
 function FieldGrid({
@@ -199,9 +201,10 @@ function FieldGrid({
     <div className="grid grid-cols-2 gap-1.5">
       {types.map((type) => {
         const isPayment = type === "payment";
-        const isDisabled = disabled || isPayment;
+        const paymentBlocked = paymentFieldBlockedReason(merchantPaymentsReady);
+        const isDisabled = disabled || (isPayment && paymentBlocked !== null);
         const disabledReason = isPayment
-          ? getPaymentDisabledReason(merchantPaymentsReady)
+          ? (paymentBlocked ?? undefined)
           : "Add a recipient before placing fields.";
 
         return (

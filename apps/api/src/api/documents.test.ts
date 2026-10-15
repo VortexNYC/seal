@@ -1296,6 +1296,47 @@ describe("documents API", () => {
     expect(updated[0]?.signingToken).not.toBe(oldToken);
   });
 
+  it("refuses a payment field until charges are approved", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+    const publicId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: crypto.randomUUID(),
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Payment gate",
+      status: "draft",
+      documentStatus: "active",
+      sharingMode: "private",
+      pageCount: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/test-org/${publicId}/signature-fields`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fieldType: "payment",
+            label: "Pay",
+            isRequired: true,
+            x: 10,
+            y: 20,
+            width: 30,
+            height: 10,
+            page: 1,
+          }),
+        }
+      ),
+      env
+    );
+    expect(response.status).toBe(403);
+  });
+
   it("creates, repositions, assigns, and deletes a signature field", async () => {
     const app = createApp("org_1");
     const db = createD1(env.D1);
