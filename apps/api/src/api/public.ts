@@ -1802,6 +1802,7 @@ const paymentConfigSummarySchema = z
     totalAmountCents: z.number().int(),
     currency: z.string(),
     paymentStatus: z.string().nullable().optional(),
+    hostedInvoiceUrl: z.string().nullable().optional(),
   })
   .openapi("PublicPaymentConfigSummary");
 
@@ -1865,6 +1866,7 @@ app.openapi(signingPaymentConfigsRouteDef, async (c) => {
       totalAmountCents: paymentFieldConfigs.totalAmountCents,
       currency: paymentFieldConfigs.currency,
       paymentStatus: paymentFieldConfigs.paymentStatus,
+      hostedInvoiceUrl: paymentFieldConfigs.hostedInvoiceUrl,
     })
     .from(paymentFieldConfigs)
     .leftJoin(

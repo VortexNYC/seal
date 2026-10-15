@@ -313,6 +313,85 @@ describe("public API", () => {
     expect(response.status).toBe(400);
   });
 
+  it("returns the hosted pay link on the signer payment config", async () => {
+    const db = createD1(env.D1);
+    await db.insert(organization).values({
+      id: "org_link",
+      name: "Link Org",
+      slug: "link-org",
+      createdAt: new Date(),
+    });
+    await db.insert(documents).values({
+      id: "doc_link",
+      publicId: "doc_pub_link",
+      organizationId: "org_link",
+      name: "Link Document",
+      status: "waiting_for_payment",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    const token = "pay-link-token";
+    await db.insert(recipients).values({
+      id: "rec_link",
+      publicId: "rec_pub_link",
+      documentId: "doc_link",
+      email: "payer@example.com",
+      name: "Payer",
+      role: "signer",
+      status: "signed",
+      signingToken: token,
+      tokenExpiresAt: new Date(Date.now() + 60_000),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await db.insert(signatureFields).values({
+      id: "field_link",
+      publicId: "field_pub_link",
+      documentId: "doc_link",
+      fieldType: "payment",
+      label: "Pay",
+      x: 1,
+      y: 1,
+      width: 10,
+      height: 4,
+      page: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await db.insert(paymentFieldConfigs).values({
+      id: "cfg_link",
+      publicId: "cfg_pub_link",
+      fieldId: "field_link",
+      documentId: "doc_link",
+      organizationId: "org_link",
+      paymentType: "one_time",
+      items: "[]",
+      currency: "usd",
+      dueDateTerms: "on_receipt",
+      allowedPaymentMethods: "[]",
+      feeHandling: "merchant",
+      totalAmountCents: 2500,
+      hostedInvoiceUrl: "https://pay.vortex.nyc/example",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const app = createApp();
+    const response = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/public/signing/${token}/payment-configs`
+      ),
+      env
+    );
+    expect(response.status).toBe(200);
+    const body = z
+      .array(z.object({ hostedInvoiceUrl: z.string().nullable() }))
+      .parse(await response.json());
+    expect(body[0]?.hostedInvoiceUrl).toBe("https://pay.vortex.nyc/example");
+  });
+
   it("returns null for an unknown qr token", async () => {
     const app = createApp();
     const response = await app.fetch(

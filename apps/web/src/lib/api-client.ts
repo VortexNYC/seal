@@ -2761,6 +2761,7 @@ const publicPaymentConfigSummarySchema = z.object({
   totalAmountCents: z.number().int(),
   currency: z.string(),
   paymentStatus: z.string().nullable().optional(),
+  hostedInvoiceUrl: z.string().nullable().optional(),
 });
 export type PublicPaymentConfigSummary = z.infer<
   typeof publicPaymentConfigSummarySchema

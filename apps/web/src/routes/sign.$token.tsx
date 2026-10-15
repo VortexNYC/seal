@@ -70,6 +70,7 @@ import {
   useGuestAnalyticsMute,
 } from "@/lib/guest-analytics";
 import { formatMoney, money } from "@/lib/money";
+import { payNowHref } from "@/lib/pay-now";
 import { pageSEO } from "@/lib/seo";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -889,6 +890,10 @@ function SigningPage() {
 
   // Check if document is waiting for payment (all signed, payment pending)
   const isWaitingForPayment = doc.workflowStatus === "waiting_for_payment";
+  const payHref = payNowHref(
+    paymentConfigs.find((config) => payNowHref(config.hostedInvoiceUrl))
+      ?.hostedInvoiceUrl
+  );
 
   // After page reloads with isCompleted=true, trigger the post-signing flow:
   // dictation first (if awaiting), then redirect (if configured), else standard thank-you.
@@ -1458,10 +1463,25 @@ function SigningPage() {
           <div className="flex items-start gap-2">
             <CreditCard className="text-kumo-default mt-0.5 h-4 w-4 shrink-0" />
             <div>
-              <Text as="p" size="sm" bold>Payment still required</Text>
-              <Text as="p" variant="secondary" size="xs">Signatures collected — complete payment below.</Text>
+              <Text as="p" size="sm" bold>Awaiting payment</Text>
+              <Text as="p" variant="secondary" size="xs">
+                {payHref
+                  ? "Signatures are in. Pay to finish the contract."
+                  : "Signatures are in. The payment link is not ready yet."}
+              </Text>
             </div>
           </div>
+          {payHref ? (
+            <a
+              href={payHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonVariants({ variant: "primary" })}
+              data-testid="signer-pay-now"
+            >
+              Pay now
+            </a>
+          ) : null}
         </div>
       )}
     </div>
