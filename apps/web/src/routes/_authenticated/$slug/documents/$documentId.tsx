@@ -781,6 +781,24 @@ function DocumentDetailPage() {
               <DropdownMenu.Item icon={FolderIcon} onClick={() => setMoveOpen(true)}>
                 Move
               </DropdownMenu.Item>
+              {!isPrepStatus &&
+              documentData.status === "active" &&
+              documentData.workflowStatus !== "cancelled" &&
+              signatureFields.length > 0 ? (
+                <DropdownMenu.Item
+                  icon={SaveIcon}
+                  onClick={() => {
+                    if (!canCreateTemplates) {
+                      toast.error("Templates require a Professional plan");
+                      return;
+                    }
+                    if (!dismissRail()) return;
+                    docState.setSaveAsTemplateOpen(true);
+                  }}
+                >
+                  Save as Template
+                </DropdownMenu.Item>
+              ) : null}
               <DropdownMenu.Item
                 icon={CopyIcon}
                 onClick={() => {
