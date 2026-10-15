@@ -1,20 +1,13 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { Text } from "@cloudflare/kumo/components/text";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { AuthProvider, PostSignUp } from "@vortex-api/better-auth-ui";
 
-import Loader from "@/components/loader";
-import { betterAuthClient } from "@/lib/better-auth";
+import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { buildOrganizationPath } from "@/lib/organization-path";
 
 interface PostSignUpSearch {
   invitation_token?: string;
   next?: string;
-}
-
-interface SessionWithActiveOrganization {
-  session?: {
-    activeOrganizationId?: string | null;
-  };
 }
 
 export const Route = createFileRoute("/_authenticated/post-sign-up")({
@@ -34,130 +27,37 @@ export const Route = createFileRoute("/_authenticated/post-sign-up")({
 function RouteComponent() {
   const navigate = useNavigate();
   const { invitation_token: invitationToken, next } = Route.useSearch();
+  const client = getBetterAuthUiClient();
 
-  const { data: sessionData, isPending: isSessionPending } =
-    betterAuthClient?.useSession() ?? {
-      data: null,
-      isPending: false,
-    };
-
-  const { data: organizations, isPending: isOrganizationsPending } = useQuery({
-    queryKey: ["auth", "organization", "list"],
-    queryFn: async () => {
-      if (betterAuthClient === null) {
-        throw new Error("Better Auth is not configured");
-      }
-      const result = await betterAuthClient.organization.list();
-      if (result.error) {
-        throw new Error(result.error.message);
-      }
-      return result.data ?? [];
-    },
-    enabled: betterAuthClient !== null,
-  });
-
-  const setActive = useMutation({
-    mutationFn: async (organizationId: string) => {
-      if (betterAuthClient === null) {
-        throw new Error("Better Auth is not configured");
-      }
-      const result = await betterAuthClient.organization.setActive({
-        organizationId,
-      });
-      if (result.error) {
-        throw new Error(result.error.message);
-      }
-      return result.data;
-    },
-  });
-
-  const acceptInvitation = useMutation({
-    mutationFn: async (token: string) => {
-      if (betterAuthClient === null) {
-        throw new Error("Better Auth is not configured");
-      }
-      const result = await betterAuthClient.organization.acceptInvitation({
-        invitationId: token,
-      });
-      if (result.error) {
-        throw new Error(result.error.message);
-      }
-      return result.data;
-    },
-  });
-
-  useEffect(() => {
-    if (
-      !sessionData ||
-      isOrganizationsPending ||
-      organizations === undefined ||
-      organizations === null
-    ) {
-      return;
-    }
-
-    const currentOrganizations = organizations;
-    const typedSession = sessionData as SessionWithActiveOrganization;
-
-    const toDestination = (slug: string | null | undefined) =>
-      next === "developer" && slug
-        ? buildOrganizationPath(slug, "/settings/developer")
-        : "/app";
-
-    async function finish() {
-      if (invitationToken) {
-        await acceptInvitation.mutateAsync(invitationToken);
-        void navigate({ to: "/app", replace: true });
-        return;
-      }
-
-      if (typedSession.session?.activeOrganizationId) {
-        const active = currentOrganizations.find(
-          (o) => o.id === typedSession.session?.activeOrganizationId
-        );
-        void navigate({ to: toDestination(active?.slug), replace: true });
-        return;
-      }
-
-      if (currentOrganizations.length > 0) {
-        const first = currentOrganizations[0];
-        if (first?.id) {
-          await setActive.mutateAsync(first.id);
-        }
-        void navigate({ to: toDestination(first?.slug), replace: true });
-        return;
-      }
-
-      void navigate({
-        to: "/onboarding/choose-organization",
-        search: next === "developer" ? { next } : {},
-        replace: true,
-      });
-    }
-
-    void finish();
-  }, [
-    sessionData,
-    isOrganizationsPending,
-    organizations,
-    invitationToken,
-    next,
-    acceptInvitation,
-    setActive,
-    navigate,
-  ]);
-
-  if (betterAuthClient === null || isSessionPending || isOrganizationsPending) {
+  if (client === null) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
-        <Loader />
+        <Text as="p" size="sm">
+          Auth client not configured.
+        </Text>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center">
-      <Loader />
+    <div className="flex min-h-dvh items-center justify-center p-4">
+      <AuthProvider client={client}>
+        <PostSignUp
+          invitationId={invitationToken}
+          onReady={(organization) => {
+            void navigate({
+              to:
+                next === "developer"
+                  ? buildOrganizationPath(
+                      organization.slug,
+                      "/settings/developer"
+                    )
+                  : "/app",
+              replace: true,
+            });
+          }}
+        />
+      </AuthProvider>
     </div>
   );
 }
