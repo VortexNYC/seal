@@ -22,6 +22,11 @@ const createTokenSchema = z.object({
     .array(scopeSchema)
     .min(1)
     .describe("Scopes: read, write, sign, admin"),
+  allowed_ip_ranges: z
+    .array(z.string().min(1).max(80))
+    .max(50)
+    .optional()
+    .describe("CIDRs or addresses. Omit to allow any address."),
 });
 
 const revokeTokenSchema = z.object({
@@ -63,7 +68,11 @@ export function registerTokenTools(
       const authToken = getAuthToken(extra);
       const response = await client.post<unknown>(
         `/organizations/${encodeURIComponent(args.organization_slug)}/tokens`,
-        { name: args.name, scopes: args.scopes },
+        {
+          name: args.name,
+          scopes: args.scopes,
+          allowedIpRanges: args.allowed_ip_ranges ?? [],
+        },
         undefined,
         authToken
       );

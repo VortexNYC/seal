@@ -43,8 +43,11 @@ function ApiKeysPage() {
   const isAdmin = isOrganizationAdminRole(organization?.userRole);
 
   const createMutation = useMutation({
-    mutationFn: (input: { name: string; scopes: string[] }) =>
-      createApiToken(slug, input),
+    mutationFn: (input: {
+      name: string;
+      scopes: string[];
+      allowedIpRanges: string[];
+    }) => createApiToken(slug, input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["api-tokens", slug] });
     },
@@ -70,7 +73,16 @@ function ApiKeysPage() {
           description="Workspace-scoped tokens for the Seal REST API. The plaintext secret is shown once."
         >
           <ApiKeyManager
-            keys={tokens ?? []}
+            keys={(tokens ?? []).map((token) => ({
+              id: token.id,
+              name: token.name,
+              publicId: token.publicId,
+              scopes: token.scopes,
+              allowedIpRanges: token.allowedIpRanges,
+              createdAt: token.createdAt,
+              lastUsedAt: token.lastUsedAt,
+              revokedAt: token.revokedAt,
+            }))}
             scopeOptions={API_TOKEN_SCOPES}
             canManage={isAdmin}
             isLoading={isPending}
