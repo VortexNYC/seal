@@ -3,13 +3,14 @@ import { Input } from "@cloudflare/kumo/components/input";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
 import { Building } from "@phosphor-icons/react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
 import Loader from "@/components/loader";
 import { betterAuthClient } from "@/lib/better-auth";
 import { buildOrganizationPath } from "@/lib/organization-path";
+import { rememberCreatedOrganization } from "@/lib/remember-created-organization";
 
 interface ChooseOrganizationSearch {
   next?: string;
@@ -40,6 +41,7 @@ export const Route = createFileRoute(
 
 function RouteComponent() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { next, create } = Route.useSearch();
   const orgDestination = (slug: string) =>
     buildOrganizationPath(
@@ -117,22 +119,19 @@ function RouteComponent() {
                   }
                 : undefined
             }
-            onCreated={(slug) => {
-              if (!slug) {
-                void navigate({ to: "/app", replace: true });
-                return;
-              }
-              void betterAuthClient?.organization
-                .setActive({ organizationSlug: slug })
-                .then(() => {
-                  void navigate({
-                    to: newOrgDestination(slug),
-                    replace: true,
-                  });
-                })
-                .catch(() => {
-                  void navigate({ to: "/app", replace: true });
-                });
+            onCreated={(created) => {
+              queryClient.setQueryData(
+                ["auth", "organization", "list"],
+                (current: Array<{ slug: string }> | undefined) =>
+                  rememberCreatedOrganization(current, created)
+              );
+              void betterAuthClient?.organization.setActive({
+                organizationSlug: created.slug,
+              });
+              void navigate({
+                to: newOrgDestination(created.slug),
+                replace: true,
+              });
             }}
           />
         </div>
@@ -227,12 +226,12 @@ function slugifyWorkspaceName(name: string): string {
     .slice(0, 48);
 }
 
-function readCreatedSlug(data: unknown): string | undefined {
-  if (typeof data !== "object" || data === null || !("slug" in data)) {
+function readCreatedField(data: unknown, key: string): string | undefined {
+  if (typeof data !== "object" || data === null || !(key in data)) {
     return undefined;
   }
-  const slug = Reflect.get(data, "slug");
-  return typeof slug === "string" && slug.length > 0 ? slug : undefined;
+  const value = Reflect.get(data, key);
+  return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
 function CreateOrganizationCard({
@@ -242,7 +241,7 @@ function CreateOrganizationCard({
 }: {
   hasOrganizations: boolean;
   onCancel?: () => void;
-  onCreated: (slug?: string) => void;
+  onCreated: (created: { id: string; name: string; slug: string }) => void;
 }) {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -276,7 +275,11 @@ function CreateOrganizationCard({
       { name: trimmedName, slug: resolvedSlug },
       {
         onSuccess: (data) => {
-          onCreated(readCreatedSlug(data) ?? resolvedSlug);
+          onCreated({
+            id: readCreatedField(data, "id") ?? resolvedSlug,
+            name: readCreatedField(data, "name") ?? trimmedName,
+            slug: readCreatedField(data, "slug") ?? resolvedSlug,
+          });
         },
         onError: (err) => {
           setError(
