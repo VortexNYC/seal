@@ -1150,6 +1150,15 @@ export const copyDocumentSchema = z.object({
 });
 export type CopyDocumentInput = z.infer<typeof copyDocumentSchema>;
 
+export const forwardEnvelopeSchema = z.object({
+  id: z
+    .string()
+    .describe(
+      "Completed document id. The executed PDF becomes a new draft with no signers."
+    ),
+});
+export type ForwardEnvelopeInput = z.infer<typeof forwardEnvelopeSchema>;
+
 export const forwardDocumentSchema = z.object({
   id: z.string().describe("Completed document id"),
   email: z

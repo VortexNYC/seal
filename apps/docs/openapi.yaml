@@ -5102,6 +5102,37 @@ paths:
         "409":
           description: Document is not completed
 
+  /documents/forward-envelope:
+    post:
+      tags: [Documents]
+      operationId: forwardEnvelope
+      summary: Start a new envelope from a completed PDF
+      description: |
+        Copies the executed PDF into a new draft. Signers and fields are not copied.
+        The source document stays completed.
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "201":
+          description: Draft envelope created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, public_id]
+                properties:
+                  id: { type: string }
+                  public_id: { type: string }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Document is not completed
+
   /documents/bulk-void:
     post:
       tags: [Documents]

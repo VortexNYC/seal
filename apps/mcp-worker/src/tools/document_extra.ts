@@ -13,6 +13,8 @@ import {
   copyDocumentSchema,
   type ForwardDocumentInput,
   forwardDocumentSchema,
+  type ForwardEnvelopeInput,
+  forwardEnvelopeSchema,
   type BulkVoidDocumentsInput,
   bulkVoidDocumentsSchema,
   type GetDocumentAccessInput,
@@ -167,6 +169,30 @@ export function registerDocumentExtraTools(
       const response = await client.post<{ sent: boolean }>(
         "/documents/forward",
         { email },
+        { id },
+        authToken
+      );
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(response, null, 2),
+          },
+        ],
+      };
+    }
+  );
+
+  server.tool(
+    "seal_forward_envelope",
+    "Start a new draft envelope from the executed PDF of a completed document. The new envelope has that signed file and no signers. Use this when someone else must sign the finished PDF. Fails if the document is not completed.",
+    forwardEnvelopeSchema.shape,
+    async (args, extra) => {
+      const { id } = args as ForwardEnvelopeInput;
+      const authToken = getAuthToken(extra);
+      const response = await client.post<{ id: string; public_id: string }>(
+        "/documents/forward-envelope",
+        {},
         { id },
         authToken
       );
