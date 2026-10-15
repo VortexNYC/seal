@@ -11,7 +11,9 @@ import {
   auditLogs,
   documents,
   organization,
+  paymentFieldConfigs,
   recipients,
+  signatureFields,
   signatures,
   webhookDeliveries,
   webhooks,
@@ -53,6 +55,8 @@ describe("public API", () => {
     await db.delete(activity);
     await db.delete(auditLogs);
     await db.delete(auditChainTips);
+    await db.delete(paymentFieldConfigs);
+    await db.delete(signatureFields);
     await db.delete(recipients);
     await db.delete(documents);
     await db.delete(organization);
@@ -428,6 +432,101 @@ describe("public API", () => {
       "document.completed",
       "recipient.signed",
     ]);
+  });
+
+  it("waits for payment after the last signature instead of completing", async () => {
+    const db = createD1(env.D1);
+    await db.insert(organization).values({
+      id: "org_pay",
+      name: "Pay Org",
+      slug: "pay-org",
+      metadata: ANONYMOUS_SIGN_ORG_METADATA,
+    });
+    await db.insert(documents).values({
+      id: "doc_pay",
+      publicId: "doc_pub_pay",
+      organizationId: "org_pay",
+      name: "Pay Document",
+      status: "sent",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    const token = "pay-token";
+    await db.insert(recipients).values({
+      id: "rec_pay",
+      publicId: "rec_pub_pay",
+      documentId: "doc_pay",
+      email: "payer@example.com",
+      name: "Payer",
+      role: "signer",
+      status: "pending",
+      signingToken: token,
+      tokenExpiresAt: new Date(Date.now() + 60_000),
+      ...consentFields,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await db.insert(signatureFields).values({
+      id: "field_pay",
+      publicId: "field_pub_pay",
+      documentId: "doc_pay",
+      recipientId: "rec_pay",
+      fieldType: "payment",
+      label: "Pay",
+      isRequired: true,
+      x: 10,
+      y: 10,
+      width: 20,
+      height: 8,
+      page: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await db.insert(paymentFieldConfigs).values({
+      id: "cfg_pay",
+      publicId: "cfg_pub_pay",
+      fieldId: "field_pay",
+      documentId: "doc_pay",
+      organizationId: "org_pay",
+      paymentType: "one_time",
+      items: "[]",
+      currency: "usd",
+      dueDateTerms: "on_receipt",
+      allowedPaymentMethods: "[]",
+      feeHandling: "merchant",
+      totalAmountCents: 2500,
+      paymentStatus: "pending",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const app = createApp();
+    const signed = await app.fetch(
+      new Request(`http://localhost:8787/api/public/signing/${token}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "signed",
+          signatureData: "Payer",
+          signatureType: "type",
+          ipAddress: "203.0.113.10",
+          userAgent: "seal-test/1.0",
+        }),
+      }),
+      env
+    );
+    expect(signed.status).toBe(200);
+
+    const [doc] = await db
+      .select({ status: documents.status })
+      .from(documents)
+      .where(eq(documents.id, "doc_pay"));
+    expect(doc?.status).toBe("waiting_for_payment");
+
+    const audits = await db.select().from(auditLogs);
+    expect(audits.map((row) => row.action)).not.toContain("document.completed");
   });
 
   it("rejects a second terminal submit (first-writer-wins)", async () => {

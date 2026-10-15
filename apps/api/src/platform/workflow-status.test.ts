@@ -4,6 +4,7 @@ import {
   isEnvelopeClosed,
   presentedWorkflowStatus,
   saveAsTemplateBlock,
+  statusAfterLastRequiredSignature,
 } from "./workflow-status.js";
 
 describe("presented workflow status", () => {
@@ -17,6 +18,18 @@ describe("presented workflow status", () => {
     expect(isEnvelopeClosed("voided")).toBe(true);
     expect(isEnvelopeClosed("cancelled")).toBe(true);
     expect(isEnvelopeClosed("sent")).toBe(false);
+  });
+
+  it("holds completion while a payment field is unpaid", () => {
+    expect(statusAfterLastRequiredSignature([])).toBe("completed");
+    expect(statusAfterLastRequiredSignature(["paid"])).toBe("completed");
+    expect(statusAfterLastRequiredSignature(["cancelled"])).toBe("completed");
+    expect(statusAfterLastRequiredSignature(["pending"])).toBe(
+      "waiting_for_payment"
+    );
+    expect(statusAfterLastRequiredSignature([null])).toBe(
+      "waiting_for_payment"
+    );
   });
 
   it("lets a sent envelope become a template", () => {

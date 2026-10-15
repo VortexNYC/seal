@@ -14,7 +14,10 @@ import {
 } from "../global/schema.js";
 import { writeAuditLog } from "../platform/audit-log.js";
 import { syncVortexOrderForm } from "../platform/vortex-order-form.js";
-import { presentedWorkflowStatus } from "../platform/workflow-status.js";
+import {
+  presentedWorkflowStatus,
+  statusAfterLastRequiredSignature,
+} from "../platform/workflow-status.js";
 import { autoStampRecipientFields } from "../platform/auto-sign-fields.js";
 import { certificateStorageKey } from "../platform/certificate-of-completion.js";
 import { generateAndStoreCertificateOfCompletion } from "../platform/certificate-store.js";
@@ -1270,10 +1273,41 @@ app.openapi(submitRouteDef, async (c) => {
     }
 
     if (pendingCount === 0) {
+      const paymentRows = await db
+        .select({ paymentStatus: paymentFieldConfigs.paymentStatus })
+        .from(paymentFieldConfigs)
+        .where(eq(paymentFieldConfigs.documentId, doc.id));
+      const nextStatus = statusAfterLastRequiredSignature(
+        paymentRows.map((row) => row.paymentStatus)
+      );
+
+      if (nextStatus === "waiting_for_payment") {
+        await db
+          .update(documents)
+          .set({
+            status: "waiting_for_payment",
+            workflowStatus: "waiting_for_payment",
+            updatedAt: nowDate,
+          })
+          .where(eq(documents.id, doc.id));
+        await db.insert(activity).values({
+          id: crypto.randomUUID(),
+          organizationId: doc.organizationId,
+          action: "document.waiting_for_payment",
+          actorName: recipient.name ?? recipient.email,
+          targetName: doc.name,
+          metadata: JSON.stringify({
+            documentId: doc.id,
+            publicId: doc.publicId,
+          }),
+          createdAt: nowDate,
+        });
+      } else {
       await db
         .update(documents)
         .set({
           status: "completed",
+          workflowStatus: "completed",
           completedAt: nowDate,
           updatedAt: nowDate,
         })
@@ -1474,6 +1508,7 @@ app.openapi(submitRouteDef, async (c) => {
         if (!result.success) {
           console.error("[public/submit] completed email failed:", result);
         }
+      }
       }
     }
   }

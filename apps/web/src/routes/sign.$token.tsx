@@ -855,12 +855,8 @@ function SigningPage() {
   const isSigningActionDisabled =
     isCompleted ||
     submitSignatureMutation.isPending ||
-    hasUnpaidPayments ||
     !allRequiredFieldsFilled;
   const signingButtonLabel = useMemo(() => {
-    if (hasUnpaidPayments) {
-      return "Payment required";
-    }
     if (!allRequiredFieldsFilled) {
       return `Please complete ${unfilledRequiredCount} more required field${unfilledRequiredCount === 1 ? "" : "s"}`;
     }
@@ -881,7 +877,6 @@ function SigningPage() {
         : "Mark as Viewed";
   }, [
     allRequiredFieldsFilled,
-    hasUnpaidPayments,
     isMainSignatureFilled,
     fields,
     recipient.role,
@@ -1361,8 +1356,8 @@ function SigningPage() {
           <div className="flex items-start gap-2">
             <CreditCard className="text-kumo-default mt-0.5 h-4 w-4 shrink-0" />
             <div>
-              <Text as="p" size="sm" bold>Payment required</Text>
-              <Text as="p" variant="secondary" size="xs">Complete payment before signing.</Text>
+              <Text as="p" size="sm" bold>Billed after signing</Text>
+              <Text as="p" variant="secondary" size="xs">This amount is due after every required signature.</Text>
             </div>
           </div>
           {paymentConfigs

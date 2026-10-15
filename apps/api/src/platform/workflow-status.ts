@@ -7,6 +7,20 @@ export function isEnvelopeClosed(status: string): boolean {
   return status === "voided" || status === "cancelled";
 }
 
+/**
+ * Billing starts when the last required signature lands and a payment field
+ * is still unpaid. Decline and an outstanding signature never reach this.
+ * Paid and cancelled fields do not hold the envelope.
+ */
+export function statusAfterLastRequiredSignature(
+  paymentStatuses: readonly (string | null)[]
+): "completed" | "waiting_for_payment" {
+  const owesMoney = paymentStatuses.some(
+    (status) => status !== "paid" && status !== "cancelled"
+  );
+  return owesMoney ? "waiting_for_payment" : "completed";
+}
+
 /** A sent or completed envelope can become a template. A closed or deleted one cannot. */
 export function saveAsTemplateBlock(
   status: string,
