@@ -37,6 +37,7 @@ import { syncVortexOrderForm } from "../platform/vortex-order-form.js";
 import {
   isEnvelopeClosed,
   presentedWorkflowStatus,
+  saveAsTemplateBlock,
 } from "../platform/workflow-status.js";
 import {
   getAuditActor,
@@ -5677,11 +5678,19 @@ app.openapi(saveAsTemplateRouteDef, async (c) => {
     );
   }
 
-  if (doc.status !== "draft") {
+  const templateBlock = saveAsTemplateBlock(
+    doc.status,
+    doc.documentStatus,
+    doc.storageKey
+  );
+  if (templateBlock === "closed") {
     return c.json(
-      { error: "Only draft documents can be saved as templates" },
+      { error: "This document cannot be saved as a template" },
       400
     );
+  }
+  if (templateBlock === "missing_file") {
+    return c.json({ error: "Document has no file" }, 400);
   }
 
   const fields = await db
