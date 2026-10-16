@@ -15,6 +15,7 @@ import {
   Copy as CopyIcon,
   DownloadSimple as DownloadIcon,
   DotsThree as MoreIcon,
+  FileCsv as FileCsvIcon,
   FloppyDisk as SaveIcon,
   Folder as FolderIcon,
   PaperPlaneTilt as SendIcon,
@@ -46,6 +47,7 @@ import {
   deleteDocument,
   downloadCertificate,
   downloadDocument,
+  getDocumentSharing,
   getPaymentsConnect,
   getSigningSettings,
   moveDocumentsToFolder,
@@ -54,6 +56,7 @@ import {
   resendRecipientEmail as resendRecipientEmailApi,
 } from "@/lib/api-client";
 import { buildActivityEvents } from "@/lib/document-activity";
+import { envelopeCsv, envelopeCsvFilename } from "@/lib/envelope-csv";
 import {
   documentHeaderAction,
   signedPdfFilename,
@@ -784,6 +787,39 @@ function DocumentDetailPage() {
                 }}
               >
                 Print
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                icon={FileCsvIcon}
+                onClick={() => {
+                  void getDocumentSharing(slug, documentPublicId)
+                    .then((sharing) => {
+                      const csv = envelopeCsv({
+                        document: {
+                          name: documentData.name,
+                          workflowStatus: documentData.workflowStatus,
+                          ownerName: sharing.owner.name,
+                          ownerEmail: sharing.owner.email,
+                          sentAt: documentData.sentAt,
+                          deadline: documentData.deadline,
+                        },
+                        recipients,
+                      });
+                      const blob = new Blob([csv], {
+                        type: "text/csv;charset=utf-8",
+                      });
+                      const url = URL.createObjectURL(blob);
+                      const link = document.createElement("a");
+                      link.href = url;
+                      link.download = envelopeCsvFilename(documentData.name);
+                      link.click();
+                      URL.revokeObjectURL(url);
+                    })
+                    .catch(() => {
+                      toast.error("Could not export this envelope");
+                    });
+                }}
+              >
+                Export CSV
               </DropdownMenu.Item>
               <DropdownMenu.Item icon={FolderIcon} onClick={() => setMoveOpen(true)}>
                 Move
