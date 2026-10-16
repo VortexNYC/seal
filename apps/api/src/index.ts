@@ -60,7 +60,9 @@ import { getAuditRequestMeta, writeAuditLog } from "./platform/audit-log.js";
 import { flushAuditSiemStream } from "./platform/audit-siem.js";
 import { createAuth } from "./platform/auth.js";
 import { sendEmail } from "./platform/email.js";
+import { requestClientIp } from "./platform/ip-allowlist.js";
 import { verifyMcpAccessToken } from "./platform/mcp-auth.js";
+import { workspaceApiAccessAllowsForOrganization } from "./platform/org-settings.js";
 import { runScheduledTasks } from "./platform/scheduled.js";
 import { selfhostUrlConfigError } from "./platform/selfhost-urls.js";
 import { getSessionUser } from "./platform/session.js";
@@ -817,6 +819,17 @@ app.use("/api/v1/*", async (c, next) => {
   const payload = await verifyMcpAccessToken(c.env, token);
   if (!payload) {
     return c.json({ error: "unauthorized" }, 401);
+  }
+
+  if (payload.organizationId) {
+    const allowed = await workspaceApiAccessAllowsForOrganization(
+      c.env,
+      payload.organizationId,
+      requestClientIp(c.req.raw.headers)
+    );
+    if (!allowed) {
+      return c.json({ error: "unauthorized" }, 401);
+    }
   }
 
   c.set("mcp", payload);
