@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { createD1 } from "../../global/db.js";
 import { documents, organization, recipients } from "../../global/schema.js";
+import { refreshOpenRecipientLink } from "../document-send.js";
 import {
   getAuditActor,
   getAuditRequestMeta,
@@ -80,6 +81,24 @@ function parseDeclineReason(signatureData: string | null): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+const FINISHED_RECIPIENT = new Set(["signed", "approved"]);
+
+function envelopeIsOpen(status: string): boolean {
+  return status === "sent";
+}
+
+async function organizationSenderName(
+  db: ReturnType<typeof createD1>,
+  organizationId: string
+): Promise<string> {
+  const rows = await db
+    .select({ name: organization.name })
+    .from(organization)
+    .where(eq(organization.id, organizationId))
+    .limit(1);
+  return rows[0]?.name ?? "your team";
 }
 
 function toApiRecipient(
@@ -316,7 +335,7 @@ app.post("/", async (c) => {
   if (!document) {
     return c.json({ error: "not_found" }, 404);
   }
-  if (document.status !== "draft") {
+  if (document.status !== "draft" && !envelopeIsOpen(document.status)) {
     return c.json({ error: "document_not_editable" }, 400);
   }
 
@@ -343,6 +362,15 @@ app.post("/", async (c) => {
     createdBy: mcp.sub,
     people: [{ email, name }],
   });
+
+  if (envelopeIsOpen(document.status)) {
+    await refreshOpenRecipientLink(db, c.env, {
+      documentId,
+      recipientId,
+      senderName: await organizationSenderName(db, organizationId),
+      rotate: false,
+    });
+  }
 
   const actor = getAuditActor({ mcp: c.get("mcp") });
   if (actor) {
@@ -437,8 +465,36 @@ async function handleUpdateRecipient(
   if (!document) {
     return c.json({ error: "not_found" }, 404);
   }
-  if (document.status !== "draft") {
+  if (document.status !== "draft" && !envelopeIsOpen(document.status)) {
     return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (
+    envelopeIsOpen(document.status) &&
+    (role !== undefined || order !== undefined)
+  ) {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+
+  const existingRows = await db
+    .select({
+      id: recipients.id,
+      email: recipients.email,
+      status: recipients.status,
+    })
+    .from(recipients)
+    .where(
+      and(eq(recipients.id, recipientId), eq(recipients.documentId, documentId))
+    )
+    .limit(1);
+  const existing = existingRows[0];
+  if (!existing) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  if (
+    envelopeIsOpen(document.status) &&
+    FINISHED_RECIPIENT.has(existing.status)
+  ) {
+    return c.json({ error: "recipient_already_finished" }, 400);
   }
 
   const updateValues: {
@@ -446,11 +502,20 @@ async function handleUpdateRecipient(
     name?: string;
     role?: string;
     order?: number;
+    status?: string;
+    declinedAt?: Date | null;
   } = {};
   if (email !== undefined) updateValues.email = email;
   if (name !== undefined) updateValues.name = name;
   if (role !== undefined) updateValues.role = role;
   if (order !== undefined) updateValues.order = order;
+  const emailChanged =
+    email !== undefined &&
+    email.toLowerCase() !== existing.email.toLowerCase();
+  if (emailChanged && existing.status === "declined") {
+    updateValues.status = "pending";
+    updateValues.declinedAt = null;
+  }
 
   await db
     .update(recipients)
@@ -458,6 +523,15 @@ async function handleUpdateRecipient(
     .where(
       and(eq(recipients.id, recipientId), eq(recipients.documentId, documentId))
     );
+
+  if (envelopeIsOpen(document.status) && emailChanged) {
+    await refreshOpenRecipientLink(db, c.env, {
+      documentId,
+      recipientId,
+      senderName: await organizationSenderName(db, organizationId),
+      rotate: true,
+    });
+  }
 
   const rows = await db
     .select({

@@ -304,6 +304,76 @@ export async function sendDocumentForSigning(
   return { sentAt, deadline, recipients: results, failedEmails };
 }
 
+/**
+ * Mint or rotate a signing link on an envelope that is already out.
+ * Emails only when it is this person's turn. A later sequential signer
+ * keeps a token and is not emailed yet.
+ */
+export async function refreshOpenRecipientLink(
+  db: ReturnType<typeof createD1>,
+  env: EmailEnv,
+  input: {
+    documentId: string;
+    recipientId: string;
+    senderName: string;
+    rotate: boolean;
+  }
+): Promise<void> {
+  const [doc] = await db
+    .select({
+      name: documents.name,
+      signingMode: documents.signingMode,
+      deadline: documents.deadline,
+    })
+    .from(documents)
+    .where(eq(documents.id, input.documentId))
+    .limit(1);
+  if (!doc) return;
+
+  const rows = await db
+    .select()
+    .from(recipients)
+    .where(eq(recipients.documentId, input.documentId));
+  const target = rows.find((row) => row.id === input.recipientId);
+  if (!target?.email) return;
+
+  const now = new Date();
+  const expires =
+    doc.deadline ?? new Date(now.getTime() + DEFAULT_EXPIRATION_MS);
+  const signingToken =
+    input.rotate || !target.signingToken
+      ? generateSigningToken()
+      : target.signingToken;
+
+  await db
+    .update(recipients)
+    .set({
+      signingToken,
+      tokenExpiresAt: expires,
+      updatedAt: now,
+    })
+    .where(eq(recipients.id, target.id));
+
+  if (!recipientsDueInvitation(doc.signingMode, rows).includes(target.id)) {
+    return;
+  }
+
+  const emailResult = await sendDocumentInvitationEmail(env, {
+    to: target.email,
+    recipientName: target.name ?? target.email,
+    senderName: input.senderName,
+    documentName: doc.name,
+    signingToken,
+    expiresAt: expires.getTime(),
+  });
+  if (!emailResult.success) {
+    console.error(
+      "[recipients/correct] invitation email failed:",
+      emailResult
+    );
+  }
+}
+
 /** Email the next sequential group after an earlier group has finished. */
 export async function inviteNextSequentialGroup(
   db: ReturnType<typeof createD1>,
