@@ -153,7 +153,7 @@ function SecuritySettingsContent() {
         .filter(Boolean);
 
       await updateSecuritySettings(slug, {
-        ipAllowlist: ipAllowlist.length > 0 ? ipAllowlist : undefined,
+        ipAllowlist,
         allowApiAccess: formData.allowApiAccess,
         ssoEnforced: formData.ssoEnforced,
       });

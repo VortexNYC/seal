@@ -1,6 +1,7 @@
 @import "@seal/tokens/seal-fonts-web.css";
 @import "@seal/tokens/seal-theme-web.css";
 @import "@cloudflare/kumo/styles";
+@import "@vortex-api/better-auth-ui/theme.css";
 @import "tailwindcss";
 
 /*
@@ -30,6 +31,17 @@
   --color-kumo-link: var(--kumo-link);
   --color-kumo-tint: var(--kumo-tint);
   --color-kumo-subtle: var(--kumo-subtle);
+  --color-kumo-canvas: var(--kumo-base);
+
+  /* Kumo text utilities read --text-color-kumo-*, not --color-kumo-*. */
+  --text-color-kumo-default: var(--kumo-default);
+  --text-color-kumo-strong: var(--kumo-default);
+  --text-color-kumo-subtle: var(--kumo-subtle);
+  --text-color-kumo-placeholder: var(--kumo-subtle);
+  --text-color-kumo-inactive: var(--kumo-subtle);
+  --text-color-kumo-brand: var(--kumo-brand);
+  --text-color-kumo-link: var(--kumo-link);
+  --text-color-kumo-info: var(--kumo-info);
 
   --text-lead: 1.05rem; /* ~17px */
 
