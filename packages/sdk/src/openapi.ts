@@ -2612,6 +2612,8 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": {
+                    /** Format: email */
+                    email?: string;
                     name?: string;
                     role?: components["schemas"]["RecipientRole"];
                     order?: number;

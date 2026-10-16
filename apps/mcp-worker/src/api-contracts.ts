@@ -227,8 +227,15 @@ export type AddRecipientInput = z.infer<typeof addRecipientSchema>;
 export const updateRecipientSchema = z.object({
   document_id: z.string().describe("The document ID"),
   id: z.string().describe("The recipient ID"),
+  email: z
+    .string()
+    .email()
+    .optional()
+    .describe(
+      "New email. On a sent envelope this rotates the signing link and sends it when it is their turn."
+    ),
   name: z.string().optional().describe("New display name"),
-  role: recipientRoleSchema.optional().describe("New recipient role"),
+  role: recipientRoleSchema.optional().describe("New recipient role. Draft only."),
   order: z.number().optional().describe("New signing order"),
   message: z.string().optional().describe("New custom message"),
 });

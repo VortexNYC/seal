@@ -2666,7 +2666,13 @@ paths:
       tags: [Recipients]
       operationId: addRecipient
       summary: Add a recipient
-      description: Adds a recipient to a draft document.
+      description: >
+        Adds a recipient to a draft, or to an envelope that is already sent
+        and not finished. On a draft they are invited when the document is
+        sent. On a sent envelope they get a signing link now if it is their
+        turn; a later sequential signer keeps a link and is emailed when
+        that group is reached. Completed, cancelled, and expired envelopes
+        are rejected.
       parameters:
         - name: document_id
           in: query
@@ -2755,7 +2761,13 @@ paths:
       tags: [Recipients]
       operationId: updateRecipient
       summary: Update a recipient
-      description: Updates a recipient on a draft document.
+      description: >
+        On a draft, name, role, order, and email can change. On a sent
+        envelope, email and name can change for someone who has not signed
+        or approved. A new email rotates the signing link and sends it when
+        it is their turn. Role and order stay locked after send. A person
+        who already finished cannot be changed. Completed, cancelled, and
+        expired envelopes are rejected.
       parameters:
         - name: document_id
           in: query
@@ -2773,12 +2785,20 @@ paths:
             schema:
               type: object
               properties:
+                email:
+                  type: string
+                  format: email
+                  description: >
+                    New address. On a sent envelope this rotates the signing
+                    link and emails it when it is this person's turn.
                 name:
                   type: string
                 role:
                   $ref: "#/components/schemas/RecipientRole"
+                  description: Draft only. Rejected after the envelope is sent.
                 order:
                   type: integer
+                  description: Draft only. Rejected after the envelope is sent.
                 message:
                   type: string
       responses:
