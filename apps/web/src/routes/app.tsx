@@ -33,6 +33,7 @@ function AuthenticatedRedirect() {
     isError: isListError,
   } = useQuery({
     queryKey: ["auth", "organization", "list"],
+    enabled: sessionData != null,
     queryFn: async () => {
       const result = await betterAuthClient!.organization.list();
       if (result.error) {
@@ -84,7 +85,7 @@ function AuthenticatedRedirect() {
 
   const isLoading =
     isSessionPending ||
-    isListPending ||
+    (sessionData != null && isListPending) ||
     (organizations &&
       organizations.length > 0 &&
       !activeOrganizationSlug &&

@@ -46,7 +46,7 @@ test.describe("Authentication", () => {
     await signInTestUser(page);
 
     await page.goto("/app", { waitUntil: "domcontentloaded" });
-    await expect(page).toHaveURL(/\/(app|.*\/home|.*\/onboarding)/, {
+    await expect(page).toHaveURL(/\/[\w-]+\/(home|onboarding)/, {
       timeout: 30000,
     });
     expect(isAuthenticatedUrl(page.url())).toBe(true);
