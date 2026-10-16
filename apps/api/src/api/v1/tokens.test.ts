@@ -355,4 +355,52 @@ describe("api v1 tokens", () => {
     );
     expect(allowed.status).toBe(200);
   });
+
+  it("rejects a token used from outside the workspace allowlist", async () => {
+    const { orgId, slug, plaintext } = await seedTokenContext();
+    const db = createD1(env.D1);
+    await db
+      .update(organization)
+      .set({
+        metadata: JSON.stringify({
+          securitySettings: {
+            ipAllowlist: ["203.0.113.0/24"],
+            allowApiAccess: true,
+          },
+        }),
+      })
+      .where(eq(organization.id, orgId));
+
+    const blocked = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/v1/organizations/${encodeURIComponent(
+          slug
+        )}/tokens`,
+        {
+          headers: {
+            authorization: `Bearer ${plaintext}`,
+            "cf-connecting-ip": "198.51.100.8",
+          },
+        }
+      ),
+      env
+    );
+    expect(blocked.status).toBe(401);
+
+    const allowed = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/v1/organizations/${encodeURIComponent(
+          slug
+        )}/tokens`,
+        {
+          headers: {
+            authorization: `Bearer ${plaintext}`,
+            "cf-connecting-ip": "203.0.113.9",
+          },
+        }
+      ),
+      env
+    );
+    expect(allowed.status).toBe(200);
+  });
 });

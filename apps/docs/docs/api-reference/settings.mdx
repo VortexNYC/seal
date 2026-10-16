@@ -65,8 +65,8 @@ The Settings API lets you read and update your workspace's configuration program
 
 | Field                     | Type     | Description                                                  |
 | ------------------------- | -------- | ------------------------------------------------------------ |
-| `ip_allowlist`            | string[] | Allowed IP ranges in CIDR notation (empty = all IPs allowed) |
-| `allow_api_access`        | boolean  | Whether API key access is enabled for the workspace          |
+| `ip_allowlist`            | string[] | CIDR ranges or exact addresses. Empty allows every address. A non-empty list rejects API token and MCP calls from anywhere else. Signing links and the signed-in app are not restricted. |
+| `allow_api_access`        | boolean  | When false, API token and MCP calls are rejected. Signing links and the signed-in app stay available. |
 | `require_mfa`             | boolean  | Require multi-factor authentication for all members          |
 | `session_timeout_minutes` | number   | Session timeout in minutes (`null` = browser default)        |
 

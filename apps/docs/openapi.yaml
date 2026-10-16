@@ -805,7 +805,18 @@ components:
             ip_allowlist:
               type: array
               items: { type: string }
-            allow_api_access: { type: boolean }
+              description: >
+                CIDR ranges or exact addresses. Empty allows every address.
+                A non-empty list rejects API token and MCP calls from any
+                other address, including a call with no client IP. Signing
+                links and the signed-in app are not restricted. The settings
+                screen stores the same rule; both lists have to allow the
+                address.
+            allow_api_access:
+              type: boolean
+              description: >
+                When false, API token and MCP calls are rejected. Signing
+                links and the signed-in app stay available.
             require_mfa: { type: boolean }
             session_timeout_minutes: { type: integer, nullable: true }
 

@@ -7,6 +7,7 @@ import { apiTokens, organization, user } from "../global/schema.js";
 import { writeAuditLog } from "./audit-log.js";
 import { ipMatchesAllowlist, requestClientIp } from "./ip-allowlist.js";
 import type { McpAccessToken } from "./mcp-auth.js";
+import { workspaceApiAccessAllows } from "./org-settings.js";
 import type { Variables } from "./types.js";
 
 const TOKEN_PREFIX = "seal_";
@@ -77,27 +78,14 @@ export async function loadApiTokenContext<E extends CloudflareBindings>(
     return false;
   }
 
+  const clientIp = requestClientIp(c.req.raw.headers);
   if (
     !ipMatchesAllowlist(
-      requestClientIp(c.req.raw.headers),
+      clientIp,
       parseApiTokenIpRanges(token.allowedIpRanges)
     )
   ) {
     return false;
-  }
-
-  const now = new Date();
-  // lastUsedAt is informational; writing it on every request doubles D1
-  // write volume on the hottest auth path. Refresh at most hourly.
-  const STALE_AFTER_MS = 60 * 60 * 1000;
-  if (
-    !token.lastUsedAt ||
-    now.getTime() - token.lastUsedAt.getTime() > STALE_AFTER_MS
-  ) {
-    await db
-      .update(apiTokens)
-      .set({ lastUsedAt: now })
-      .where(eq(apiTokens.id, token.id));
   }
 
   const [userRow, orgRow] = await Promise.all([
@@ -113,6 +101,24 @@ export async function loadApiTokenContext<E extends CloudflareBindings>(
   const orgRecord = orgRow[0];
   if (!userRecord || !orgRecord) {
     return false;
+  }
+
+  if (!workspaceApiAccessAllows(orgRecord.metadata, clientIp)) {
+    return false;
+  }
+
+  const now = new Date();
+  // lastUsedAt is informational; writing it on every request doubles D1
+  // write volume on the hottest auth path. Refresh at most hourly.
+  const STALE_AFTER_MS = 60 * 60 * 1000;
+  if (
+    !token.lastUsedAt ||
+    now.getTime() - token.lastUsedAt.getTime() > STALE_AFTER_MS
+  ) {
+    await db
+      .update(apiTokens)
+      .set({ lastUsedAt: now })
+      .where(eq(apiTokens.id, token.id));
   }
 
   c.set("user", {
