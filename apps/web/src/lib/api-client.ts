@@ -1697,6 +1697,24 @@ export async function addRecipients(
     }
   );
 }
+export async function updateRecipient(
+  organizationSlug: string,
+  publicId: string,
+  recipientPublicId: string,
+  input: {
+    email?: string;
+    name?: string;
+  }
+): Promise<ApiRecipient> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/recipients/${encodeURIComponent(recipientPublicId)}`,
+    recipientSchema,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }
+  );
+}
 export async function removeRecipient(
   organizationSlug: string,
   publicId: string,

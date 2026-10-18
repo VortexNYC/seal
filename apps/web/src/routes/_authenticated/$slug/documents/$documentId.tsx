@@ -54,6 +54,7 @@ import {
   removeRecipient as removeRecipientApi,
   replaceDocumentPdf,
   resendRecipientEmail as resendRecipientEmailApi,
+  updateRecipient as updateRecipientApi,
 } from "@/lib/api-client";
 import { buildActivityEvents } from "@/lib/document-activity";
 import { envelopeCsv, envelopeCsvFilename } from "@/lib/envelope-csv";
@@ -388,6 +389,9 @@ function DocumentDetailPage() {
     prepStatuses.has(documentData.workflowStatus);
 
   const canEdit = documentData.status === "active" && isPrepStatus;
+  const canCorrectRecipients =
+    documentData.status === "active" &&
+    documentData.workflowStatus === "sent";
 
   const sharedPdfCanvas = Boolean(pdfViewer.pdfUrl);
 
@@ -466,6 +470,23 @@ function DocumentDetailPage() {
       void refetchCurrentUserRecipient();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not void");
+    }
+  };
+
+  const handleChangeEmail = async (recipientId: string, email: string) => {
+    const recipient = recipients.find((r) => r._id === recipientId);
+    if (!recipient) return;
+    try {
+      await updateRecipientApi(slug, documentPublicId, recipient.publicId, {
+        email,
+      });
+      toast.success("Email updated");
+      docState.setRecipientOptionsOpen(false);
+      void refetchRecipients();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update email"
+      );
     }
   };
 
@@ -1144,6 +1165,8 @@ function DocumentDetailPage() {
                 void refetchFields();
               }}
               canEdit={canEdit}
+              canAddRecipient={canEdit || canCorrectRecipients}
+              signingMode={documentData.signingMode}
               isUserAlreadyRecipient={isUserAlreadyRecipient}
               openSections={openSections}
               toggleSection={toggleSection}
@@ -1232,7 +1255,9 @@ function DocumentDetailPage() {
                     recipient={docState.selectedRecipientForOptions}
                     documentStatus={documentData.workflowStatus}
                     canEdit={canEdit}
+                    canChangeEmail={canCorrectRecipients}
                     onResendEmail={handleResendEmail}
+                    onChangeEmail={handleChangeEmail}
                     onRemove={(recipient) => {
                       openRemoveRecipientDialog(recipient);
                     }}

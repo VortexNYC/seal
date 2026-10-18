@@ -54,6 +54,7 @@ const documentListSchema = z.array(documentSchema);
 describe("documents API", () => {
   beforeEach(async () => {
     const db = createD1(env.D1);
+    await db.delete(recipients);
     await db.delete(documents);
     await db.delete(folders);
     await db.delete(member);
@@ -1498,5 +1499,138 @@ describe("documents API", () => {
     expect(row[0]?.parsedFormat).toBe("pdf");
     expect(row[0]?.pageCount).toBe(1);
     expect(uploaded.storageKey).toBeTruthy();
+  });
+
+  it("emails a new signer added to a sent envelope", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+    const publicId = crypto.randomUUID();
+    const docId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: docId,
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Sent",
+      status: "sent",
+      documentStatus: "active",
+      sharingMode: "private",
+      signingMode: "parallel",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/test-org/${publicId}/recipients`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            recipients: [{ email: "new@example.com", name: "New" }],
+          }),
+        }
+      ),
+      env
+    );
+    expect(response.status).toBe(201);
+    const rows = await db
+      .select({
+        email: recipients.email,
+        signingToken: recipients.signingToken,
+      })
+      .from(recipients)
+      .where(eq(recipients.documentId, docId));
+    expect(rows[0]?.email).toBe("new@example.com");
+    expect((rows[0]?.signingToken ?? "").length).toBeGreaterThan(10);
+  });
+
+  it("rejects a new signer on a finished envelope", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+    const publicId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: crypto.randomUUID(),
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Done",
+      status: "completed",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/test-org/${publicId}/recipients`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            recipients: [{ email: "late@example.com" }],
+          }),
+        }
+      ),
+      env
+    );
+    expect(response.status).toBe(400);
+  });
+
+  it("rotates the link when a sent recipient's email changes", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+    const publicId = crypto.randomUUID();
+    const docId = crypto.randomUUID();
+    const recipientPublicId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: docId,
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Sent",
+      status: "sent",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await db.insert(recipients).values({
+      id: crypto.randomUUID(),
+      publicId: recipientPublicId,
+      documentId: docId,
+      email: "old@example.com",
+      name: "Old",
+      role: "signer",
+      order: 1,
+      status: "pending",
+      signingToken: "old-token",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/test-org/${publicId}/recipients/${recipientPublicId}`,
+        {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ email: "new@example.com" }),
+        }
+      ),
+      env
+    );
+    expect(response.status).toBe(200);
+    const rows = await db
+      .select({
+        email: recipients.email,
+        signingToken: recipients.signingToken,
+      })
+      .from(recipients)
+      .where(eq(recipients.documentId, docId));
+    expect(rows[0]?.email).toBe("new@example.com");
+    expect(rows[0]?.signingToken).not.toBe("old-token");
+    expect((rows[0]?.signingToken ?? "").length).toBeGreaterThan(10);
   });
 });
