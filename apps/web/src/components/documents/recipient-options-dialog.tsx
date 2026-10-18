@@ -1,7 +1,9 @@
 import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
+import { Input } from "@cloudflare/kumo/components/input";
 import { Text } from "@cloudflare/kumo/components/text";
 import { EnvelopeSimple, Link, Trash, X } from "@phosphor-icons/react";
+import { useState } from "react";
 
 import {
   recipientFacingStatus,
@@ -39,7 +41,13 @@ interface RecipientOptionsDialogProps {
   recipient: Recipient | null;
   documentStatus?: string;
   canEdit: boolean;
+  /** Change the email on a sent envelope that this person has not finished. */
+  canChangeEmail?: boolean;
   onResendEmail?: (recipientId: Id<"document_recipients">) => void;
+  onChangeEmail?: (
+    recipientId: Id<"document_recipients">,
+    email: string
+  ) => Promise<void>;
   onRemove?: (recipient: Recipient) => void;
   presentation?: "dialog" | "panel";
 }
@@ -56,6 +64,50 @@ function getInitials(name?: string, email?: string): string {
     return email.substring(0, 2).toUpperCase();
   }
   return "??";
+}
+
+function ChangeEmailForm({
+  recipientId,
+  currentEmail,
+  onChangeEmail,
+}: {
+  recipientId: Id<"document_recipients">;
+  currentEmail: string;
+  onChangeEmail: (
+    recipientId: Id<"document_recipients">,
+    email: string
+  ) => Promise<void>;
+}) {
+  const [email, setEmail] = useState(currentEmail);
+  const [saving, setSaving] = useState(false);
+  const unchanged = email.trim().toLowerCase() === currentEmail.toLowerCase();
+
+  return (
+    <form
+      className="flex flex-col gap-2 px-2 py-2"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (unchanged || saving) return;
+        setSaving(true);
+        void onChangeEmail(recipientId, email.trim())
+          .then(() => undefined)
+          .finally(() => setSaving(false));
+      }}
+    >
+      <Input
+        type="email"
+        value={email}
+        aria-label="Recipient email"
+        onChange={(event) => setEmail(event.target.value)}
+      />
+      <Button type="submit" size="sm" disabled={unchanged || saving}>
+        Update email
+      </Button>
+      <Text as="p" size="xs" variant="secondary">
+        A new link goes to this address when it is their turn.
+      </Text>
+    </form>
+  );
 }
 
 function getRoleLabel(role: RecipientRole): string {
@@ -77,7 +129,9 @@ export function RecipientOptionsDialog({
   recipient,
   documentStatus,
   canEdit,
+  canChangeEmail = false,
   onResendEmail,
+  onChangeEmail,
   onRemove,
   presentation = "dialog",
 }: RecipientOptionsDialogProps) {
@@ -224,6 +278,18 @@ export function RecipientOptionsDialog({
             </Button>
           )}
 
+          {canChangeEmail &&
+            recipient.status !== "signed" &&
+            recipient.status !== "approved" &&
+            onChangeEmail && (
+              <ChangeEmailForm
+                key={`${recipient._id}:${recipient.email}`}
+                recipientId={recipient._id}
+                currentEmail={recipient.email}
+                onChangeEmail={onChangeEmail}
+              />
+            )}
+
           {canResend && onResendEmail && (
             <Button
               type="button"
@@ -267,7 +333,7 @@ export function RecipientOptionsDialog({
             </>
           )}
 
-          {!hasSigningLink && !canResend && !canEdit && (
+          {!hasSigningLink && !canResend && !canEdit && !canChangeEmail && (
             <div className="p-4 text-center">
               <Text as="p" size="sm" variant="secondary">
                 No actions available

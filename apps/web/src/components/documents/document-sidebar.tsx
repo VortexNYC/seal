@@ -8,6 +8,7 @@ import { CaretDown as ChevronDownIcon, Check as CheckIcon, Eye as EyeIcon, Gear 
 import { useEffect, useState, type ReactNode } from "react";
 
 import type { ActivityEvent, ActivityEventType } from "@/lib/document-activity";
+import { envelopeWaitingDetail } from "@/lib/envelope-waiting";
 import {
   recipientFacingStatus,
   recipientMarkClass,
@@ -68,6 +69,9 @@ interface DocumentSidebarProps {
 
   // Permissions
   canEdit: boolean;
+  /** Add a person on a draft, or on a sent envelope that is still open. */
+  canAddRecipient: boolean;
+  signingMode?: string | null;
   isUserAlreadyRecipient: boolean;
 
   // Collapsible section state
@@ -240,7 +244,7 @@ function RecipientRow({
 
 function RecipientsSection({
   recipients,
-  canEdit,
+  canAddRecipient,
   isUserAlreadyRecipient,
   open,
   onOpenChange,
@@ -250,7 +254,7 @@ function RecipientsSection({
   workflowStatus,
 }: {
   recipients: FieldListRecipient[];
-  canEdit: boolean;
+  canAddRecipient: boolean;
   isUserAlreadyRecipient: boolean;
   open: boolean;
   onOpenChange: () => void;
@@ -290,14 +294,14 @@ function RecipientsSection({
               />
             ))}
           </div>
-        ) : !canEdit ? (
+        ) : !canAddRecipient ? (
           <EmptySection
             icon={<UsersIcon className="size-6" />}
             title="No recipients"
             description="Recipients who need to sign or view this document show up here."
           />
         ) : null}
-        {canEdit ? (
+        {canAddRecipient ? (
           <div className="mt-3 flex flex-col gap-2">
             {!isUserAlreadyRecipient ? (
               <span title="Add your account as a signer" className="inline-flex w-full">
@@ -698,12 +702,34 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
       props.currentUserRecipient.role === "approver")
       ? props.currentUserRecipient
       : null;
-  const pendingRecipients =
-    (props.progress?.byStatus.pending ?? 0) +
-    (props.progress?.byStatus.viewed ?? 0);
+  const waitingParties = props.recipients.flatMap((recipient) => {
+    const status =
+      "status" in recipient && typeof recipient.status === "string"
+        ? recipient.status
+        : null;
+    const role =
+      "role" in recipient && typeof recipient.role === "string"
+        ? recipient.role
+        : null;
+    const order =
+      "order" in recipient && typeof recipient.order === "number"
+        ? recipient.order
+        : null;
+    if (!status || !role || order === null) return [];
+    return [
+      {
+        id: recipient._id,
+        name: recipient.name,
+        email: recipient.email,
+        role,
+        order,
+        status,
+      },
+    ];
+  });
   const waitingDetail =
-    pendingRecipients > 0
-      ? `${pendingRecipients} recipient${pendingRecipients === 1 ? "" : "s"} still need to act.`
+    waitingParties.length > 0
+      ? envelopeWaitingDetail(props.signingMode, waitingParties)
       : "Waiting on the next step in this envelope.";
 
   const requiredMine = props.currentUserFields.filter((field) => field.isRequired);
@@ -805,7 +831,7 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
       )}
       <RecipientsSection
         recipients={props.recipients}
-        canEdit={props.canEdit}
+        canAddRecipient={props.canAddRecipient}
         isUserAlreadyRecipient={props.isUserAlreadyRecipient}
         open={props.openSections.has("recipients")}
         onOpenChange={() => props.toggleSection("recipients")}

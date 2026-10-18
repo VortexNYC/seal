@@ -96,6 +96,7 @@ import {
   documentSigningPatch,
   generateSigningToken,
   recipientsDueInvitation,
+  refreshOpenRecipientLink,
   sendDocumentForSigning,
   signingProgress,
 } from "./document-send.js";
@@ -1717,7 +1718,11 @@ app.openapi(addRecipientsRouteDef, async (c) => {
     return c.json({ error: "Only the document owner can add recipients" }, 403);
   }
 
-  if (doc.status === "deleted" || doc.documentStatus !== "active") {
+  if (
+    doc.status === "deleted" ||
+    doc.documentStatus !== "active" ||
+    (doc.status !== "draft" && doc.status !== "sent")
+  ) {
     return c.json({ error: "Cannot add recipients to this document" }, 400);
   }
 
@@ -1833,6 +1838,19 @@ app.openapi(addRecipientsRouteDef, async (c) => {
     }),
     createdAt: now,
   });
+
+  if (doc.status === "sent") {
+    const senderName =
+      c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown";
+    for (const row of rows) {
+      await refreshOpenRecipientLink(db, c.env, {
+        documentId: doc.id,
+        recipientId: row.id,
+        senderName,
+        rotate: false,
+      });
+    }
+  }
 
   return c.json(rows.map(recipientResponse), 201);
 });
@@ -2136,6 +2154,169 @@ app.openapi(resendRecipientRouteDef, async (c) => {
   });
 
   return c.json({ success: true });
+});
+
+const updateRecipientBodySchema = z.object({
+  email: z.string().email().optional(),
+  name: z.string().min(1).optional(),
+});
+
+const updateRecipientRouteDef = createRoute({
+  method: "patch",
+  path: "/{slug}/{publicId}/recipients/{recipientPublicId}",
+  request: {
+    params: z.object({
+      publicId: z.string(),
+      recipientPublicId: z.string(),
+    }),
+    body: {
+      content: {
+        "application/json": { schema: updateRecipientBodySchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: { "application/json": { schema: RecipientSchema } },
+      description: "Recipient email or name updated",
+    },
+    400: { description: "Cannot update recipient" },
+    403: { description: "Forbidden" },
+    404: { description: "Document or recipient not found" },
+  },
+});
+
+app.openapi(updateRecipientRouteDef, async (c) => {
+  const organizationId = c.get("organization").id;
+  const userId = c.get("user")!.user.id;
+  const { publicId, recipientPublicId } = c.req.valid("param");
+  const input = c.req.valid("json");
+
+  if (input.email === undefined && input.name === undefined) {
+    return c.json({ error: "Nothing to update" }, 400);
+  }
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  if (doc.ownerId !== userId) {
+    return c.json(
+      { error: "Only the document owner can change recipients" },
+      403
+    );
+  }
+
+  if (doc.status !== "draft" && doc.status !== "sent") {
+    return c.json({ error: "Cannot change recipients on this document" }, 400);
+  }
+
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(
+      and(
+        eq(recipients.publicId, recipientPublicId),
+        eq(recipients.documentId, doc.id)
+      )
+    )
+    .limit(1);
+
+  const recipient = recipientRows[0];
+  if (!recipient) {
+    return c.json({ error: "Recipient not found" }, 404);
+  }
+
+  if (
+    doc.status === "sent" &&
+    (recipient.status === "signed" || recipient.status === "approved")
+  ) {
+    return c.json({ error: "This person already finished" }, 400);
+  }
+
+  const email =
+    input.email === undefined ? undefined : input.email.toLowerCase();
+  const emailChanged =
+    email !== undefined && email !== recipient.email.toLowerCase();
+
+  if (emailChanged) {
+    const siblings = await db
+      .select({ id: recipients.id, email: recipients.email })
+      .from(recipients)
+      .where(eq(recipients.documentId, doc.id));
+    if (
+      siblings.some(
+        (row) => row.id !== recipient.id && row.email.toLowerCase() === email
+      )
+    ) {
+      return c.json({ error: "That email is already on this envelope" }, 400);
+    }
+  }
+
+  const now = new Date();
+  await db
+    .update(recipients)
+    .set({
+      ...(emailChanged && email !== undefined ? { email } : {}),
+      ...(input.name !== undefined ? { name: input.name } : {}),
+      ...(emailChanged && recipient.status === "declined"
+        ? { status: "pending", declinedAt: null }
+        : {}),
+      updatedAt: now,
+    })
+    .where(eq(recipients.id, recipient.id));
+
+  if (doc.status === "sent" && emailChanged) {
+    const senderName =
+      c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown";
+    await refreshOpenRecipientLink(db, c.env, {
+      documentId: doc.id,
+      recipientId: recipient.id,
+      senderName,
+      rotate: true,
+    });
+  }
+
+  const updatedRows = await db
+    .select()
+    .from(recipients)
+    .where(eq(recipients.id, recipient.id))
+    .limit(1);
+  const updated = updatedRows[0];
+  if (!updated) {
+    return c.json({ error: "Recipient not found" }, 404);
+  }
+
+  await db.insert(activity).values({
+    id: crypto.randomUUID(),
+    organizationId,
+    action: "recipient.updated",
+    actorName:
+      c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown",
+    targetName: doc.name,
+    metadata: JSON.stringify({
+      documentId: doc.id,
+      publicId,
+      recipientId: recipient.id,
+      emailChanged,
+    }),
+    createdAt: now,
+  });
+
+  return c.json(recipientResponse(updated));
 });
 
 const FieldPropertiesSchema = ZFieldPropertiesFlat.nullable();
