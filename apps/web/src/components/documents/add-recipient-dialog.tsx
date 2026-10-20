@@ -315,22 +315,23 @@ export function AddRecipientDialog({
                     filteredSuggestions.length > 0 && (
                       <div className="bg-kumo-elevated absolute top-full left-0 z-50 mt-1 w-full rounded-md border p-1 shadow-md">
                         {filteredSuggestions.map((contact) => (
-                          <Button
+                          <button
                             key={contact._id}
                             type="button"
-                            variant="ghost"
-                            className="h-auto w-full flex-col items-start"
+                            className="hover:bg-kumo-control flex w-full flex-col items-start gap-0.5 rounded-md px-2 py-1.5 text-left"
                             onClick={() => {
                               setEmail(contact.email);
                               setName(contact.fullName);
                               setShowSuggestions(false);
                             }}
                           >
-                            <span className="font-medium">
+                            <span className="text-sm font-medium">
                               {contact.fullName}
                             </span>
-                            <span className="text-xs">{contact.email}</span>
-                          </Button>
+                            <span className="text-kumo-secondary text-xs">
+                              {contact.email}
+                            </span>
+                          </button>
                         ))}
                       </div>
                     )}

@@ -1,10 +1,11 @@
 import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Label } from "@cloudflare/kumo/components/label";
-import { FileText, UploadSimple, X } from "@phosphor-icons/react";
+import { FileText, X } from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
 import { type ChangeEvent, useRef, useState } from "react";
 
+import { DropSurface } from "@/components/kumo-docs/file-upload";
 import { uploadAttachment } from "@/lib/api-client";
 
 interface AttachmentFieldInputProps {
@@ -100,7 +101,12 @@ export function AttachmentFieldInput({
       </Label>
 
       {!storageId ? (
-        <div className="border-kumo-hairline rounded-lg border-2 border-dashed p-6 text-center">
+        <DropSurface
+          title={isUploading ? "Uploading…" : "Click to upload"}
+          description="Maximum file size: 10MB"
+          disabled={isUploading}
+          onClick={() => fileInputRef.current?.click()}
+        >
           <input
             ref={fileInputRef}
             type="file"
@@ -108,22 +114,7 @@ export function AttachmentFieldInput({
             onChange={handleFileChange}
             disabled={isUploading}
           />
-          <Button
-            type="button"
-            variant="outline"
-            className="h-auto w-full flex-col"
-            icon={UploadSimple}
-            disabled={isUploading}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {isUploading ? "Uploading…" : "Click to upload"}
-          </Button>
-          <div className="mt-2">
-            <Text as="p" variant="secondary" size="xs">
-              Maximum file size: 10MB
-            </Text>
-          </div>
-        </div>
+        </DropSurface>
       ) : (
         <div className="border-kumo-hairline flex items-center justify-between rounded-lg border p-4">
           <div className="flex items-center gap-2">

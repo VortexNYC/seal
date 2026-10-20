@@ -153,7 +153,7 @@ Seal coverage in this change:
 
 | Requirement | Where |
 | --- | --- |
-| PR / main CI gate | `.github/workflows/secret-scan.yml` → `pnpm run scan:secrets` |
+| PR / main CI gate | cloudflare-ci checks (`src/repos.ts` seal entry) → `pnpm run scan:secrets` → `secretlint` check run |
 | Local pre-commit | `simple-git-hooks` → `pnpm run scan:secrets` (secretlint recommend preset) |
 | GitHub native push protection | Repo `secret_scanning` + `secret_scanning_push_protection` enabled |
 | Prove | `pnpm run prove:secret-scan` |

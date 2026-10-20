@@ -110,11 +110,15 @@ export function FileSystem({
           {items.map((item) => {
             const selected = item.id === selectedId;
             return (
-              <Button
+              <button
                 key={item.id}
                 type="button"
-                variant={itemButtonVariant(selected)}
-                className="h-auto w-full flex-col"
+                className={cn(
+                  "flex w-full flex-col items-center justify-center gap-2 rounded-lg px-2 py-3 text-center",
+                  selected
+                    ? "bg-kumo-control text-kumo-default"
+                    : "hover:bg-kumo-control"
+                )}
                 onClick={() => activate(item)}
               >
                 {item.kind === "folder" ? (
@@ -130,10 +134,8 @@ export function FileSystem({
                     className="w-full border-0 shadow-none"
                   />
                 )}
-                <span className="text-xs line-clamp-2 w-full">
-                  {item.name}
-                </span>
-              </Button>
+                <span className="line-clamp-2 w-full text-xs">{item.name}</span>
+              </button>
             );
           })}
         </div>

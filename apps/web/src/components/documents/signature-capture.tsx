@@ -504,17 +504,19 @@ export function SignatureCapture({
       </div>
 
       <Dialog.Root open={showSaveDialog} onOpenChange={setShowSaveDialog}>
-        <Dialog>
-          <Dialog.Title>
-            {isFirstAdopt
-              ? "Adopt your signature"
-              : "Save to Signature Library?"}
-          </Dialog.Title>
-          <Dialog.Description>
-            {isFirstAdopt
-              ? "Save this as your default signature so the next document is one click."
-              : "Would you like to save this signature for quick reuse in future documents?"}
-          </Dialog.Description>
+        <Dialog className="flex flex-col gap-4 p-6">
+          <div className="flex flex-col gap-1">
+            <Dialog.Title className="text-lg font-medium">
+              {isFirstAdopt
+                ? "Adopt your signature"
+                : "Save to Signature Library?"}
+            </Dialog.Title>
+            <Dialog.Description className="text-kumo-secondary text-sm">
+              {isFirstAdopt
+                ? "Save this as your default signature so the next document is one click."
+                : "Would you like to save this signature for quick reuse in future documents?"}
+            </Dialog.Description>
+          </div>
           <div className="space-y-4 py-4">
             {pendingSignatureData ? (
               <div

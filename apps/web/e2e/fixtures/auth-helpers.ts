@@ -174,14 +174,25 @@ async function completeOnboardingIfPresent(
     .waitFor({ state: "visible", timeout: 15000 });
 
   // Newer onboarding: single "Create your workspace" form.
-  const workspaceName = page.locator("#org-name");
+  const namedWorkspace = page.getByRole("textbox", { name: "Workspace name" });
+  const workspaceName = (await page
+    .locator("#org-name")
+    .isVisible()
+    .catch(() => false))
+    ? page.locator("#org-name")
+    : namedWorkspace;
   if (await workspaceName.isVisible().catch(() => false)) {
     await workspaceName.click();
     await workspaceName.fill("");
     await workspaceName.pressSequentially(config.organizationName, {
       delay: 20,
     });
-    const slugField = page.locator("#org-slug");
+    const slugField = (await page
+      .locator("#org-slug")
+      .isVisible()
+      .catch(() => false))
+      ? page.locator("#org-slug")
+      : page.getByRole("textbox", { name: "Slug" });
     await slugField.click();
     await slugField.fill("");
     await slugField.pressSequentially(config.organizationSlug, { delay: 20 });

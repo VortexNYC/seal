@@ -15,6 +15,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { FileArrowUp as FileUpIcon } from "@phosphor-icons/react";
 import { useCallback, useRef, useState } from "react";
 
+import { DropSurface } from "@/components/kumo-docs/file-upload";
 import {
   VerifyFailed,
   VerifyPageShell,
@@ -98,20 +99,11 @@ function VerifyUploadPage() {
           Upload a completed Seal PDF — its contents are hashed and checked
           against the recorded document fingerprint. Altered files fail.
         </Text>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="application/pdf,.pdf"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) void verify(file);
-          }}
-        />
-        <Button
-          type="button"
-          variant="outline"
-          className="h-auto w-full flex-col py-10"
+        <DropSurface
+          title={
+            verifying ? "Verifying…" : "Drop a PDF here or click to browse"
+          }
+          disabled={verifying}
           onClick={() => fileInputRef.current?.click()}
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
@@ -120,8 +112,17 @@ function VerifyUploadPage() {
             if (file) void verify(file);
           }}
         >
-          {verifying ? "Verifying…" : "Drop a PDF here or click to browse"}
-        </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/pdf,.pdf"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void verify(file);
+            }}
+          />
+        </DropSurface>
       </LayerCard>
 
       <Text variant="secondary" size="xs">

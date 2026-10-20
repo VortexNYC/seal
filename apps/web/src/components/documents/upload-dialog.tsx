@@ -130,7 +130,7 @@ export function UploadDialog({
   return (
     <>
       <Dialog.Root open={open} onOpenChange={onOpenChange}>
-        <Dialog size="xl" className="flex max-h-vh-80 flex-col">
+        <Dialog size="lg" className="flex max-h-[80vh] flex-col gap-4 p-6">
           <UploadDialogHeader />
           <form
             onSubmit={controller.handleSubmit}
@@ -308,13 +308,13 @@ function useUploadController({
 
 function UploadDialogHeader() {
   return (
-    <>
-      <Dialog.Title>Upload</Dialog.Title>
-      <Dialog.Description>
+    <div className="flex flex-col gap-1">
+      <Dialog.Title className="text-lg font-medium">Upload</Dialog.Title>
+      <Dialog.Description className="text-kumo-secondary text-sm">
         One file · {getMaxFileSizeDisplay()} max ·{" "}
         {getSupportedFileTypesDisplay()}
       </Dialog.Description>
-    </>
+    </div>
   );
 }
 
@@ -557,7 +557,7 @@ function UploadDialogFooter({
 }) {
   // Cap: upload starts on drop — footer is cancel / close only.
   return (
-    <div className="mt-3 flex justify-end">
+    <div className="flex justify-end">
       <Button
         type="button"
         variant="outline"
@@ -580,11 +580,15 @@ function CancelUploadDialog({
       open={controller.showCancelConfirm}
       onOpenChange={controller.setShowCancelConfirm}
     >
-      <Dialog>
-        <Dialog.Title>Cancel upload?</Dialog.Title>
-        <Dialog.Description>
-          Upload is in progress. Canceling will stop all ongoing uploads.
-        </Dialog.Description>
+      <Dialog className="flex flex-col gap-4 p-6">
+        <div className="flex flex-col gap-1">
+          <Dialog.Title className="text-lg font-medium">
+            Cancel upload?
+          </Dialog.Title>
+          <Dialog.Description className="text-kumo-secondary text-sm">
+            Upload is in progress. Canceling will stop all ongoing uploads.
+          </Dialog.Description>
+        </div>
         <div className="mt-4 flex flex-col-reverse justify-end gap-2 sm:flex-row">
           <Button
             type="button"
