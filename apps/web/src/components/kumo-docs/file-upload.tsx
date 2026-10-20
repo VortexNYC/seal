@@ -1,7 +1,6 @@
 import { Text } from "@cloudflare/kumo/components/text";
-import { Button } from "@cloudflare/kumo/components/button";
 import { UploadSimple as Upload } from "@phosphor-icons/react";
-import type { JSX } from "react";
+import type { ButtonHTMLAttributes, JSX, ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDropzone, type FileRejection } from "react-dropzone";
 
@@ -30,6 +29,37 @@ export type FileUploadProps = {
   onFilesRejected?: (rejections: FileRejection[]) => void;
   onFilesChange?: (items: FileUploadItem[]) => void;
 };
+
+const DROP_SURFACE_CLASS =
+  "border-kumo-line text-kumo-default flex w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-6 py-8 text-center text-sm disabled:opacity-50";
+
+export function DropSurface({
+  title,
+  description,
+  className,
+  children,
+  type = "button",
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  title: string;
+  description?: string;
+  children?: ReactNode;
+}): JSX.Element {
+  return (
+    <button
+      type={type}
+      className={cn(DROP_SURFACE_CLASS, className)}
+      {...props}
+    >
+      {children}
+      <Upload className="size-5" aria-hidden />
+      <span>{title}</span>
+      {description ? (
+        <span className="text-kumo-secondary text-xs">{description}</span>
+      ) : null}
+    </button>
+  );
+}
 
 /**
  * Dropzone upload surface — Extend file-upload, Seal accept rules, Kumo chrome.
@@ -99,20 +129,14 @@ export function FileUpload({
 
   return (
     <div data-kumo-docs="file-upload" className={cn("space-y-3", className)}>
-      <Button
+      <DropSurface
         {...getRootProps()}
-        type="button"
-        variant="outline"
-        className="h-auto w-full flex-col py-6"
-        icon={Upload}
+        title={title}
+        description={description}
         disabled={disabled}
       >
         <input {...getInputProps()} />
-        <span className="flex flex-col items-center">
-          <span>{title}</span>
-          {description ? <span>{description}</span> : null}
-        </span>
-      </Button>
+      </DropSurface>
       {error ? <Text as="p" variant="error" size="xs">{error}</Text> : null}
       {showFileList && items.length > 0 ? (
         <ul className="space-y-1">

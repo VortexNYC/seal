@@ -378,7 +378,7 @@ function PaymentConfigLoadingDialog({
   }
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog size="xl">
+      <Dialog size="xl" className="p-6">
         <div className="flex items-center justify-center py-12">
           <Loader size="lg" />
         </div>
@@ -434,7 +434,10 @@ function PaymentConfigDialog({
   }
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog size="xl" className="max-h-vh-85 overflow-y-auto">
+      <Dialog
+        size="xl"
+        className="flex max-h-[85vh] flex-col gap-4 overflow-y-auto p-6"
+      >
         <PaymentConfigHeader />
         {formBody}
       </Dialog>
@@ -444,16 +447,16 @@ function PaymentConfigDialog({
 
 function PaymentConfigHeader() {
   return (
-    <>
-      <Dialog.Title className="flex items-center gap-2">
+    <div className="flex flex-col gap-1">
+      <Dialog.Title className="flex items-center gap-2 text-lg font-medium">
         <CreditCardIcon className="text-kumo-info h-5 w-5" />
         Configure Payment
       </Dialog.Title>
-      <Dialog.Description>
+      <Dialog.Description className="text-kumo-secondary text-sm">
         Set up line items, payment terms, and accepted methods for this payment
         field.
       </Dialog.Description>
-    </>
+    </div>
   );
 }
 

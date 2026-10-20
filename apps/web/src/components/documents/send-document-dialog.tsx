@@ -572,9 +572,15 @@ export function SendDocumentDialog({
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog size="xl" className="flex max-h-vh-90 flex-col">
-        <Dialog.Title>Send for signature</Dialog.Title>
-        <Dialog.Description>{sendDescription}</Dialog.Description>
+      <Dialog size="xl" className="flex max-h-[90vh] flex-col gap-4 p-6">
+        <div className="flex flex-col gap-1">
+          <Dialog.Title className="text-lg font-medium">
+            Send for signature
+          </Dialog.Title>
+          <Dialog.Description className="text-kumo-secondary text-sm">
+            {sendDescription}
+          </Dialog.Description>
+        </div>
         {sendBody}
       </Dialog>
     </Dialog.Root>
