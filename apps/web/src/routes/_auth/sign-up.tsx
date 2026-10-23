@@ -56,7 +56,7 @@ function RouteComponent() {
         className={AUTH_FORM_CARD_CLASS}
         redirectTo={redirectTo}
         signInUrl="/sign-in"
-        providers={[{ id: "vortex", label: "Continue with Vortex" }]}
+        providers={[{ provider: "vortex", label: "Continue with Vortex" }]}
       />
     </AuthProvider>
   );

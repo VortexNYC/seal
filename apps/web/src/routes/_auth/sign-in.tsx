@@ -51,7 +51,7 @@ function RouteComponent() {
         redirectTo={forceRedirectUrl}
         forgotPasswordHref="/forgot-password"
         signUpUrl="/sign-up"
-        providers={[{ id: "vortex", label: "Sign in with Vortex" }]}
+        providers={[{ provider: "vortex", label: "Sign in with Vortex" }]}
       />
     </AuthProvider>
   );
