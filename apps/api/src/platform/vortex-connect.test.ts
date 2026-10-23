@@ -316,4 +316,33 @@ describe("provisionConnectedAccount", () => {
     ]);
     expect(readUserVortexOrganizations("{invalid")).toEqual([]);
   });
+
+  it("marks chargesApproved true when status=active and capabilityStatus=active", async () => {
+    const metadata = withVortexConnect(null, {
+      merchantAccountId: "ma_active",
+      claimUrl: null,
+      claimExpiresAt: null,
+      status: "active",
+      environment: "production",
+      ratePlanId: null,
+      onboardingSessionId: null,
+    });
+    const view = await presentVortexConnect(
+      env,
+      metadata,
+      async () =>
+        new Response(
+          JSON.stringify({
+            data: {
+              id: "ma_active",
+              status: "active",
+              capabilityStatus: "active",
+            },
+          }),
+          { status: 200 }
+        )
+    );
+    expect(view.chargesApproved).toBe(true);
+    expect(view.ratePlanId).toBeNull();
+  });
 });

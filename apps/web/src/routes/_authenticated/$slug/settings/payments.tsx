@@ -58,7 +58,6 @@ function PaymentsSettings() {
     useState<LegalEntityType>("CORPORATION");
   const [country, setCountry] = useState("USA");
   const [defaultCurrency, setDefaultCurrency] = useState("USD");
-  const [existingMerchantId, setExistingMerchantId] = useState("");
 
   const connect = useMutation({
     mutationFn: () =>
@@ -76,9 +75,9 @@ function PaymentsSettings() {
   });
 
   const attachExisting = useMutation({
-    mutationFn: () =>
+    mutationFn: (merchantAccountId: string) =>
       connectPayments(slug, {
-        merchantAccountId: existingMerchantId.trim(),
+        merchantAccountId,
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["payments", slug] });
@@ -155,17 +154,7 @@ function PaymentsSettings() {
                       variant="secondary"
                       disabled={attachExisting.isPending}
                       onClick={() => {
-                        setExistingMerchantId(m.merchantAccountId);
-                        connectPayments(slug, {
-                          merchantAccountId: m.merchantAccountId,
-                        })
-                          .then(async () => {
-                            await queryClient.invalidateQueries({
-                              queryKey: ["payments", slug],
-                            });
-                            toast.success("Existing Vortex merchant connected");
-                          })
-                          .catch((err) => toast.error(getErrorMessage(err)));
+                        attachExisting.mutate(m.merchantAccountId);
                       }}
                     >
                       Connect {m.displayName} ({m.merchantAccountId} ·{" "}
