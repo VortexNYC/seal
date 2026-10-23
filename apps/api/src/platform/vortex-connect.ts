@@ -1,3 +1,52 @@
+import { z } from "zod";
+
+export const vortexOAuthMerchantSummarySchema = z.object({
+  merchantAccountId: z.string().min(1),
+  displayName: z.string().min(1),
+  environment: z.string().min(1),
+  status: z.string().min(1),
+  chargesApproved: z.boolean(),
+});
+
+export type VortexOAuthMerchantSummary = z.infer<
+  typeof vortexOAuthMerchantSummarySchema
+>;
+
+export const vortexOAuthOrganizationSummarySchema = z.object({
+  organizationId: z.string().min(1),
+  name: z.string().min(1),
+  slug: z.string().min(1),
+  role: z.string().min(1),
+  merchants: z.array(vortexOAuthMerchantSummarySchema).default([]),
+});
+
+export const vortexOAuthUserMetadataSchema = z.object({
+  vortexOrganizations: z
+    .array(vortexOAuthOrganizationSummarySchema)
+    .default([]),
+});
+
+export function readUserVortexOrganizations(
+  rawMetadata: unknown
+): readonly z.infer<typeof vortexOAuthOrganizationSummarySchema>[] {
+  try {
+    const obj: unknown =
+      typeof rawMetadata === "string" ? JSON.parse(rawMetadata) : rawMetadata;
+    const parsed = vortexOAuthUserMetadataSchema.safeParse(obj);
+    return parsed.success ? parsed.data.vortexOrganizations : [];
+  } catch {
+    return [];
+  }
+}
+
+export function readUserVortexMerchants(
+  rawMetadata: unknown
+): readonly VortexOAuthMerchantSummary[] {
+  return readUserVortexOrganizations(rawMetadata).flatMap(
+    (org) => org.merchants
+  );
+}
+
 export interface VortexConnectEnv {
   VORTEX_API_KEY?: string;
   VORTEX_API_BASE_URL?: string;
@@ -21,7 +70,7 @@ export type VortexConnectRecord = {
   claimExpiresAt: string | null;
   status: string;
   environment: "production";
-  ratePlanId: string;
+  ratePlanId: string | null;
   onboardingSessionId: string | null;
 };
 
@@ -33,6 +82,7 @@ export type VortexConnectView = {
   claimExpiresAt: string | null;
   status: string | null;
   onboardingSessionId: string | null;
+  ratePlanId: string | null;
   chargesApproved: boolean;
   summary: string;
 };
@@ -82,6 +132,7 @@ function disconnectedView(): VortexConnectView {
     claimExpiresAt: null,
     status: null,
     onboardingSessionId: null,
+    ratePlanId: null,
     chargesApproved: false,
     summary: "No connected account yet.",
   };
@@ -123,6 +174,7 @@ export function readVortexConnect(metadata: string | null): VortexConnectView {
     claimExpiresAt: stringField(stored, "claimExpiresAt"),
     status: stringField(stored, "status"),
     onboardingSessionId: stringField(stored, "onboardingSessionId"),
+    ratePlanId: stringField(stored, "ratePlanId"),
     chargesApproved: false,
   });
 }
@@ -215,9 +267,13 @@ export async function presentVortexConnect(
   const status = merchant
     ? (stringField(merchant, "status") ?? stored.status)
     : stored.status;
+  const capabilityStatus = merchant
+    ? stringField(merchant, "capabilityStatus")
+    : null;
   const chargesApproved =
     merchant !== null &&
-    stringField(merchant, "capabilityStatus") === "enabled";
+    (capabilityStatus === "enabled" ||
+      (status === "active" && capabilityStatus === "active"));
   let claimUrl = stored.claimUrl;
   if (claimUrl) {
     const usable = await claimLinkUsable(claimUrl, fetchImpl);
@@ -231,6 +287,7 @@ export async function presentVortexConnect(
     claimExpiresAt: stored.claimExpiresAt,
     status,
     onboardingSessionId: stored.onboardingSessionId,
+    ratePlanId: stored.ratePlanId,
     chargesApproved,
   });
 }
@@ -356,6 +413,40 @@ export async function provisionConnectedAccount(
     environment: "production",
     ratePlanId,
     onboardingSessionId,
+  };
+}
+
+/**
+ * SEA-121 — attach an existing Vortex merchant onto a Seal workspace without
+ * assigning `seal_fleet_standard` (preserving the merchant's existing Vortex
+ * rate plan).
+ */
+export async function attachConnectedAccount(
+  env: VortexConnectEnv,
+  input: {
+    merchantAccountId: string;
+  },
+  fetchImpl: typeof fetch = fetch
+): Promise<VortexConnectRecord> {
+  const environment = env.VORTEX_API_KEY?.startsWith("vp_test")
+    ? "sandbox"
+    : "production";
+  const merchant = await vortexGet(
+    env,
+    `/v1/merchant-accounts/${encodeURIComponent(input.merchantAccountId)}?environment=${environment}`,
+    fetchImpl
+  );
+  if (merchant === null) {
+    throw new VortexConnectError(404, "Vortex merchant account not found");
+  }
+  return {
+    merchantAccountId: input.merchantAccountId,
+    claimUrl: null,
+    claimExpiresAt: null,
+    status: stringField(merchant, "status") ?? "draft",
+    environment: "production",
+    ratePlanId: null,
+    onboardingSessionId: null,
   };
 }
 

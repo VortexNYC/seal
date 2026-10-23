@@ -537,8 +537,20 @@ const paymentsConnectSchema = z.object({
   claimExpiresAt: z.string().nullable(),
   status: z.string().nullable(),
   onboardingSessionId: z.string().nullable(),
+  ratePlanId: z.string().nullable().optional(),
   chargesApproved: z.boolean(),
   summary: z.string(),
+  availableMerchants: z
+    .array(
+      z.object({
+        merchantAccountId: z.string(),
+        displayName: z.string(),
+        environment: z.string(),
+        status: z.string(),
+        chargesApproved: z.boolean(),
+      })
+    )
+    .optional(),
 });
 export type ApiPaymentsConnect = z.infer<typeof paymentsConnectSchema>;
 export async function getPaymentsConnect(
@@ -551,12 +563,16 @@ export async function getPaymentsConnect(
 }
 export async function connectPayments(
   organizationSlug: string,
-  input: {
-    displayName: string;
-    legalEntityType: "INDIVIDUAL" | "CORPORATION" | "LLC" | "PARTNERSHIP";
-    country: string;
-    defaultCurrency: string;
-  }
+  input:
+    | {
+        merchantAccountId: string;
+      }
+    | {
+        displayName: string;
+        legalEntityType: "INDIVIDUAL" | "CORPORATION" | "LLC" | "PARTNERSHIP";
+        country: string;
+        defaultCurrency: string;
+      }
 ): Promise<ApiPaymentsConnect> {
   return apiFetch(
     `/api/organizations/${encodeURIComponent(organizationSlug)}/payments`,

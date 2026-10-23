@@ -1,8 +1,10 @@
+import { Button } from "@cloudflare/kumo/components/button";
 import { Text } from "@cloudflare/kumo/components/text";
 import { createFileRoute } from "@tanstack/react-router";
 import { AuthProvider, SignUpForm } from "@vortex-api/better-auth-ui";
 
 import { AUTH_FORM_CARD_CLASS } from "@/lib/auth-form";
+import { betterAuthClient } from "@/lib/better-auth";
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { createPageMeta, pageSEO } from "@/lib/seo";
 
@@ -43,17 +45,36 @@ function RouteComponent() {
         : "/post-sign-up";
 
   if (client === null) {
-    return <Text as="p" size="sm">Auth client not configured.</Text>;
+    return (
+      <Text as="p" size="sm">
+        Auth client not configured.
+      </Text>
+    );
   }
 
   return (
     <AuthProvider client={client}>
-      <SignUpForm
-        className={AUTH_FORM_CARD_CLASS}
-        redirectTo={redirectTo}
-        signInUrl="/sign-in"
-        providers={[]}
-      />
+      <div className="flex w-full max-w-md flex-col gap-3">
+        <SignUpForm
+          className={AUTH_FORM_CARD_CLASS}
+          redirectTo={redirectTo}
+          signInUrl="/sign-in"
+          providers={[]}
+        />
+        <Button
+          type="button"
+          variant="secondary"
+          data-testid="sign-up-with-vortex"
+          onClick={() => {
+            void betterAuthClient?.signIn.social({
+              provider: "vortex",
+              callbackURL: "/app",
+            });
+          }}
+        >
+          Sign in with Vortex
+        </Button>
+      </div>
     </AuthProvider>
   );
 }
