@@ -216,7 +216,8 @@ export async function presentVortexConnect(
     ? (stringField(merchant, "status") ?? stored.status)
     : stored.status;
   const chargesApproved =
-    merchant !== null && stringField(merchant, "capabilityStatus") === "enabled";
+    merchant !== null &&
+    stringField(merchant, "capabilityStatus") === "enabled";
   let claimUrl = stored.claimUrl;
   if (claimUrl) {
     const usable = await claimLinkUsable(claimUrl, fetchImpl);
@@ -355,5 +356,75 @@ export async function provisionConnectedAccount(
     environment: "production",
     ratePlanId,
     onboardingSessionId,
+  };
+}
+
+export interface MintSignToPayCheckoutSessionInput {
+  readonly merchantAccountId: string;
+  readonly idempotencyKey: string;
+  readonly amountCents: number;
+  readonly currency: string;
+  readonly payerEmail: string;
+  readonly dueDate?: string | null;
+  readonly description: string;
+  readonly environment?: "sandbox" | "production";
+}
+
+export interface MintSignToPayCheckoutSessionResult {
+  readonly checkoutSessionId: string;
+  readonly paymentRequestId: string;
+  readonly checkoutUrl: string | null;
+  readonly providerInvoiceId: string | null;
+}
+
+/**
+ * SEA-123 / SEA-124 — mint an ad-hoc one-time payable + hosted `/pay` link on
+ * the connected Vortex merchant when the last required signature lands.
+ */
+export async function mintSignToPayCheckoutSession(
+  env: VortexConnectEnv,
+  input: MintSignToPayCheckoutSessionInput,
+  fetchImpl: typeof fetch = fetch
+): Promise<MintSignToPayCheckoutSessionResult> {
+  const environment =
+    input.environment ??
+    (env.VORTEX_API_KEY?.startsWith("vp_test") ? "sandbox" : "production");
+  const data = await vortexPost(
+    env,
+    `/v1/checkout/sessions?environment=${environment}`,
+    input.idempotencyKey,
+    {
+      environment,
+      merchantAccountId: input.merchantAccountId,
+      mode: "payment",
+      amountCents: input.amountCents,
+      currency: input.currency.toUpperCase(),
+      payerEmail: input.payerEmail,
+      ...(input.dueDate ? { dueDate: input.dueDate } : {}),
+      description: input.description,
+    },
+    fetchImpl
+  );
+  const session = isRecord(data.checkoutSession) ? data.checkoutSession : data;
+  const paymentRequestId = stringField(session, "paymentRequestId");
+  const checkoutSessionId = stringField(session, "checkoutSessionId");
+  if (!paymentRequestId || !checkoutSessionId) {
+    throw new VortexConnectError(
+      502,
+      "Vortex did not return a paymentRequestId/checkoutSessionId"
+    );
+  }
+  const invoiceNumbers = Array.isArray(session.invoiceNumbers)
+    ? session.invoiceNumbers
+    : [];
+  const providerInvoiceId =
+    typeof invoiceNumbers[0] === "string" && invoiceNumbers[0].length > 0
+      ? invoiceNumbers[0]
+      : null;
+  return {
+    checkoutSessionId,
+    paymentRequestId,
+    checkoutUrl: stringField(session, "checkoutUrl"),
+    providerInvoiceId,
   };
 }
