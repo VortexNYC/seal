@@ -8,6 +8,7 @@ import {
   member,
   organization,
   templates as templatesTable,
+  user as userTable,
 } from "../global/schema.js";
 import {
   hasSSOAccountForWorkspace,
@@ -17,9 +18,12 @@ import {
 } from "../platform/sso-enforcement.js";
 import type { Variables } from "../platform/types.js";
 import {
+  attachConnectedAccount,
   presentVortexConnect,
   provisionConnectedAccount,
+  readUserVortexMerchants,
   readVortexConnect,
+  vortexOAuthMerchantSummarySchema,
   VortexConnectError,
   withVortexConnect,
 } from "../platform/vortex-connect.js";
@@ -744,10 +748,7 @@ app.openapi(updateSecurityRouteDef, async (c) => {
   };
   if (body.ssoEnforced !== undefined) {
     nextMetadata = JSON.parse(
-      withSSOEnforcedMetadata(
-        JSON.stringify(nextMetadata),
-        body.ssoEnforced
-      )
+      withSSOEnforcedMetadata(JSON.stringify(nextMetadata), body.ssoEnforced)
     ) as Record<string, unknown>;
   }
 
@@ -1324,25 +1325,41 @@ const PaymentsConnectSchema = z
     claimExpiresAt: z.string().nullable(),
     status: z.string().nullable(),
     onboardingSessionId: z.string().nullable(),
+    ratePlanId: z.string().nullable().optional(),
     chargesApproved: z.boolean(),
     summary: z.string(),
+    availableMerchants: z.array(vortexOAuthMerchantSummarySchema).optional(),
   })
   .openapi("PaymentsConnect");
 
-const connectPaymentsBodySchema = z.object({
-  displayName: z.string().trim().min(1).max(200),
-  legalEntityType: z.enum(["INDIVIDUAL", "CORPORATION", "LLC", "PARTNERSHIP"]),
-  country: z
-    .string()
-    .trim()
-    .length(3)
-    .transform((value) => value.toUpperCase()),
-  defaultCurrency: z
-    .string()
-    .trim()
-    .length(3)
-    .transform((value) => value.toUpperCase()),
-});
+const connectPaymentsBodySchema = z.union([
+  z
+    .object({
+      merchantAccountId: z.string().trim().min(1).max(120),
+    })
+    .strict(),
+  z
+    .object({
+      displayName: z.string().trim().min(1).max(200),
+      legalEntityType: z.enum([
+        "INDIVIDUAL",
+        "CORPORATION",
+        "LLC",
+        "PARTNERSHIP",
+      ]),
+      country: z
+        .string()
+        .trim()
+        .length(3)
+        .transform((value) => value.toUpperCase()),
+      defaultCurrency: z
+        .string()
+        .trim()
+        .length(3)
+        .transform((value) => value.toUpperCase()),
+    })
+    .strict(),
+]);
 
 const paymentsRouteDef = createRoute({
   method: "get",
@@ -1365,10 +1382,24 @@ const paymentsRouteDef = createRoute({
 
 app.openapi(paymentsRouteDef, async (c) => {
   const org = c.get("organization");
+  const currentUser = c.get("user");
   if (!org) {
     return c.json({ error: "Organization not found" }, 404);
   }
-  return c.json(await presentVortexConnect(c.env, org.metadata));
+  const db = createD1(c.env.D1);
+  const [userRow] = currentUser
+    ? await db
+        .select({ metadata: userTable.metadata })
+        .from(userTable)
+        .where(eq(userTable.id, currentUser.user.id))
+        .limit(1)
+    : [];
+  const availableMerchants = readUserVortexMerchants(userRow?.metadata);
+  const view = await presentVortexConnect(c.env, org.metadata);
+  return c.json({
+    ...view,
+    availableMerchants: [...availableMerchants],
+  });
 });
 
 const connectPaymentsRouteDef = createRoute({
@@ -1415,15 +1446,43 @@ app.openapi(connectPaymentsRouteDef, async (c) => {
   }
 
   const body = c.req.valid("json");
+  const db = createD1(c.env.D1);
   try {
-    const record = await provisionConnectedAccount(c.env, {
-      organizationId: org.id,
-      displayName: body.displayName,
-      legalEntityType: body.legalEntityType,
-      country: body.country,
-      defaultCurrency: body.defaultCurrency,
-    });
-    const db = createD1(c.env.D1);
+    let record;
+    if ("merchantAccountId" in body) {
+      const currentUser = c.get("user");
+      const [userRow] = currentUser
+        ? await db
+            .select({ metadata: userTable.metadata })
+            .from(userTable)
+            .where(eq(userTable.id, currentUser.user.id))
+            .limit(1)
+        : [];
+      const availableMerchants = readUserVortexMerchants(userRow?.metadata);
+      const isOwnedByCaller = availableMerchants.some(
+        (m) => m.merchantAccountId === body.merchantAccountId
+      );
+      if (!isOwnedByCaller) {
+        return c.json(
+          {
+            error:
+              "Connect your Vortex account first to verify ownership of this merchant account.",
+          },
+          403
+        );
+      }
+      record = await attachConnectedAccount(c.env, {
+        merchantAccountId: body.merchantAccountId,
+      });
+    } else {
+      record = await provisionConnectedAccount(c.env, {
+        organizationId: org.id,
+        displayName: body.displayName,
+        legalEntityType: body.legalEntityType,
+        country: body.country,
+        defaultCurrency: body.defaultCurrency,
+      });
+    }
     await db
       .update(organization)
       .set({
@@ -1432,10 +1491,7 @@ app.openapi(connectPaymentsRouteDef, async (c) => {
       })
       .where(eq(organization.id, org.id));
     return c.json(
-      await presentVortexConnect(
-        c.env,
-        withVortexConnect(org.metadata, record)
-      )
+      await presentVortexConnect(c.env, withVortexConnect(org.metadata, record))
     );
   } catch (error) {
     if (error instanceof VortexConnectError && error.status === 503) {

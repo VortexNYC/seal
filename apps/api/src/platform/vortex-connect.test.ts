@@ -1,10 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  attachConnectedAccount,
   connectIdempotencyKey,
   mintSignToPayCheckoutSession,
   presentVortexConnect,
   provisionConnectedAccount,
+  readUserVortexMerchants,
+  readUserVortexOrganizations,
   readVortexConnect,
   SEAL_CONNECT_RATE_PLAN_ID,
   SEAL_PLATFORM_MERCHANT_ACCOUNT_ID,
@@ -251,5 +254,66 @@ describe("provisionConnectedAccount", () => {
       "https://api.vortex.test/v1/checkout/sessions?environment=production"
     );
     expect(seenBody.environment).toBe("production");
+  });
+
+  it("attaches an existing Vortex merchant without assigning seal_fleet_standard (SEA-121)", async () => {
+    let seenUrl = "";
+    const fetchImpl: typeof fetch = async (input) => {
+      seenUrl = String(input);
+      return new Response(
+        JSON.stringify({
+          data: {
+            id: "ma_existing_1",
+            status: "active",
+            capabilityStatus: "enabled",
+          },
+        }),
+        { status: 200 }
+      );
+    };
+    const record = await attachConnectedAccount(
+      env,
+      { merchantAccountId: "ma_existing_1" },
+      fetchImpl
+    );
+    expect(seenUrl).toBe(
+      "https://api.vortex.test/v1/merchant-accounts/ma_existing_1?environment=sandbox"
+    );
+    expect(record.merchantAccountId).toBe("ma_existing_1");
+    expect(record.ratePlanId).toBeNull();
+    expect(record.claimUrl).toBeNull();
+  });
+
+  it("parses OAuth-verified Vortex organizations and merchants with Zod (SEA-120 / SEA-121)", () => {
+    const metadata = JSON.stringify({
+      vortexOrganizations: [
+        {
+          organizationId: "org_vx_1",
+          name: "Acme Corp",
+          slug: "acme-corp",
+          role: "owner",
+          merchants: [
+            {
+              merchantAccountId: "ma_live_1",
+              displayName: "Acme Corp",
+              environment: "production",
+              status: "active",
+              chargesApproved: true,
+            },
+          ],
+        },
+      ],
+    });
+    expect(readUserVortexOrganizations(metadata)).toHaveLength(1);
+    expect(readUserVortexMerchants(metadata)).toEqual([
+      {
+        merchantAccountId: "ma_live_1",
+        displayName: "Acme Corp",
+        environment: "production",
+        status: "active",
+        chargesApproved: true,
+      },
+    ]);
+    expect(readUserVortexOrganizations("{invalid")).toEqual([]);
   });
 });
