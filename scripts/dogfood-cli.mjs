@@ -407,10 +407,7 @@ startxref
         ? pass("agent list fields", `${fields.length}`)
         : fail("agent list fields", JSON.stringify(listed));
     } catch (err) {
-      fail(
-        "agent list fields",
-        err instanceof Error ? err.message : String(err)
-      );
+      fail("agent list fields", err instanceof Error ? err.message : String(err));
     }
   }
 
@@ -659,7 +656,10 @@ startxref
         const ct = res.headers.get("content-type") ?? "";
         const buf = res.ok ? await res.arrayBuffer() : null;
         res.ok && ct.includes("pdf") && buf && buf.byteLength > 500
-          ? pass("certificate of completion", `${ct} bytes=${buf.byteLength}`)
+          ? pass(
+              "certificate of completion",
+              `${ct} bytes=${buf.byteLength}`
+            )
           : fail(
               "certificate of completion",
               `HTTP ${res.status} content-type=${ct} bytes=${buf?.byteLength ?? 0}`

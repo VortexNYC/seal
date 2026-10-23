@@ -285,11 +285,7 @@ describe("final-pdf position stress", () => {
     const { trimTransparentPng } = await import("./png-trim.js");
     const { deflateSync } = await import("node:zlib");
 
-    function makePadded(
-      width: number,
-      height: number,
-      pad: number
-    ): Uint8Array {
+    function makePadded(width: number, height: number, pad: number): Uint8Array {
       const raw = Buffer.alloc((width * 4 + 1) * height);
       const inkY = height - 1 - pad;
       for (let y = 0; y < height; y++) {

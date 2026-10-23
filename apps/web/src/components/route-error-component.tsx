@@ -1,7 +1,12 @@
 import { Button } from "@cloudflare/kumo/components/button";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
-import { ArrowClockwise, House, SignOut, Warning } from "@phosphor-icons/react";
+import {
+  ArrowClockwise,
+  House,
+  SignOut,
+  Warning,
+} from "@phosphor-icons/react";
 import { type ErrorComponentProps, useRouter } from "@tanstack/react-router";
 
 import { useAnalytics } from "@/hooks/use-analytics";

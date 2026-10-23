@@ -6,25 +6,14 @@
  * and validation rules for signature fields.
  */
 
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input, Textarea } from "@cloudflare/kumo/components/input";
 import { Label } from "@cloudflare/kumo/components/label";
 import { Select } from "@cloudflare/kumo/components/select";
 import { Switch } from "@cloudflare/kumo/components/switch";
-import { Text } from "@cloudflare/kumo/components/text";
-import {
-  Calendar as CalendarIcon,
-  CheckSquare as CheckSquareIcon,
-  CreditCard as CreditCardIcon,
-  Hash as HashIcon,
-  PenNib as PenToolIcon,
-  Question as HelpCircleIcon,
-  TextT as TypeIcon,
-  Warning as AlertTriangleIcon,
-  WarningCircle as AlertCircleIcon,
-  X as XIcon,
-} from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
+import { Calendar as CalendarIcon, CheckSquare as CheckSquareIcon, CreditCard as CreditCardIcon, Hash as HashIcon, PenNib as PenToolIcon, Question as HelpCircleIcon, TextT as TypeIcon, Warning as AlertTriangleIcon, WarningCircle as AlertCircleIcon, X as XIcon } from "@phosphor-icons/react";
 import { useEffect, useState, type ChangeEvent } from "react";
 
 import { updateSignatureField } from "@/lib/api-client";
@@ -359,14 +348,12 @@ function FieldPanelHeader({
   return (
     <div className="flex items-center justify-between border-b p-4">
       <div className="flex items-center gap-2">
-        <div className="text-kumo-default">{FIELD_ICONS[field.fieldType]}</div>
+        <div className="text-kumo-default">
+          {FIELD_ICONS[field.fieldType]}
+        </div>
         <div>
-          <Text as="h3" variant="heading">
-            Field Properties
-          </Text>
-          <Text as="p" variant="secondary" size="xs">
-            {FIELD_TYPE_LABELS[field.fieldType]} Field
-          </Text>
+          <Text as="h3" variant="heading">Field Properties</Text>
+          <Text as="p" variant="secondary" size="xs">{FIELD_TYPE_LABELS[field.fieldType]} Field</Text>
         </div>
       </div>
       <Button
@@ -430,9 +417,7 @@ function RecipientAssignmentSection({
           ))}
         </Select>
       ) : (
-        <Text as="p" variant="secondary" size="xs">
-          Add a recipient to the document first
-        </Text>
+        <Text as="p" variant="secondary" size="xs">Add a recipient to the document first</Text>
       )}
       {selectedRecipientId === "unassigned" && recipients.length > 0 && (
         <p className="text-kumo-warning flex items-center gap-1 text-xs">
@@ -459,13 +444,10 @@ function PaymentConfigurationSection({
         variant="outline"
         className="w-full"
         onClick={() => onConfigurePayment(field._id)}
-        icon={CreditCardIcon}
-      >
+       icon={CreditCardIcon}>
         Configure Payment
       </Button>
-      <Text as="p" variant="secondary" size="xs">
-        Set up line items, payment terms, and methods
-      </Text>
+      <Text as="p" variant="secondary" size="xs">Set up line items, payment terms, and methods</Text>
     </div>
   );
 }
@@ -506,17 +488,13 @@ function BasicFieldSettings({
           onChange={(event) => setLabel(event.target.value)}
           placeholder="Enter field label"
         />
-        <Text as="p" variant="secondary" size="xs">
-          The name displayed on the field
-        </Text>
+        <Text as="p" variant="secondary" size="xs">The name displayed on the field</Text>
       </div>
 
       <div className="flex items-center justify-between">
         <div className="space-y-0.5">
           <Label htmlFor="field-required">Required</Label>
-          <Text as="p" variant="secondary" size="xs">
-            Must be filled before submission
-          </Text>
+          <Text as="p" variant="secondary" size="xs">Must be filled before submission</Text>
         </div>
         <Switch
           aria-label="Required"
@@ -535,9 +513,7 @@ function BasicFieldSettings({
             onChange={(event) => setPlaceholder(event.target.value)}
             placeholder="Enter placeholder text"
           />
-          <Text as="p" variant="secondary" size="xs">
-            Shown when the field is empty
-          </Text>
+          <Text as="p" variant="secondary" size="xs">Shown when the field is empty</Text>
         </div>
       )}
 
@@ -552,9 +528,7 @@ function BasicFieldSettings({
           className="font-mono text-xs"
           spellCheck={false}
         />
-        <Text as="p" variant="secondary" size="xs">
-          Structured key for agent apply-bindings
-        </Text>
+        <Text as="p" variant="secondary" size="xs">Structured key for agent apply-bindings</Text>
       </div>
 
       <div className="space-y-2">
@@ -574,9 +548,7 @@ function BasicFieldSettings({
           placeholder="Add instructions for the signer"
           rows={2}
         />
-        <Text as="p" variant="secondary" size="xs">
-          Additional guidance for the recipient
-        </Text>
+        <Text as="p" variant="secondary" size="xs">Additional guidance for the recipient</Text>
       </div>
     </>
   );
@@ -652,9 +624,7 @@ function ValidationSettings({
             onChange={(event) => setCustomMessage(event.target.value)}
             placeholder="Please enter a valid value"
           />
-          <Text as="p" variant="secondary" size="xs">
-            Shown when validation fails
-          </Text>
+          <Text as="p" variant="secondary" size="xs">Shown when validation fails</Text>
         </div>
       )}
     </div>

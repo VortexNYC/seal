@@ -336,7 +336,8 @@ export async function flattenFieldsIntoPdf(
           height: drawH,
         });
         if (stamp) {
-          const stampY = box.height >= 24 && box.y > 14 ? box.y - 8 : box.y + 1;
+          const stampY =
+            box.height >= 24 && box.y > 14 ? box.y - 8 : box.y + 1;
           page.drawText(textForEmbeddedFont(font, stamp), {
             x: box.x + drawW + 3,
             y: stampY,

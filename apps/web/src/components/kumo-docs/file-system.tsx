@@ -1,5 +1,5 @@
-import { Button } from "@cloudflare/kumo/components/button";
 import { Text } from "@cloudflare/kumo/components/text";
+import { Button } from "@cloudflare/kumo/components/button";
 import { File as FileIcon, Folder as FolderIcon } from "@phosphor-icons/react";
 import type { JSX } from "react";
 
@@ -66,9 +66,7 @@ export function FileSystem({
       role="list"
     >
       {items.length === 0 ? (
-        <Text as="p" variant="secondary" size="sm">
-          This folder is empty.
-        </Text>
+        <Text as="p" variant="secondary" size="sm">This folder is empty.</Text>
       ) : view === "list" || view === "columns" ? (
         <ul
           className={cn(
@@ -98,7 +96,7 @@ export function FileSystem({
                 >
                   <span className="truncate">{item.name}</span>
                   {item.kind === "file" && item.size != null ? (
-                    <span className="text-kumo-secondary ml-auto text-xs tabular-nums">
+                    <span className="text-kumo-secondary text-xs ml-auto tabular-nums">
                       {(item.size / 1024).toFixed(0)} KB
                     </span>
                   ) : null}

@@ -4,13 +4,13 @@
  * SEA-104/105/106/107: Signature Capture Interface
  */
 
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Input } from "@cloudflare/kumo/components/input";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Tabs } from "@cloudflare/kumo/components/tabs";
-import { Text } from "@cloudflare/kumo/components/text";
 import {
   Bookmark,
   Check,
@@ -286,12 +286,8 @@ export function SignatureCapture({
     return (
       <LayerCard className="mx-auto w-full max-w-2xl">
         <LayerCard.Primary>
-          <Text as="h3" variant="heading">
-            Sign Document
-          </Text>
-          <Text as="p" variant="secondary" size="sm">
-            No signature methods are currently available.
-          </Text>
+          <Text as="h3" variant="heading">Sign Document</Text>
+          <Text as="p" variant="secondary" size="sm">No signature methods are currently available.</Text>
         </LayerCard.Primary>
         <div className="text-kumo-secondary p-6 pt-0 text-sm">
           Contact your organization administrator to re-enable signing methods.
@@ -366,12 +362,8 @@ export function SignatureCapture({
   return (
     <LayerCard className="mx-auto w-full max-w-2xl">
       <LayerCard.Primary>
-        <Text as="h3" variant="heading">
-          Sign Document
-        </Text>
-        <Text as="p" variant="secondary" size="sm">
-          Choose your preferred method to sign this document
-        </Text>
+        <Text as="h3" variant="heading">Sign Document</Text>
+        <Text as="p" variant="secondary" size="sm">Choose your preferred method to sign this document</Text>
       </LayerCard.Primary>
       <div className="p-6 pt-0">
         <Tabs
@@ -389,13 +381,9 @@ export function SignatureCapture({
             {savedSignatures.length === 0 ? (
               <div className="text-kumo-secondary py-8 text-center">
                 <Bookmark className="mx-auto mb-4 h-12 w-12 opacity-50" />
-                <Text as="p" size="sm">
-                  No saved signatures yet
-                </Text>
-                <Text as="p" size="xs" DANGEROUS_className="mt-1">
-                  Create a signature using Draw, Type, or Upload and save it for
-                  quick reuse
-                </Text>
+                <Text as="p" size="sm">No saved signatures yet</Text>
+                <Text as="p" size="xs" DANGEROUS_className="mt-1">Create a signature using Draw, Type, or Upload and save it for
+                  quick reuse</Text>
               </div>
             ) : (
               <div
@@ -443,7 +431,7 @@ export function SignatureCapture({
                         src={sig.signatureImageUrl}
                         alt={sig.name}
                         // vortex-allow-color: signature thumbnails represent white paper in both themes
-                        className="bg-kumo-base h-12 w-24 rounded border object-contain"
+                        className="h-12 w-24 rounded border bg-kumo-base object-contain"
                       />
                       <div className="flex flex-col gap-1">
                         {!sig.isDefault ? (
@@ -478,9 +466,7 @@ export function SignatureCapture({
                 ))}
               </div>
             )}
-            <Text as="p" variant="secondary" size="xs">
-              {savedSignatures.length}/10 signatures saved
-            </Text>
+            <Text as="p" variant="secondary" size="xs">{savedSignatures.length}/10 signatures saved</Text>
           </div>
         ) : null}
 
@@ -508,16 +494,13 @@ export function SignatureCapture({
             onClick={handleAccept}
             size="lg"
             className="flex-1"
-            icon={Check}
-          >
+           icon={Check}>
             Accept & Sign
           </Button>
         </div>
 
-        <Text as="p" variant="secondary" size="xs" DANGEROUS_className="mt-4">
-          By clicking "Accept & Sign", you agree that this is a legal
-          representation of your signature.
-        </Text>
+        <Text as="p" variant="secondary" size="xs" DANGEROUS_className="mt-4">By clicking "Accept & Sign", you agree that this is a legal
+          representation of your signature.</Text>
       </div>
 
       <Dialog.Root open={showSaveDialog} onOpenChange={setShowSaveDialog}>
@@ -538,7 +521,7 @@ export function SignatureCapture({
             {pendingSignatureData ? (
               <div
                 // vortex-allow-color: signature library preview represents white paper in both themes
-                className="border-kumo-hairline bg-kumo-base rounded-lg border p-4"
+                className="border-kumo-hairline rounded-lg border bg-kumo-base p-4"
               >
                 <img
                   src={pendingSignatureData.data}
@@ -576,8 +559,7 @@ export function SignatureCapture({
               }}
               disabled={!saveSignatureName.trim()}
               className="flex-1"
-              icon={Plus}
-            >
+             icon={Plus}>
               {isFirstAdopt ? "Adopt & Sign" : "Save & Sign"}
             </Button>
           </div>

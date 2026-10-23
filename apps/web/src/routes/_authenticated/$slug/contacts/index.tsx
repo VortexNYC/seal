@@ -273,232 +273,227 @@ function ContactsTableContent({
 
   return (
     <div className="flex items-stretch">
-      <div className="flex min-w-0 flex-1 flex-col gap-4">
-        {/* Bulk action bar */}
-        {selectedIds.size > 0 && (
-          <div className="bg-kumo-elevated/50 flex items-center justify-between gap-2 rounded-lg border p-2">
-            <Text as="span" variant="secondary" size="sm">
-              {selectedIds.size} selected
-            </Text>
+    <div className="flex min-w-0 flex-1 flex-col gap-4">
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="bg-kumo-elevated/50 flex items-center justify-between gap-2 rounded-lg border p-2">
+          <Text as="span" variant="secondary" size="sm">
+            {selectedIds.size} selected
+          </Text>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setBulkDeleteOpen(true)}
+          >
+            Delete ({selectedIds.size})
+          </Button>
+        </div>
+      )}
+
+      <div className="overflow-x-auto rounded-lg border">
+        <Table className="min-w-150">
+          <Table.Header>
+            <Table.Row>
+              <Table.Head className="w-10">
+                <Table.CheckHead
+                  checked={allSelected}
+                  indeterminate={someSelected}
+                  onCheckedChange={toggleSelectAll}
+                  label="Select all contacts"
+                />
+              </Table.Head>
+              <Table.Head>Name</Table.Head>
+              <Table.Head>Email</Table.Head>
+              <Table.Head className="hidden sm:table-cell">Company</Table.Head>
+              <Table.Head className="hidden md:table-cell">Title</Table.Head>
+              <Table.Head>Status</Table.Head>
+              <Table.Head className="text-right">Actions</Table.Head>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
+            {contacts.map((contact) => (
+              <Table.Row
+                key={contact._id}
+                className="cursor-pointer"
+                variant={
+                  inspectedId === contact._id || selectedIds.has(contact._id)
+                    ? "selected"
+                    : "default"
+                }
+                onClick={() => setInspectedId(contact._id)}
+              >
+                <Table.CheckCell
+                  checked={selectedIds.has(contact._id)}
+                  onCheckedChange={() => toggleSelect(contact._id)}
+                  label={`Select ${contact.fullName}`}
+                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                />
+                <Table.Cell>
+                  <Text as="p" bold>{contact.fullName}</Text>
+                </Table.Cell>
+                <Table.Cell>
+                  <Text as="p" variant="secondary" size="sm">
+                    {contact.email}
+                  </Text>
+                </Table.Cell>
+                <Table.Cell className="hidden sm:table-cell">
+                  <Text as="p" size="sm">
+                    {contact.company ?? "-"}
+                  </Text>
+                </Table.Cell>
+                <Table.Cell className="hidden md:table-cell">
+                  <Text as="p" size="sm">
+                    {contact.title ?? "-"}
+                  </Text>
+                </Table.Cell>
+                <Table.Cell>
+                  <ContactStatusBadge status={contact.status} />
+                </Table.Cell>
+                <Table.Cell className="text-right">
+                  <DropdownMenu>
+                    <DropdownMenu.Trigger>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={`Contact actions for ${contact.fullName ?? "selected contact"}`}
+                        shape="square"
+                        icon={DotsThreeVertical}
+                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                      />
+                    </DropdownMenu.Trigger>
+                    <DropdownMenu.Content
+                      align="end"
+                      onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                    >
+                      <DropdownMenu.Item
+                        onClick={() => handleOpenContact(contact._id)}
+                      >
+                        Open
+                      </DropdownMenu.Item>
+                      <DropdownMenu.Item
+                        onClick={() => setEditContact(contact)}
+                        icon={PencilSimple}
+                      >
+                        Edit
+                      </DropdownMenu.Item>
+                      <DropdownMenu.Item
+                        onClick={() =>
+                          handleDelete(contact._id, contact.fullName)
+                        }
+                        variant="danger"
+                        icon={Trash}
+                      >
+                        Delete
+                      </DropdownMenu.Item>
+                    </DropdownMenu.Content>
+                  </DropdownMenu>
+                </Table.Cell>
+              </Table.Row>
+            ))}
+          </Table.Body>
+        </Table>
+      </div>
+
+      {/* Single delete confirmation */}
+      <Dialog.Root
+        open={deleteDialog.open}
+        onOpenChange={(open) =>
+          setDeleteDialog({ open, contactId: null, contactName: "" })
+        }
+        role="alertdialog"
+      >
+        <Dialog size="sm" className="p-6">
+          <div className="space-y-1.5">
+            <Dialog.Title>Delete Contact</Dialog.Title>
+            <Dialog.Description>
+              Are you sure you want to delete &ldquo;{deleteDialog.contactName}
+              &rdquo;? This action cannot be undone.
+            </Dialog.Description>
+          </div>
+          <div className="mt-6 flex justify-end gap-2">
             <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setBulkDeleteOpen(true)}
+              type="button"
+              variant="secondary"
+              onClick={() =>
+                setDeleteDialog({
+                  open: false,
+                  contactId: null,
+                  contactName: "",
+                })
+              }
             >
-              Delete ({selectedIds.size})
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleConfirmDelete}
+            >
+              Delete
             </Button>
           </div>
-        )}
+        </Dialog>
+      </Dialog.Root>
 
-        <div className="overflow-x-auto rounded-lg border">
-          <Table className="min-w-150">
-            <Table.Header>
-              <Table.Row>
-                <Table.Head className="w-10">
-                  <Table.CheckHead
-                    checked={allSelected}
-                    indeterminate={someSelected}
-                    onCheckedChange={toggleSelectAll}
-                    label="Select all contacts"
-                  />
-                </Table.Head>
-                <Table.Head>Name</Table.Head>
-                <Table.Head>Email</Table.Head>
-                <Table.Head className="hidden sm:table-cell">
-                  Company
-                </Table.Head>
-                <Table.Head className="hidden md:table-cell">Title</Table.Head>
-                <Table.Head>Status</Table.Head>
-                <Table.Head className="text-right">Actions</Table.Head>
-              </Table.Row>
-            </Table.Header>
-            <Table.Body>
-              {contacts.map((contact) => (
-                <Table.Row
-                  key={contact._id}
-                  className="cursor-pointer"
-                  variant={
-                    inspectedId === contact._id || selectedIds.has(contact._id)
-                      ? "selected"
-                      : "default"
-                  }
-                  onClick={() => setInspectedId(contact._id)}
-                >
-                  <Table.CheckCell
-                    checked={selectedIds.has(contact._id)}
-                    onCheckedChange={() => toggleSelect(contact._id)}
-                    label={`Select ${contact.fullName}`}
-                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                  />
-                  <Table.Cell>
-                    <Text as="p" bold>
-                      {contact.fullName}
-                    </Text>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <Text as="p" variant="secondary" size="sm">
-                      {contact.email}
-                    </Text>
-                  </Table.Cell>
-                  <Table.Cell className="hidden sm:table-cell">
-                    <Text as="p" size="sm">
-                      {contact.company ?? "-"}
-                    </Text>
-                  </Table.Cell>
-                  <Table.Cell className="hidden md:table-cell">
-                    <Text as="p" size="sm">
-                      {contact.title ?? "-"}
-                    </Text>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <ContactStatusBadge status={contact.status} />
-                  </Table.Cell>
-                  <Table.Cell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenu.Trigger>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          aria-label={`Contact actions for ${contact.fullName ?? "selected contact"}`}
-                          shape="square"
-                          icon={DotsThreeVertical}
-                          onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                        />
-                      </DropdownMenu.Trigger>
-                      <DropdownMenu.Content
-                        align="end"
-                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                      >
-                        <DropdownMenu.Item
-                          onClick={() => handleOpenContact(contact._id)}
-                        >
-                          Open
-                        </DropdownMenu.Item>
-                        <DropdownMenu.Item
-                          onClick={() => setEditContact(contact)}
-                          icon={PencilSimple}
-                        >
-                          Edit
-                        </DropdownMenu.Item>
-                        <DropdownMenu.Item
-                          onClick={() =>
-                            handleDelete(contact._id, contact.fullName)
-                          }
-                          variant="danger"
-                          icon={Trash}
-                        >
-                          Delete
-                        </DropdownMenu.Item>
-                      </DropdownMenu.Content>
-                    </DropdownMenu>
-                  </Table.Cell>
-                </Table.Row>
-              ))}
-            </Table.Body>
-          </Table>
-        </div>
+      {/* Bulk delete confirmation */}
+      <Dialog.Root
+        open={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+        role="alertdialog"
+      >
+        <Dialog size="sm" className="p-6">
+          <div className="space-y-1.5">
+            <Dialog.Title>Delete {selectedIds.size} Contacts</Dialog.Title>
+            <Dialog.Description>
+              Are you sure you want to delete {selectedIds.size} contacts? This
+              action cannot be undone.
+            </Dialog.Description>
+          </div>
+          <div className="mt-6 flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setBulkDeleteOpen(false)}
+              disabled={isBulkDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleBulkDelete}
+              disabled={isBulkDeleting}
+            >
+              {isBulkDeleting
+                ? "Deleting..."
+                : `Delete ${selectedIds.size} Contacts`}
+            </Button>
+          </div>
+        </Dialog>
+      </Dialog.Root>
 
-        {/* Single delete confirmation */}
-        <Dialog.Root
-          open={deleteDialog.open}
-          onOpenChange={(open) =>
-            setDeleteDialog({ open, contactId: null, contactName: "" })
-          }
-          role="alertdialog"
-        >
-          <Dialog size="sm" className="p-6">
-            <div className="space-y-1.5">
-              <Dialog.Title>Delete Contact</Dialog.Title>
-              <Dialog.Description>
-                Are you sure you want to delete &ldquo;
-                {deleteDialog.contactName}
-                &rdquo;? This action cannot be undone.
-              </Dialog.Description>
-            </div>
-            <div className="mt-6 flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() =>
-                  setDeleteDialog({
-                    open: false,
-                    contactId: null,
-                    contactName: "",
-                  })
-                }
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={handleConfirmDelete}
-              >
-                Delete
-              </Button>
-            </div>
-          </Dialog>
-        </Dialog.Root>
-
-        {/* Bulk delete confirmation */}
-        <Dialog.Root
-          open={bulkDeleteOpen}
-          onOpenChange={setBulkDeleteOpen}
-          role="alertdialog"
-        >
-          <Dialog size="sm" className="p-6">
-            <div className="space-y-1.5">
-              <Dialog.Title>Delete {selectedIds.size} Contacts</Dialog.Title>
-              <Dialog.Description>
-                Are you sure you want to delete {selectedIds.size} contacts?
-                This action cannot be undone.
-              </Dialog.Description>
-            </div>
-            <div className="mt-6 flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setBulkDeleteOpen(false)}
-                disabled={isBulkDeleting}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={handleBulkDelete}
-                disabled={isBulkDeleting}
-              >
-                {isBulkDeleting
-                  ? "Deleting..."
-                  : `Delete ${selectedIds.size} Contacts`}
-              </Button>
-            </div>
-          </Dialog>
-        </Dialog.Root>
-
-        {/* Edit dialog */}
-        {editContact && (
-          <EditContactDialog
-            organizationSlug={slug}
-            open={!!editContact}
-            onOpenChange={(open) => {
-              if (!open) setEditContact(null);
-            }}
-            contact={editContact}
-            onUpdated={() =>
-              queryClient.invalidateQueries({ queryKey: ["api", "contacts"] })
-            }
-          />
-        )}
-      </div>
-      {inspected ? (
-        <ContactOversightPanel
+      {/* Edit dialog */}
+      {editContact && (
+        <EditContactDialog
           organizationSlug={slug}
-          contact={inspected}
-          onClose={() => setInspectedId(null)}
+          open={!!editContact}
+          onOpenChange={(open) => {
+            if (!open) setEditContact(null);
+          }}
+          contact={editContact}
+          onUpdated={() =>
+            queryClient.invalidateQueries({ queryKey: ["api", "contacts"] })
+          }
         />
-      ) : null}
+      )}
+    </div>
+    {inspected ? (
+      <ContactOversightPanel
+        organizationSlug={slug}
+        contact={inspected}
+        onClose={() => setInspectedId(null)}
+      />
+    ) : null}
     </div>
   );
 }

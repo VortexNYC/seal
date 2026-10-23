@@ -45,38 +45,34 @@ export function ThumbnailSidebar({
         : pages.map((page) => {
             const active = page.page === currentPage;
             return (
-              <span
-                key={page.page}
-                title={`Go to page ${page.page}`}
-                className="inline-flex w-full"
+              <span key={page.page} title={`Go to page ${page.page}`} className="inline-flex w-full">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => onSelectPage(page.page)}
+                className={cn(
+                  "flex h-auto flex-col items-center gap-1 rounded-lg p-1.5",
+                  active && "bg-kumo-elevated ring-kumo-focus ring-2"
+                )}
+                aria-current={active ? "page" : undefined}
               >
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => onSelectPage(page.page)}
-                  className={cn(
-                    "flex h-auto flex-col items-center gap-1 rounded-lg p-1.5",
-                    active && "bg-kumo-elevated ring-kumo-focus ring-2"
+                <div className="border-kumo-line bg-kumo-canvas relative h-24 w-20 overflow-hidden rounded-md border shadow-xs">
+                  {page.src ? (
+                    <img
+                      src={page.src}
+                      alt=""
+                      className="h-full w-full object-cover object-top"
+                    />
+                  ) : (
+                    <div className="text-kumo-secondary flex h-full items-center justify-center text-xs">
+                      {page.page}
+                    </div>
                   )}
-                  aria-current={active ? "page" : undefined}
-                >
-                  <div className="border-kumo-line bg-kumo-canvas relative h-24 w-20 overflow-hidden rounded-md border shadow-xs">
-                    {page.src ? (
-                      <img
-                        src={page.src}
-                        alt=""
-                        className="h-full w-full object-cover object-top"
-                      />
-                    ) : (
-                      <div className="text-kumo-secondary flex h-full items-center justify-center text-xs">
-                        {page.page}
-                      </div>
-                    )}
-                  </div>
-                  <span className="text-kumo-secondary text-xs tabular-nums">
-                    {page.label ?? page.page}
-                  </span>
-                </Button>
+                </div>
+                <span className="text-kumo-secondary text-xs tabular-nums">
+                  {page.label ?? page.page}
+                </span>
+              </Button>
               </span>
             );
           })}

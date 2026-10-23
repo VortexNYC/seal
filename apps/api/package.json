@@ -13,6 +13,34 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate"
   },
+  "cloudflare": {
+    "bindings": {
+      "BETTER_AUTH_SECRET": {
+        "description": "Session signing secret. Generate with `openssl rand -base64 32` (≥32 chars)."
+      },
+      "TOKEN_HASH_SECRET": {
+        "description": "API token hashing secret. Generate with `openssl rand -base64 32`."
+      },
+      "INTERNAL_API_KEY": {
+        "description": "Shared key for Worker-to-Worker `/internal` calls. Generate with `openssl rand -base64 32`."
+      },
+      "MCP_SIGNING_KEY": {
+        "description": "Optional. Only needed if you deploy the MCP worker."
+      },
+      "SEAL_SEALING_P12": {
+        "description": "Optional. Base64 PKCS#12 for platform PAdES-B (SEA-49 L1b). Generate offline; never commit."
+      },
+      "SEAL_SEALING_P12_PASSPHRASE": {
+        "description": "Optional. Passphrase for SEAL_SEALING_P12."
+      },
+      "D1": {
+        "description": "Primary Seal database (auto-provisioned on first selfhost deploy)."
+      },
+      "DOCUMENTS_BUCKET": {
+        "description": "R2 bucket for PDFs and signed artifacts (auto-provisioned)."
+      }
+    }
+  },
   "dependencies": {
     "@better-auth/scim": "1.7.6",
     "@better-auth/sso": "1.7.6",
@@ -48,33 +76,5 @@
     "typescript": "catalog:",
     "vitest": "catalog:",
     "wrangler": "^4.133.0"
-  },
-  "cloudflare": {
-    "bindings": {
-      "BETTER_AUTH_SECRET": {
-        "description": "Session signing secret. Generate with `openssl rand -base64 32` (≥32 chars)."
-      },
-      "TOKEN_HASH_SECRET": {
-        "description": "API token hashing secret. Generate with `openssl rand -base64 32`."
-      },
-      "INTERNAL_API_KEY": {
-        "description": "Shared key for Worker-to-Worker `/internal` calls. Generate with `openssl rand -base64 32`."
-      },
-      "MCP_SIGNING_KEY": {
-        "description": "Optional. Only needed if you deploy the MCP worker."
-      },
-      "SEAL_SEALING_P12": {
-        "description": "Optional. Base64 PKCS#12 for platform PAdES-B (SEA-49 L1b). Generate offline; never commit."
-      },
-      "SEAL_SEALING_P12_PASSPHRASE": {
-        "description": "Optional. Passphrase for SEAL_SEALING_P12."
-      },
-      "D1": {
-        "description": "Primary Seal database (auto-provisioned on first selfhost deploy)."
-      },
-      "DOCUMENTS_BUCKET": {
-        "description": "R2 bucket for PDFs and signed artifacts (auto-provisioned)."
-      }
-    }
   }
 }

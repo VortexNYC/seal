@@ -7,12 +7,12 @@ import {
 
 describe("isPlaceholderSelfhostUrl", () => {
   it("flags bare selfhost workers.dev hosts", () => {
-    expect(
-      isPlaceholderSelfhostUrl("https://seal-selfhost-web.workers.dev")
-    ).toBe(true);
-    expect(
-      isPlaceholderSelfhostUrl("https://seal-selfhost-api.workers.dev/")
-    ).toBe(true);
+    expect(isPlaceholderSelfhostUrl("https://seal-selfhost-web.workers.dev")).toBe(
+      true
+    );
+    expect(isPlaceholderSelfhostUrl("https://seal-selfhost-api.workers.dev/")).toBe(
+      true
+    );
     expect(isPlaceholderSelfhostUrl("https://seal-web.workers.dev")).toBe(true);
   });
 

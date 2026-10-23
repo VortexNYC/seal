@@ -9,14 +9,13 @@
  *   - openssl cms -verify -noverify succeeds over the ByteRange segments
  */
 import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-
-import forge from "node-forge";
+import { createHash } from "node:crypto";
 import { PDFDocument, rgb } from "pdf-lib";
+import forge from "node-forge";
 
 import {
   extractCmsDerFromSignedPdf,
@@ -53,14 +52,9 @@ function makeTestP12(passphrase: string): string {
     { name: "keyUsage", keyCertSign: true, digitalSignature: true },
   ]);
   cert.sign(keys.privateKey, forge.md.sha256.create());
-  const p12Asn1 = forge.pkcs12.toPkcs12Asn1(
-    keys.privateKey,
-    [cert],
-    passphrase,
-    {
-      algorithm: "3des",
-    }
-  );
+  const p12Asn1 = forge.pkcs12.toPkcs12Asn1(keys.privateKey, [cert], passphrase, {
+    algorithm: "3des",
+  });
   return forge.util.encode64(forge.asn1.toDer(p12Asn1).getBytes());
 }
 

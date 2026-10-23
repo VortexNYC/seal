@@ -12,12 +12,12 @@ org settings that shut them off.
 
 ## Paths that leave Seal
 
-| Path                    | What leaves                                   | Gate                                                                                                  |
-| ----------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Path | What leaves | Gate |
+| --- | --- | --- |
 | **Transactional email** | Recipient email, document title, signing link | Product notifications settings; cannot void signing without email unless you use API-only agent flows |
-| **Webhooks**            | Event JSON to your HTTPS endpoint             | `egress.webhook_payload_mode`: `full` (default) or `minimal`                                          |
-| **Convert worker**      | Office/CSV bytes → PDF                        | `egress.allow_convert` (default `true`)                                                               |
-| **Anydoc / AI**         | PDF/Office bytes for parse + field candidates | `ai.enabled` (default `true`)                                                                         |
+| **Webhooks** | Event JSON to your HTTPS endpoint | `egress.webhook_payload_mode`: `full` (default) or `minimal` |
+| **Convert worker** | Office/CSV bytes → PDF | `egress.allow_convert` (default `true`) |
+| **Anydoc / AI** | PDF/Office bytes for parse + field candidates | `ai.enabled` (default `true`) |
 
 Convert and anydoc are **same-account Cloudflare service bindings** on hosted
 Seal (and on self-host when you bind them). They are still a second processing
@@ -39,10 +39,10 @@ Content-Type: application/json
 }
 ```
 
-| Setting                                  | Effect                                                                                                                                          |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ai.enabled: false`                      | AI routes return `403` `{ "error": "ai_disabled" }`; anydoc parse is skipped                                                                    |
-| `egress.allow_convert: false`            | Convert attempts return `403` `{ "error": "convert_disabled" }`                                                                                 |
+| Setting | Effect |
+| --- | --- |
+| `ai.enabled: false` | AI routes return `403` `{ "error": "ai_disabled" }`; anydoc parse is skipped |
+| `egress.allow_convert: false` | Convert attempts return `403` `{ "error": "convert_disabled" }` |
 | `egress.webhook_payload_mode: "minimal"` | Webhook `data` keeps ids, status, timestamps, counts; drops email/name/title/IP/signature/free text. Envelope includes `payloadMode: "minimal"` |
 
 GET `/api/v1/settings` returns the current values (defaults shown above when

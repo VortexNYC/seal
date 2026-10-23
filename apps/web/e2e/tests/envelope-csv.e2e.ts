@@ -2,7 +2,10 @@ import { readFile } from "node:fs/promises";
 
 import { expect, test } from "@playwright/test";
 
-import { createDocument, deleteDocument } from "../factories/document-factory";
+import {
+  createDocument,
+  deleteDocument,
+} from "../factories/document-factory";
 import { loadSamplePdf } from "../fixtures/api-test-client";
 import { signInTestUser } from "../fixtures/auth-helpers";
 import { sampleDocumentPath } from "../fixtures/paths";

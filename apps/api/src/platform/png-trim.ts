@@ -95,12 +95,7 @@ function decodePngRgba(
   }
 
   // Only 8-bit RGBA or RGB (+ optional tRNS handled as opaque RGB)
-  if (
-    bitDepth !== 8 ||
-    (colorType !== 6 && colorType !== 2) ||
-    width <= 0 ||
-    height <= 0
-  ) {
+  if (bitDepth !== 8 || (colorType !== 6 && colorType !== 2) || width <= 0 || height <= 0) {
     return null;
   }
 

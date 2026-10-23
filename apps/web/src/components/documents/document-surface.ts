@@ -183,8 +183,7 @@ export function fieldPlacementBox(input: {
   const scaleX = input.renderedWidth / input.naturalWidth;
   const scaleY = input.renderedHeight / input.naturalHeight;
   const renderedW = (input.widthPx / DESIGN_PAGE_WIDTH) * input.renderedWidth;
-  const renderedH =
-    (input.heightPx / DESIGN_PAGE_HEIGHT) * input.renderedHeight;
+  const renderedH = (input.heightPx / DESIGN_PAGE_HEIGHT) * input.renderedHeight;
   const localX = input.clientX - input.pageLeft - renderedW / 2;
   const localY =
     input.anchor === "bottom"

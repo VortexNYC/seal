@@ -1,5 +1,5 @@
-import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Lock as LockIcon } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 
@@ -41,13 +41,9 @@ export function FeatureGate({
               <LockIcon className="text-kumo-secondary h-4 w-4" />
             </div>
             <div className="space-y-1">
-              <Text as="p" size="sm" bold>
-                {feature} — available on{" "}
-                {tier === "pro" ? "Professional" : "Enterprise"}
-              </Text>
-              <Text as="p" variant="secondary" size="sm">
-                {description}
-              </Text>
+              <Text as="p" size="sm" bold>{feature} — available on{" "}
+                {tier === "pro" ? "Professional" : "Enterprise"}</Text>
+              <Text as="p" variant="secondary" size="sm">{description}</Text>
             </div>
           </div>
         </LayerCard.Primary>

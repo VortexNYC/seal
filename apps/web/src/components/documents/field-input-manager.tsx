@@ -1,6 +1,6 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
-import { Text } from "@cloudflare/kumo/components/text";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
@@ -160,9 +160,7 @@ const FIELD_INPUT_RENDERERS: Record<
   ),
   payment: ({ fieldId, signingToken }) =>
     signingToken ? (
-      <Text as="p" variant="secondary" size="sm">
-        Payment is required to complete this document.
-      </Text>
+      <Text as="p" variant="secondary" size="sm">Payment is required to complete this document.</Text>
     ) : (
       <PaymentFieldSummary
         fieldId={parseId("signature_fields", fieldId)}

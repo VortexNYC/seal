@@ -20,9 +20,7 @@ function ctx(
     env: { INTERNAL_API_KEY: key },
     req: {
       header(name: string): string | undefined {
-        return name.toLowerCase() === "x-internal-api-key"
-          ? provided
-          : undefined;
+        return name.toLowerCase() === "x-internal-api-key" ? provided : undefined;
       },
     },
   };

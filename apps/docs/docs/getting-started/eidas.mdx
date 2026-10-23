@@ -11,10 +11,10 @@ It is documentation, not a product claim of QES.
 
 ## What Seal produces today
 
-| Market frame        | Seal level                                     | What that means                                                                                                        |
-| ------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| **eIDAS**           | **SES** — Simple Electronic Signature          | Identity + intent + integrity of the _record_ (and, at Level 1, of final PDF bytes via platform PAdES-B). Not AES/QES. |
-| **US ESIGN / UETA** | Electronic signature with demonstrable consent | ESIGN consent + privacy notice + sealed audit trail + Certificate of Completion.                                       |
+| Market frame | Seal level | What that means |
+| --- | --- | --- |
+| **eIDAS** | **SES** — Simple Electronic Signature | Identity + intent + integrity of the *record* (and, at Level 1, of final PDF bytes via platform PAdES-B). Not AES/QES. |
+| **US ESIGN / UETA** | Electronic signature with demonstrable consent | ESIGN consent + privacy notice + sealed audit trail + Certificate of Completion. |
 
 SES under eIDAS Art. 3(10) is still legally valid for many B2B flows. It is **not**
 equivalent to an Advanced or Qualified signature for regulated EU use cases that
@@ -45,13 +45,13 @@ require AES/QES.
 
 Ship only when a deal requires it. Levels match SEA-49:
 
-| Step             | Product                                                  | eIDAS mapping                   | Dependency                                                                    |
-| ---------------- | -------------------------------------------------------- | ------------------------------- | ----------------------------------------------------------------------------- |
-| **Today**        | SES + platform PAdES-B (L1)                              | SES                             | Shipped                                                                       |
-| **PAdES-T**      | RFC 3161 TSA at seal time                                | Still SES/AES-adjacent evidence | SEA-49 Level 2 — TSA vendor + ops cost                                        |
-| **PAdES-LT/LTA** | Embed OCSP/CRL + archival timestamp                      | Long-term validation            | SEA-49 Level 3 — enterprise/EU sales                                          |
-| **AES**          | Per-signer certificates under sole control of the signer | Advanced Electronic Signature   | TSP integration; signer key custody (device or remote)                        |
-| **QES**          | Qualified certificates + QSCD / CSC-style remote signing | Qualified Electronic Signature  | EU trust-service provider; certified device/CSC; different regulatory company |
+| Step | Product | eIDAS mapping | Dependency |
+| --- | --- | --- | --- |
+| **Today** | SES + platform PAdES-B (L1) | SES | Shipped |
+| **PAdES-T** | RFC 3161 TSA at seal time | Still SES/AES-adjacent evidence | SEA-49 Level 2 — TSA vendor + ops cost |
+| **PAdES-LT/LTA** | Embed OCSP/CRL + archival timestamp | Long-term validation | SEA-49 Level 3 — enterprise/EU sales |
+| **AES** | Per-signer certificates under sole control of the signer | Advanced Electronic Signature | TSP integration; signer key custody (device or remote) |
+| **QES** | Qualified certificates + QSCD / CSC-style remote signing | Qualified Electronic Signature | EU trust-service provider; certified device/CSC; different regulatory company |
 
 **Rule:** do not market “eIDAS compliant” without naming the **level**. Default
 copy: “SES with sealed audit trail and platform-sealed final PDF; AES/QES via
@@ -60,7 +60,6 @@ TSP roadmap.”
 ## For EU RFPs
 
 Answer with this page + [Trust & evidence](/getting-started/trust-and-evidence)
-
-- [Production checklist](/getting-started/production). If the RFP requires AES
-  or QES as a go-live gate, escalate — that is a TSP partnership, not a weekend
-  feature.
++ [Production checklist](/getting-started/production). If the RFP requires AES
+or QES as a go-live gate, escalate — that is a TSP partnership, not a weekend
+feature.

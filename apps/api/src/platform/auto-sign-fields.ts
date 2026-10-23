@@ -30,7 +30,10 @@ export function isAutoSignableFieldType(
 }
 
 export function initialsFromName(name: string | null | undefined): string {
-  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
+  const parts = (name ?? "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
   if (parts.length === 0) return "";
   if (parts.length === 1) {
     const only = parts[0] ?? "";

@@ -23,10 +23,7 @@ import {
   AuditChainConflictError,
   buildAuditChainTipRevertBatchItems,
 } from "./audit-chain.js";
-import {
-  recordAuditWriteFailure,
-  recordAuditWriteSuccess,
-} from "./audit-health.js";
+import { recordAuditWriteFailure, recordAuditWriteSuccess } from "./audit-health.js";
 import {
   prepareChainedAuditLog,
   tipBatchItemsForPrepared,

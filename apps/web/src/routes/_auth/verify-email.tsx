@@ -37,11 +37,7 @@ function VerifyEmailRoute() {
   const callbackUrl = `${resolveAppOrigin()}/verify-email`;
 
   if (client === null) {
-    return (
-      <Text as="p" size="sm">
-        Auth client not configured.
-      </Text>
-    );
+    return <Text as="p" size="sm">Auth client not configured.</Text>;
   }
 
   return (

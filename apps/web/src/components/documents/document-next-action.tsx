@@ -151,15 +151,15 @@ export function DocumentNextAction({
 
       {model.kind === "add_people" ? (
         <span title="Add who needs to sign" className="inline-flex w-full">
-          <Button
-            type="button"
-            variant="primary"
-            className="w-full"
-            icon={UserPlus}
-            onClick={model.onAction}
-          >
-            Add people
-          </Button>
+        <Button
+          type="button"
+          variant="primary"
+          className="w-full"
+          icon={UserPlus}
+          onClick={model.onAction}
+        >
+          Add people
+        </Button>
         </span>
       ) : null}
 
@@ -172,46 +172,43 @@ export function DocumentNextAction({
           }
           className="inline-flex w-full"
         >
-          <Button
-            type="button"
-            variant="primary"
-            className="w-full"
-            icon={Signature}
-            onClick={model.onAction}
-          >
-            {model.kind === "place_fields" ? "Show fields" : "Review fields"}
-          </Button>
+        <Button
+          type="button"
+          variant="primary"
+          className="w-full"
+          icon={Signature}
+          onClick={model.onAction}
+        >
+          {model.kind === "place_fields" ? "Show fields" : "Review fields"}
+        </Button>
         </span>
       ) : null}
 
       {model.kind === "send" ? (
         <span title="Send this document" className="inline-flex w-full">
-          <Button
-            type="button"
-            variant="primary"
-            className="w-full"
-            icon={PaperPlaneTilt}
-            onClick={model.onAction}
-          >
-            {model.label}
-          </Button>
+        <Button
+          type="button"
+          variant="primary"
+          className="w-full"
+          icon={PaperPlaneTilt}
+          onClick={model.onAction}
+        >
+          {model.label}
+        </Button>
         </span>
       ) : null}
 
       {model.kind === "sign_yourself" ? (
-        <span
-          title="Continue signing this document"
-          className="inline-flex w-full"
+        <span title="Continue signing this document" className="inline-flex w-full">
+        <Button
+          type="button"
+          variant="primary"
+          className="w-full"
+          icon={Signature}
+          onClick={model.onAction}
         >
-          <Button
-            type="button"
-            variant="primary"
-            className="w-full"
-            icon={Signature}
-            onClick={model.onAction}
-          >
-            {model.ready ? "Submit signature" : "Continue signing"}
-          </Button>
+          {model.ready ? "Submit signature" : "Continue signing"}
+        </Button>
         </span>
       ) : null}
 
@@ -243,11 +240,7 @@ export function DocumentNextAction({
           >
             Download PDF
           </Button>
-          <Text
-            variant="secondary"
-            size="sm"
-            DANGEROUS_className="flex items-center gap-2"
-          >
+          <Text variant="secondary" size="sm" DANGEROUS_className="flex items-center gap-2">
             <CheckCircle className="size-5" />
             Nothing needed from you
           </Text>

@@ -3,6 +3,12 @@ import { DropdownMenu } from "@cloudflare/kumo/components/dropdown";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Loader } from "@cloudflare/kumo/components/loader";
 import { Text } from "@cloudflare/kumo/components/text";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import {
+  type ErrorComponentProps,
+  createFileRoute,
+  useRouter,
+} from "@tanstack/react-router";
 import {
   ArrowLeft as ArrowLeftIcon,
   ClockCounterClockwise as HistoryIcon,
@@ -17,18 +23,16 @@ import {
   ShareFat as ForwardIcon,
   Trash as TrashIcon,
 } from "@phosphor-icons/react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import {
-  type ErrorComponentProps,
-  createFileRoute,
-  useRouter,
-} from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 
-import { fieldPlacementAnchor } from "@/components/documents/document-surface";
 import { DocumentToolRow } from "@/components/documents/document-tool-row";
 import { paymentFieldBlockedReason } from "@/components/documents/field-toolbar";
-import { MoveToFolderDialog } from "@/components/folders/move-to-folder-dialog";
+import { fieldPlacementAnchor } from "@/components/documents/document-surface";
+import {
+  FIELD_DIMENSIONS,
+  FIELD_TYPE_LABELS,
+  type FieldType,
+} from "@/lib/field-types";
 import { NotFoundPage } from "@/components/not-found-page";
 import { PageWrapper } from "@/components/page-wrapper";
 import { RouteErrorComponent } from "@/components/route-error-component";
@@ -53,26 +57,26 @@ import {
   updateRecipient as updateRecipientApi,
 } from "@/lib/api-client";
 import { buildActivityEvents } from "@/lib/document-activity";
+import { envelopeCsv, envelopeCsvFilename } from "@/lib/envelope-csv";
 import {
   documentHeaderAction,
   signedPdfFilename,
   toWorkflowStatus,
 } from "@/lib/document-status";
-import { envelopeCsv, envelopeCsvFilename } from "@/lib/envelope-csv";
-import {
-  FIELD_DIMENSIONS,
-  FIELD_TYPE_LABELS,
-  type FieldType,
-} from "@/lib/field-types";
 import { parseId } from "@/lib/ids";
 import { toast } from "@/lib/toast";
 
+import { MoveToFolderDialog } from "@/components/folders/move-to-folder-dialog";
+
 import { AddMyselfDialog } from "../../../../components/documents/add-myself-dialog";
 import { AddRecipientDialog } from "../../../../components/documents/add-recipient-dialog";
-import { DeleteEnvelopeDialog } from "../../../../components/documents/delete-envelope-dialog";
 import { DeleteFieldDialog } from "../../../../components/documents/delete-field-dialog";
+import { DeleteEnvelopeDialog } from "../../../../components/documents/delete-envelope-dialog";
+import { EnvelopeHistoryDialog } from "../../../../components/documents/envelope-history-dialog";
+import { ForwardDocumentDialog } from "../../../../components/documents/forward-document-dialog";
 import { DocumentCanvas } from "../../../../components/documents/document-canvas";
 import { DocumentPresence } from "../../../../components/documents/document-presence";
+import { DocumentSidebar } from "../../../../components/documents/document-sidebar";
 import {
   FINISH_FIELD_MESSAGE,
   activeRailPanel,
@@ -87,12 +91,9 @@ import {
   sendDocumentReadiness,
   signerRecipients,
 } from "../../../../components/documents/document-rail";
-import { DocumentSidebar } from "../../../../components/documents/document-sidebar";
 import { thumbnailPdfUrl } from "../../../../components/documents/document-surface";
-import { EnvelopeHistoryDialog } from "../../../../components/documents/envelope-history-dialog";
 import { FieldOptionsDialog } from "../../../../components/documents/field-options-dialog";
 import { FieldPropertiesDialog } from "../../../../components/documents/field-properties-dialog";
-import { ForwardDocumentDialog } from "../../../../components/documents/forward-document-dialog";
 import { useDocumentState } from "../../../../components/documents/hooks/use-document-state";
 import {
   useFieldPlacement,
@@ -389,7 +390,8 @@ function DocumentDetailPage() {
 
   const canEdit = documentData.status === "active" && isPrepStatus;
   const canCorrectRecipients =
-    documentData.status === "active" && documentData.workflowStatus === "sent";
+    documentData.status === "active" &&
+    documentData.workflowStatus === "sent";
 
   const sharedPdfCanvas = Boolean(pdfViewer.pdfUrl);
 
@@ -567,19 +569,18 @@ function DocumentDetailPage() {
           }
           className="inline-flex w-full"
         >
-          <Button
-            onClick={() => {
-              if (!dismissRail()) return;
-              docState.setSaveAsTemplateOpen(true);
-            }}
-            size="sm"
-            variant="outline"
-            className="w-full"
-            disabled={!canCreateTemplates}
-            icon={SaveIcon}
-          >
-            <span className="truncate">Save as Template</span>
-          </Button>
+        <Button
+          onClick={() => {
+            if (!dismissRail()) return;
+            docState.setSaveAsTemplateOpen(true);
+          }}
+          size="sm"
+          variant="outline"
+          className="w-full"
+          disabled={!canCreateTemplates}
+         icon={SaveIcon}>
+          <span className="truncate">Save as Template</span>
+        </Button>
         </span>
       </div>
     ) : null;
@@ -719,21 +720,21 @@ function DocumentDetailPage() {
       headerActions={
         <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
           <span title="Return to documents" className="inline-flex">
-            <Button
-              onClick={() =>
-                router.navigate({
-                  to: "/$slug/documents",
-                  params: { slug },
-                  search: { folderId: undefined },
-                })
-              }
-              variant="ghost"
-              size="sm"
-              className="flex-1 sm:flex-none"
-              icon={ArrowLeftIcon}
-            >
-              <span className="truncate">Documents</span>
-            </Button>
+          <Button
+            onClick={() =>
+              router.navigate({
+                to: "/$slug/documents",
+                params: { slug },
+                search: { folderId: undefined },
+              })
+            }
+            variant="ghost"
+            size="sm"
+            className="flex-1 sm:flex-none"
+            icon={ArrowLeftIcon}
+          >
+            <span className="truncate">Documents</span>
+          </Button>
           </span>
           <DocumentPresence documentId={documentId} />
           {documentHeaderAction(documentData.workflowStatus) === "download" ? (
@@ -841,10 +842,7 @@ function DocumentDetailPage() {
               >
                 Export CSV
               </DropdownMenu.Item>
-              <DropdownMenu.Item
-                icon={FolderIcon}
-                onClick={() => setMoveOpen(true)}
-              >
+              <DropdownMenu.Item icon={FolderIcon} onClick={() => setMoveOpen(true)}>
                 Move
               </DropdownMenu.Item>
               {!isPrepStatus &&
@@ -945,8 +943,7 @@ function DocumentDetailPage() {
                             ? (clientX, clientY) => {
                                 const intent = resolvePagePlaceIntent({
                                   fieldSetupOpen: fieldPlacement.fieldSetupOpen,
-                                  signerCount:
-                                    signerRecipients(recipients).length,
+                                  signerCount: signerRecipients(recipients).length,
                                 });
                                 if (intent === "finish-field") {
                                   toast.info(FINISH_FIELD_MESSAGE);
@@ -998,11 +995,7 @@ function DocumentDetailPage() {
                                   toast.info(paymentBlocked);
                                   return;
                                 }
-                                if (
-                                  !canLeaveFieldSetup(
-                                    fieldPlacement.fieldSetupOpen
-                                  )
-                                ) {
+                                if (!canLeaveFieldSetup(fieldPlacement.fieldSetupOpen)) {
                                   toast.info(FINISH_FIELD_MESSAGE);
                                   return;
                                 }
@@ -1059,8 +1052,7 @@ function DocumentDetailPage() {
                             ? (event) => {
                                 const intent = resolvePagePlaceIntent({
                                   fieldSetupOpen: fieldPlacement.fieldSetupOpen,
-                                  signerCount:
-                                    signerRecipients(recipients).length,
+                                  signerCount: signerRecipients(recipients).length,
                                 });
                                 if (intent === "finish-field") {
                                   event.preventDefault();
@@ -1109,9 +1101,7 @@ function DocumentDetailPage() {
                                   new Blob([copy], { type: "application/pdf" })
                                 );
                                 if (savedMarkupUrlRef.current) {
-                                  URL.revokeObjectURL(
-                                    savedMarkupUrlRef.current
-                                  );
+                                  URL.revokeObjectURL(savedMarkupUrlRef.current);
                                 }
                                 savedMarkupUrlRef.current = url;
                                 setSavedMarkupUrl(url);
@@ -1281,8 +1271,7 @@ function DocumentDetailPage() {
                     fieldType={
                       fieldPlacement.selectedFieldId
                         ? fieldPlacement.placedFields.find(
-                            (field) =>
-                              field.id === fieldPlacement.selectedFieldId
+                            (field) => field.id === fieldPlacement.selectedFieldId
                           )?.fieldType
                         : undefined
                     }
@@ -1296,9 +1285,7 @@ function DocumentDetailPage() {
                     }}
                     fieldType={optionsFieldType}
                     onConfirm={fieldPlacement.handleFieldOptionsConfirm}
-                    initialConfig={
-                      fieldPlacement.pendingFieldOptions ?? undefined
-                    }
+                    initialConfig={fieldPlacement.pendingFieldOptions ?? undefined}
                   />
                 ) : railPanelId === "payment" ? (
                   <PaymentConfigModal
@@ -1352,9 +1339,7 @@ function DocumentDetailPage() {
                     documentName={documentData.name}
                     recipients={recipients}
                     signatureFieldCount={signatureFieldCount}
-                    requiresSigningField={
-                      signerRecipients(recipients).length > 0
-                    }
+                    requiresSigningField={signerRecipients(recipients).length > 0}
                     fieldCountsByRecipient={fieldCountsByRecipient}
                     paymentConfigs={paymentConfigs}
                     open
@@ -1406,6 +1391,7 @@ function DocumentDetailPage() {
             />
           </div>
         </div>
+
       </div>
       <MoveToFolderDialog
         open={moveOpen}

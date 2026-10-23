@@ -1,11 +1,11 @@
 import { deflateSync } from "node:zlib";
 
-import { PDFDocument, rgb } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 
 import { flattenFieldsIntoPdf } from "./final-pdf.js";
 import { percentToPdfRect } from "./pdf-ops.js";
 import { trimTransparentPng } from "./png-trim.js";
+import { PDFDocument, rgb } from "pdf-lib";
 
 function crc32(buf: Buffer): number {
   let c = ~0;
@@ -26,11 +26,7 @@ function chunk(type: string, data: Buffer): Buffer {
 }
 
 /** RGBA PNG with optional transparent padding below a solid red ink row. */
-function makePng(
-  width: number,
-  height: number,
-  inkRowFromBottom: number
-): Buffer {
+function makePng(width: number, height: number, inkRowFromBottom: number): Buffer {
   const raw = Buffer.alloc((width * 4 + 1) * height);
   const inkY = height - 1 - inkRowFromBottom;
   for (let y = 0; y < height; y++) {

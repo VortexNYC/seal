@@ -11,17 +11,11 @@
  * 3. Declined with alternative options
  */
 
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
-import { Text } from "@cloudflare/kumo/components/text";
-import {
-  CheckCircle as CheckCircle2Icon,
-  DownloadSimple as DownloadIcon,
-  Envelope as MailIcon,
-  FileText as FileTextIcon,
-  XCircle as XCircleIcon,
-} from "@phosphor-icons/react";
+import { CheckCircle as CheckCircle2Icon, DownloadSimple as DownloadIcon, Envelope as MailIcon, FileText as FileTextIcon, XCircle as XCircleIcon } from "@phosphor-icons/react";
 import { useCallback, useState } from "react";
 
 import { SealLogo } from "@/components/seal-logo";
@@ -81,22 +75,16 @@ export function EsignConsentDialog({
           <div className="flex flex-col gap-2 text-center">
             <div className="flex items-center justify-center gap-2">
               <XCircleIcon className="text-kumo-danger size-6" />
-              <Text as="h1" variant="heading">
-                Electronic Signature Declined
-              </Text>
+              <Text as="h1" variant="heading">Electronic Signature Declined</Text>
             </div>
-            <Text as="p" variant="secondary" size="sm">
-              You declined electronic signatures. You can still complete this
+            <Text as="p" variant="secondary" size="sm">You declined electronic signatures. You can still complete this
               document with a paper or wet-ink signature — choose an option
-              below and the sender will be notified.
-            </Text>
+              below and the sender will be notified.</Text>
           </div>
 
           <LayerCard>
             <LayerCard.Primary className="flex flex-col gap-3 p-5">
-              <Text as="p" size="sm" bold>
-                Manual signature options:
-              </Text>
+              <Text as="p" size="sm" bold>Manual signature options:</Text>
               <div className="flex flex-col gap-2">
                 {onDownloadPdf && (
                   <Button
@@ -168,28 +156,20 @@ export function EsignConsentDialog({
           <div className="flex flex-col gap-2 text-center">
             <div className="flex items-center justify-center gap-2">
               <CheckCircle2Icon className="text-kumo-default size-6" />
-              <Text as="h1" variant="heading">
-                Consent Accepted
-              </Text>
+              <Text as="h1" variant="heading">Consent Accepted</Text>
             </div>
-            <Text as="p" variant="secondary" size="sm">
-              Thank you for providing your consent. Loading your document...
-            </Text>
+            <Text as="p" variant="secondary" size="sm">Thank you for providing your consent. Loading your document...</Text>
           </div>
 
           <LayerCard className="border-kumo-line">
             <LayerCard.Primary className="space-y-1 p-5 text-center">
-              <Text as="p" size="sm">
-                {recipientEmail}
-              </Text>
-              <Text as="p" size="xs">
-                Consent Date:{" "}
+              <Text as="p" size="sm">{recipientEmail}</Text>
+              <Text as="p" size="xs">Consent Date:{" "}
                 {new Date().toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
                   year: "numeric",
-                })}
-              </Text>
+                })}</Text>
             </LayerCard.Primary>
           </LayerCard>
         </div>
@@ -209,30 +189,20 @@ export function EsignConsentDialog({
         </div>
 
         <div className="flex flex-col gap-2 text-center">
-          <Text as="h1" variant="heading">
-            Electronic Signature Consent
-          </Text>
-          <Text as="p" variant="secondary" size="sm">
-            Before you can sign documents electronically, please review and
-            accept the following:
-          </Text>
+          <Text as="h1" variant="heading">Electronic Signature Consent</Text>
+          <Text as="p" variant="secondary" size="sm">Before you can sign documents electronically, please review and
+            accept the following:</Text>
         </div>
 
         <div>
-          <Text as="h2" variant="heading" DANGEROUS_className="mb-3">
-            Electronic Signature Agreement
-          </Text>
+          <Text as="h2" variant="heading" DANGEROUS_className="mb-3">Electronic Signature Agreement</Text>
           <LayerCard className="border-kumo-line">
             <LayerCard.Primary className="flex flex-col gap-4 p-5">
-              <Text as="p" variant="secondary" size="sm">
-                {customConsentText ??
-                  "By checking the box below, you consent to use electronic signatures for this document and future documents."}
-              </Text>
+              <Text as="p" variant="secondary" size="sm">{customConsentText ??
+                  "By checking the box below, you consent to use electronic signatures for this document and future documents."}</Text>
 
               <div>
-                <Text as="p" size="sm" bold DANGEROUS_className="mb-2">
-                  You acknowledge that:
-                </Text>
+                <Text as="p" size="sm" bold DANGEROUS_className="mb-2">You acknowledge that:</Text>
                 <ul className="text-kumo-secondary space-y-1.5 text-sm">
                   <li className="flex items-start gap-2">
                     <span className="mt-1.5 block size-1 shrink-0 rounded-full bg-current" />
@@ -251,9 +221,7 @@ export function EsignConsentDialog({
               </div>
 
               <div>
-                <Text as="p" size="sm" bold DANGEROUS_className="mb-2">
-                  Technical Requirements:
-                </Text>
+                <Text as="p" size="sm" bold DANGEROUS_className="mb-2">Technical Requirements:</Text>
                 <ul className="text-kumo-secondary space-y-1 text-sm">
                   <li className="flex items-start gap-2">
                     <span className="mt-1.5 block size-1 shrink-0 rounded-full bg-current" />

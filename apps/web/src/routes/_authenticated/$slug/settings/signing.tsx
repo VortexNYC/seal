@@ -5,14 +5,14 @@
  * Route: /{slug}/settings/signing
  */
 
+import { Text } from "@cloudflare/kumo/components/text";
 import { Textarea } from "@cloudflare/kumo";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
 import { Input } from "@cloudflare/kumo/components/input";
-import { Text } from "@cloudflare/kumo/components/text";
-import { FloppyDisk as Save, PenNib as PenTool } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { FloppyDisk as Save, PenNib as PenTool } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
@@ -215,14 +215,7 @@ function SigningSettings() {
                   }
                 />
               </div>
-              <Text
-                as="p"
-                variant="secondary"
-                size="sm"
-                DANGEROUS_className="mb-2.5"
-              >
-                after the document is sent
-              </Text>
+              <Text as="p" variant="secondary" size="sm" DANGEROUS_className="mb-2.5">after the document is sent</Text>
             </div>
           </SettingsSection>
 

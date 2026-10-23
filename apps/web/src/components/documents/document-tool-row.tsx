@@ -125,68 +125,68 @@ export function DocumentToolRow({
         title="Choose a field, then click the page to place it"
         className="inline-flex"
       >
-        <Popover
-          open={fieldsOpen}
-          onOpenChange={(open) => {
-            setFieldsOpen(open);
-          }}
+      <Popover
+        open={fieldsOpen}
+        onOpenChange={(open) => {
+          setFieldsOpen(open);
+        }}
+      >
+        <Popover.Trigger
+          render={
+            <Button
+              type="button"
+              size="sm"
+              variant={armedField ? "primary" : "ghost"}
+              icon={armedIcon ?? PenNib}
+            >
+              Fields
+            </Button>
+          }
+        />
+        <Popover.Content
+          className="flex w-max flex-col gap-1 p-1.5"
+          align="start"
         >
-          <Popover.Trigger
-            render={
-              <Button
-                type="button"
-                size="sm"
-                variant={armedField ? "primary" : "ghost"}
-                icon={armedIcon ?? PenNib}
-              >
-                Fields
-              </Button>
-            }
-          />
-          <Popover.Content
-            className="flex w-max flex-col gap-1 p-1.5"
-            align="start"
-          >
-            {FIELD_TOOLS.map((tool) => (
-              <FieldToolButton
-                key={tool.id}
-                icon={tool.icon}
-                label={FIELD_TYPE_LABELS[tool.id]}
-                selected={armedField === tool.id}
-                onClick={() => {
-                  onArmField(tool.id);
-                  setFieldsOpen(false);
-                }}
-              />
-            ))}
+          {FIELD_TOOLS.map((tool) => (
             <FieldToolButton
-              icon={CreditCard}
-              label={FIELD_TYPE_LABELS.payment}
-              selected={armedField === "payment"}
-              disabledReason={paymentFieldBlockedReason(chargesApproved)}
+              key={tool.id}
+              icon={tool.icon}
+              label={FIELD_TYPE_LABELS[tool.id]}
+              selected={armedField === tool.id}
               onClick={() => {
-                onArmField("payment");
+                onArmField(tool.id);
                 setFieldsOpen(false);
               }}
             />
-            {armedField ? (
-              <span title="Stop placing a field" className="inline-flex">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="w-full justify-start"
-                  onClick={() => {
-                    onClearField();
-                    setFieldsOpen(false);
-                  }}
-                >
-                  Stop placing
-                </Button>
-              </span>
-            ) : null}
-          </Popover.Content>
-        </Popover>
+          ))}
+          <FieldToolButton
+            icon={CreditCard}
+            label={FIELD_TYPE_LABELS.payment}
+            selected={armedField === "payment"}
+            disabledReason={paymentFieldBlockedReason(chargesApproved)}
+            onClick={() => {
+              onArmField("payment");
+              setFieldsOpen(false);
+            }}
+          />
+          {armedField ? (
+            <span title="Stop placing a field" className="inline-flex">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="w-full justify-start"
+                onClick={() => {
+                  onClearField();
+                  setFieldsOpen(false);
+                }}
+              >
+                Stop placing
+              </Button>
+            </span>
+          ) : null}
+        </Popover.Content>
+      </Popover>
       </span>
       <span
         title="Turn this page a quarter turn clockwise"

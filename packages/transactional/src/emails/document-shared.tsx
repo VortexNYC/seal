@@ -93,12 +93,7 @@ export function DocumentShared({
               {permissionLabels[permissionLevel]}
             </strong>
           </Text>
-          <Text
-            style={{
-              ...emailStyles.documentMeta,
-              color: email.mutedForeground,
-            }}
-          >
+          <Text style={{ ...emailStyles.documentMeta, color: email.mutedForeground }}>
             {permissionDescriptions[permissionLevel]}
           </Text>
         </Section>

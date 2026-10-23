@@ -39,9 +39,7 @@ describe("final-pdf (SEA-49 L1a)", () => {
   });
 
   it("sanitizes non-WinAnsi glyphs", () => {
-    expect(sanitizePdfText("NDA — Acme ↔ Vortex")).toBe(
-      "NDA ? Acme <-> Vortex"
-    );
+    expect(sanitizePdfText("NDA — Acme ↔ Vortex")).toBe("NDA ? Acme <-> Vortex");
   });
 
   it("hashes PDF bytes stably", async () => {

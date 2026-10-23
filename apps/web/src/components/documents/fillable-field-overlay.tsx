@@ -1,17 +1,6 @@
-import { Button } from "@cloudflare/kumo/components/button";
-import {
-  Calendar as CalendarIcon,
-  CaretDown as ChevronDownIcon,
-  CheckSquare as CheckSquareIcon,
-  RadioButton as CircleDotIcon,
-  CreditCard as CreditCardIcon,
-  File as FileIcon,
-  Hash as HashIcon,
-  PenNib as PenToolIcon,
-  Star as StarIcon,
-  TextT as TypeIcon,
-} from "@phosphor-icons/react";
 import { canvas } from "@seal/tokens/theme";
+import { Button } from "@cloudflare/kumo/components/button";
+import { Calendar as CalendarIcon, CaretDown as ChevronDownIcon, CheckSquare as CheckSquareIcon, RadioButton as CircleDotIcon, CreditCard as CreditCardIcon, File as FileIcon, Hash as HashIcon, PenNib as PenToolIcon, Star as StarIcon, TextT as TypeIcon } from "@phosphor-icons/react";
 import { forwardRef, type ReactElement } from "react";
 
 import {
@@ -161,11 +150,7 @@ function SignatureOnRule({
     <>
       <span
         className="absolute text-[8px] leading-none"
-        style={{
-          left: frame.x,
-          top: frame.y + captionOffset,
-          color: "#595961",
-        }}
+        style={{ left: frame.x, top: frame.y + captionOffset, color: "#595961" }}
       >
         Signed by:
       </span>
@@ -245,8 +230,7 @@ export const FillableFieldOverlay = forwardRef<
 
   if (isFilledField && signatureDetails) {
     const appearance = filledFieldText(fieldType, currentValue);
-    const isSignature =
-      fieldType === "signature" || fieldType === "free_signature";
+    const isSignature = fieldType === "signature" || fieldType === "free_signature";
     const frame =
       currentSignatureImageUrl && isSignature
         ? signatureMarkFrame(
@@ -256,11 +240,7 @@ export const FillableFieldOverlay = forwardRef<
         : null;
     return (
       <div
-        className={
-          frame
-            ? "absolute overflow-visible"
-            : "absolute overflow-hidden bg-white"
-        }
+        className={frame ? "absolute overflow-visible" : "absolute overflow-hidden bg-white"}
         style={{
           left: `${absoluteX}px`,
           top: `${absoluteY}px`,
@@ -317,12 +297,10 @@ export const FillableFieldOverlay = forwardRef<
         style={{ paddingLeft: sealIconSize + 10 }}
       >
         <div className="flex items-center gap-1">
-          {isMainSignature && (
-            <StarIcon className="text-kumo-warning h-3 w-3" />
-          )}
+          {isMainSignature && <StarIcon className="text-kumo-warning h-3 w-3" />}
           {getFieldIcon(fieldType)}
           {absoluteWidth > 80 && (
-            <span className="max-w-15 truncate text-xs font-medium">
+            <span className="text-xs max-w-15 truncate font-medium">
               {getFieldTypeLabel(fieldType)}
             </span>
           )}
@@ -368,7 +346,7 @@ export const FillableFieldOverlay = forwardRef<
         </div>
 
         {validationError && (
-          <div className="text-kumo-danger mt-1 max-w-50 text-xs">
+          <div className="text-kumo-danger text-xs mt-1 max-w-50">
             ⚠ {validationError}
           </div>
         )}

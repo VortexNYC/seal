@@ -76,13 +76,9 @@ function run(cmd, argv, opts = {}) {
 }
 
 async function sealJson(argv) {
-  const { code, stdout, stderr } = await run(
-    process.execPath,
-    [SEAL_BIN, ...argv],
-    {
-      env: { ...process.env, SEAL_API_KEY: KEY, SEAL_BASE_URL: API },
-    }
-  );
+  const { code, stdout, stderr } = await run(process.execPath, [SEAL_BIN, ...argv], {
+    env: { ...process.env, SEAL_API_KEY: KEY, SEAL_BASE_URL: API },
+  });
   if (code !== 0) {
     throw new Error(stderr || stdout || `seal exit ${code}`);
   }
@@ -243,9 +239,7 @@ console.log(
 );
 
 if (SKIP_BROWSER) {
-  console.log(
-    `\nMint-only. Drive browser:\n  agent-browser open ${signingUrl}`
-  );
+  console.log(`\nMint-only. Drive browser:\n  agent-browser open ${signingUrl}`);
   process.exit(pdfRes.ok ? 0 : 1);
 }
 
@@ -343,7 +337,12 @@ async function ensureCheckboxThenContinue(snap) {
   } else {
     console.log("gate  no checkbox/label ref");
   }
-  const snap2 = await ab(["--session", "seal-signer-proof", "snapshot", "-i"]);
+  const snap2 = await ab([
+    "--session",
+    "seal-signer-proof",
+    "snapshot",
+    "-i",
+  ]);
   return clickMatching(
     snap2,
     [
@@ -358,18 +357,19 @@ async function ensureCheckboxThenContinue(snap) {
 // Clear invite/privacy/consent BEFORE recording so the sheet captures paint,
 // not gate clicks — and so snapshot -i keeps nested checkbox refs.
 for (let gate = 0; gate < 8; gate++) {
-  const snap = await ab(["--session", "seal-signer-proof", "snapshot", "-i"]);
+  const snap = await ab([
+    "--session",
+    "seal-signer-proof",
+    "snapshot",
+    "-i",
+  ]);
   if (
     /pdf-signing-document|data-engine|Decline to sign|All fields/i.test(snap)
   ) {
     break;
   }
   if (await clickMatching(snap, ["\\bStart\\b"], { role: "button" })) continue;
-  if (
-    /Privacy notice|Electronic Signature Consent|I consent to use electronic/i.test(
-      snap
-    )
-  ) {
+  if (/Privacy notice|Electronic Signature Consent|I consent to use electronic/i.test(snap)) {
     if (await ensureCheckboxThenContinue(snap)) continue;
   }
   if (
@@ -394,6 +394,7 @@ await ab([
   "--fps",
   "10",
 ]);
+
 
 // Wait for PDF paint testid / img
 let painted = false;

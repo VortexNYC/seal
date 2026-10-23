@@ -211,7 +211,9 @@ export async function writeAuditLog(
     }
 
     // Tip lost the race — remove the orphan sealed row and retry.
-    await db.delete(auditLogs).where(eq(auditLogs.id, prepared.values.id));
+    await db
+      .delete(auditLogs)
+      .where(eq(auditLogs.id, prepared.values.id));
   }
 
   await recordAuditWriteFailure(

@@ -31,6 +31,14 @@ import {
   user as userTable,
 } from "../global/schema.js";
 import { parseDocumentFromStorage } from "../platform/anydoc.js";
+import { recordUsageEvent } from "../platform/usage-events.js";
+import { emitWebhookEvent } from "../platform/webhook-events.js";
+import { syncVortexOrderForm } from "../platform/vortex-order-form.js";
+import {
+  isEnvelopeClosed,
+  presentedWorkflowStatus,
+  saveAsTemplateBlock,
+} from "../platform/workflow-status.js";
 import {
   getAuditActor,
   getAuditRequestMeta,
@@ -49,11 +57,6 @@ import {
   isConvertibleFileType,
   isImageFileType,
 } from "../platform/document-conversion.js";
-import { copyDocument } from "../platform/document-copy.js";
-import {
-  forwardCompletedDocument,
-  startEnvelopeFromCompleted,
-} from "../platform/document-forward.js";
 import {
   sendDocumentInvitationEmail,
   sendOwnershipTransferredEmail,
@@ -62,11 +65,17 @@ import { ensureContactsFromRecipients } from "../platform/ensure-contacts.js";
 import { ZFieldPropertiesFlat } from "../platform/field-meta.js";
 import { materializeSuggestionsFromCandidates } from "../platform/field-suggestions.js";
 import { FieldTypeEnum } from "../platform/field-types.js";
+import { copyDocument } from "../platform/document-copy.js";
+import { presentVortexConnect } from "../platform/vortex-connect.js";
+import {
+  forwardCompletedDocument,
+  startEnvelopeFromCompleted,
+} from "../platform/document-forward.js";
+import { downloadShouldBurnInk } from "../platform/final-pdf.js";
 import {
   generateAndStoreFinalPdf,
   renderFilledPdfBytes,
 } from "../platform/final-pdf-store.js";
-import { downloadShouldBurnInk } from "../platform/final-pdf.js";
 import {
   FeatureDisabledError,
   assertConvertEnabled,
@@ -81,15 +90,6 @@ import {
   resolveRecipientAuthMethod,
 } from "../platform/signing-settings.js";
 import type { Variables } from "../platform/types.js";
-import { recordUsageEvent } from "../platform/usage-events.js";
-import { presentVortexConnect } from "../platform/vortex-connect.js";
-import { syncVortexOrderForm } from "../platform/vortex-order-form.js";
-import { emitWebhookEvent } from "../platform/webhook-events.js";
-import {
-  isEnvelopeClosed,
-  presentedWorkflowStatus,
-  saveAsTemplateBlock,
-} from "../platform/workflow-status.js";
 import ai from "./ai.js";
 import documentPower from "./document-power.js";
 import {
@@ -1254,11 +1254,7 @@ app.openapi(uploadRouteDef, async (c) => {
   // cannot be overwritten in place — a second upload must be a new document.
   if (doc.storageKey) {
     return c.json(
-      {
-        error: "already_uploaded",
-        message:
-          "Document already has content — create a new draft to replace it.",
-      },
+      { error: "already_uploaded", message: "Document already has content — create a new draft to replace it." },
       409
     );
   }
@@ -2058,7 +2054,10 @@ app.openapi(resendRecipientRouteDef, async (c) => {
     doc.status === "cancelled" ||
     doc.status === "completed"
   ) {
-    return c.json({ error: "Cannot resend email for this document" }, 400);
+    return c.json(
+      { error: "Cannot resend email for this document" },
+      400
+    );
   }
 
   const recipientRows = await db
@@ -5284,8 +5283,7 @@ app.openapi(bulkSendRouteDef, async (c) => {
         )
         .limit(1);
       const row = rows[0];
-      if (!row)
-        return { id: publicId, success: false, error: "Document not found" };
+      if (!row) return { id: publicId, success: false, error: "Document not found" };
       if (row.status !== "draft") {
         return {
           id: publicId,
@@ -5302,11 +5300,7 @@ app.openapi(bulkSendRouteDef, async (c) => {
         .from(recipients)
         .where(eq(recipients.documentId, row.id));
       if (recipientRows.length === 0) {
-        return {
-          id: publicId,
-          success: false,
-          error: "Document has no recipients",
-        };
+        return { id: publicId, success: false, error: "Document has no recipients" };
       }
       if (compliance.requireRecipientAuth) {
         const unauthenticated = recipientRows.filter(
@@ -5378,11 +5372,7 @@ app.openapi(bulkSendRouteDef, async (c) => {
         return { id: publicId, success: true };
       } catch (err) {
         console.error("[documents/bulk-send] failed:", err);
-        return {
-          id: publicId,
-          success: false,
-          error: "Could not send this document",
-        };
+        return { id: publicId, success: false, error: "Could not send this document" };
       }
     })
   );

@@ -1,6 +1,6 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Label } from "@cloudflare/kumo/components/label";
-import { Text } from "@cloudflare/kumo/components/text";
 import { FileText, X } from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
 import { type ChangeEvent, useRef, useState } from "react";
@@ -139,19 +139,11 @@ export function AttachmentFieldInput({
       )}
 
       {helpText && !error && (
-        <Text as="p" variant="secondary" size="xs">
-          {helpText}
-        </Text>
+        <Text as="p" variant="secondary" size="xs">{helpText}</Text>
       )}
-      {error && (
-        <Text as="p" variant="error" size="xs">
-          {error}
-        </Text>
-      )}
+      {error && <Text as="p" variant="error" size="xs">{error}</Text>}
       {isUploading && (
-        <Text as="p" variant="secondary" size="xs">
-          Uploading...
-        </Text>
+        <Text as="p" variant="secondary" size="xs">Uploading...</Text>
       )}
     </div>
   );

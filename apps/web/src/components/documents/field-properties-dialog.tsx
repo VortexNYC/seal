@@ -4,8 +4,8 @@ import { Text } from "@cloudflare/kumo/components/text";
 import { type Id } from "@/lib/ids";
 
 import { FieldPropertiesPanel } from "./field-properties-panel";
-import type { FieldType } from "./field-toolbar";
 import { RailBack } from "./rail-back";
+import type { FieldType } from "./field-toolbar";
 
 interface FieldData {
   _id: Id<"signature_fields">;
@@ -65,15 +65,15 @@ export function FieldPropertiesDialog({
   if (!field || !open) return null;
 
   const panel = (
-    <FieldPropertiesPanel
-      organizationSlug={organizationSlug}
-      documentPublicId={documentPublicId}
-      field={field}
-      recipients={recipients}
-      onClose={() => onOpenChange(false)}
-      onSave={onSave}
-      onConfigurePayment={onConfigurePayment}
-    />
+        <FieldPropertiesPanel
+          organizationSlug={organizationSlug}
+          documentPublicId={documentPublicId}
+          field={field}
+          recipients={recipients}
+          onClose={() => onOpenChange(false)}
+          onSave={onSave}
+          onConfigurePayment={onConfigurePayment}
+        />
   );
 
   if (presentation === "panel") {

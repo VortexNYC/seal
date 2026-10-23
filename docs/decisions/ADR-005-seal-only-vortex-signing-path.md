@@ -19,7 +19,7 @@ Eng already unblocked the agent path (OpenAPI / MCP / CLI / InteractionSession
 URL+poll — ADR-003, ADR-004). Ops owns canceling leftover DocuSign seats. This
 ADR is the durable rule agents and humans follow so exceptions do not grow back.
 
-Import adapters that _read_ historical DocuSign/PandaDoc envelopes may remain
+Import adapters that *read* historical DocuSign/PandaDoc envelopes may remain
 as one-way migration tools. They are not a create/send path.
 
 ## Decision
@@ -42,8 +42,8 @@ as one-way migration tools. They are not a create/send path.
 
 - Portfolio AGENTS / Hermes treat “sign this” as Seal by default.
 - Corporate filing checklists and contractor packets name Seal, not DocuSign.
-- Competitive copy may still _mention_ DocuSign; product workflows must not
-  _use_ it.
+- Competitive copy may still *mention* DocuSign; product workflows must not
+  *use* it.
 
 ## Related
 

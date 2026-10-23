@@ -15,21 +15,9 @@ import { Select } from "@cloudflare/kumo/components/select";
 import { Table } from "@cloudflare/kumo/components/table";
 import { Tabs } from "@cloudflare/kumo/components/tabs";
 import { Text } from "@cloudflare/kumo/components/text";
-import {
-  ArrowDown as ArrowDownIcon,
-  ArrowUp as ArrowUpIcon,
-  Calendar as CalendarIcon,
-  ChartBar as BarChart3Icon,
-  CheckCircle as CheckCircle2Icon,
-  Clock as ClockIcon,
-  DownloadSimple as DownloadIcon,
-  FileText as FileTextIcon,
-  TrendUp as TrendingUpIcon,
-  Users as UsersIcon,
-  XCircle as XCircleIcon,
-} from "@phosphor-icons/react";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { ArrowDown as ArrowDownIcon, ArrowUp as ArrowUpIcon, Calendar as CalendarIcon, ChartBar as BarChart3Icon, CheckCircle as CheckCircle2Icon, Clock as ClockIcon, DownloadSimple as DownloadIcon, FileText as FileTextIcon, TrendUp as TrendingUpIcon, Users as UsersIcon, XCircle as XCircleIcon } from "@phosphor-icons/react";
 import {
   type Dispatch,
   type ReactElement,
@@ -40,6 +28,8 @@ import {
   useState,
 } from "react";
 import type { DateRange } from "react-day-picker";
+
+import { Chart, echarts, kumoPaint, TimeseriesChart } from "@/lib/kumo-charts";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import {
@@ -58,7 +48,6 @@ import {
   getRecipientTimingStats,
   getTemplatePerformance,
 } from "@/lib/api-client";
-import { Chart, echarts, kumoPaint, TimeseriesChart } from "@/lib/kumo-charts";
 import { parseSelectValue } from "@/lib/select-values";
 import { pageSEO } from "@/lib/seo";
 
@@ -331,27 +320,23 @@ function StatCard({
   return (
     <LayerCard className="flex flex-col p-4">
       <div className="flex items-center justify-between gap-2">
-        <Text as="h3" variant="heading">
-          {title}
-        </Text>
+        <Text as="h3" variant="heading">{title}</Text>
         <span className="text-kumo-secondary">{icon}</span>
       </div>
       <div className="mt-2 flex items-center gap-2">
         <Text as="p" size="lg" bold>
           {value}
         </Text>
-        {trend === "up" && (
-          <ArrowUpIcon className="text-kumo-success h-4 w-4" />
-        )}
+        {trend === "up" && <ArrowUpIcon className="text-kumo-success h-4 w-4" />}
         {trend === "down" && (
           <ArrowDownIcon className="text-kumo-danger h-4 w-4" />
         )}
       </div>
-      {progress !== undefined ? <Meter label={title} value={progress} /> : null}
+      {progress !== undefined ? (
+        <Meter label={title} value={progress} />
+      ) : null}
       {description ? (
-        <Text as="p" variant="secondary" size="xs" DANGEROUS_className="mt-1">
-          {description}
-        </Text>
+        <Text as="p" variant="secondary" size="xs" DANGEROUS_className="mt-1">{description}</Text>
       ) : null}
     </LayerCard>
   );
@@ -454,12 +439,8 @@ function TrendChart({
   return (
     <LayerCard>
       <LayerCard.Primary className="pb-2">
-        <Text as="h3" variant="heading">
-          Document Trends
-        </Text>
-        <Text as="p" variant="secondary" size="sm">
-          Documents created and completed over the selected period
-        </Text>
+        <Text as="h3" variant="heading">Document Trends</Text>
+        <Text as="p" variant="secondary" size="sm">Documents created and completed over the selected period</Text>
       </LayerCard.Primary>
       <div className="pl-0 sm:pl-6">
         {hasData ? (
@@ -593,9 +574,7 @@ function StatusPieChart({ scope }: { scope: "personal" | "team" }) {
     return (
       <LayerCard>
         <LayerCard.Primary>
-          <Text as="h3" variant="heading">
-            Status Distribution
-          </Text>
+          <Text as="h3" variant="heading">Status Distribution</Text>
         </LayerCard.Primary>
         <div>
           <div className="text-kumo-secondary flex h-62.5 items-center justify-center text-sm">
@@ -609,12 +588,8 @@ function StatusPieChart({ scope }: { scope: "personal" | "team" }) {
   return (
     <LayerCard>
       <LayerCard.Primary className="pb-2">
-        <Text as="h3" variant="heading">
-          Status Distribution
-        </Text>
-        <Text as="p" variant="secondary" size="sm">
-          Current document status breakdown
-        </Text>
+        <Text as="h3" variant="heading">Status Distribution</Text>
+        <Text as="p" variant="secondary" size="sm">Current document status breakdown</Text>
       </LayerCard.Primary>
       <div>
         <Chart
@@ -679,11 +654,7 @@ function StatusBarChart({ scope }: { scope: "personal" | "team" }) {
         value: stats.cancelled,
         color: statusColor("cancelled"),
       },
-      {
-        name: "Declined",
-        value: stats.declined,
-        color: statusColor("declined"),
-      },
+      { name: "Declined", value: stats.declined, color: statusColor("declined") },
       { name: "Expired", value: stats.expired, color: statusColor("expired") },
     ],
     [stats]
@@ -692,12 +663,8 @@ function StatusBarChart({ scope }: { scope: "personal" | "team" }) {
   return (
     <LayerCard>
       <LayerCard.Primary className="pb-2">
-        <Text as="h3" variant="heading">
-          Status Counts
-        </Text>
-        <Text as="p" variant="secondary" size="sm">
-          Document count by workflow status
-        </Text>
+        <Text as="h3" variant="heading">Status Counts</Text>
+        <Text as="p" variant="secondary" size="sm">Document count by workflow status</Text>
       </LayerCard.Primary>
       <div>
         <CategoryBars rows={barData} />
@@ -810,9 +777,7 @@ function RecentActivityFeed() {
     return (
       <LayerCard>
         <LayerCard.Primary>
-          <Text as="h3" variant="heading">
-            Recent Activity
-          </Text>
+          <Text as="h3" variant="heading">Recent Activity</Text>
         </LayerCard.Primary>
         <div>
           <div className="text-kumo-secondary flex h-32 items-center justify-center text-sm">
@@ -826,12 +791,8 @@ function RecentActivityFeed() {
   return (
     <LayerCard>
       <LayerCard.Primary className="pb-2">
-        <Text as="h3" variant="heading">
-          Recent Activity
-        </Text>
-        <Text as="p" variant="secondary" size="sm">
-          Latest actions across your workspace
-        </Text>
+        <Text as="h3" variant="heading">Recent Activity</Text>
+        <Text as="p" variant="secondary" size="sm">Latest actions across your workspace</Text>
       </LayerCard.Primary>
       <div>
         <div className="space-y-3">
@@ -852,15 +813,13 @@ function RecentActivityFeed() {
                     </span>
                     <Badge
                       variant={actionInfo?.variant ?? "secondary"}
-                      className="shrink-0 text-xs"
+                      className="text-xs shrink-0"
                     >
                       {actionLabel}
                     </Badge>
                   </div>
                   {typeof item.metadata?.description === "string" && (
-                    <Text as="p" variant="secondary" size="xs" truncate>
-                      {item.metadata.description}
-                    </Text>
+                    <Text as="p" variant="secondary" size="xs" truncate>{item.metadata.description}</Text>
                   )}
                 </div>
                 <span className="text-kumo-secondary shrink-0 text-xs tabular-nums">
@@ -898,9 +857,7 @@ function MemberActivityTable() {
     return (
       <LayerCard>
         <LayerCard.Primary>
-          <Text as="h3" variant="heading">
-            Team Member Activity
-          </Text>
+          <Text as="h3" variant="heading">Team Member Activity</Text>
         </LayerCard.Primary>
         <div>
           <div className="text-kumo-secondary flex h-32 items-center justify-center text-sm">
@@ -916,13 +873,9 @@ function MemberActivityTable() {
       <LayerCard.Primary className="pb-4">
         <div className="flex items-center gap-2">
           <UsersIcon className="text-kumo-secondary h-4 w-4" />
-          <Text as="h3" variant="heading">
-            Team Member Activity
-          </Text>
+          <Text as="h3" variant="heading">Team Member Activity</Text>
         </div>
-        <Text as="p" variant="secondary" size="sm">
-          Document activity breakdown by workspace member
-        </Text>
+        <Text as="p" variant="secondary" size="sm">Document activity breakdown by workspace member</Text>
       </LayerCard.Primary>
       <div>
         <div className="overflow-x-auto">
@@ -1175,12 +1128,8 @@ function ExportPanel() {
   return (
     <LayerCard>
       <LayerCard.Primary className="pb-4">
-        <Text as="h3" variant="heading">
-          Export Documents
-        </Text>
-        <Text as="p" variant="secondary" size="sm">
-          Download document data as CSV or PDF for external analysis
-        </Text>
+        <Text as="h3" variant="heading">Export Documents</Text>
+        <Text as="p" variant="secondary" size="sm">Download document data as CSV or PDF for external analysis</Text>
       </LayerCard.Primary>
       <div className="space-y-4">
         <div className="flex flex-wrap items-end gap-4">
@@ -1229,25 +1178,21 @@ function ExportPanel() {
           <Button
             onClick={handleExportCsv}
             disabled={isExporting || !exportData || exportData.length === 0}
-            icon={DownloadIcon}
-          >
+           icon={DownloadIcon}>
             CSV
           </Button>
           <Button
             variant="outline"
             onClick={() => void handleExportPdf()}
             disabled={isExporting || !exportData || exportData.length === 0}
-            icon={DownloadIcon}
-          >
+           icon={DownloadIcon}>
             PDF
           </Button>
         </div>
 
-        <Text as="p" variant="secondary" size="xs">
-          {exportData === undefined
+        <Text as="p" variant="secondary" size="xs">{exportData === undefined
             ? "Loading documents..."
-            : `${exportData.length} document${exportData.length !== 1 ? "s" : ""} match your filters`}
-        </Text>
+            : `${exportData.length} document${exportData.length !== 1 ? "s" : ""} match your filters`}</Text>
       </div>
     </LayerCard>
   );
@@ -1283,9 +1228,7 @@ function EmailEngagementTab() {
     return (
       <LayerCard>
         <div className="flex h-50 items-center justify-center">
-          <Text as="p" variant="secondary" size="sm">
-            No email data available yet
-          </Text>
+          <Text as="p" variant="secondary" size="sm">No email data available yet</Text>
         </div>
       </LayerCard>
     );
@@ -1364,12 +1307,8 @@ function EmailEngagementTab() {
 
       <LayerCard>
         <LayerCard.Primary className="pb-2">
-          <Text as="h3" variant="heading">
-            Email Funnel
-          </Text>
-          <Text as="p" variant="secondary" size="sm">
-            Email engagement progression (last 30 days)
-          </Text>
+          <Text as="h3" variant="heading">Email Funnel</Text>
+          <Text as="p" variant="secondary" size="sm">Email engagement progression (last 30 days)</Text>
         </LayerCard.Primary>
         <div>
           <CategoryBars rows={funnelData} />
@@ -1411,9 +1350,7 @@ function RecipientTimingTab() {
     return (
       <LayerCard>
         <div className="flex h-50 items-center justify-center">
-          <Text as="p" variant="secondary" size="sm">
-            No signed documents in the last 30 days
-          </Text>
+          <Text as="p" variant="secondary" size="sm">No signed documents in the last 30 days</Text>
         </div>
       </LayerCard>
     );
@@ -1456,12 +1393,8 @@ function RecipientTimingTab() {
 
       <LayerCard>
         <LayerCard.Primary className="pb-2">
-          <Text as="h3" variant="heading">
-            Signing Time Distribution
-          </Text>
-          <Text as="p" variant="secondary" size="sm">
-            How long recipients take to complete signing
-          </Text>
+          <Text as="h3" variant="heading">Signing Time Distribution</Text>
+          <Text as="p" variant="secondary" size="sm">How long recipients take to complete signing</Text>
         </LayerCard.Primary>
         <div>
           <CategoryBars rows={distributionData} />
@@ -1506,9 +1439,7 @@ function TemplatePerformanceTab() {
       <LayerCard>
         <div className="flex h-50 flex-col items-center justify-center gap-2">
           <TrendingUpIcon className="text-kumo-secondary h-8 w-8" />
-          <Text as="p" variant="secondary" size="sm">
-            Template Performance is available on the Professional plan
-          </Text>
+          <Text as="p" variant="secondary" size="sm">Template Performance is available on the Professional plan</Text>
         </div>
       </LayerCard>
     );
@@ -1518,9 +1449,7 @@ function TemplatePerformanceTab() {
     return (
       <LayerCard>
         <div className="flex h-50 items-center justify-center">
-          <Text as="p" variant="secondary" size="sm">
-            No template-based documents in the last 90 days
-          </Text>
+          <Text as="p" variant="secondary" size="sm">No template-based documents in the last 90 days</Text>
         </div>
       </LayerCard>
     );
@@ -1530,12 +1459,8 @@ function TemplatePerformanceTab() {
     <div className="space-y-4">
       <LayerCard>
         <LayerCard.Primary className="pb-2">
-          <Text as="h3" variant="heading">
-            Template Comparison
-          </Text>
-          <Text as="p" variant="secondary" size="sm">
-            Performance of templates over the last 90 days
-          </Text>
+          <Text as="h3" variant="heading">Template Comparison</Text>
+          <Text as="p" variant="secondary" size="sm">Performance of templates over the last 90 days</Text>
         </LayerCard.Primary>
         <div>
           <div className="space-y-3">
@@ -1545,42 +1470,22 @@ function TemplatePerformanceTab() {
                 className="flex items-center justify-between rounded-lg border p-3"
               >
                 <div className="min-w-0 flex-1">
-                  <Text as="p" size="sm" bold truncate>
-                    {t.templateName}
-                  </Text>
-                  <Text as="p" variant="secondary" size="xs">
-                    {t.docsSent} documents sent
-                  </Text>
+                  <Text as="p" size="sm" bold truncate>{t.templateName}</Text>
+                  <Text as="p" variant="secondary" size="xs">{t.docsSent} documents sent</Text>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <Text
-                      as="p"
-                      size="sm"
-                      bold
-                      DANGEROUS_className="tabular-nums"
-                    >
-                      {t.completionRate}%
-                    </Text>
-                    <Text as="p" variant="secondary" size="xs">
-                      Completed
-                    </Text>
+                    <Text as="p" size="sm" bold DANGEROUS_className="tabular-nums">{t.completionRate}%</Text>
+                    <Text as="p" variant="secondary" size="xs">Completed</Text>
                   </div>
                   <div className="text-right">
-                    <Text
-                      as="p"
-                      size="sm"
-                      bold
-                      DANGEROUS_className="tabular-nums"
-                    >
-                      {t.avgTurnaround ?? "—"}
-                    </Text>
-                    <Text as="p" variant="secondary" size="xs">
-                      Avg time
-                    </Text>
+                    <Text as="p" size="sm" bold DANGEROUS_className="tabular-nums">{t.avgTurnaround ?? "—"}</Text>
+                    <Text as="p" variant="secondary" size="xs">Avg time</Text>
                   </div>
                   {t.declineRate > 0 && (
-                    <Badge variant="error">{t.declineRate}% declined</Badge>
+                    <Badge variant="error">
+                      {t.declineRate}% declined
+                    </Badge>
                   )}
                 </div>
               </div>

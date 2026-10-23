@@ -14,14 +14,14 @@ endpoints below are live when the API is deployed with the SSO plugin.
 
 ## What you get
 
-| Capability          | How                                                                          |
-| ------------------- | ---------------------------------------------------------------------------- |
-| Register IdP        | `POST /api/auth/sso/register` (org owner/admin session)                      |
+| Capability | How |
+| --- | --- |
+| Register IdP | `POST /api/auth/sso/register` (org owner/admin session) |
 | Domain verification | Enabled — DNS TXT token via SSO plugin verify endpoints before first sign-in |
-| SP metadata         | `GET /api/auth/sso/saml2/sp/metadata?providerId=…`                           |
-| Sign-in             | `POST /api/auth/sign-in/sso` → IdP redirect → ACS                            |
-| Org provisioning    | First SSO login joins the provider’s organization as `member`                |
-| Enforce SSO         | `PATCH /api/organizations/{slug}/security` with `{ "ssoEnforced": true }`    |
+| SP metadata | `GET /api/auth/sso/saml2/sp/metadata?providerId=…` |
+| Sign-in | `POST /api/auth/sign-in/sso` → IdP redirect → ACS |
+| Org provisioning | First SSO login joins the provider’s organization as `member` |
+| Enforce SSO | `PATCH /api/organizations/{slug}/security` with `{ "ssoEnforced": true }` |
 
 ## Enforce SSO
 

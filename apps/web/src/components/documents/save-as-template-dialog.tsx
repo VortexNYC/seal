@@ -17,10 +17,9 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { saveAsTemplate } from "@/lib/api-client";
+import { RailBack } from "./rail-back";
 import { toast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
-
-import { RailBack } from "./rail-back";
 
 interface SaveAsTemplateDialogProps {
   documentPublicId: string;
@@ -82,53 +81,52 @@ export function SaveAsTemplateDialog({
 
   const templateBody = (
     <>
-      <div className="space-y-4 py-4">
-        <Input
-          id="templateName"
-          label="Template Name"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          placeholder="Enter template name..."
-        />
 
-        <div className="space-y-2">
-          <Label htmlFor="templateDescription">
-            Description{" "}
-            <Text as="span" size="sm" variant="secondary">
-              (optional)
-            </Text>
-          </Label>
-          <Textarea
-            id="templateDescription"
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-            placeholder="Describe what this template is for..."
-            rows={3}
-            maxLength={500}
+        <div className="space-y-4 py-4">
+          <Input
+            id="templateName"
+            label="Template Name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Enter template name..."
           />
-          <Text as="p" variant="secondary" size="xs">
-            {description.length}/500
-          </Text>
-        </div>
-      </div>
 
-      <div className="flex justify-end gap-2">
-        <Button
-          variant="outline"
-          onClick={() => onOpenChange(false)}
-          disabled={isSaving}
-        >
-          Cancel
-        </Button>
-        <Button
-          onClick={() => void handleSave()}
-          disabled={!name.trim()}
-          loading={isSaving}
-          icon={FloppyDisk}
-        >
-          Save Template
-        </Button>
-      </div>
+          <div className="space-y-2">
+            <Label htmlFor="templateDescription">
+              Description{" "}
+              <Text as="span" size="sm" variant="secondary">
+                (optional)
+              </Text>
+            </Label>
+            <Textarea
+              id="templateDescription"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="Describe what this template is for..."
+              rows={3}
+              maxLength={500}
+            />
+            <Text as="p" variant="secondary" size="xs">{description.length}/500</Text>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSaving}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => void handleSave()}
+            disabled={!name.trim()}
+            loading={isSaving}
+            icon={FloppyDisk}
+          >
+            Save Template
+          </Button>
+        </div>
     </>
   );
 
@@ -136,10 +134,7 @@ export function SaveAsTemplateDialog({
     if (!open) return null;
     return (
       <div data-testid="save-template-panel" className="flex flex-col gap-3">
-        <RailBack
-          onBack={() => onOpenChange(false)}
-          tip="Back to the document"
-        />
+        <RailBack onBack={() => onOpenChange(false)} tip="Back to the document" />
         <div>
           <Text as="p" size="sm" bold>
             Save as template

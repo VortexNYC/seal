@@ -43,10 +43,8 @@ function TeamSettings() {
         <SettingsBody>
           <div className="flex flex-col gap-5">
             {!isPro && (
-              <Text as="p" variant="secondary" size="sm">
-                Inviting teammates requires Pro. You can still view members on
-                Free.
-              </Text>
+              <Text as="p" variant="secondary" size="sm">Inviting teammates requires Pro. You can still view members on
+                Free.</Text>
             )}
 
             {isPro && canManage && (

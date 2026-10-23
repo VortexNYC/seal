@@ -97,10 +97,8 @@ export function DocxEditor({
           />
         </LayerCard>
       )}
-      <Text as="p" variant="secondary" size="xs">
-        Saves a real .docx (OpenXML). Seal reconverts to PDF for signing
-        preview.
-      </Text>
+      <Text as="p" variant="secondary" size="xs">Saves a real .docx (OpenXML). Seal reconverts to PDF for signing
+        preview.</Text>
     </div>
   );
 }

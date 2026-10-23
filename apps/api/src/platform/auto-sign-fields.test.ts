@@ -38,11 +38,7 @@ describe("auto-sign-fields (Documenso-class)", () => {
     expect(autoValueForField("email", recipient)).toBe("mark@example.com");
     expect(autoValueForField("initials", recipient)).toBe("MG");
     expect(
-      autoValueForField(
-        "date_signed",
-        recipient,
-        new Date("2026-01-02T00:00:00Z")
-      )
+      autoValueForField("date_signed", recipient, new Date("2026-01-02T00:00:00Z"))
     ).toBe("2026-01-02");
   });
 });

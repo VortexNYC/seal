@@ -367,7 +367,10 @@ export async function refreshOpenRecipientLink(
     expiresAt: expires.getTime(),
   });
   if (!emailResult.success) {
-    console.error("[recipients/correct] invitation email failed:", emailResult);
+    console.error(
+      "[recipients/correct] invitation email failed:",
+      emailResult
+    );
   }
 }
 

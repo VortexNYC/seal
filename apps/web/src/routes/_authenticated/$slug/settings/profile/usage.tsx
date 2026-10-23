@@ -5,22 +5,15 @@
  * Route: /{slug}/settings/profile/usage
  */
 
-import { Badge } from "@cloudflare/kumo/components/badge";
 import { Banner } from "@cloudflare/kumo/components/banner";
+import { Badge } from "@cloudflare/kumo/components/badge";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Meter } from "@cloudflare/kumo/components/meter";
 import { Text } from "@cloudflare/kumo/components/text";
 import { Separator } from "@cloudflare/kumo/primitives/separator";
-import {
-  CheckCircle,
-  Clock,
-  FileText,
-  HardDrive,
-  PaperPlaneTilt as Send,
-  TrendUp as TrendingUp,
-} from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { CheckCircle, Clock, FileText, HardDrive, PaperPlaneTilt as Send, TrendUp as TrendingUp } from "@phosphor-icons/react";
 
 import { SettingsBody } from "@/components/settings-body";
 import { FormSkeleton } from "@/components/skeletons";
@@ -131,10 +124,8 @@ function UsageSettings() {
                   }
                 />
                 {isApproachingDocumentLimit && (
-                  <Text as="p" size="xs">
-                    {Math.round(stats.documentsPercentUsed)}% of monthly limit
-                    used
-                  </Text>
+                  <Text as="p" size="xs">{Math.round(stats.documentsPercentUsed)}% of monthly limit
+                    used</Text>
                 )}
               </div>
 
@@ -148,10 +139,8 @@ function UsageSettings() {
                   }
                 />
                 {isApproachingStorageLimit && (
-                  <Text as="p" size="xs">
-                    {Math.round(stats.storagePercentUsed)}% of storage limit
-                    used
-                  </Text>
+                  <Text as="p" size="xs">{Math.round(stats.storagePercentUsed)}% of storage limit
+                    used</Text>
                 )}
               </div>
             </div>
@@ -269,19 +258,13 @@ function UsageSettings() {
                 </span>
               </div>
               <div className="space-y-1">
-                <Text as="p" variant="secondary" size="sm">
-                  {stats.completedThisMonth} of {stats.sentThisMonth} documents
-                  completed
-                </Text>
+                <Text as="p" variant="secondary" size="sm">{stats.completedThisMonth} of {stats.sentThisMonth} documents
+                  completed</Text>
                 {stats.sentThisMonth > 0 && stats.completionRate >= 80 && (
-                  <Text as="p" variant="success" size="sm">
-                    Great completion rate!
-                  </Text>
+                  <Text as="p" variant="success" size="sm">Great completion rate!</Text>
                 )}
                 {stats.sentThisMonth > 0 && stats.completionRate < 50 && (
-                  <Text as="p" size="sm">
-                    Consider sending reminders to improve completion
-                  </Text>
+                  <Text as="p" size="sm">Consider sending reminders to improve completion</Text>
                 )}
               </div>
             </div>
@@ -324,7 +307,9 @@ function UsageSettings() {
               </div>
               <Separator />
               <div className="flex items-center justify-between">
-                <span className="text-kumo-secondary text-sm">Total Limit</span>
+                <span className="text-kumo-secondary text-sm">
+                  Total Limit
+                </span>
                 <span className="font-medium">
                   {formatBytes(stats.storageLimitBytes)}
                 </span>

@@ -39,12 +39,12 @@ illegal or competition-misaligned path.
 
 ### 2. MCP, CLI, and SDK follow OpenAPI
 
-| Surface            | Role                                                                      |
-| ------------------ | ------------------------------------------------------------------------- |
-| OpenAPI / HTTP API | Contract                                                                  |
-| MCP                | Typed tools + prompts over the same API                                   |
-| CLI (`seal`)       | Thin client over the same API (verbs may grow; must not invent endpoints) |
-| SDK                | Typed client / embed over the same API                                    |
+| Surface | Role |
+| ------- | ---- |
+| OpenAPI / HTTP API | Contract |
+| MCP | Typed tools + prompts over the same API |
+| CLI (`seal`) | Thin client over the same API (verbs may grow; must not invent endpoints) |
+| SDK | Typed client / embed over the same API |
 
 Do not ship MCP-only or CLI-only behavior. Spec first, then wrap.
 
@@ -67,7 +67,7 @@ Do not ship MCP-only or CLI-only behavior. Spec first, then wrap.
 - This matches market practice (agent-native e-sign products: agents prepare /
   route / track; humans review and sign) and EU eIDAS (electronic signatures
   are created by natural persons; org automation is a seal, not a signature).
-- US ESIGN/UETA allow electronic _agents_ to help form contracts when acts are
+- US ESIGN/UETA allow electronic *agents* to help form contracts when acts are
   attributable to a person/company — that is attribution, not “the model is
   the signer of record.”
 

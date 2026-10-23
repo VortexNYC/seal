@@ -8,11 +8,11 @@ import {
   isConvertibleFileType,
   isImageFileType,
 } from "../../platform/document-conversion.js";
-import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import {
   FeatureDisabledError,
   assertConvertEnabled,
 } from "../../platform/org-settings.js";
+import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import { createUploadToken, verifyUploadToken } from "./upload-token.js";
 
 const app = new OpenAPIHono<{
@@ -65,7 +65,10 @@ app.post("/", async (c) => {
 
   // Trailer-only PDF stubs (~27B) are not usable documents
   const MIN_PDF_SIZE = 100;
-  if (contentType === "application/pdf" && bytes.byteLength < MIN_PDF_SIZE) {
+  if (
+    contentType === "application/pdf" &&
+    bytes.byteLength < MIN_PDF_SIZE
+  ) {
     return c.json({ error: "empty_or_corrupt_pdf" }, 400);
   }
 

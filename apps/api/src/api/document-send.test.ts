@@ -29,9 +29,7 @@ describe("invitation message", () => {
         defaultMessage: " For everyone ",
       })
     ).toBe("For everyone");
-    expect(
-      invitationMessage("rec_2", { defaultMessage: "  " })
-    ).toBeUndefined();
+    expect(invitationMessage("rec_2", { defaultMessage: "  " })).toBeUndefined();
   });
 });
 

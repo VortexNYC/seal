@@ -1,6 +1,6 @@
+import { getPosthog, withPosthog } from "@/lib/posthog-client";
 import { useEffect } from "react";
 
-import { getPosthog, withPosthog } from "@/lib/posthog-client";
 import { isGuestAnalyticsSurface } from "@/lib/posthog-proxy";
 
 type GuestAnalyticsClient = {

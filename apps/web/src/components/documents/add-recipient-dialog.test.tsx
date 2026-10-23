@@ -134,9 +134,7 @@ describe("AddRecipientDialog", () => {
     test("shows a loading spinner when members query returns undefined", () => {
       mockUseOrganizationMembers.mockReturnValue({ data: undefined });
       renderDialog();
-      expect(
-        screen.getByRole("status", { name: "Loading" })
-      ).toBeInTheDocument();
+      expect(screen.getByRole("status", { name: "Loading" })).toBeInTheDocument();
     });
 
     test("does not show the member list while loading", () => {

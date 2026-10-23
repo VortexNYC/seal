@@ -1,6 +1,5 @@
-import { useCallback, useRef } from "react";
-
 import { usePostHog } from "@/lib/posthog-client";
+import { useCallback, useRef } from "react";
 
 /**
  * PostHog Analytics Hook - provides type-safe event tracking, user identification,

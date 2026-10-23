@@ -4,9 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 
-import { WorkflowStatusBadge } from "@/components/documents/workflow-status-badge";
 import { OversightFrame } from "@/components/oversight-frame";
-import { getContactRelatedDocuments, type ApiContact } from "@/lib/api-client";
+import { WorkflowStatusBadge } from "@/components/documents/workflow-status-badge";
+import {
+  getContactRelatedDocuments,
+  type ApiContact,
+} from "@/lib/api-client";
 import { toWorkflowStatus } from "@/lib/document-status";
 
 export function ContactOversightPanel({
@@ -27,7 +30,8 @@ export function ContactOversightPanel({
       contact.email,
       organizationSlug,
     ],
-    queryFn: () => getContactRelatedDocuments(organizationSlug, contact.email),
+    queryFn: () =>
+      getContactRelatedDocuments(organizationSlug, contact.email),
   });
 
   return (

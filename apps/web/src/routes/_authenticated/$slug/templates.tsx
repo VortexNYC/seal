@@ -7,6 +7,7 @@
  * Route: /{slug}/templates
  */
 
+import { Text } from "@cloudflare/kumo/components/text";
 import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
@@ -15,30 +16,13 @@ import { Empty } from "@cloudflare/kumo/components/empty";
 import { Input, Textarea } from "@cloudflare/kumo/components/input";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Table } from "@cloudflare/kumo/components/table";
-import { Text } from "@cloudflare/kumo/components/text";
-import {
-  ArrowDown as ArrowDownIcon,
-  ArrowUp as ArrowUpIcon,
-  CaretLeft as ChevronLeftIcon,
-  CaretRight as ChevronRightIcon,
-  Copy as CopyIcon,
-  DotsThreeVertical as MoreVerticalIcon,
-  FileText as FileTextIcon,
-  Folder as FolderIcon,
-  FolderOpen as FolderOpenIcon,
-  FolderSimple as FolderInputIcon,
-  List as LayoutListIcon,
-  MagnifyingGlass as SearchIcon,
-  PencilSimple as PencilIcon,
-  SquaresFour as LayoutGridIcon,
-  Trash as TrashIcon,
-} from "@phosphor-icons/react";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import {
   createFileRoute,
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
+import { ArrowDown as ArrowDownIcon, ArrowUp as ArrowUpIcon, CaretLeft as ChevronLeftIcon, CaretRight as ChevronRightIcon, Copy as CopyIcon, DotsThreeVertical as MoreVerticalIcon, FileText as FileTextIcon, Folder as FolderIcon, FolderOpen as FolderOpenIcon, FolderSimple as FolderInputIcon, List as LayoutListIcon, MagnifyingGlass as SearchIcon, PencilSimple as PencilIcon, SquaresFour as LayoutGridIcon, Trash as TrashIcon } from "@phosphor-icons/react";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
 import { CreateFolderDialog } from "@/components/folders/create-folder-dialog";
@@ -286,9 +270,7 @@ function TemplatesList({
                           >
                             {folder.name}
                           </p>
-                          <Text as="p" variant="secondary" size="xs">
-                            Folder
-                          </Text>
+                          <Text as="p" variant="secondary" size="xs">Folder</Text>
                         </Table.Cell>
                         <Table.Cell>
                           <div className="text-sm">
@@ -296,7 +278,9 @@ function TemplatesList({
                           </div>
                         </Table.Cell>
                         <Table.Cell>
-                          <Badge variant="outline">Folder</Badge>
+                          <Badge variant="outline">
+                            Folder
+                          </Badge>
                         </Table.Cell>
                         <Table.Cell className="text-right" />
                       </Table.Row>
@@ -321,39 +305,21 @@ function TemplatesList({
                       </Table.Cell>
                       <Table.Cell>
                         <div>
-                          <Text as="p" bold>
-                            {template.name}
-                          </Text>
+                          <Text as="p" bold>{template.name}</Text>
                           {template.description && (
-                            <Text
-                              as="p"
-                              variant="secondary"
-                              size="sm"
-                              DANGEROUS_className="line-clamp-1"
-                            >
-                              {template.description}
-                            </Text>
+                            <Text as="p" variant="secondary" size="sm" DANGEROUS_className="line-clamp-1">{template.description}</Text>
                           )}
                           {template.pageCount != null &&
                             template.pageCount > 0 && (
-                              <Text
-                                as="p"
-                                variant="secondary"
-                                size="xs"
-                                DANGEROUS_className="mt-1"
-                              >
-                                {template.pageCount}{" "}
-                                {template.pageCount === 1 ? "page" : "pages"}
-                              </Text>
+                              <Text as="p" variant="secondary" size="xs" DANGEROUS_className="mt-1">{template.pageCount}{" "}
+                                {template.pageCount === 1 ? "page" : "pages"}</Text>
                             )}
                         </div>
                       </Table.Cell>
                       <Table.Cell>
                         <div className="text-sm">
                           <p>{formatDate(template.createdAt)}</p>
-                          <Text as="p" variant="secondary">
-                            {formatBytes(template.fileSize)}
-                          </Text>
+                          <Text as="p" variant="secondary">{formatBytes(template.fileSize)}</Text>
                         </div>
                       </Table.Cell>
                       <Table.Cell>
@@ -375,27 +341,23 @@ function TemplatesList({
                           <DropdownMenu.Content align="end">
                             <DropdownMenu.Item
                               onClick={() => onUseTemplate(template)}
-                              icon={CopyIcon}
-                            >
+                             icon={CopyIcon}>
                               Use Template
                             </DropdownMenu.Item>
                             <DropdownMenu.Item
                               onClick={() => onEditTemplate(template)}
-                              icon={PencilIcon}
-                            >
+                             icon={PencilIcon}>
                               Edit Details
                             </DropdownMenu.Item>
                             <DropdownMenu.Item
                               onClick={() => onMoveToFolder(template._id)}
-                              icon={FolderInputIcon}
-                            >
+                             icon={FolderInputIcon}>
                               Move to Folder
                             </DropdownMenu.Item>
                             <DropdownMenu.Item
                               onClick={() => onDeleteTemplate(template)}
                               variant="danger"
-                              icon={TrashIcon}
-                            >
+                             icon={TrashIcon}>
                               Delete
                             </DropdownMenu.Item>
                           </DropdownMenu.Content>
@@ -442,14 +404,7 @@ function TemplatesList({
                   </div>
                   <div className="flex flex-1 flex-col gap-2 p-3">
                     <div className="flex items-start justify-between gap-2">
-                      <Text
-                        as="p"
-                        size="sm"
-                        bold
-                        DANGEROUS_className="line-clamp-2 min-w-0 flex-1"
-                      >
-                        {template.name}
-                      </Text>
+                      <Text as="p" size="sm" bold DANGEROUS_className="line-clamp-2 min-w-0 flex-1">{template.name}</Text>
                       <DropdownMenu>
                         <DropdownMenu.Trigger>
                           <Button
@@ -464,56 +419,42 @@ function TemplatesList({
                         <DropdownMenu.Content align="end">
                           <DropdownMenu.Item
                             onClick={() => onUseTemplate(template)}
-                            icon={CopyIcon}
-                          >
+                           icon={CopyIcon}>
                             Use Template
                           </DropdownMenu.Item>
                           <DropdownMenu.Item
                             onClick={() => onEditTemplate(template)}
-                            icon={PencilIcon}
-                          >
+                           icon={PencilIcon}>
                             Edit Details
                           </DropdownMenu.Item>
                           <DropdownMenu.Item
                             onClick={() => onMoveToFolder(template._id)}
-                            icon={FolderInputIcon}
-                          >
+                           icon={FolderInputIcon}>
                             Move to Folder
                           </DropdownMenu.Item>
                           <DropdownMenu.Item
                             onClick={() => onDeleteTemplate(template)}
                             variant="danger"
-                            icon={TrashIcon}
-                          >
+                           icon={TrashIcon}>
                             Delete
                           </DropdownMenu.Item>
                         </DropdownMenu.Content>
                       </DropdownMenu>
                     </div>
                     {template.description ? (
-                      <Text
-                        as="p"
-                        variant="secondary"
-                        size="xs"
-                        DANGEROUS_className="line-clamp-2"
-                      >
-                        {template.description}
-                      </Text>
+                      <Text as="p" variant="secondary" size="xs" DANGEROUS_className="line-clamp-2">{template.description}</Text>
                     ) : null}
-                    <Text as="p" variant="secondary" size="xs">
-                      {formatDate(template.createdAt)}
+                    <Text as="p" variant="secondary" size="xs">{formatDate(template.createdAt)}
                       {" · "}
                       Used {template.useCount}
                       {template.pageCount != null
                         ? `· ${template.pageCount} pages`
-                        : null}
-                    </Text>
+                        : null}</Text>
                     <Button
                       className="mt-auto w-full"
                       size="sm"
                       onClick={() => onUseTemplate(template)}
-                      icon={CopyIcon}
-                    >
+                     icon={CopyIcon}>
                       Use template
                     </Button>
                   </div>
@@ -525,11 +466,9 @@ function TemplatesList({
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between">
-              <Text as="p" variant="secondary" size="sm">
-                Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
+              <Text as="p" variant="secondary" size="sm">Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
                 {Math.min(currentPage * ITEMS_PER_PAGE, sortedTemplates.length)}{" "}
-                of {sortedTemplates.length} templates
-              </Text>
+                of {sortedTemplates.length} templates</Text>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -790,9 +729,7 @@ function TemplatesPage() {
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <Text as="p" variant="secondary" size="sm">
-              Save a document as a template from its actions menu.
-            </Text>
+            <Text as="p" variant="secondary" size="sm">Save a document as a template from its actions menu.</Text>
             <div className="bg-kumo-elevated/40 flex items-center gap-0.5 rounded-md p-0.5">
               <Button
                 variant={viewMode === "table" ? "primary" : "ghost"}

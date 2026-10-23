@@ -51,45 +51,45 @@ export function RemoveRecipientDialog({
 
   const details = (
     <>
-      <div className="mt-3">
-        {recipientName ? <Text>{recipientName}</Text> : null}
-        <Text variant="secondary">{recipientEmail}</Text>
-        {recipientRole ? (
-          <Text variant="secondary" size="xs">
-            {formatRole(recipientRole)}
+        <div className="mt-3">
+          {recipientName ? <Text>{recipientName}</Text> : null}
+          <Text variant="secondary">{recipientEmail}</Text>
+          {recipientRole ? (
+            <Text variant="secondary" size="xs">
+              {formatRole(recipientRole)}
+            </Text>
+          ) : null}
+        </div>
+        {hasFields ? (
+          <Text variant="error" size="sm" DANGEROUS_className="mt-3">
+            {fieldCount} {fieldCount === 1 ? "field" : "fields"} assigned to
+            this recipient will be permanently removed.
           </Text>
         ) : null}
-      </div>
-      {hasFields ? (
-        <Text variant="error" size="sm" DANGEROUS_className="mt-3">
-          {fieldCount} {fieldCount === 1 ? "field" : "fields"} assigned to this
-          recipient will be permanently removed.
-        </Text>
-      ) : null}
-      <div className="mt-4 flex flex-col gap-2">
-        <Button
-          type="button"
-          variant="destructive"
-          className="w-full"
-          onClick={handleConfirm}
-          disabled={isRemoving}
-        >
-          {isRemoving
-            ? "Removing..."
-            : hasFields
-              ? "Remove with fields"
-              : "Remove"}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          onClick={() => onOpenChange(false)}
-          disabled={isRemoving}
-        >
-          Cancel
-        </Button>
-      </div>
+        <div className="mt-4 flex flex-col gap-2">
+          <Button
+            type="button"
+            variant="destructive"
+            className="w-full"
+            onClick={handleConfirm}
+            disabled={isRemoving}
+          >
+            {isRemoving
+              ? "Removing..."
+              : hasFields
+                ? "Remove with fields"
+                : "Remove"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => onOpenChange(false)}
+            disabled={isRemoving}
+          >
+            Cancel
+          </Button>
+        </div>
     </>
   );
 

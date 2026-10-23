@@ -17,11 +17,11 @@ editing, tabular review matrices with pinpoint citations, a curated workflow
 corpus, and citation verification.
 
 Mike's license makes code extraction radioactive: pasting AGPL code into Seal
-would make Seal a derivative work, and AGPL §13 reaches _network-served_ users.
+would make Seal a derivative work, and AGPL §13 reaches *network-served* users.
 Separately, most of Mike is dead weight for us — Supabase auth, a Next.js app,
 an Express monolith — none of which maps onto Seal's Workers + D1 + R2 stack.
 
-Seal already owns a _better_ ingestion layer than Mike's:
+Seal already owns a *better* ingestion layer than Mike's:
 
 - `anydoc-worker`: `@firecrawl/anydoc-wasm` (any format → markdown) and
   `@firecrawl/pdf-inspector-wasm` (pdfType, `pagesNeedingOcr`, layout) — versus
@@ -48,7 +48,7 @@ Seal's stack, exposed through OpenAPI/MCP per ADR-003:
 2. **Review matrix** (tabular review): `review_matrices` / `review_rows` /
    `review_cells` tables. A cell is `{summary, flag, reasoning, citations[]}`.
    Generation streams cell updates; every cell must cite `documentId + page +
-quote` or report `not_found`. No uncited cells.
+   quote` or report `not_found`. No uncited cells.
 3. **Citation grounding**: anchors `{documentId, page, quote, bbox}` — the
    bbox comes free from pdf-inspector's layout pass, which Mike cannot do.
    Citations are validated against `parsedText` before display.
@@ -70,7 +70,7 @@ quarantined while the native primitives land.
 
 ## Consequences
 
-- Seal gains a legal-review surface that operates on _its own_ document graph —
+- Seal gains a legal-review surface that operates on *its own* document graph —
   execution status, counterparty history, fields, and audit — which Mike can
   never see.
 - The AGPL posture stays clean: zero copied code, one optional service call.

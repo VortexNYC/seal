@@ -1,29 +1,6 @@
-import { Button } from "@cloudflare/kumo/components/button";
 import { Text } from "@cloudflare/kumo/components/text";
-import {
-  Calendar as CalendarIcon,
-  CalendarCheck as CalendarCheckIcon,
-  CaretCircleDown as ChevronDownSquareIcon,
-  CaretDown as ChevronDownIcon,
-  CheckSquare as CheckSquareIcon,
-  RadioButton as CircleDotIcon,
-  Columns as Columns3Icon,
-  CreditCard as CreditCardIcon,
-  Hash as HashIcon,
-  IdentificationCard as IdCardIcon,
-  Image as ImageIcon,
-  ListChecks as ListChecksIcon,
-  Paperclip as PaperclipIcon,
-  Pen as PenLineIcon,
-  PenNib as PenToolIcon,
-  Phone as PhoneIcon,
-  ShieldCheck as ShieldCheckIcon,
-  Stamp as StampIcon,
-  TextH as HeadingIcon,
-  TextStrikethrough as StrikethroughIcon,
-  TextT as TypeIcon,
-  User as UserIcon,
-} from "@phosphor-icons/react";
+import { Button } from "@cloudflare/kumo/components/button";
+import { Calendar as CalendarIcon, CalendarCheck as CalendarCheckIcon, CaretCircleDown as ChevronDownSquareIcon, CaretDown as ChevronDownIcon, CheckSquare as CheckSquareIcon, RadioButton as CircleDotIcon, Columns as Columns3Icon, CreditCard as CreditCardIcon, Hash as HashIcon, IdentificationCard as IdCardIcon, Image as ImageIcon, ListChecks as ListChecksIcon, Paperclip as PaperclipIcon, Pen as PenLineIcon, PenNib as PenToolIcon, Phone as PhoneIcon, ShieldCheck as ShieldCheckIcon, Stamp as StampIcon, TextH as HeadingIcon, TextStrikethrough as StrikethroughIcon, TextT as TypeIcon, User as UserIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import {
@@ -273,9 +250,7 @@ export function FieldToolbar({
   return (
     <div className="flex flex-col gap-2">
       {disabled ? (
-        <Text as="p" variant="secondary" size="xs">
-          Add a recipient first, then drag fields onto the PDF.
-        </Text>
+        <Text as="p" variant="secondary" size="xs">Add a recipient first, then drag fields onto the PDF.</Text>
       ) : null}
       <FieldGrid
         types={PRIMARY_FIELD_TYPES}

@@ -1,3 +1,4 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
 import { DatePicker } from "@cloudflare/kumo/components/date-picker";
@@ -9,32 +10,7 @@ import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Loader, SkeletonLine } from "@cloudflare/kumo/components/loader";
 import { Popover } from "@cloudflare/kumo/components/popover";
 import { Table } from "@cloudflare/kumo/components/table";
-import { Text } from "@cloudflare/kumo/components/text";
 import { Tooltip } from "@cloudflare/kumo/components/tooltip";
-import {
-  ArrowDown as ArrowDownIcon,
-  ArrowsLeftRight as ArrowRightLeftIcon,
-  ArrowUp as ArrowUpIcon,
-  Calendar as CalendarIcon,
-  CaretLeft as ChevronLeftIcon,
-  CaretRight as ChevronRightIcon,
-  DotsThreeVertical as MoreVerticalIcon,
-  DownloadSimple as DownloadIcon,
-  File as FileIcon,
-  FileText as FileTextIcon,
-  Folder as FolderIcon,
-  FolderSimple as FolderInputIcon,
-  List as LayoutListIcon,
-  MagnifyingGlass as SearchIcon,
-  PaperPlaneTilt as SendIcon,
-  Prohibit as BanIcon,
-  ShareNetwork as Share2Icon,
-  Sparkle as SparklesIcon,
-  SquaresFour as LayoutGridIcon,
-  Trash as TrashIcon,
-  UploadSimple as UploadIcon,
-  X as XIcon,
-} from "@phosphor-icons/react";
 import {
   useMutation,
   useQueryClient,
@@ -47,6 +23,7 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 import Fuse, { type FuseResultMatch } from "fuse.js";
+import { ArrowDown as ArrowDownIcon, ArrowsLeftRight as ArrowRightLeftIcon, ArrowUp as ArrowUpIcon, Calendar as CalendarIcon, CaretLeft as ChevronLeftIcon, CaretRight as ChevronRightIcon, DotsThreeVertical as MoreVerticalIcon, DownloadSimple as DownloadIcon, File as FileIcon, FileText as FileTextIcon, Folder as FolderIcon, FolderSimple as FolderInputIcon, List as LayoutListIcon, MagnifyingGlass as SearchIcon, PaperPlaneTilt as SendIcon, Prohibit as BanIcon, ShareNetwork as Share2Icon, Sparkle as SparklesIcon, SquaresFour as LayoutGridIcon, Trash as TrashIcon, UploadSimple as UploadIcon, X as XIcon } from "@phosphor-icons/react";
 import {
   Suspense,
   useCallback,
@@ -57,7 +34,6 @@ import {
 } from "react";
 import type { DateRange } from "react-day-picker";
 
-import { BulkSendDialog } from "@/components/documents/bulk-send-dialog";
 import { DocumentOversightRail } from "@/components/documents/document-oversight-rail";
 import { DocumentThumbnail } from "@/components/documents/document-thumbnail";
 import { ShareDocumentDialog } from "@/components/documents/share-document-dialog";
@@ -66,6 +42,7 @@ import { UploadDialog } from "@/components/documents/upload-dialog";
 import { WorkflowStatusBadge } from "@/components/documents/workflow-status-badge";
 import { CreateFolderDialog } from "@/components/folders/create-folder-dialog";
 import { FolderBreadcrumbs } from "@/components/folders/folder-breadcrumbs";
+import { BulkSendDialog } from "@/components/documents/bulk-send-dialog";
 import { MoveToFolderDialog } from "@/components/folders/move-to-folder-dialog";
 import {
   FileSystem,
@@ -187,10 +164,7 @@ function HighlightedText({
     }
     // Add highlighted matching text
     parts.push(
-      <mark
-        key={`${start}-${end}`}
-        className="bg-kumo-warning/30 rounded px-0.5"
-      >
+      <mark key={`${start}-${end}`} className="bg-kumo-warning/30 rounded px-0.5">
         {text.slice(start, end + 1)}
       </mark>
     );
@@ -364,10 +338,8 @@ function filterDocumentsByStatusAndDate(
 ): readonly DocumentListItem[] {
   return documents.filter((doc) => {
     return (
-      documentMatchesFolder(
-        doc.workflowStatus ?? "draft",
-        workflowStatusFilter
-      ) && documentMatchesDateRange(doc, dateRange)
+      documentMatchesFolder(doc.workflowStatus ?? "draft", workflowStatusFilter) &&
+      documentMatchesDateRange(doc, dateRange)
     );
   });
 }
@@ -395,7 +367,9 @@ function documentMatchesFolder(
   }
   if (filter === "done") {
     return (
-      status === "completed" || status === "cancelled" || status === "declined"
+      status === "completed" ||
+      status === "cancelled" ||
+      status === "declined"
     );
   }
   return status === filter;
@@ -538,16 +512,11 @@ function FolderTableRow({
       onClick={() => onFolderNavigate(folder._id)}
     >
       <Table.Cell className="max-w-sheet">
-        <p
-          className="flex items-center gap-2 truncate font-medium"
-          title={folder.name}
-        >
+        <p className="flex items-center gap-2 truncate font-medium" title={folder.name}>
           <FolderIcon className="text-kumo-secondary h-4 w-4 shrink-0" />
           {folder.name}
         </p>
-        <Text as="p" variant="secondary" size="xs">
-          Folder
-        </Text>
+        <Text as="p" variant="secondary" size="xs">Folder</Text>
       </Table.Cell>
       <Table.Cell className="hidden whitespace-nowrap sm:table-cell">
         <p className="text-sm">{formatDate(folder.createdAt)}</p>
@@ -651,12 +620,7 @@ function DocumentSummary({
         ) : null}
       </p>
       {progress ? (
-        <Text
-          as="p"
-          variant="secondary"
-          size="sm"
-          DANGEROUS_className="truncate"
-        >
+        <Text as="p" variant="secondary" size="sm" DANGEROUS_className="truncate">
           {progress}
         </Text>
       ) : null}
@@ -685,7 +649,11 @@ function DocumentListDate({ doc }: { readonly doc: DocumentListItem }) {
     <>
       <p>{date.sent ? `Sent ${formatDate(date.at)}` : formatDate(date.at)}</p>
       {date.dueAt ? (
-        <Text as="p" variant={date.overdue ? "error" : "secondary"} size="xs">
+        <Text
+          as="p"
+          variant={date.overdue ? "error" : "secondary"}
+          size="xs"
+        >
           {`Due ${formatDate(date.dueAt)}`}
         </Text>
       ) : date.sent ? null : (
@@ -779,7 +747,11 @@ function GridCardHeader({
     <div className="flex items-start justify-between">
       <div className="pointer-events-none flex min-w-0 flex-1 items-start gap-2">
         <FileIcon className="text-kumo-secondary h-5 w-5" />
-        <Text as="h3" size="sm" DANGEROUS_className="line-clamp-2 break-all">
+        <Text
+          as="h3"
+          size="sm"
+          DANGEROUS_className="line-clamp-2 break-all"
+        >
           <HighlightedText text={doc.name} matches={matches} fieldKey="name" />
         </Text>
       </div>
@@ -810,9 +782,7 @@ function DocumentGridMetadata({ doc }: { readonly doc: DocumentListItem }) {
         </>
       ) : null}
       <span aria-hidden>·</span>
-      <span>
-        {date.sent ? `Sent ${formatDate(date.at)}` : formatDate(date.at)}
-      </span>
+      <span>{date.sent ? `Sent ${formatDate(date.at)}` : formatDate(date.at)}</span>
       {date.dueAt ? (
         <>
           <span aria-hidden>·</span>
@@ -895,10 +865,7 @@ function DocumentActionsMenu({
         align="end"
         onClick={(event) => event.stopPropagation()}
       >
-        <DropdownMenu.Item
-          onClick={() => actions.openDocument(doc._id)}
-          icon={FileTextIcon}
-        >
+        <DropdownMenu.Item onClick={() => actions.openDocument(doc._id)} icon={FileTextIcon}>
           Open
         </DropdownMenu.Item>
         {actions.inBin ? (
@@ -907,10 +874,7 @@ function DocumentActionsMenu({
           </DropdownMenu.Item>
         ) : null}
         {!actions.inBin && canSend && (
-          <DropdownMenu.Item
-            onClick={() => actions.sendDocument(doc._id)}
-            icon={SendIcon}
-          >
+          <DropdownMenu.Item onClick={() => actions.sendDocument(doc._id)} icon={SendIcon}>
             {workflowStatus === "expired"
               ? "Re-send Document"
               : "Send Document"}
@@ -920,40 +884,29 @@ function DocumentActionsMenu({
           <DropdownMenu.Item
             onClick={() => actions.cancelDocument(doc._id)}
             variant="danger"
-            icon={BanIcon}
-          >
+           icon={BanIcon}>
             Cancel Document
           </DropdownMenu.Item>
         )}
         {!actions.inBin ? (
-          <DropdownMenu.Item
-            onClick={() => actions.downloadDocument(doc._id)}
-            icon={DownloadIcon}
-          >
+          <DropdownMenu.Item onClick={() => actions.downloadDocument(doc._id)} icon={DownloadIcon}>
             Download
           </DropdownMenu.Item>
         ) : null}
         {!actions.inBin ? (
           <DropdownMenu.Item
             onClick={() => actions.shareDocument(doc._id, doc.name)}
-            icon={Share2Icon}
-          >
+           icon={Share2Icon}>
             Share
           </DropdownMenu.Item>
         ) : null}
         {!actions.inBin ? (
-          <DropdownMenu.Item
-            onClick={() => actions.moveToFolder(doc._id)}
-            icon={FolderInputIcon}
-          >
+          <DropdownMenu.Item onClick={() => actions.moveToFolder(doc._id)} icon={FolderInputIcon}>
             Move to Folder
           </DropdownMenu.Item>
         ) : null}
         {!actions.inBin && includeTransferOwnership && delegateOwnership && (
-          <DropdownMenu.Item
-            onClick={() => actions.transferOwnership(doc)}
-            icon={ArrowRightLeftIcon}
-          >
+          <DropdownMenu.Item onClick={() => actions.transferOwnership(doc)} icon={ArrowRightLeftIcon}>
             Transfer Ownership
           </DropdownMenu.Item>
         )}
@@ -961,8 +914,7 @@ function DocumentActionsMenu({
           <DropdownMenu.Item
             onClick={() => actions.deleteDocument(doc._id)}
             variant="danger"
-            icon={TrashIcon}
-          >
+           icon={TrashIcon}>
             Delete
           </DropdownMenu.Item>
         ) : null}
@@ -1186,35 +1138,35 @@ function DocumentsListContent({
   return (
     <div className="flex items-stretch gap-0">
       <div className="min-w-0 flex-1 space-y-4">
-        {viewMode === "table" ? (
-          <DocumentsTable
-            data={data}
-            delegateOwnership={delegateOwnership}
-            documentActions={documentActions}
-            inspectedId={inspected?._id ?? null}
-            onFolderNavigate={onFolderNavigate}
-            onInspect={onInspect}
-            onSortChange={onSortChange}
-            searchQuery={searchQuery}
-            sortDirection={sortDirection}
-            sortField={sortField}
-          />
-        ) : viewMode === "finder" ? (
-          <DocumentsFinder
-            data={data}
-            documentActions={documentActions}
-            onFolderNavigate={onFolderNavigate}
-            searchQuery={searchQuery}
-          />
-        ) : (
-          <DocumentsGrid
-            data={data}
-            documentActions={documentActions}
-            onFolderNavigate={onFolderNavigate}
-            searchQuery={searchQuery}
-          />
-        )}
-        <DocumentsPagination data={data} />
+      {viewMode === "table" ? (
+        <DocumentsTable
+          data={data}
+          delegateOwnership={delegateOwnership}
+          documentActions={documentActions}
+          inspectedId={inspected?._id ?? null}
+          onFolderNavigate={onFolderNavigate}
+          onInspect={onInspect}
+          onSortChange={onSortChange}
+          searchQuery={searchQuery}
+          sortDirection={sortDirection}
+          sortField={sortField}
+        />
+      ) : viewMode === "finder" ? (
+        <DocumentsFinder
+          data={data}
+          documentActions={documentActions}
+          onFolderNavigate={onFolderNavigate}
+          searchQuery={searchQuery}
+        />
+      ) : (
+        <DocumentsGrid
+          data={data}
+          documentActions={documentActions}
+          onFolderNavigate={onFolderNavigate}
+          searchQuery={searchQuery}
+        />
+      )}
+      <DocumentsPagination data={data} />
       </div>
       {inspected ? (
         <DocumentOversightRail
@@ -1254,7 +1206,11 @@ function DocumentsEmptyState({
           title="Send your first document"
           description="Upload a PDF, add people, place fields, send. About a minute."
           contents={
-            <Button onClick={onUploadClick} variant="primary" icon={UploadIcon}>
+            <Button
+              onClick={onUploadClick}
+              variant="primary"
+              icon={UploadIcon}
+            >
               Upload PDF
             </Button>
           }
@@ -2171,9 +2127,7 @@ function DocumentsPage() {
           fallback={
             viewMode === "table" ? (
               <div className="flex items-center justify-center rounded-lg border p-12">
-                <Text as="p" variant="secondary">
-                  Loading documents...
-                </Text>
+                <Text as="p" variant="secondary">Loading documents...</Text>
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

@@ -3,15 +3,11 @@
  * (/verify/$qrToken) and the upload page (/verify). Public, no auth.
  */
 
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Link } from "@cloudflare/kumo/components/link";
-import { Text } from "@cloudflare/kumo/components/text";
-import {
-  CheckCircle as CheckCircle2Icon,
-  Copy as CopyIcon,
-  ShieldSlash as ShieldXIcon,
-} from "@phosphor-icons/react";
+import { CheckCircle as CheckCircle2Icon, Copy as CopyIcon, ShieldSlash as ShieldXIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import { SealLogo } from "@/components/seal-logo";
@@ -42,39 +38,27 @@ export function VerifySuccess({ result }: { result: VerifyDocumentResult }) {
             <CheckCircle2Icon className="text-kumo-success h-7 w-7" />
           </div>
           <div>
-            <Text as="p" variant="secondary" size="xs">
-              Document Verified
-            </Text>
-            <Text as="h1" variant="heading" DANGEROUS_className="mt-1">
-              {result.documentName}
-            </Text>
+            <Text as="p" variant="secondary" size="xs">Document Verified</Text>
+            <Text as="h1" variant="heading" DANGEROUS_className="mt-1">{result.documentName}</Text>
           </div>
           {result.completedAt && (
-            <Text as="p" variant="secondary" size="sm">
-              Completed on{" "}
+            <Text as="p" variant="secondary" size="sm">Completed on{" "}
               {new Date(result.completedAt).toLocaleDateString("en-US", {
                 year: "numeric",
                 month: "long",
                 day: "numeric",
                 timeZone: "UTC",
-              })}
-            </Text>
+              })}</Text>
           )}
         </div>
 
         <div className="border-kumo-line border-t pt-6">
-          <Text as="h2" variant="heading" DANGEROUS_className="mb-3">
-            Signers ({result.signerCount})
-          </Text>
+          <Text as="h2" variant="heading" DANGEROUS_className="mb-3">Signers ({result.signerCount})</Text>
           <div className="space-y-3">
             {result.signers.map((signer, i) => (
               <div key={i} className="bg-kumo-elevated/50 rounded-lg px-4 py-3">
-                <Text as="p" size="sm" bold>
-                  {signer.name}
-                </Text>
-                <Text as="p" variant="secondary" size="xs">
-                  {signer.maskedEmail}
-                </Text>
+                <Text as="p" size="sm" bold>{signer.name}</Text>
+                <Text as="p" variant="secondary" size="xs">{signer.maskedEmail}</Text>
                 <div className="mt-1 flex items-center gap-2">
                   <span className="text-kumo-secondary text-xs capitalize">
                     {signer.role}
@@ -100,30 +84,17 @@ export function VerifySuccess({ result }: { result: VerifyDocumentResult }) {
 
         {result.documentHash && (
           <div className="border-kumo-line mt-6 border-t pt-6">
-            <Text as="h2" variant="heading" DANGEROUS_className="mb-2">
-              Document Integrity
-            </Text>
-            <Text
-              as="p"
-              variant="secondary"
-              size="xs"
-              DANGEROUS_className="mb-2"
-            >
-              SHA-256 hash of the signed document. Compare this with your copy
-              to verify it has not been altered.
-            </Text>
+            <Text as="h2" variant="heading" DANGEROUS_className="mb-2">Document Integrity</Text>
+            <Text as="p" variant="secondary" size="xs" DANGEROUS_className="mb-2">SHA-256 hash of the signed document. Compare this with your copy
+              to verify it has not been altered.</Text>
             <HashField hash={result.documentHash} />
           </div>
         )}
       </LayerCard>
 
-      <Text
-        variant="secondary"
-        size="xs"
-        DANGEROUS_className="mt-8 text-center"
-      >
-        Verified by <Link href="https://seal.nyc">Seal</Link> — Document Signing
-        Platform
+      <Text variant="secondary" size="xs" DANGEROUS_className="mt-8 text-center">
+        Verified by <Link href="https://seal.nyc">Seal</Link> — Document
+        Signing Platform
       </Text>
     </VerifyPageShell>
   );
@@ -138,13 +109,9 @@ export function VerifyFailed({ message }: { message?: string }) {
             <ShieldXIcon className="text-kumo-danger h-7 w-7" />
           </div>
         </div>
-        <Text as="h1" variant="heading" DANGEROUS_className="mb-2">
-          Verification Failed
-        </Text>
-        <Text as="p" variant="secondary" size="sm">
-          {message ??
-            "This verification link is invalid or the document no longer exists."}
-        </Text>
+        <Text as="h1" variant="heading" DANGEROUS_className="mb-2">Verification Failed</Text>
+        <Text as="p" variant="secondary" size="sm">{message ??
+            "This verification link is invalid or the document no longer exists."}</Text>
         <Link href="https://seal.nyc">Go to Seal</Link>
       </LayerCard>
     </VerifyPageShell>

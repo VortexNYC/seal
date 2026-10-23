@@ -227,7 +227,9 @@ async function runCase(name, opts) {
       sent,
       opts.recipients.find((r) => r.role === "signer")?.email
     );
-    token ? pass(`${name} send`) : fail(`${name} send`, JSON.stringify(sent));
+    token
+      ? pass(`${name} send`)
+      : fail(`${name} send`, JSON.stringify(sent));
   } catch (err) {
     fail(`${name} send`, err instanceof Error ? err.message : String(err));
     return;
@@ -283,15 +285,18 @@ async function runCase(name, opts) {
       ? pass(`${name} access_code reject`, JSON.stringify(badBody))
       : fail(`${name} access_code reject`, `HTTP ${bad.status}`);
 
-    const blocked = await fetch(`${API}/api/public/signing/${token}/submit`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        status: "viewed",
-        ipAddress: "198.51.100.20",
-        userAgent: "seal-dogfood-stress/1.0",
-      }),
-    });
+    const blocked = await fetch(
+      `${API}/api/public/signing/${token}/submit`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          status: "viewed",
+          ipAddress: "198.51.100.20",
+          userAgent: "seal-dogfood-stress/1.0",
+        }),
+      }
+    );
     const blockedBody = await blocked.json().catch(() => ({}));
     !blocked.ok
       ? pass(`${name} gate before auth`, `HTTP ${blocked.status}`)

@@ -447,6 +447,8 @@ describe("api v1 audit logs", () => {
     expect(first.action).toBe("settings.update");
     expect(first.ipAddress).toBe("198.51.100.20");
     expect(first.sequence).toBeGreaterThan(0);
-    expect(res.headers.get("x-seal-next-sequence")).toBe(String(last.sequence));
+    expect(res.headers.get("x-seal-next-sequence")).toBe(
+      String(last.sequence)
+    );
   });
 });

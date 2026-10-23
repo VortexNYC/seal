@@ -67,16 +67,12 @@ function checkboxChecked(value: string): boolean {
       const parsed: unknown = JSON.parse(value);
       return (
         Array.isArray(parsed) &&
-        parsed.some(
-          (item) => typeof item === "string" && item.trim().length > 0
-        )
+        parsed.some((item) => typeof item === "string" && item.trim().length > 0)
       );
     } catch {
       return false;
     }
   }
   const v = value.toLowerCase();
-  return (
-    v === "true" || v === "1" || v === "yes" || v === "on" || v === "checked"
-  );
+  return v === "true" || v === "1" || v === "yes" || v === "on" || v === "checked";
 }

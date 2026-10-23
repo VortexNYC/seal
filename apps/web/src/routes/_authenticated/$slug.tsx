@@ -77,10 +77,7 @@ function WorkspaceLayout() {
 
   return (
     <WorkspaceShellProvider slug={slug}>
-      <Sidebar.Provider
-        collapsible="icon"
-        className="bg-kumo-canvas h-dvh min-h-0"
-      >
+      <Sidebar.Provider collapsible="icon" className="bg-kumo-canvas h-dvh min-h-0">
         <PostHogIdentify organization={orgData} />
         <PostHogPageview />
         <AppSidebar

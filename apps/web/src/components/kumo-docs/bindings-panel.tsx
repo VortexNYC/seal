@@ -1,7 +1,7 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Label } from "@cloudflare/kumo/components/label";
-import { Text } from "@cloudflare/kumo/components/text";
 import { Plus, Trash } from "@phosphor-icons/react";
 import type { JSX } from "react";
 
@@ -58,9 +58,7 @@ export function BindingsPanel({
 
       <div className="flex-1 space-y-3 overflow-y-auto p-3">
         {rows.length === 0 ? (
-          <Text as="p" variant="secondary" size="sm">
-            Place fields first, then bind them to structured keys.
-          </Text>
+          <Text as="p" variant="secondary" size="sm">Place fields first, then bind them to structured keys.</Text>
         ) : (
           rows.map((row) => (
             <div key={row.fieldId} className="space-y-1.5">

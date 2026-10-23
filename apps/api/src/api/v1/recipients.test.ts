@@ -389,10 +389,7 @@ describe("GET /api/v1/recipients", () => {
     expect(response.status).toBe(200);
     const created = getResponseSchema.parse(await response.json());
     const stored = await db
-      .select({
-        signingToken: recipients.signingToken,
-        email: recipients.email,
-      })
+      .select({ signingToken: recipients.signingToken, email: recipients.email })
       .from(recipients)
       .where(eq(recipients.id, created.id))
       .limit(1);

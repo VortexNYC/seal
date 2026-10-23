@@ -6,10 +6,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  ApiKeyManager,
-  isOrganizationAdminRole,
-} from "@vortex-api/better-auth-ui";
+import { ApiKeyManager, isOrganizationAdminRole } from "@vortex-api/better-auth-ui";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { SettingsBody } from "@/components/settings-body";
@@ -17,7 +14,11 @@ import { SettingsSection } from "@/components/settings-section";
 import { DeveloperNav } from "@/components/settings/developer-nav";
 import { PageFormSkeleton } from "@/components/skeletons";
 import { useOrganization } from "@/hooks/use-organization";
-import { createApiToken, getApiTokens, revokeApiToken } from "@/lib/api-client";
+import {
+  createApiToken,
+  getApiTokens,
+  revokeApiToken,
+} from "@/lib/api-client";
 import { toast } from "@/lib/toast";
 
 const API_TOKEN_SCOPES = ["read", "write", "sign", "admin"] as const;

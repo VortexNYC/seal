@@ -4,11 +4,11 @@ CompAI `fnd_6ab563f6c6010aa7fade2e30` — backup/DR for signed documents and aud
 
 ## What is protected
 
-| Asset                                            | Store                                         | Recovery primitive                                                                            |
-| ------------------------------------------------ | --------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| Envelopes, recipients, sealed `audit_logs`, tips | D1 `seal-global`                              | [D1 Time Travel](https://developers.cloudflare.com/d1/reference/time-travel/) (30-day window) |
-| PDFs, certificates, attachments                  | R2 `seal-documents`                           | R2 bucket locks (7-year retention) + object immutability against delete/overwrite during lock |
-| Audit tip snapshots                              | R2 `backups/audit/{YYYY-MM-DD}/manifest.json` | Daily Worker cron export (SEA-55)                                                             |
+| Asset | Store | Recovery primitive |
+| --- | --- | --- |
+| Envelopes, recipients, sealed `audit_logs`, tips | D1 `seal-global` | [D1 Time Travel](https://developers.cloudflare.com/d1/reference/time-travel/) (30-day window) |
+| PDFs, certificates, attachments | R2 `seal-documents` | R2 bucket locks (7-year retention) + object immutability against delete/overwrite during lock |
+| Audit tip snapshots | R2 `backups/audit/{YYYY-MM-DD}/manifest.json` | Daily Worker cron export (SEA-55) |
 
 ## Production controls (applied)
 
@@ -73,7 +73,7 @@ curl -sS -H "Authorization: Bearer $TOKEN" \
 
 ## R2 object recovery
 
-Locked objects cannot be deleted or overwritten until the retention window ends. If an object is corrupted _before_ lock enforcement or outside lock scope, recover from:
+Locked objects cannot be deleted or overwritten until the retention window ends. If an object is corrupted *before* lock enforcement or outside lock scope, recover from:
 
 1. Prior object version if bucket versioning is enabled in the dashboard (optional add-on).
 2. Application-level re-upload of the source PDF from the sender.

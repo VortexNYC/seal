@@ -5,13 +5,8 @@
 import { Button } from "@cloudflare/kumo/components/button";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
-import {
-  FileText as FileTextIcon,
-  type Icon,
-  Layout as LayoutTemplateIcon,
-  UploadSimple as UploadIcon,
-} from "@phosphor-icons/react";
 import { useRouter } from "@tanstack/react-router";
+import { FileText as FileTextIcon, type Icon, Layout as LayoutTemplateIcon, UploadSimple as UploadIcon } from "@phosphor-icons/react";
 
 interface QuickActionItem {
   label: string;

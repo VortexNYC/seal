@@ -270,11 +270,7 @@
 }
 
 [data-auth-shell] button[type="submit"]:hover:not(:disabled) {
-  background-color: color-mix(
-    in oklch,
-    var(--kumo-primary) 88%,
-    var(--kumo-default)
-  );
+  background-color: color-mix(in oklch, var(--kumo-primary) 88%, var(--kumo-default));
   box-shadow:
     0 2px 6px color-mix(in oklch, var(--kumo-default) 16%, transparent),
     0 0 0 1px color-mix(in oklch, var(--kumo-primary) 50%, transparent);
@@ -315,11 +311,7 @@
 
 [data-auth-shell] [data-kumo-component="Banner"] {
   color: var(--kumo-default);
-  background-color: color-mix(
-    in oklch,
-    var(--kumo-danger) 18%,
-    var(--kumo-elevated)
-  );
+  background-color: color-mix(in oklch, var(--kumo-danger) 18%, var(--kumo-elevated));
   border-color: color-mix(in oklch, var(--kumo-danger) 45%, transparent);
 }
 
@@ -575,11 +567,7 @@
 }
 
 @utility bg-fade-muted {
-  background-image: linear-gradient(
-    to top,
-    var(--kumo-elevated) 0%,
-    transparent 100%
-  );
+  background-image: linear-gradient(to top, var(--kumo-elevated) 0%, transparent 100%);
 }
 
 @utility transition-lift {

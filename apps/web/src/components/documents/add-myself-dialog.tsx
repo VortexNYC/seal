@@ -64,27 +64,27 @@ export function AddMyselfDialog({
   if (!open) return null;
 
   return (
-    <div data-testid="add-myself-panel" className="flex flex-col gap-2">
-      <span title="Back to recipients" className="inline-flex">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          icon={ArrowLeft}
-          onClick={() => onOpenChange(false)}
-        >
-          Back
-        </Button>
-      </span>
-      <div>
-        <Text as="p" size="sm" bold>
-          Add yourself as a signer
-        </Text>
-        <Text as="p" variant="secondary" size="xs">
-          You will be added as a signer on this document.
-        </Text>
+      <div data-testid="add-myself-panel" className="flex flex-col gap-2">
+        <span title="Back to recipients" className="inline-flex">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            icon={ArrowLeft}
+            onClick={() => onOpenChange(false)}
+          >
+            Back
+          </Button>
+        </span>
+        <div>
+          <Text as="p" size="sm" bold>
+            Add yourself as a signer
+          </Text>
+          <Text as="p" variant="secondary" size="xs">
+            You will be added as a signer on this document.
+          </Text>
+        </div>
+        {body}
       </div>
-      {body}
-    </div>
   );
 }

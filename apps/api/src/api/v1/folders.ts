@@ -123,10 +123,7 @@ app.get("/", async (c) => {
   const parents = await parentPublicIdMap(db, organizationId, rows);
   return c.json({
     folders: rows.map((row) =>
-      toApiFolder(
-        row,
-        row.parentId ? (parents.get(row.parentId) ?? null) : null
-      )
+      toApiFolder(row, row.parentId ? (parents.get(row.parentId) ?? null) : null)
     ),
   });
 });

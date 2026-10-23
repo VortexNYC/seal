@@ -189,7 +189,7 @@ function EmailStatusIndicator({
     case "pending":
       return (
         <span
-          className="text-kumo-warning inline-flex items-center gap-1 text-xs"
+          className="text-kumo-warning text-xs inline-flex items-center gap-1"
           title="Email sending..."
         >
           <Clock className="size-3" />
@@ -198,7 +198,7 @@ function EmailStatusIndicator({
     case "sent":
       return (
         <span
-          className="text-kumo-success inline-flex items-center gap-1 text-xs"
+          className="text-kumo-success text-xs inline-flex items-center gap-1"
           title="Email sent"
         >
           <EnvelopeSimple className="size-3" />
@@ -208,7 +208,7 @@ function EmailStatusIndicator({
     case "failed":
       return (
         <span
-          className="text-kumo-danger inline-flex items-center gap-1 text-xs"
+          className="text-kumo-danger text-xs inline-flex items-center gap-1"
           title={lastError ?? "Email failed to send"}
         >
           <EnvelopeSimple className="size-3" />
@@ -366,7 +366,10 @@ export function NotificationsPopover({
             icon={Bell}
           >
             {hasUnread && (
-              <Badge variant="error" className="absolute -top-1 -right-1">
+              <Badge
+                variant="error"
+                className="absolute -top-1 -right-1"
+              >
                 {unreadCount && unreadCount > 99 ? "99+" : unreadCount}
               </Badge>
             )}

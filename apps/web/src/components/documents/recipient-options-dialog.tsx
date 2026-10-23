@@ -182,162 +182,165 @@ export function RecipientOptionsDialog({
     recipient.status
   );
 
-  const statusVariant = (status: RecipientStatus): "secondary" | "error" => {
+  const statusVariant = (
+    status: RecipientStatus
+  ): "secondary" | "error" => {
     if (status === "declined") return "error";
     return "secondary";
   };
 
   const optionsBody = (
     <>
-      {/* Header */}
-      <div className="border-kumo-hairline flex items-center justify-between border-b p-4">
-        <div className="flex items-center gap-3">
-          <div
-            className={cn(
-              "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-sans text-sm font-semibold",
-              recipientMarkClass(shownStatus)
-            )}
-          >
-            {getInitials(recipient.name, recipient.email)}
-          </div>
-          <div className="min-w-0">
-            {recipient.name && (
-              <Text
-                as="p"
-                size="sm"
-                variant="body"
-                DANGEROUS_className="truncate"
-              >
-                {recipient.name}
-              </Text>
-            )}
+
+        {/* Header */}
+        <div className="border-kumo-hairline flex items-center justify-between border-b p-4">
+          <div className="flex items-center gap-3">
             <div
               className={cn(
-                "truncate",
-                recipient.name ? "text-xs" : "text-sm font-medium"
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-sans text-sm font-semibold",
+                recipientMarkClass(shownStatus)
               )}
             >
-              <Text
-                as="p"
-                size={recipient.name ? "xs" : "sm"}
-                variant="secondary"
-                DANGEROUS_className="truncate"
-              >
-                {recipient.email}
-              </Text>
+              {getInitials(recipient.name, recipient.email)}
             </div>
-            <div className="mt-0.5 flex items-center gap-1 text-xs">
-              <Text as="span" size="xs" variant="secondary">
-                {getRoleLabel(recipient.role)} &middot;{" "}
-              </Text>
-              <Text
-                as="span"
-                size="xs"
-                variant={
-                  shownStatus === "voided"
-                    ? "secondary"
-                    : statusVariant(recipient.status)
-                }
+            <div className="min-w-0">
+              {recipient.name && (
+                <Text
+                  as="p"
+                  size="sm"
+                  variant="body"
+                  DANGEROUS_className="truncate"
+                >
+                  {recipient.name}
+                </Text>
+              )}
+              <div
+                className={cn(
+                  "truncate",
+                  recipient.name ? "text-xs" : "text-sm font-medium"
+                )}
               >
-                {shownStatus.charAt(0).toUpperCase() + shownStatus.slice(1)}
-              </Text>
+                <Text
+                  as="p"
+                  size={recipient.name ? "xs" : "sm"}
+                  variant="secondary"
+                  DANGEROUS_className="truncate"
+                >
+                  {recipient.email}
+                </Text>
+              </div>
+              <div className="mt-0.5 flex items-center gap-1 text-xs">
+                <Text as="span" size="xs" variant="secondary">
+                  {getRoleLabel(recipient.role)} &middot;{" "}
+                </Text>
+                <Text
+                  as="span"
+                  size="xs"
+                  variant={
+                    shownStatus === "voided"
+                      ? "secondary"
+                      : statusVariant(recipient.status)
+                  }
+                >
+                  {shownStatus.charAt(0).toUpperCase() + shownStatus.slice(1)}
+                </Text>
+              </div>
             </div>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            shape="square"
+            icon={X}
+            aria-label="Close recipient options"
+            onClick={() => onOpenChange(false)}
+          />
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          shape="square"
-          icon={X}
-          aria-label="Close recipient options"
-          onClick={() => onOpenChange(false)}
-        />
-      </div>
 
-      {/* Options */}
-      <div className="p-2">
-        {hasSigningLink && (
-          <Button
-            type="button"
-            variant="ghost"
-            className="h-auto w-full justify-start"
-            icon={Link}
-            onClick={handleCopySigningLink}
-          >
-            <span className="flex flex-col items-start">
-              <Text as="span" size="sm">
-                Copy signing link
-              </Text>
-              <Text as="span" size="xs" variant="secondary">
-                Share this link with the recipient
-              </Text>
-            </span>
-          </Button>
-        )}
-
-        {canChangeEmail &&
-          recipient.status !== "signed" &&
-          recipient.status !== "approved" &&
-          onChangeEmail && (
-            <ChangeEmailForm
-              key={`${recipient._id}:${recipient.email}`}
-              recipientId={recipient._id}
-              currentEmail={recipient.email}
-              onChangeEmail={onChangeEmail}
-            />
-          )}
-
-        {canResend && onResendEmail && (
-          <Button
-            type="button"
-            variant="ghost"
-            className="h-auto w-full justify-start"
-            icon={EnvelopeSimple}
-            onClick={handleResendEmail}
-          >
-            <span className="flex flex-col items-start">
-              <Text as="span" size="sm">
-                Resend email
-              </Text>
-              <Text as="span" size="xs" variant="secondary">
-                Send another notification email
-              </Text>
-            </span>
-          </Button>
-        )}
-
-        {canEdit && onRemove && (
-          <>
-            {(hasSigningLink || canResend) && (
-              <div className="border-kumo-hairline my-2 border-t" />
-            )}
+        {/* Options */}
+        <div className="p-2">
+          {hasSigningLink && (
             <Button
               type="button"
               variant="ghost"
               className="h-auto w-full justify-start"
-              icon={Trash}
-              onClick={handleRemove}
+              icon={Link}
+              onClick={handleCopySigningLink}
             >
               <span className="flex flex-col items-start">
-                <Text as="span" size="sm" variant="error">
-                  Remove recipient
+                <Text as="span" size="sm">
+                  Copy signing link
                 </Text>
                 <Text as="span" size="xs" variant="secondary">
-                  Remove from this document
+                  Share this link with the recipient
                 </Text>
               </span>
             </Button>
-          </>
-        )}
+          )}
 
-        {!hasSigningLink && !canResend && !canEdit && !canChangeEmail && (
-          <div className="p-4 text-center">
-            <Text as="p" size="sm" variant="secondary">
-              No actions available
-            </Text>
-          </div>
-        )}
-      </div>
+          {canChangeEmail &&
+            recipient.status !== "signed" &&
+            recipient.status !== "approved" &&
+            onChangeEmail && (
+              <ChangeEmailForm
+                key={`${recipient._id}:${recipient.email}`}
+                recipientId={recipient._id}
+                currentEmail={recipient.email}
+                onChangeEmail={onChangeEmail}
+              />
+            )}
+
+          {canResend && onResendEmail && (
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-auto w-full justify-start"
+              icon={EnvelopeSimple}
+              onClick={handleResendEmail}
+            >
+              <span className="flex flex-col items-start">
+                <Text as="span" size="sm">
+                  Resend email
+                </Text>
+                <Text as="span" size="xs" variant="secondary">
+                  Send another notification email
+                </Text>
+              </span>
+            </Button>
+          )}
+
+          {canEdit && onRemove && (
+            <>
+              {(hasSigningLink || canResend) && (
+                <div className="border-kumo-hairline my-2 border-t" />
+              )}
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-auto w-full justify-start"
+                icon={Trash}
+                onClick={handleRemove}
+              >
+                <span className="flex flex-col items-start">
+                  <Text as="span" size="sm" variant="error">
+                    Remove recipient
+                  </Text>
+                  <Text as="span" size="xs" variant="secondary">
+                    Remove from this document
+                  </Text>
+                </span>
+              </Button>
+            </>
+          )}
+
+          {!hasSigningLink && !canResend && !canEdit && !canChangeEmail && (
+            <div className="p-4 text-center">
+              <Text as="p" size="sm" variant="secondary">
+                No actions available
+              </Text>
+            </div>
+          )}
+        </div>
     </>
   );
 
@@ -345,10 +348,7 @@ export function RecipientOptionsDialog({
 
   if (presentation === "panel") {
     return (
-      <div
-        data-testid="recipient-options-panel"
-        className="flex flex-col gap-2"
-      >
+      <div data-testid="recipient-options-panel" className="flex flex-col gap-2">
         <RailBack onBack={() => onOpenChange(false)} tip="Back to recipients" />
         {optionsBody}
       </div>

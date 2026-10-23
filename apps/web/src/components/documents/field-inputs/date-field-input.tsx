@@ -1,8 +1,8 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { DatePicker } from "@cloudflare/kumo/components/date-picker";
 import { Label } from "@cloudflare/kumo/components/label";
 import { Popover } from "@cloudflare/kumo/components/popover";
-import { Text } from "@cloudflare/kumo/components/text";
 import { CalendarBlank } from "@phosphor-icons/react";
 import { format } from "date-fns";
 import { useState } from "react";
@@ -65,8 +65,7 @@ export function DateFieldInput({
                 !date && "text-kumo-secondary",
                 error && "border-kumo-danger"
               )}
-              icon={CalendarBlank}
-            >
+             icon={CalendarBlank}>
               {date ? format(date, "PPP") : <span>Pick a date</span>}
             </Button>
           }
@@ -80,15 +79,9 @@ export function DateFieldInput({
         </Popover.Content>
       </Popover>
       {helpText && !error && (
-        <Text as="p" variant="secondary" size="xs">
-          {helpText}
-        </Text>
+        <Text as="p" variant="secondary" size="xs">{helpText}</Text>
       )}
-      {error && (
-        <Text as="p" variant="error" size="xs">
-          {error}
-        </Text>
-      )}
+      {error && <Text as="p" variant="error" size="xs">{error}</Text>}
     </div>
   );
 }

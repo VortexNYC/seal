@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import { fieldCandidateSchema } from "./anydoc.js";
 import { extractAnnotationsFromMarkdown } from "./document-annotations.js";
+import { fieldCandidateSchema } from "./anydoc.js";
 
 export const layoutBlockTypeSchema = z.enum([
   "text",
@@ -61,8 +61,7 @@ export function buildDocumentLayoutBlocks(args: {
       const parsed = z.array(fieldCandidateSchema).safeParse(raw);
       if (parsed.success) {
         for (const [index, candidate] of parsed.data.entries()) {
-          const page =
-            candidate.page && candidate.page >= 1 ? candidate.page : 1;
+          const page = candidate.page && candidate.page >= 1 ? candidate.page : 1;
           const x = candidate.x ?? 10;
           const y = candidate.y ?? 10;
           const width = candidate.width ?? 30;

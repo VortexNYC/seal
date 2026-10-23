@@ -12,9 +12,7 @@ function parseMetadata(value: string | null): Record<string, unknown> {
   if (!value) return {};
   try {
     const parsed: unknown = JSON.parse(value);
-    return typeof parsed === "object" &&
-      parsed !== null &&
-      !Array.isArray(parsed)
+    return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
       ? (parsed as Record<string, unknown>)
       : {};
   } catch {
@@ -69,7 +67,9 @@ export async function hasSSOAccountForWorkspace(
   return linked.length > 0;
 }
 
-export function readSSOEnforcedFromMetadata(metadata: string | null): boolean {
+export function readSSOEnforcedFromMetadata(
+  metadata: string | null
+): boolean {
   const parsed = ssoEnforcedMetadataSchema.safeParse(parseMetadata(metadata));
   return parsed.success && parsed.data.ssoEnforced === true;
 }

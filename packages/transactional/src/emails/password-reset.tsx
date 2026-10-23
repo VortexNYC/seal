@@ -8,7 +8,10 @@ export interface PasswordResetProps {
   resetUrl: string;
 }
 
-export function PasswordReset({ recipientName, resetUrl }: PasswordResetProps) {
+export function PasswordReset({
+  recipientName,
+  resetUrl,
+}: PasswordResetProps) {
   const greeting = recipientName.trim() ? `Hi ${recipientName},` : "Hi,";
 
   return (

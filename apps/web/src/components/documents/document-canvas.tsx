@@ -3,6 +3,7 @@ import { Input } from "@cloudflare/kumo/components/input";
 import { Popover } from "@cloudflare/kumo/components/popover";
 import { Select } from "@cloudflare/kumo/components/select";
 import { PDFViewer, type PDFViewerRef } from "@embedpdf/react-pdf-viewer";
+import { dark, light } from "@seal/tokens/theme";
 import {
   ArrowUUpLeft,
   ArrowUUpRight,
@@ -31,7 +32,6 @@ import {
   WaveSine,
   type Icon,
 } from "@phosphor-icons/react";
-import { dark, light } from "@seal/tokens/theme";
 import type { DragEvent, FormEvent, JSX, ReactNode, RefObject } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -39,6 +39,7 @@ import { useTheme } from "@/components/theme-provider";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
+import type { PlacedField } from "./draggable-field";
 import {
   DESIGN_PAGE_HEIGHT,
   DESIGN_PAGE_WIDTH,
@@ -53,7 +54,6 @@ import {
   pageSlot,
   type PageBox,
 } from "./document-surface";
-import type { PlacedField } from "./draggable-field";
 import { PdfCanvasLayer } from "./pdf-canvas-layer";
 
 type PluginRegistryLike = {
@@ -104,7 +104,10 @@ type ScrollCapability = {
 
 type ZoomCapability = {
   requestZoom?: (level: number | string) => void;
-  requestZoomBy?: (delta: number, center?: { vx: number; vy: number }) => void;
+  requestZoomBy?: (
+    delta: number,
+    center?: { vx: number; vy: number }
+  ) => void;
   zoomIn?: () => void;
   zoomOut?: () => void;
   getState?: () => { currentZoomLevel?: number };
@@ -406,9 +409,7 @@ function resolvePageBox(
   const visibility = metrics.pageVisibilityMetrics.find(
     (entry) => entry.pageNumber === pageNumber
   );
-  let layoutPage:
-    | (typeof layout.virtualItems)[number]["pageLayouts"][number]
-    | undefined;
+  let layoutPage: (typeof layout.virtualItems)[number]["pageLayouts"][number] | undefined;
   for (const item of layout.virtualItems) {
     const page = item.pageLayouts.find((p) => p.pageNumber === pageNumber);
     if (page) {
@@ -442,7 +443,8 @@ function renderedPageElement(
     (node): node is HTMLDivElement =>
       matches(node) &&
       !(
-        node.parentElement instanceof HTMLElement && matches(node.parentElement)
+        node.parentElement instanceof HTMLElement &&
+        matches(node.parentElement)
       )
   );
   return (
@@ -486,9 +488,7 @@ function placeBoxOnRenderedPage(
   if (!scroller) return box;
   return {
     ...box,
-    x:
-      box.x +
-      centeredPageShift(scroller.clientWidth, box.width, scroller.scrollLeft),
+    x: box.x + centeredPageShift(scroller.clientWidth, box.width, scroller.scrollLeft),
   };
 }
 
@@ -651,9 +651,10 @@ export function DocumentCanvas({
         onZoomChangeRef.current?.(level);
       }
       docOpenedSubRef.current?.();
-      const docManager = (registry as PluginRegistryLike)
-        .getPlugin?.("document-manager")
-        ?.provides?.() as DocumentManagerCapability | undefined;
+      const docManager = (
+        (registry as PluginRegistryLike).getPlugin?.("document-manager")
+          ?.provides?.() as DocumentManagerCapability | undefined
+      );
       docOpenedSubRef.current =
         docManager?.onDocumentOpened?.(() => {
           // Scroll viewport mounts after document-opened — defer the zoom
@@ -843,10 +844,7 @@ export function DocumentCanvas({
       const overlay = frame.querySelector(
         "[data-testid=document-canvas-field-overlay]"
       );
-      if (
-        !(overlay instanceof HTMLElement) ||
-        !overlay.contains(event.target as Node)
-      ) {
+      if (!(overlay instanceof HTMLElement) || !overlay.contains(event.target as Node)) {
         return;
       }
       if (event.ctrlKey || event.metaKey) {
@@ -855,7 +853,10 @@ export function DocumentCanvas({
         if (!zoomCap?.requestZoomBy || typeof current !== "number") return;
         event.preventDefault();
         const factor = 1 - event.deltaY * 0.01;
-        const next = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, current * factor));
+        const next = Math.min(
+          ZOOM_MAX,
+          Math.max(ZOOM_MIN, current * factor)
+        );
         const bounds = frame.getBoundingClientRect();
         zoomCap.requestZoomBy(next - current, {
           vx: event.clientX - bounds.left,
@@ -939,27 +940,22 @@ export function DocumentCanvas({
   const onSaveMarkupRef = useRef(onSaveMarkup);
   onSaveMarkupRef.current = onSaveMarkup;
 
-  const readMarkup = useCallback(
-    async (epoch: number): Promise<ArrayBuffer | null> => {
-      if (!registryRef.current) return null;
-      const registry = registryRef.current as PluginRegistryLike;
-      const exportPlugin = registry.getPlugin?.("export");
-      const documentManager = registry.getPlugin?.("document-manager");
-      const exportCap = exportPlugin?.provides?.() as
-        | ExportCapability
-        | undefined;
-      const docsCap = documentManager?.provides?.() as
-        | DocumentManagerCapability
-        | undefined;
-      const documentId = docsCap?.getActiveDocumentId?.();
-      const save = markupExport(exportCap, documentId);
-      if (!save) throw new Error("EmbedPDF export is not ready");
-      const buffer = await save().toPromise();
-      if (fileEpochRef.current !== epoch) return null;
-      return buffer;
-    },
-    []
-  );
+  const readMarkup = useCallback(async (epoch: number): Promise<ArrayBuffer | null> => {
+    if (!registryRef.current) return null;
+    const registry = registryRef.current as PluginRegistryLike;
+    const exportPlugin = registry.getPlugin?.("export");
+    const documentManager = registry.getPlugin?.("document-manager");
+    const exportCap = exportPlugin?.provides?.() as ExportCapability | undefined;
+    const docsCap = documentManager?.provides?.() as
+      | DocumentManagerCapability
+      | undefined;
+    const documentId = docsCap?.getActiveDocumentId?.();
+    const save = markupExport(exportCap, documentId);
+    if (!save) throw new Error("EmbedPDF export is not ready");
+    const buffer = await save().toPromise();
+    if (fileEpochRef.current !== epoch) return null;
+    return buffer;
+  }, []);
 
   // The copy is taken as soon as the mark commits. The upload waits so a run of
   // strokes becomes one write, unless the page leaves first.
@@ -1189,34 +1185,34 @@ export function DocumentCanvas({
         <div className="bg-kumo-surface/95 flex min-w-0 flex-1 flex-nowrap items-center gap-1 overflow-x-auto rounded-lg border p-1 shadow-sm">
           {markup ? (
             <Tip tip="Undo the last mark">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                shape="square"
-                aria-label="Undo"
-                disabled={!ready}
-                onClick={() =>
-                  getCapability<HistoryCapability>(
-                    registryRef.current,
-                    "history"
-                  )?.undo()
-                }
-                icon={ArrowUUpLeft}
-              />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              shape="square"
+              aria-label="Undo"
+              disabled={!ready}
+              onClick={() =>
+                getCapability<HistoryCapability>(
+                  registryRef.current,
+                  "history"
+                )?.undo()
+              }
+              icon={ArrowUUpLeft}
+            />
             </Tip>
           ) : (
             <Tip tip="Previous page">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                shape="square"
-                aria-label="Previous page"
-                disabled={!ready || currentPage <= 1}
-                onClick={() => goToPage(currentPage - 1)}
-                icon={CaretLeft}
-              />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              shape="square"
+              aria-label="Previous page"
+              disabled={!ready || currentPage <= 1}
+              onClick={() => goToPage(currentPage - 1)}
+              icon={CaretLeft}
+            />
             </Tip>
           )}
           <form
@@ -1249,117 +1245,117 @@ export function DocumentCanvas({
           </form>
           {markup ? (
             <Tip tip="Redo the last mark">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                shape="square"
-                aria-label="Redo"
-                disabled={!ready}
-                onClick={() =>
-                  getCapability<HistoryCapability>(
-                    registryRef.current,
-                    "history"
-                  )?.redo()
-                }
-                icon={ArrowUUpRight}
-              />
-            </Tip>
-          ) : (
-            <Tip tip="Next page">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                shape="square"
-                aria-label="Next page"
-                disabled={!ready || currentPage >= totalPages}
-                onClick={() => goToPage(currentPage + 1)}
-                icon={CaretRight}
-              />
-            </Tip>
-          )}
-
-          <Tip tip="Zoom out 25%">
             <Button
               type="button"
               variant="ghost"
               size="sm"
               shape="square"
-              aria-label="Zoom out"
-              disabled={!ready || zoom <= 0.5}
-              onClick={() => zoomToNearestLevel("out")}
-              icon={Minus}
+              aria-label="Redo"
+              disabled={!ready}
+              onClick={() =>
+                getCapability<HistoryCapability>(
+                  registryRef.current,
+                  "history"
+                )?.redo()
+              }
+              icon={ArrowUUpRight}
             />
+            </Tip>
+          ) : (
+            <Tip tip="Next page">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              shape="square"
+              aria-label="Next page"
+              disabled={!ready || currentPage >= totalPages}
+              onClick={() => goToPage(currentPage + 1)}
+              icon={CaretRight}
+            />
+            </Tip>
+          )}
+
+          <Tip tip="Zoom out 25%">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            shape="square"
+            aria-label="Zoom out"
+            disabled={!ready || zoom <= 0.5}
+            onClick={() => zoomToNearestLevel("out")}
+            icon={Minus}
+          />
           </Tip>
           <span title="Choose a zoom level" className="inline-flex">
-            <Select
-              value={zoom.toFixed(2)}
-              onValueChange={(value) => {
-                if (value) setZoomLevel(Number.parseFloat(value));
-              }}
-              size="sm"
-              renderValue={() => `${zoomPercentage}%`}
-              className="hidden w-18 sm:flex"
-              disabled={!ready}
-            >
-              {ZOOM_LEVELS.map((level) => (
-                <Select.Option key={level} value={level.toFixed(2)}>
-                  {Math.round(level * 100)}%
-                </Select.Option>
-              ))}
-            </Select>
+          <Select
+            value={zoom.toFixed(2)}
+            onValueChange={(value) => {
+              if (value) setZoomLevel(Number.parseFloat(value));
+            }}
+            size="sm"
+            renderValue={() => `${zoomPercentage}%`}
+            className="hidden w-18 sm:flex"
+            disabled={!ready}
+          >
+            {ZOOM_LEVELS.map((level) => (
+              <Select.Option key={level} value={level.toFixed(2)}>
+                {Math.round(level * 100)}%
+              </Select.Option>
+            ))}
+          </Select>
           </span>
           <span className="text-kumo-secondary min-w-10 text-center text-xs sm:hidden">
             {zoomPercentage}%
           </span>
           <Tip tip="Zoom in 25%">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              shape="square"
-              aria-label="Zoom in"
-              disabled={!ready || zoom >= 8}
-              onClick={() => zoomToNearestLevel("in")}
-              icon={Plus}
-            />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            shape="square"
+            aria-label="Zoom in"
+            disabled={!ready || zoom >= 8}
+            onClick={() => zoomToNearestLevel("in")}
+            icon={Plus}
+          />
           </Tip>
 
           <Tip tip="Fit the page to the width of the window">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              aria-label="Fit to width"
-              disabled={!ready}
-              onClick={() => setZoomLevel("fit-width")}
-              className="hidden sm:inline-flex"
-              icon={CornersOut}
-            >
-              Fit
-            </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-label="Fit to width"
+            disabled={!ready}
+            onClick={() => setZoomLevel("fit-width")}
+            className="hidden sm:inline-flex"
+            icon={CornersOut}
+          >
+            Fit
+          </Button>
           </Tip>
           {markup ? (
             <>
               <Tip tip="Select a mark or a field">
-                <Button
-                  type="button"
-                  variant={
-                    markupTool === null && !layoutActive && !suspendMarkup
-                      ? "primary"
-                      : "ghost"
-                  }
-                  size="sm"
-                  shape="square"
-                  aria-label="Select"
-                  disabled={!ready}
-                  onClick={() => {
-                    selectMarkupTool(null);
-                    onClearTool?.();
-                  }}
-                  icon={Cursor}
-                />
+              <Button
+                type="button"
+                variant={
+                  markupTool === null && !layoutActive && !suspendMarkup
+                    ? "primary"
+                    : "ghost"
+                }
+                size="sm"
+                shape="square"
+                aria-label="Select"
+                disabled={!ready}
+                onClick={() => {
+                  selectMarkupTool(null);
+                  onClearTool?.();
+                }}
+                icon={Cursor}
+              />
               </Tip>
               {toolbarExtras}
               {MARKUP_GROUPS.map((group) => {
@@ -1378,52 +1374,47 @@ export function DocumentCanvas({
                           : "Shapes you drag onto the page"
                     }
                   >
-                    <Popover
-                      open={openMarkupGroup === group.id}
-                      onOpenChange={(open) => {
-                        setOpenMarkupGroup(open ? group.id : null);
-                      }}
+                  <Popover
+                    open={openMarkupGroup === group.id}
+                    onOpenChange={(open) => {
+                      setOpenMarkupGroup(open ? group.id : null);
+                    }}
+                  >
+                    <Popover.Trigger
+                      render={
+                        <Button
+                          type="button"
+                          variant={activeTool ? "primary" : "ghost"}
+                          size="sm"
+                          disabled={!ready || GroupIcon === undefined}
+                          icon={GroupIcon}
+                        >
+                          {activeTool?.label ?? group.label}
+                        </Button>
+                      }
+                    />
+                    <Popover.Content
+                      className={TOOL_MENU_CLASS}
+                      align="start"
                     >
-                      <Popover.Trigger
-                        render={
-                          <Button
-                            type="button"
-                            variant={activeTool ? "primary" : "ghost"}
-                            size="sm"
-                            disabled={!ready || GroupIcon === undefined}
-                            icon={GroupIcon}
-                          >
-                            {activeTool?.label ?? group.label}
-                          </Button>
-                        }
-                      />
-                      <Popover.Content
-                        className={TOOL_MENU_CLASS}
-                        align="start"
-                      >
-                        {group.tools.map((tool) => (
-                          <Tip
-                            key={tool.id}
-                            tip={TOOL_HINTS[tool.id] ?? tool.label}
-                          >
-                            <Button
-                              type="button"
-                              variant={
-                                markupTool === tool.id ? "primary" : "ghost"
-                              }
-                              size="sm"
-                              className="w-full justify-start"
-                              icon={tool.icon}
-                              onClick={() => {
-                                selectMarkupTool(tool.id, tool.command);
-                              }}
-                            >
-                              {tool.label}
-                            </Button>
-                          </Tip>
-                        ))}
-                      </Popover.Content>
-                    </Popover>
+                      {group.tools.map((tool) => (
+                        <Tip key={tool.id} tip={TOOL_HINTS[tool.id] ?? tool.label}>
+                        <Button
+                          type="button"
+                          variant={markupTool === tool.id ? "primary" : "ghost"}
+                          size="sm"
+                          className="w-full justify-start"
+                          icon={tool.icon}
+                          onClick={() => {
+                            selectMarkupTool(tool.id, tool.command);
+                          }}
+                        >
+                          {tool.label}
+                        </Button>
+                        </Tip>
+                      ))}
+                    </Popover.Content>
+                  </Popover>
                   </Tip>
                 );
               })}
@@ -1473,8 +1464,7 @@ export function DocumentCanvas({
               setGhostPoint(null);
             }}
             onPointerUp={(event) => {
-              if (!placementGhost || !onEmptyClick || event.button !== 0)
-                return;
+              if (!placementGhost || !onEmptyClick || event.button !== 0) return;
               onEmptyClick(event.clientX, event.clientY);
             }}
             className={cn(

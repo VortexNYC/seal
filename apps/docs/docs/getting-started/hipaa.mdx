@@ -13,12 +13,12 @@ certification and **not** a substitute for counsel.
 **Seal declines healthcare / PHI workloads until a signed BAA and PHI control
 program are in place.**
 
-| Question                                                                               | Answer today                                                                                                                            |
-| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Is Seal HIPAA-compliant / HITRUST certified?                                           | **No. Do not claim this.**                                                                                                              |
-| Can a covered entity use Seal for intake, consent, or health records that include PHI? | **Not yet** — that relationship makes Seal a **business associate** under HIPAA.                                                        |
-| Default product posture                                                                | General e-sign (contracts, commercial agreements, HR, etc.). Healthcare is an **explicit expand** decision.                             |
-| Gate before first health customer                                                      | (1) Counsel-approved **BAA** template + countersign process, (2) PHI control checklist below green, (3) founder/ops accept the BA risk. |
+| Question | Answer today |
+| --- | --- |
+| Is Seal HIPAA-compliant / HITRUST certified? | **No. Do not claim this.** |
+| Can a covered entity use Seal for intake, consent, or health records that include PHI? | **Not yet** — that relationship makes Seal a **business associate** under HIPAA. |
+| Default product posture | General e-sign (contracts, commercial agreements, HR, etc.). Healthcare is an **explicit expand** decision. |
+| Gate before first health customer | (1) Counsel-approved **BAA** template + countersign process, (2) PHI control checklist below green, (3) founder/ops accept the BA risk. |
 
 If a prospect’s documents contain PHI (or they are a covered entity / BA sending
 PHI through Seal), **stop the sale** and route to the expand path — do not “just
@@ -43,15 +43,15 @@ outside this ticket’s expand gate.
 
 These help any regulated customer; they do **not** equal HIPAA readiness:
 
-| Control                                | Where                               |
-| -------------------------------------- | ----------------------------------- |
-| Sealed audit trail                     | SEA-44 hash chain + `/audit/verify` |
-| Consent / privacy / opt-out            | SEA-45 / SEA-52 / SEA-58            |
-| Final PDF integrity                    | SEA-49 Level 1 PAdES-B              |
-| Certificate of Completion              | SEA-50                              |
-| Backup / retention primitives          | SEA-55 (D1 Time Travel, R2 locks)   |
-| Encryption in transit                  | HTTPS to Workers / R2               |
-| Access via org-scoped API keys + roles | Vortex Auth / MCP scopes            |
+| Control | Where |
+| --- | --- |
+| Sealed audit trail | SEA-44 hash chain + `/audit/verify` |
+| Consent / privacy / opt-out | SEA-45 / SEA-52 / SEA-58 |
+| Final PDF integrity | SEA-49 Level 1 PAdES-B |
+| Certificate of Completion | SEA-50 |
+| Backup / retention primitives | SEA-55 (D1 Time Travel, R2 locks) |
+| Encryption in transit | HTTPS to Workers / R2 |
+| Access via org-scoped API keys + roles | Vortex Auth / MCP scopes |
 
 ## PHI control gaps (must close before accepting health)
 

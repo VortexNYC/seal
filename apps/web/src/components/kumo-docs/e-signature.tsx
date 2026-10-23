@@ -1,9 +1,9 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Label } from "@cloudflare/kumo/components/label";
 import { Select } from "@cloudflare/kumo/components/select";
 import { Tabs } from "@cloudflare/kumo/components/tabs";
-import { Text } from "@cloudflare/kumo/components/text";
 import type { JSX } from "react";
 import { useEffect, useRef, useState } from "react";
 import SignatureCanvas from "react-signature-canvas";
@@ -300,7 +300,7 @@ export function ESignature({
           <div
             ref={canvasContainerRef}
             // vortex-allow-color: signature capture pad represents white paper in both themes
-            className="border-kumo-line bg-kumo-base overflow-hidden rounded-lg border-2 border-dashed"
+            className="border-kumo-line overflow-hidden rounded-lg border-2 border-dashed bg-kumo-base"
           >
             <SignatureCanvas
               key={canvasWidth}
@@ -340,9 +340,7 @@ export function ESignature({
               </Button>
             ) : null}
           </div>
-          <Text as="p" variant="secondary" size="xs">
-            Use your mouse or finger to draw your signature above
-          </Text>
+          <Text as="p" variant="secondary" size="xs">Use your mouse or finger to draw your signature above</Text>
         </div>
       ) : null}
 
@@ -387,16 +385,14 @@ export function ESignature({
           ) : null}
           <p
             // vortex-allow-color: signature preview represents white paper in both themes
-            className="border-kumo-line bg-kumo-base overflow-hidden rounded-lg border-2 p-4 text-center text-3xl sm:p-8 sm:text-5xl"
+            className="border-kumo-line overflow-hidden rounded-lg border-2 bg-kumo-base p-4 text-center text-3xl sm:p-8 sm:text-5xl"
             style={{ fontFamily: currentFontFamily }}
             aria-hidden
           >
             {typedName || "Your name"}
           </p>
-          <Text as="p" variant="secondary" size="sm">
-            Your typed name will be converted to a signature style using the
-            selected font
-          </Text>
+          <Text as="p" variant="secondary" size="sm">Your typed name will be converted to a signature style using the
+            selected font</Text>
           {showActions ? (
             <Button type="button" size="sm" onClick={submitTyped}>
               Adopt signature
@@ -429,7 +425,7 @@ export function ESignature({
           {uploadedImage ? (
             <div
               // vortex-allow-color: uploaded signature preview represents white paper in both themes
-              className="border-kumo-line bg-kumo-base rounded-lg border-2 p-4"
+              className="border-kumo-line rounded-lg border-2 bg-kumo-base p-4"
             >
               <img
                 src={uploadedImage}
@@ -438,9 +434,7 @@ export function ESignature({
               />
             </div>
           ) : null}
-          <Text as="p" variant="secondary" size="sm">
-            Upload a PNG or JPG image file (max 5MB)
-          </Text>
+          <Text as="p" variant="secondary" size="sm">Upload a PNG or JPG image file (max 5MB)</Text>
           {showActions ? (
             <Button
               type="button"

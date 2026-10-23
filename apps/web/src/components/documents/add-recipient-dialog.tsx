@@ -1,18 +1,14 @@
+import { Loader } from "@cloudflare/kumo/components/loader";
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Label } from "@cloudflare/kumo/components/label";
-import { Loader } from "@cloudflare/kumo/components/loader";
 import { Select } from "@cloudflare/kumo/components/select";
 import { Tabs } from "@cloudflare/kumo/components/tabs";
-import { Text } from "@cloudflare/kumo/components/text";
-import {
-  ArrowLeft,
-  Check as CheckIcon,
-  Users as UsersIcon,
-} from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { useMutation } from "@tanstack/react-query";
+import { ArrowLeft, Check as CheckIcon, Users as UsersIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { z } from "zod";
 
@@ -218,213 +214,211 @@ export function AddRecipientDialog({
     (resolvedAuthMethod === "access_code" && accessCode.trim().length < 4);
 
   const form = (
-    <form onSubmit={handleSubmit} className="mt-2 space-y-4">
-      <Tabs
-        tabs={[
-          {
-            value: "team",
-            label: `Team${eligibleMembers ? ` (${eligibleMembers.length})` : ""}`,
-          },
-          { value: "outsider", label: "Email" },
-        ]}
-        value={activeTab}
-        onValueChange={(v) =>
-          setActiveTab(parseSelectValue(v, RECIPIENT_TABS) ?? activeTab)
-        }
-        listClassName="grid w-full grid-cols-2"
-      />
-
-      {activeTab === "team" && (
-        <div className="space-y-4">
-          {members === undefined ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader size="lg" />
-            </div>
-          ) : eligibleMembers && eligibleMembers.length > 0 ? (
-            <div className="max-h-drop space-y-1 overflow-y-auto rounded-md border p-2">
-              {eligibleMembers.map((member) => (
-                <Button
-                  key={member.userId}
-                  type="button"
-                  variant={
-                    selectedMember?.id === member.userId ? "primary" : "ghost"
-                  }
-                  className="h-auto w-full justify-start"
-                  onClick={() =>
-                    setSelectedMember({
-                      id: member.userId,
-                      email: member.email,
-                      name: member.name ?? null,
-                    })
-                  }
-                >
-                  <div className="bg-kumo-elevated text-kumo-default flex h-8 w-8 items-center justify-center overflow-hidden rounded-full text-xs font-medium">
-                    {member.avatarUrl ? (
-                      <img
-                        src={member.avatarUrl}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      getInitials(member.name)
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <Text as="p" size="sm" bold truncate>
-                      {member.name || "Unknown"}
-                    </Text>
-                    <Text as="p" variant="secondary" size="xs" truncate>
-                      {member.email}
-                    </Text>
-                  </div>
-                  {selectedMember?.id === member.userId && (
-                    <CheckIcon className="h-4 w-4 shrink-0" />
-                  )}
-                </Button>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <UsersIcon className="text-kumo-secondary mb-2 h-8 w-8" />
-              <Text as="p" variant="secondary" size="sm">
-                {existingRecipientEmails.length > 0
-                  ? "All team members have been added"
-                  : "No team members available"}
-              </Text>
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeTab === "outsider" && (
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email Address *</Label>
-            <div className="relative">
-              <Input
-                id="email"
-                type="email"
-                placeholder="recipient@example.com"
-                value={email}
-                aria-label="Email address"
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setShowSuggestions(true);
-                  if (emailError) setEmailError(null);
-                }}
-                onFocus={() => setShowSuggestions(true)}
-                onBlur={() => {
-                  // Delay to allow click on suggestion
-                  setTimeout(() => setShowSuggestions(false), 200);
-                }}
-              />
-              {showSuggestions &&
-                filteredSuggestions &&
-                filteredSuggestions.length > 0 && (
-                  <div className="bg-kumo-elevated absolute top-full left-0 z-50 mt-1 w-full rounded-md border p-1 shadow-md">
-                    {filteredSuggestions.map((contact) => (
-                      <button
-                        key={contact._id}
-                        type="button"
-                        className="hover:bg-kumo-control flex w-full flex-col items-start gap-0.5 rounded-md px-2 py-1.5 text-left"
-                        onClick={() => {
-                          setEmail(contact.email);
-                          setName(contact.fullName);
-                          setShowSuggestions(false);
-                        }}
-                      >
-                        <span className="text-sm font-medium">
-                          {contact.fullName}
-                        </span>
-                        <span className="text-kumo-secondary text-xs">
-                          {contact.email}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-            </div>
-          </div>
-          {emailError && (
-            <Text as="p" variant="error" size="sm">
-              {emailError}
-            </Text>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="name">Name (Optional)</Label>
-            <Input
-              id="name"
-              type="text"
-              placeholder="John Doe"
-              value={name}
-              aria-label="Full name"
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-        </div>
-      )}
-
-      <div className="space-y-2">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Select
-            value={role}
-            label="Role"
-            onValueChange={(v) => {
-              if (!v) return;
-              setRole(parseSelectValue(v, RECIPIENT_ROLES) ?? role);
-            }}
-          >
-            <Select.Option value="signer">Signer</Select.Option>
-            <Select.Option value="approver">Approver</Select.Option>
-            <Select.Option value="viewer">Viewer</Select.Option>
-          </Select>
-          <Select
-            value={resolvedAuthMethod}
-            label="Auth"
-            onValueChange={(v) => {
-              if (v === "none" || v === "access_code" || v === "email_otp") {
-                setAuthMethod(v);
-              }
-            }}
-          >
-            <Select.Option value="email_otp">Email OTP</Select.Option>
-            <Select.Option value="access_code">Access code</Select.Option>
-            {!requireRecipientAuth ? (
-              <Select.Option value="none">Link only</Select.Option>
-            ) : null}
-          </Select>
-        </div>
-      </div>
-
-      {resolvedAuthMethod === "access_code" ? (
-        <div className="space-y-2">
-          <Input
-            id="access-code"
-            label="Access code"
-            data-testid="recipient-access-code"
-            value={accessCode}
-            onChange={(e) => setAccessCode(e.target.value)}
-            placeholder="Shared secret"
-            autoComplete="off"
+        <form onSubmit={handleSubmit} className="mt-2 space-y-4">
+          <Tabs
+            tabs={[
+              {
+                value: "team",
+                label: `Team${eligibleMembers ? ` (${eligibleMembers.length})` : ""}`,
+              },
+              { value: "outsider", label: "Email" },
+            ]}
+            value={activeTab}
+            onValueChange={(v) =>
+              setActiveTab(parseSelectValue(v, RECIPIENT_TABS) ?? activeTab)
+            }
+            listClassName="grid w-full grid-cols-2"
           />
-        </div>
-      ) : null}
 
-      <div className="mt-4 flex flex-col-reverse justify-end gap-2 sm:flex-row">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => onOpenChange(false)}
-          disabled={loading}
-        >
-          Cancel
-        </Button>
-        <Button type="submit" variant="primary" disabled={isSubmitDisabled}>
-          {loading ? "Adding…" : "Add recipient"}
-        </Button>
-      </div>
-    </form>
+          {activeTab === "team" && (
+            <div className="space-y-4">
+              {members === undefined ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader size="lg" />
+                </div>
+              ) : eligibleMembers && eligibleMembers.length > 0 ? (
+                <div className="max-h-drop space-y-1 overflow-y-auto rounded-md border p-2">
+                  {eligibleMembers.map((member) => (
+                    <Button
+                      key={member.userId}
+                      type="button"
+                      variant={
+                        selectedMember?.id === member.userId
+                          ? "primary"
+                          : "ghost"
+                      }
+                      className="h-auto w-full justify-start"
+                      onClick={() =>
+                        setSelectedMember({
+                          id: member.userId,
+                          email: member.email,
+                          name: member.name ?? null,
+                        })
+                      }
+                    >
+                      <div className="bg-kumo-elevated text-kumo-default flex h-8 w-8 items-center justify-center overflow-hidden rounded-full text-xs font-medium">
+                        {member.avatarUrl ? (
+                          <img
+                            src={member.avatarUrl}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          getInitials(member.name)
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <Text as="p" size="sm" bold truncate>{member.name || "Unknown"}</Text>
+                        <Text as="p" variant="secondary" size="xs" truncate>{member.email}</Text>
+                      </div>
+                      {selectedMember?.id === member.userId && (
+                        <CheckIcon className="h-4 w-4 shrink-0" />
+                      )}
+                    </Button>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <UsersIcon className="text-kumo-secondary mb-2 h-8 w-8" />
+                  <Text as="p" variant="secondary" size="sm">{existingRecipientEmails.length > 0
+                      ? "All team members have been added"
+                      : "No team members available"}</Text>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === "outsider" && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address *</Label>
+                <div className="relative">
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="recipient@example.com"
+                    value={email}
+                    aria-label="Email address"
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setShowSuggestions(true);
+                      if (emailError) setEmailError(null);
+                    }}
+                    onFocus={() => setShowSuggestions(true)}
+                    onBlur={() => {
+                      // Delay to allow click on suggestion
+                      setTimeout(() => setShowSuggestions(false), 200);
+                    }}
+                  />
+                  {showSuggestions &&
+                    filteredSuggestions &&
+                    filteredSuggestions.length > 0 && (
+                      <div className="bg-kumo-elevated absolute top-full left-0 z-50 mt-1 w-full rounded-md border p-1 shadow-md">
+                        {filteredSuggestions.map((contact) => (
+                          <button
+                            key={contact._id}
+                            type="button"
+                            className="hover:bg-kumo-control flex w-full flex-col items-start gap-0.5 rounded-md px-2 py-1.5 text-left"
+                            onClick={() => {
+                              setEmail(contact.email);
+                              setName(contact.fullName);
+                              setShowSuggestions(false);
+                            }}
+                          >
+                            <span className="text-sm font-medium">
+                              {contact.fullName}
+                            </span>
+                            <span className="text-kumo-secondary text-xs">
+                              {contact.email}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                </div>
+              </div>
+              {emailError && (
+                <Text as="p" variant="error" size="sm">{emailError}</Text>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="name">Name (Optional)</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="John Doe"
+                  value={name}
+                  aria-label="Full name"
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Select
+                value={role}
+                label="Role"
+                onValueChange={(v) => {
+                  if (!v) return;
+                  setRole(parseSelectValue(v, RECIPIENT_ROLES) ?? role);
+                }}
+              >
+                <Select.Option value="signer">Signer</Select.Option>
+                <Select.Option value="approver">Approver</Select.Option>
+                <Select.Option value="viewer">Viewer</Select.Option>
+              </Select>
+              <Select
+                value={resolvedAuthMethod}
+                label="Auth"
+                onValueChange={(v) => {
+                  if (
+                    v === "none" ||
+                    v === "access_code" ||
+                    v === "email_otp"
+                  ) {
+                    setAuthMethod(v);
+                  }
+                }}
+              >
+                <Select.Option value="email_otp">Email OTP</Select.Option>
+                <Select.Option value="access_code">Access code</Select.Option>
+                {!requireRecipientAuth ? (
+                  <Select.Option value="none">Link only</Select.Option>
+                ) : null}
+              </Select>
+            </div>
+          </div>
+
+          {resolvedAuthMethod === "access_code" ? (
+            <div className="space-y-2">
+              <Input
+                id="access-code"
+                label="Access code"
+                data-testid="recipient-access-code"
+                value={accessCode}
+                onChange={(e) => setAccessCode(e.target.value)}
+                placeholder="Shared secret"
+                autoComplete="off"
+              />
+            </div>
+          ) : null}
+
+          <div className="mt-4 flex flex-col-reverse justify-end gap-2 sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" disabled={isSubmitDisabled}>
+              {loading ? "Adding…" : "Add recipient"}
+            </Button>
+          </div>
+        </form>
   );
 
   if (presentation === "panel") {

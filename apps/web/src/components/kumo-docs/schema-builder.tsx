@@ -1,7 +1,7 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Select } from "@cloudflare/kumo/components/select";
-import { Text } from "@cloudflare/kumo/components/text";
 import { Plus, Trash } from "@phosphor-icons/react";
 import type { JSX } from "react";
 import { useMemo, useState } from "react";
@@ -150,9 +150,7 @@ export function SchemaBuilderPanel({
       ) : (
         <div className="flex-1 space-y-2 overflow-y-auto p-3">
           {schema.properties.length === 0 ? (
-            <Text as="p" variant="secondary" size="sm">
-              No properties yet. Add a field key to start the schema.
-            </Text>
+            <Text as="p" variant="secondary" size="sm">No properties yet. Add a field key to start the schema.</Text>
           ) : (
             schema.properties.map((prop) => (
               <div

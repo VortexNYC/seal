@@ -219,10 +219,8 @@ export function DocumentPdfOpsPanel({
     >
       <div className="space-y-2">
         <Text size="xs">Organize pages</Text>
-        <Text variant="secondary" size="xs">
-          Reorder or delete pages in this draft. Fields on removed pages are
-          dropped.
-        </Text>
+        <Text variant="secondary" size="xs">Reorder or delete pages in this draft. Fields on removed pages are
+          dropped.</Text>
         <ul className="max-h-48 space-y-1 overflow-y-auto">
           {pageOrder.map((sourcePage, index) => (
             <li
@@ -292,10 +290,8 @@ export function DocumentPdfOpsPanel({
 
       <div className="border-kumo-line space-y-2 border-t pt-4">
         <Text size="xs">Rotate pages</Text>
-        <Text variant="secondary" size="xs">
-          Turn the PDF before sending — whole document or the page you&apos;re
-          on.
-        </Text>
+        <Text variant="secondary" size="xs">Turn the PDF before sending — whole document or the page you&apos;re
+          on.</Text>
         <div className="flex flex-wrap gap-1">
           <Button
             type="button"
@@ -337,10 +333,8 @@ export function DocumentPdfOpsPanel({
 
       <div className="border-kumo-line space-y-2 border-t pt-4">
         <Text size="xs">Crop</Text>
-        <Text variant="secondary" size="xs">
-          Trim equal margins (scan edges / letterhead junk). Uses the same
-          Entire PDF / This page scope as rotate.
-        </Text>
+        <Text variant="secondary" size="xs">Trim equal margins (scan edges / letterhead junk). Uses the same
+          Entire PDF / This page scope as rotate.</Text>
         <div className="flex flex-wrap gap-1">
           {([2.5, 5, 10] as const).map((margin) => (
             <Button
@@ -375,9 +369,7 @@ export function DocumentPdfOpsPanel({
 
       <div className="border-kumo-line space-y-2 border-t pt-4">
         <Text size="xs">Watermark</Text>
-        <Text variant="secondary" size="xs">
-          Stamp text across the PDF before send (DRAFT, CONFIDENTIAL, …).
-        </Text>
+        <Text variant="secondary" size="xs">Stamp text across the PDF before send (DRAFT, CONFIDENTIAL, …).</Text>
         <Input
           label="Watermark text"
           value={watermarkText}
@@ -423,9 +415,7 @@ export function DocumentPdfOpsPanel({
 
       <div className="border-kumo-line space-y-2 border-t pt-4">
         <Text size="xs">Page numbers</Text>
-        <Text variant="secondary" size="xs">
-          Footer stamps for assembled packs.
-        </Text>
+        <Text variant="secondary" size="xs">Footer stamps for assembled packs.</Text>
         <div className="flex flex-wrap gap-1">
           {(
             [
@@ -488,9 +478,7 @@ export function DocumentPdfOpsPanel({
 
       <div className="border-kumo-line space-y-2 border-t pt-4">
         <Text size="xs">Compress</Text>
-        <Text variant="secondary" size="xs">
-          Shrink images for email-size packs. Text and layout stay intact.
-        </Text>
+        <Text variant="secondary" size="xs">Shrink images for email-size packs. Text and layout stay intact.</Text>
         <div className="flex flex-wrap gap-1">
           {(
             [
@@ -522,10 +510,8 @@ export function DocumentPdfOpsPanel({
 
       <div className="border-kumo-line space-y-2 border-t pt-4">
         <Text size="xs">Redact region</Text>
-        <Text variant="secondary" size="xs">
-          Permanently remove content inside a box on this page — text under it
-          is deleted, not just hidden. Values are % of page.
-        </Text>
+        <Text variant="secondary" size="xs">Permanently remove content inside a box on this page — text under it
+          is deleted, not just hidden. Values are % of page.</Text>
         <div className="grid grid-cols-2 gap-2">
           {(
             [
@@ -578,10 +564,8 @@ export function DocumentPdfOpsPanel({
 
       <div className="border-kumo-line space-y-2 border-t pt-4">
         <Text size="xs">Protect with password</Text>
-        <Text variant="secondary" size="xs">
-          Make an encrypted copy to download — your working draft stays editable
-          here.
-        </Text>
+        <Text variant="secondary" size="xs">Make an encrypted copy to download — your working draft stays editable
+          here.</Text>
         <Input
           label="Open password"
           type="password"
@@ -614,11 +598,9 @@ export function DocumentPdfOpsPanel({
 
       <div className="border-kumo-line space-y-2 border-t pt-4">
         <Text size="xs">Flatten annotations &amp; forms</Text>
-        <Text variant="secondary" size="xs">
-          Bake annotation and form appearances into the page — interactive
+        <Text variant="secondary" size="xs">Bake annotation and form appearances into the page — interactive
           overlays become static content. Signature fields you placed here are
-          unaffected.
-        </Text>
+          unaffected.</Text>
         <Button
           type="button"
           size="sm"
@@ -679,10 +661,8 @@ export function DocumentPdfOpsPanel({
 
       <div className="border-kumo-line space-y-2 border-t pt-4">
         <Text size="xs">Convert to Office</Text>
-        <Text variant="secondary" size="xs">
-          Export as Word, Excel, or PowerPoint. Layout-locked — text boxes, not
-          flowing prose.
-        </Text>
+        <Text variant="secondary" size="xs">Export as Word, Excel, or PowerPoint. Layout-locked — text boxes, not
+          flowing prose.</Text>
         <div className="flex gap-2">
           {(["docx", "xlsx", "pptx"] as const).map((f) => (
             <Button
@@ -720,9 +700,7 @@ export function DocumentPdfOpsPanel({
 
       <div className="border-kumo-line space-y-2 border-t pt-4">
         <Text size="xs">Make searchable (OCR)</Text>
-        <Text variant="secondary" size="xs">
-          Add a text layer to scanned pages — existing text is preserved.
-        </Text>
+        <Text variant="secondary" size="xs">Add a text layer to scanned pages — existing text is preserved.</Text>
         <Input
           label="Language"
           value={ocrLang}
@@ -746,9 +724,7 @@ export function DocumentPdfOpsPanel({
 
       <div className="border-kumo-line space-y-2 border-t pt-4">
         <Text size="xs">Compare with another draft</Text>
-        <Text variant="secondary" size="xs">
-          Text-level diff — lists lines added and removed per page.
-        </Text>
+        <Text variant="secondary" size="xs">Text-level diff — lists lines added and removed per page.</Text>
         <Select
           value={compareTarget}
           onValueChange={(v) => setCompareTarget(v ?? "")}
@@ -771,16 +747,12 @@ export function DocumentPdfOpsPanel({
         </Button>
         {compareResult ? (
           <div className="bg-kumo-elevated max-h-64 space-y-2 overflow-y-auto rounded-md p-2 text-xs">
-            <Text as="p" bold>
-              {compareResult.pagesDifferent === 0
+            <Text as="p" bold>{compareResult.pagesDifferent === 0
                 ? "Identical text — no differences."
-                : `${compareResult.pagesDifferent} page(s) differ: +${compareResult.linesAdded} −${compareResult.linesRemoved} lines`}
-            </Text>
+                : `${compareResult.pagesDifferent} page(s) differ: +${compareResult.linesAdded} −${compareResult.linesRemoved} lines`}</Text>
             {compareResult.pages.map((p) => (
               <div key={p.page} className="space-y-0.5">
-                <Text as="p" variant="secondary">
-                  Page {p.page}
-                </Text>
+                <Text as="p" variant="secondary">Page {p.page}</Text>
                 {p.removed.map((l, i) => (
                   <p key={`r${i}`} className="text-kumo-danger truncate">
                     − {l}
@@ -799,10 +771,8 @@ export function DocumentPdfOpsPanel({
 
       <div className="border-kumo-line space-y-2 border-t pt-4">
         <Text size="xs">Archival format (PDF/A)</Text>
-        <Text variant="secondary" size="xs">
-          Convert to a long-term-archival PDF/A flavour — replaces the stored
-          PDF.
-        </Text>
+        <Text variant="secondary" size="xs">Convert to a long-term-archival PDF/A flavour — replaces the stored
+          PDF.</Text>
         <Select
           value={pdfaFormat}
           onValueChange={(v) =>
@@ -829,13 +799,9 @@ export function DocumentPdfOpsPanel({
 
       <div className="border-kumo-line space-y-2 border-t pt-4">
         <Text size="xs">Combine with another draft</Text>
-        <Text variant="secondary" size="xs">
-          Append other draft PDFs after this one into a new draft.
-        </Text>
+        <Text variant="secondary" size="xs">Append other draft PDFs after this one into a new draft.</Text>
         {mergeCandidates.length === 0 ? (
-          <Text variant="secondary" size="xs">
-            No other draft documents available.
-          </Text>
+          <Text variant="secondary" size="xs">No other draft documents available.</Text>
         ) : (
           <ul className="max-h-40 space-y-1 overflow-y-auto">
             {mergeCandidates.map((doc) => {

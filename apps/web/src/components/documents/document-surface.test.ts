@@ -159,10 +159,7 @@ describe("field spacing", () => {
       heightPx: FIELD_DIMENSIONS.date.height,
       anchor: "center",
     });
-    expect(placed.width).toBeCloseTo(
-      (FIELD_DIMENSIONS.date.width / 612) * 100,
-      5
-    );
+    expect(placed.width).toBeCloseTo((FIELD_DIMENSIONS.date.width / 612) * 100, 5);
     expect(placed.height).toBeCloseTo(
       (FIELD_DIMENSIONS.date.height / 792) * 100,
       5

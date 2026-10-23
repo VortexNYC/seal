@@ -123,9 +123,7 @@ export function listRowDate(input: {
   readonly dueAt: number | null;
   readonly overdue: boolean;
 } {
-  const sent = Boolean(
-    input.status && input.status !== "draft" && input.sentAt
-  );
+  const sent = Boolean(input.status && input.status !== "draft" && input.sentAt);
   const closed =
     input.status === "completed" ||
     input.status === "cancelled" ||

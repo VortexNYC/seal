@@ -5,7 +5,7 @@ description: Audit lifecycle coverage, timestamp source of truth, and signer acc
 
 # Trust and evidence
 
-CompAI / SEA-46. How Seal proves _what happened_, _when_, and what we claim for
+CompAI / SEA-46. How Seal proves *what happened*, *when*, and what we claim for
 signer accessibility.
 
 ## Audit lifecycle coverage
@@ -14,18 +14,18 @@ Sealed `audit_logs` (hash-chained, SEA-44) cover the signing spine. Actions are
 written through `writeAuditLog` / `commitSigningSubmit` / expiry helpers — not
 only into the softer `activity` feed.
 
-| Event                             | Audit action                                                                     | Where                                                                   |
-| --------------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Document created                  | `document.create` / `document.created`                                           | v1 + session APIs                                                       |
-| Sent for signature                | `document.sent`                                                                  | v1 send / session send                                                  |
-| Recipient viewed                  | `recipient.viewed`                                                               | public signing submit                                                   |
-| Recipient signed / approved       | `recipient.signed`                                                               | public signing submit (atomic)                                          |
-| Recipient declined                | `recipient.declined`                                                             | public signing submit                                                   |
-| Envelope completed                | `document.completed`                                                             | public signing completion                                               |
-| Voided                            | `document.voided`                                                                | v1 void / batch void                                                    |
-| Expired                           | `document.expired` (+ `recipient.expired`)                                       | scheduled expiry                                                        |
-| ESIGN consent / privacy / opt-out | `recipient.esign_consent`, `recipient.privacy_notice`, `recipient.esign_opt_out` | public signing                                                          |
-| **Downloaded (PDF / CoC)**        | `document.downloaded`                                                            | v1 `download-file`, public `signed-pdf` + `certificate`, v1 certificate |
+| Event | Audit action | Where |
+| --- | --- | --- |
+| Document created | `document.create` / `document.created` | v1 + session APIs |
+| Sent for signature | `document.sent` | v1 send / session send |
+| Recipient viewed | `recipient.viewed` | public signing submit |
+| Recipient signed / approved | `recipient.signed` | public signing submit (atomic) |
+| Recipient declined | `recipient.declined` | public signing submit |
+| Envelope completed | `document.completed` | public signing completion |
+| Voided | `document.voided` | v1 void / batch void |
+| Expired | `document.expired` (+ `recipient.expired`) | scheduled expiry |
+| ESIGN consent / privacy / opt-out | `recipient.esign_consent`, `recipient.privacy_notice`, `recipient.esign_opt_out` | public signing |
+| **Downloaded (PDF / CoC)** | `document.downloaded` | v1 `download-file`, public `signed-pdf` + `certificate`, v1 certificate |
 
 Verify an org chain:
 
@@ -41,11 +41,11 @@ they do not replace the sealed audit row.
 
 ## Timestamp source of truth
 
-| Clock                                            | Source                                                 | Use                                    |
-| ------------------------------------------------ | ------------------------------------------------------ | -------------------------------------- |
-| Audit `created_at` / chain `createdAtMs`         | Cloudflare Worker `Date` + D1 `unixepoch('subsecond')` | Event ordering + hash canonicalization |
-| Recipient `viewedAt` / `signedAt` / `declinedAt` | Same Worker clock at submit                            | Ceremony timeline on CoC               |
-| Platform PAdES-B signing-time                    | Worker clock inside CMS signed attrs                   | Byte seal (SEA-49 L1b)                 |
+| Clock | Source | Use |
+| --- | --- | --- |
+| Audit `created_at` / chain `createdAtMs` | Cloudflare Worker `Date` + D1 `unixepoch('subsecond')` | Event ordering + hash canonicalization |
+| Recipient `viewedAt` / `signedAt` / `declinedAt` | Same Worker clock at submit | Ceremony timeline on CoC |
+| Platform PAdES-B signing-time | Worker clock inside CMS signed attrs | Byte seal (SEA-49 L1b) |
 
 Cloudflare's edge clock is NTP-disciplined by the provider. That is **not** an
 RFC 3161 Time Stamp Authority (TSA) token.

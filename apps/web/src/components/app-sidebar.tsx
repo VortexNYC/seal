@@ -13,7 +13,6 @@ import {
 } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { WorkspaceAccountMenu } from "@vortex-api/better-auth-ui";
 import * as React from "react";
 
 import {
@@ -22,6 +21,7 @@ import {
   type NavPrimaryItem,
 } from "@/components/nav-main";
 import { SealLogo } from "@/components/seal-logo";
+import { WorkspaceAccountMenu } from "@vortex-api/better-auth-ui";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";

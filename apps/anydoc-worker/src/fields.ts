@@ -19,6 +19,7 @@ export type FieldCandidate = {
   confidence: number;
 };
 
+
 const LINES_PER_PAGE = 50;
 const LEFT_MARGIN = 10;
 
@@ -33,17 +34,15 @@ const DEFAULT_SIZE: Record<FieldType, { width: number; height: number }> = {
 
 const LINE_BOTTOM_ANCHORED = new Set<FieldType>(["signature", "initials"]);
 
-function geometryFor(
-  type: FieldType,
-  line: number
-): {
+function geometryFor(type: FieldType, line: number): {
   x: number;
   y: number;
   width: number;
   height: number;
 } {
   const size = DEFAULT_SIZE[type];
-  const lineY = Math.round((Math.max(0, line) / LINES_PER_PAGE) * 90 * 10) / 10;
+  const lineY =
+    Math.round((Math.max(0, line) / LINES_PER_PAGE) * 90 * 10) / 10;
   const y = LINE_BOTTOM_ANCHORED.has(type)
     ? Math.max(0, Math.min(100 - size.height, lineY - size.height))
     : Math.min(100 - size.height, lineY);
@@ -109,7 +108,12 @@ function detectField(
   const hasCheckbox = CHECKBOX_MARKERS.some((m) => trimmed.includes(m));
   if (hasCheckbox) {
     const label = normalizeLabel(trimmed);
-    return withGeometry("checkbox", label || "Checkbox", page, lineIndex);
+    return withGeometry(
+      "checkbox",
+      label || "Checkbox",
+      page,
+      lineIndex
+    );
   }
 
   const hasUnderscore = /_{3,}/.test(trimmed);
@@ -121,11 +125,21 @@ function detectField(
     lower.includes("signed by") ||
     (lower.includes("sign") && hasUnderscore)
   ) {
-    return withGeometry("signature", normalizeLabel(trimmed), page, lineIndex);
+    return withGeometry(
+      "signature",
+      normalizeLabel(trimmed),
+      page,
+      lineIndex
+    );
   }
 
   if (lower.includes("initial") || lower.includes("initials")) {
-    return withGeometry("initials", normalizeLabel(trimmed), page, lineIndex);
+    return withGeometry(
+      "initials",
+      normalizeLabel(trimmed),
+      page,
+      lineIndex
+    );
   }
 
   if (
@@ -135,7 +149,12 @@ function detectField(
       lower.includes("yyyy-mm-dd") ||
       lower.includes("dd/mm/yyyy"))
   ) {
-    return withGeometry("date", normalizeLabel(trimmed), page, lineIndex);
+    return withGeometry(
+      "date",
+      normalizeLabel(trimmed),
+      page,
+      lineIndex
+    );
   }
 
   if (
@@ -145,7 +164,12 @@ function detectField(
       (lower.includes("name") && hasUnderscore)) &&
     !lower.includes("signature")
   ) {
-    return withGeometry("name", normalizeLabel(trimmed), page, lineIndex);
+    return withGeometry(
+      "name",
+      normalizeLabel(trimmed),
+      page,
+      lineIndex
+    );
   }
 
   if (hasUnderscore) {

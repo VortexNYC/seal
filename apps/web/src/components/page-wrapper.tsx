@@ -1,6 +1,6 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Sidebar } from "@cloudflare/kumo/components/sidebar";
-import { Text } from "@cloudflare/kumo/components/text";
 import { type Icon } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 
@@ -81,13 +81,9 @@ export function PageWrapper({
               className="shrink-0"
             />
             <div className="min-w-0 flex-1">
-              <Text as="h1" variant="heading" truncate>
-                {title}
-              </Text>
+              <Text as="h1" variant="heading" truncate>{title}</Text>
               {description && (
-                <Text as="p" variant="secondary" size="xs" truncate>
-                  {description}
-                </Text>
+                <Text as="p" variant="secondary" size="xs" truncate>{description}</Text>
               )}
             </div>
           </div>
@@ -140,7 +136,10 @@ export function PageWrapper({
           children
         ) : (
           <div
-            className={cn("mx-auto w-full px-4 sm:px-6", !bleed && "max-w-6xl")}
+            className={cn(
+              "mx-auto w-full px-4 sm:px-6",
+              !bleed && "max-w-6xl"
+            )}
           >
             {children}
             <div className="h-6 sm:h-10" aria-hidden />

@@ -16,12 +16,7 @@ async function makePdf(pages = 3): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   for (let i = 0; i < pages; i++) {
     const page = doc.addPage([612, 792]);
-    page.drawText(`Page ${i + 1}`, {
-      x: 50,
-      y: 700,
-      size: 12,
-      color: rgb(0, 0, 0),
-    });
+    page.drawText(`Page ${i + 1}`, { x: 50, y: 700, size: 12, color: rgb(0, 0, 0) });
   }
   return doc.save();
 }
@@ -59,10 +54,9 @@ describe("pdf-ops", () => {
 
   it("reorders and deletes pages in one pass", async () => {
     const src = await makePdf(4);
-    const { bytes, pageCount, pageMap } = await organizePdfPages(
-      src,
-      [4, 1, 2]
-    );
+    const { bytes, pageCount, pageMap } = await organizePdfPages(src, [
+      4, 1, 2,
+    ]);
     expect(pageCount).toBe(3);
     expect(await getPdfPageCount(bytes)).toBe(3);
     expect(pageMap.get(4)).toBe(1);

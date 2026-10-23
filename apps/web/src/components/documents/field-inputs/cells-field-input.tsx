@@ -1,5 +1,5 @@
-import { Input } from "@cloudflare/kumo";
 import { Text } from "@cloudflare/kumo/components/text";
+import { Input } from "@cloudflare/kumo";
 import { useState } from "react";
 
 interface CellsFieldInputProps {
@@ -61,9 +61,7 @@ export function CellsFieldInput({
         className="tracking-mega font-mono"
       />
       {helpText ? (
-        <Text as="p" variant="secondary" size="xs">
-          {helpText}
-        </Text>
+        <Text as="p" variant="secondary" size="xs">{helpText}</Text>
       ) : null}
     </div>
   );

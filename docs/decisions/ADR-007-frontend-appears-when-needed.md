@@ -35,8 +35,8 @@ triple progress, blank PDF). That is the wrong vision.
    1. **Components** — field types, signing/builder blocks (React + Kumo)
    2. **Typed patterns** — fieldMeta, auth, embed schemas, seal-on-complete
    3. **Pages / workflows** — investigate each surface; keep / adapt / skip
-      Checklist: `docs/oss-esign-component-lineup.md`. Compare notes:
-      `docs/oss-esign-ui-compare.md`.
+   Checklist: `docs/oss-esign-component-lineup.md`. Compare notes:
+   `docs/oss-esign-ui-compare.md`.
 3. **Signer end-state (after lineup + page decisions):** title · PDF+fields ·
    one progress · one CTA · Decline · consent once (**SEA-78**). PDF must paint
    first (**SEA-74**).
@@ -47,7 +47,7 @@ triple progress, blank PDF). That is the wrong vision.
 ## Consequences
 
 - Feature requests that add signer chrome answer: “does an agent need this, or
-  does a human need it _in the moment of signing_?” If neither — refuse.
+  does a human need it *in the moment of signing*?” If neither — refuse.
 - CompAI / enterprise trust can exist without shipping DocuSign UX.
 - Sender “Activity” lives on oversight routes, never on the guest signer.
 

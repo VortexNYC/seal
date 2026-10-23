@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
+import { DEFAULT_FIELD_SIZE_PERCENT } from "./field-types.js";
 import {
   confidenceForCandidateType,
   geometryFromLine,
   mapCandidateTypeToFieldType,
   validateFieldGeometry,
 } from "./field-geometry.js";
-import { DEFAULT_FIELD_SIZE_PERCENT } from "./field-types.js";
 
 describe("field-geometry", () => {
   it("sizes an email field for a full address on a letter page", () => {

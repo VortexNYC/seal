@@ -137,11 +137,7 @@ export function FileUpload({
       >
         <input {...getInputProps()} />
       </DropSurface>
-      {error ? (
-        <Text as="p" variant="error" size="xs">
-          {error}
-        </Text>
-      ) : null}
+      {error ? <Text as="p" variant="error" size="xs">{error}</Text> : null}
       {showFileList && items.length > 0 ? (
         <ul className="space-y-1">
           {items.map((item) => (

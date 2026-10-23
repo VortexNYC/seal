@@ -1,13 +1,7 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Collapsible } from "@cloudflare/kumo/components/collapsible";
-import { Text } from "@cloudflare/kumo/components/text";
-import {
-  CaretDown as ChevronDownIcon,
-  CheckCircle as CheckCircleIcon,
-  Clock as ClockIcon,
-  Pen as PenLineIcon,
-  XCircle as XCircleIcon,
-} from "@phosphor-icons/react";
+import { CaretDown as ChevronDownIcon, CheckCircle as CheckCircleIcon, Clock as ClockIcon, Pen as PenLineIcon, XCircle as XCircleIcon } from "@phosphor-icons/react";
 import type { JSX } from "react";
 
 import { cn } from "@/lib/utils";
@@ -193,10 +187,8 @@ export function InAppSigningSection({
               </>
             ) : (
               <>
-                <Text as="p" variant="secondary" size="sm">
-                  Your signing link is not available yet. Check your email for
-                  the invitation, or ask the sender to resend it.
-                </Text>
+                <Text as="p" variant="secondary" size="sm">Your signing link is not available yet. Check your email for
+                  the invitation, or ask the sender to resend it.</Text>
                 <Button
                   disabled
                   className="w-full"
@@ -221,14 +213,7 @@ export function InAppSigningSection({
                 ? "You have approved this document"
                 : "You have signed this document"}
             </div>
-            <Text
-              as="p"
-              variant="secondary"
-              size="xs"
-              DANGEROUS_className="mt-1"
-            >
-              A copy has been sent to your email
-            </Text>
+            <Text as="p" variant="secondary" size="xs" DANGEROUS_className="mt-1">A copy has been sent to your email</Text>
           </div>
         )}
 

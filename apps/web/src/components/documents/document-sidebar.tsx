@@ -4,28 +4,15 @@ import { Collapsible } from "@cloudflare/kumo/components/collapsible";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Select } from "@cloudflare/kumo/components/select";
 import { Text } from "@cloudflare/kumo/components/text";
-import {
-  CaretDown as ChevronDownIcon,
-  Check as CheckIcon,
-  Eye as EyeIcon,
-  Gear as SettingsIcon,
-  PaperPlaneTilt as SendIcon,
-  Plus as PlusIcon,
-  Pulse as ActivityIcon,
-  Signature as FileSignatureIcon,
-  User as UserIcon,
-  UserPlus as UserPlusIcon,
-  Users as UsersIcon,
-  X as XIcon,
-} from "@phosphor-icons/react";
+import { CaretDown as ChevronDownIcon, Check as CheckIcon, Eye as EyeIcon, Gear as SettingsIcon, PaperPlaneTilt as SendIcon, Plus as PlusIcon, Pulse as ActivityIcon, Signature as FileSignatureIcon, User as UserIcon, UserPlus as UserPlusIcon, Users as UsersIcon, X as XIcon } from "@phosphor-icons/react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import type { ActivityEvent, ActivityEventType } from "@/lib/document-activity";
+import { envelopeWaitingDetail } from "@/lib/envelope-waiting";
 import {
   recipientFacingStatus,
   recipientMarkClass,
 } from "@/lib/document-status";
-import { envelopeWaitingDetail } from "@/lib/envelope-waiting";
 import {
   formatDate,
   formatFileSize,
@@ -40,12 +27,12 @@ import {
   type DocumentNextActionModel,
 } from "./document-next-action";
 import { DocumentProgressRing } from "./document-progress-ring";
-import { placementFieldChooser } from "./document-rail";
 import {
   DocumentSendSteps,
   resolveSendStep,
   type SendStepId,
 } from "./document-send-steps";
+import { placementFieldChooser } from "./document-rail";
 import { FieldList } from "./field-list";
 import { InAppSigningSection } from "./in-app-signing-section";
 import type { DocumentWorkflowStatus } from "./workflow-status-badge";
@@ -225,31 +212,31 @@ function RecipientRow({
       </div>
       <span
         className={cn(
-          "rounded-full px-2.5 py-1 font-sans text-xs font-semibold whitespace-nowrap sm:px-2 sm:py-0.5",
+          "text-xs rounded-full px-2.5 py-1 font-sans font-semibold whitespace-nowrap sm:px-2 sm:py-0.5",
           statusColorClass
         )}
       >
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
       <span title="Options for this recipient" className="inline-flex">
-        <Button
-          variant="ghost"
-          shape="square"
-          size="sm"
-          aria-label="Recipient options"
-          icon={SettingsIcon}
-          onClick={() =>
-            onRecipientOptions({
-              ...recipient,
-              status: storedStatus,
-              signingToken:
-                "signingToken" in recipient &&
-                typeof recipient.signingToken === "string"
-                  ? recipient.signingToken
-                  : undefined,
-            })
-          }
-        />
+      <Button
+        variant="ghost"
+        shape="square"
+        size="sm"
+        aria-label="Recipient options"
+        icon={SettingsIcon}
+        onClick={() =>
+          onRecipientOptions({
+            ...recipient,
+            status: storedStatus,
+            signingToken:
+              "signingToken" in recipient &&
+              typeof recipient.signingToken === "string"
+                ? recipient.signingToken
+                : undefined,
+          })
+        }
+      />
       </span>
     </div>
   );
@@ -279,77 +266,70 @@ function RecipientsSection({
   return (
     <LayerCard>
       <Collapsible.Root open={open} onOpenChange={onOpenChange}>
-        <Collapsible.Trigger
-          title="Show or hide recipients"
-          className="flex w-full items-center justify-between gap-2 p-4 text-left"
-        >
-          <div className="flex items-center gap-3">
-            <span className="font-medium">Recipients</span>
-            {recipients.length > 0 && (
-              <Badge variant="secondary">{recipients.length}</Badge>
-            )}
+      <Collapsible.Trigger title="Show or hide recipients" className="flex w-full items-center justify-between gap-2 p-4 text-left">
+        <div className="flex items-center gap-3">
+          <span className="font-medium">
+            Recipients
+          </span>
+          {recipients.length > 0 && (
+            <Badge variant="secondary">{recipients.length}</Badge>
+          )}
+        </div>
+        <ChevronDownIcon
+          className={cn(
+            "text-kumo-secondary h-4 w-4 transition-transform",
+            open && "rotate-180"
+          )}
+        />
+      </Collapsible.Trigger>
+      <Collapsible.Panel className="px-4 pb-4">
+        {recipients.length > 0 ? (
+          <div className="mt-4 flex flex-col gap-2.5 sm:gap-2">
+            {recipients.map((recipient) => (
+              <RecipientRow
+                key={recipient._id}
+                recipient={recipient}
+                onRecipientOptions={onRecipientOptions}
+                workflowStatus={workflowStatus}
+              />
+            ))}
           </div>
-          <ChevronDownIcon
-            className={cn(
-              "text-kumo-secondary h-4 w-4 transition-transform",
-              open && "rotate-180"
-            )}
+        ) : !canAddRecipient ? (
+          <EmptySection
+            icon={<UsersIcon className="size-6" />}
+            title="No recipients"
+            description="Recipients who need to sign or view this document show up here."
           />
-        </Collapsible.Trigger>
-        <Collapsible.Panel className="px-4 pb-4">
-          {recipients.length > 0 ? (
-            <div className="mt-4 flex flex-col gap-2.5 sm:gap-2">
-              {recipients.map((recipient) => (
-                <RecipientRow
-                  key={recipient._id}
-                  recipient={recipient}
-                  onRecipientOptions={onRecipientOptions}
-                  workflowStatus={workflowStatus}
-                />
-              ))}
-            </div>
-          ) : !canAddRecipient ? (
-            <EmptySection
-              icon={<UsersIcon className="size-6" />}
-              title="No recipients"
-              description="Recipients who need to sign or view this document show up here."
-            />
-          ) : null}
-          {canAddRecipient ? (
-            <div className="mt-3 flex flex-col gap-2">
-              {!isUserAlreadyRecipient ? (
-                <span
-                  title="Add your account as a signer"
-                  className="inline-flex w-full"
-                >
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={onAddMyself}
-                    icon={UserIcon}
-                  >
-                    Add myself as signer
-                  </Button>
-                </span>
-              ) : null}
-              <span
-                title="Add someone who needs to sign or view"
-                className="inline-flex w-full"
-              >
+        ) : null}
+        {canAddRecipient ? (
+          <div className="mt-3 flex flex-col gap-2">
+            {!isUserAlreadyRecipient ? (
+              <span title="Add your account as a signer" className="inline-flex w-full">
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   size="sm"
                   className="w-full"
-                  icon={PlusIcon}
-                  onClick={onAddRecipient}
+                  onClick={onAddMyself}
+                  icon={UserIcon}
                 >
-                  Add Recipient
+                  Add myself as signer
                 </Button>
               </span>
-            </div>
-          ) : null}
-        </Collapsible.Panel>
+            ) : null}
+            <span title="Add someone who needs to sign or view" className="inline-flex w-full">
+              <Button
+                variant="secondary"
+                size="sm"
+                className="w-full"
+                icon={PlusIcon}
+                onClick={onAddRecipient}
+              >
+                Add Recipient
+              </Button>
+            </span>
+          </div>
+        ) : null}
+      </Collapsible.Panel>
       </Collapsible.Root>
     </LayerCard>
   );
@@ -391,79 +371,72 @@ function SignatureFieldsSection({
   return (
     <LayerCard>
       <Collapsible.Root open={open} onOpenChange={onOpenChange}>
-        <Collapsible.Trigger
-          title="Show or hide placed fields"
-          className="flex w-full items-center justify-between gap-2 p-4 text-left"
-        >
-          <div className="flex items-center gap-3">
-            <span className="font-medium">Fields</span>
-            {signatureFields.length > 0 && (
-              <Badge variant="secondary">{signatureFields.length}</Badge>
-            )}
-          </div>
-          <ChevronDownIcon
-            className={cn(
-              "text-kumo-secondary h-4 w-4 transition-transform duration-200",
-              open && "rotate-180"
-            )}
-          />
-        </Collapsible.Trigger>
-        <Collapsible.Panel className="px-4 pb-4">
-          {canEdit &&
-          placementFieldChooser(placementSigners.length) === "named" ? (
-            <Text
-              as="p"
-              variant="secondary"
-              size="xs"
-              DANGEROUS_className="mt-3"
-            >
-              Placing fields for{" "}
-              {placementSigners[0]?.name || placementSigners[0]?.email}
-            </Text>
-          ) : null}
-          {canEdit &&
-          placementFieldChooser(placementSigners.length) === "select" &&
-          onPlacementSignerChange ? (
-            <div className="mt-3">
-              <Select
-                value={placementSignerId ?? placementSigners[0]?._id ?? ""}
-                onValueChange={(value) => {
-                  if (value) onPlacementSignerChange(value);
-                }}
-                label="Placing fields for"
-                renderValue={(value) => {
-                  const signer = placementSigners.find(
-                    (recipient) => recipient._id === value
-                  );
-                  return signer?.name || signer?.email || "Choose a signer";
-                }}
-              >
-                {placementSigners.map((signer) => (
-                  <Select.Option key={signer._id} value={signer._id}>
-                    {signer.name || signer.email}
-                  </Select.Option>
-                ))}
-              </Select>
-            </div>
-          ) : null}
-          {signatureFields.length > 0 ? (
-            <FieldList
-              fields={signatureFields}
-              recipients={recipients}
-              selectedFieldId={canEdit ? selectedFieldId : null}
-              canEdit={canEdit}
-              onFieldSelect={canEdit ? onFieldSelect : undefined}
-              onFieldDelete={canEdit ? onFieldDelete : undefined}
-              onFieldProperties={canEdit ? onFieldProperties : undefined}
-            />
-          ) : (
-            <EmptySection
-              icon={<FileSignatureIcon className="size-6" />}
-              title="No fields yet"
-              description="Choose a field on the toolbar, then click the page."
-            />
+      <Collapsible.Trigger title="Show or hide placed fields" className="flex w-full items-center justify-between gap-2 p-4 text-left">
+        <div className="flex items-center gap-3">
+          <span className="font-medium">
+            Fields
+          </span>
+          {signatureFields.length > 0 && (
+            <Badge variant="secondary">{signatureFields.length}</Badge>
           )}
-        </Collapsible.Panel>
+        </div>
+        <ChevronDownIcon
+          className={cn(
+            "text-kumo-secondary h-4 w-4 transition-transform duration-200",
+            open && "rotate-180"
+          )}
+        />
+      </Collapsible.Trigger>
+      <Collapsible.Panel className="px-4 pb-4">
+        {canEdit && placementFieldChooser(placementSigners.length) === "named" ? (
+          <Text as="p" variant="secondary" size="xs" DANGEROUS_className="mt-3">
+            Placing fields for{" "}
+            {placementSigners[0]?.name || placementSigners[0]?.email}
+          </Text>
+        ) : null}
+        {canEdit &&
+        placementFieldChooser(placementSigners.length) === "select" &&
+        onPlacementSignerChange ? (
+          <div className="mt-3">
+            <Select
+              value={placementSignerId ?? placementSigners[0]?._id ?? ""}
+              onValueChange={(value) => {
+                if (value) onPlacementSignerChange(value);
+              }}
+              label="Placing fields for"
+              renderValue={(value) => {
+                const signer = placementSigners.find(
+                  (recipient) => recipient._id === value
+                );
+                return signer?.name || signer?.email || "Choose a signer";
+              }}
+            >
+              {placementSigners.map((signer) => (
+                <Select.Option key={signer._id} value={signer._id}>
+                  {signer.name || signer.email}
+                </Select.Option>
+              ))}
+            </Select>
+          </div>
+        ) : null}
+        {signatureFields.length > 0 ? (
+          <FieldList
+            fields={signatureFields}
+            recipients={recipients}
+            selectedFieldId={canEdit ? selectedFieldId : null}
+            canEdit={canEdit}
+            onFieldSelect={canEdit ? onFieldSelect : undefined}
+            onFieldDelete={canEdit ? onFieldDelete : undefined}
+            onFieldProperties={canEdit ? onFieldProperties : undefined}
+          />
+        ) : (
+          <EmptySection
+            icon={<FileSignatureIcon className="size-6" />}
+            title="No fields yet"
+            description="Choose a field on the toolbar, then click the page."
+          />
+        )}
+      </Collapsible.Panel>
       </Collapsible.Root>
     </LayerCard>
   );
@@ -506,49 +479,48 @@ function DocumentDetailsSection({
   return (
     <LayerCard>
       <Collapsible.Root open={open} onOpenChange={onOpenChange}>
-        <Collapsible.Trigger
-          title="Show or hide document details"
-          className="flex w-full items-center justify-between gap-2 p-4 text-left"
-        >
-          <div className="flex items-center gap-3">
-            <span className="font-medium">Details</span>
-          </div>
-          <ChevronDownIcon
-            className={cn(
-              "text-kumo-secondary h-4 w-4 transition-transform",
-              open && "rotate-180"
-            )}
-          />
-        </Collapsible.Trigger>
-        <Collapsible.Panel className="px-4 pb-4">
-          <div className="mt-4 grid grid-cols-2 gap-4 sm:gap-2.5">
-            <DetailMetric label="File Size" value={formatFileSize(fileSize)} />
-            <DetailMetric label="Pages" value={pageCount || numPages || "—"} />
-            <DetailMetric label="Uploaded" value={formatDate(createdAt)} />
-            <DetailMetric label="Fields" value={signatureFields.length} />
-            <DetailMetric label="Document ID" value={documentPublicId} />
-            {sentAt ? (
-              <DetailMetric
-                label="Sent"
-                value={new Intl.DateTimeFormat("en-US", {
-                  month: "2-digit",
-                  day: "2-digit",
-                  year: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                }).format(sentAt)}
-              />
-            ) : null}
-          </div>
-          {description && (
-            <LayerCard className="col-span-2 mt-4 p-3">
-              <Text variant="secondary" size="xs">
-                Description
-              </Text>
-              <Text size="sm">{description}</Text>
-            </LayerCard>
+      <Collapsible.Trigger title="Show or hide document details" className="flex w-full items-center justify-between gap-2 p-4 text-left">
+        <div className="flex items-center gap-3">
+          <span className="font-medium">
+            Details
+          </span>
+        </div>
+        <ChevronDownIcon
+          className={cn(
+            "text-kumo-secondary h-4 w-4 transition-transform",
+            open && "rotate-180"
           )}
-        </Collapsible.Panel>
+        />
+      </Collapsible.Trigger>
+      <Collapsible.Panel className="px-4 pb-4">
+        <div className="mt-4 grid grid-cols-2 gap-4 sm:gap-2.5">
+          <DetailMetric label="File Size" value={formatFileSize(fileSize)} />
+          <DetailMetric label="Pages" value={pageCount || numPages || "—"} />
+          <DetailMetric label="Uploaded" value={formatDate(createdAt)} />
+          <DetailMetric label="Fields" value={signatureFields.length} />
+          <DetailMetric label="Document ID" value={documentPublicId} />
+          {sentAt ? (
+            <DetailMetric
+              label="Sent"
+              value={new Intl.DateTimeFormat("en-US", {
+                month: "2-digit",
+                day: "2-digit",
+                year: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+              }).format(sentAt)}
+            />
+          ) : null}
+        </div>
+        {description && (
+          <LayerCard className="col-span-2 mt-4 p-3">
+            <Text variant="secondary" size="xs">
+              Description
+            </Text>
+            <Text size="sm">{description}</Text>
+          </LayerCard>
+        )}
+      </Collapsible.Panel>
       </Collapsible.Root>
     </LayerCard>
   );
@@ -573,10 +545,10 @@ function ActivityEventRow({
         {getActivityIcon(event.type)}
       </div>
       <div className="min-w-0 flex-1 pt-1">
-        <div className="text-kumo-default font-sans text-sm leading-snug sm:text-xs">
+        <div className="text-kumo-default text-sm font-sans leading-snug sm:text-xs">
           {event.description}
         </div>
-        <div className="text-kumo-secondary mt-1 font-sans text-xs">
+        <div className="text-kumo-secondary text-xs mt-1 font-sans">
           {formatRelativeTime(event.timestamp)}
         </div>
       </div>
@@ -596,42 +568,41 @@ function ActivitySection({
   return (
     <LayerCard>
       <Collapsible.Root open={open} onOpenChange={onOpenChange}>
-        <Collapsible.Trigger
-          title="Show or hide activity"
-          className="flex w-full items-center justify-between gap-2 p-4 text-left"
-        >
-          <div className="flex items-center gap-3">
-            <span className="font-medium">Activity</span>
-            {activityEvents.length > 0 && (
-              <Badge variant="secondary">{activityEvents.length}</Badge>
-            )}
-          </div>
-          <ChevronDownIcon
-            className={cn(
-              "text-kumo-secondary h-4 w-4 transition-transform",
-              open && "rotate-180"
-            )}
-          />
-        </Collapsible.Trigger>
-        <Collapsible.Panel className="px-4 pb-4">
-          {activityEvents.length > 0 ? (
-            <div className="before:bg-border before:content-empty relative mt-4 before:absolute before:top-2 before:bottom-2 before:left-3.75 before:w-0.5 before:rounded-sm sm:before:left-3.25">
-              {activityEvents.slice(0, 10).map((event, index) => (
-                <ActivityEventRow
-                  key={`${event.type}-${event.timestamp}`}
-                  event={event}
-                  index={index}
-                />
-              ))}
-            </div>
-          ) : (
-            <EmptySection
-              icon={<ActivityIcon className="size-6" />}
-              title="No activity yet"
-              description="Activity will appear here as recipients interact with this document."
-            />
+      <Collapsible.Trigger title="Show or hide activity" className="flex w-full items-center justify-between gap-2 p-4 text-left">
+        <div className="flex items-center gap-3">
+          <span className="font-medium">
+            Activity
+          </span>
+          {activityEvents.length > 0 && (
+            <Badge variant="secondary">{activityEvents.length}</Badge>
           )}
-        </Collapsible.Panel>
+        </div>
+        <ChevronDownIcon
+          className={cn(
+            "text-kumo-secondary h-4 w-4 transition-transform",
+            open && "rotate-180"
+          )}
+        />
+      </Collapsible.Trigger>
+      <Collapsible.Panel className="px-4 pb-4">
+        {activityEvents.length > 0 ? (
+          <div className="before:bg-border before:content-empty relative mt-4 before:absolute before:top-2 before:bottom-2 before:left-3.75 before:w-0.5 before:rounded-sm sm:before:left-3.25">
+            {activityEvents.slice(0, 10).map((event, index) => (
+              <ActivityEventRow
+                key={`${event.type}-${event.timestamp}`}
+                event={event}
+                index={index}
+              />
+            ))}
+          </div>
+        ) : (
+          <EmptySection
+            icon={<ActivityIcon className="size-6" />}
+            title="No activity yet"
+            description="Activity will appear here as recipients interact with this document."
+          />
+        )}
+      </Collapsible.Panel>
       </Collapsible.Root>
     </LayerCard>
   );
@@ -761,9 +732,7 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
       ? envelopeWaitingDetail(props.signingMode, waitingParties)
       : "Waiting on the next step in this envelope.";
 
-  const requiredMine = props.currentUserFields.filter(
-    (field) => field.isRequired
-  );
+  const requiredMine = props.currentUserFields.filter((field) => field.isRequired);
   const signatureSaved =
     requiredMine.length > 0 && requiredMine.every((field) => field.isFilled);
 
@@ -828,88 +797,86 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
           <DocumentSendSteps current={sendStep} onSelect={selectStep} />
         </div>
       ) : null}
-      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto sm:gap-4 [&>*]:shrink-0">
-        {props.railOpen ? (
-          props.railPanel
-        ) : (
-          <>
-            {/* SendSteps already covers add_people / place_fields — keep NextAction for send/block/sign/wait. */}
-            {nextAction.kind !== "add_people" &&
-            nextAction.kind !== "place_fields" ? (
-              <DocumentNextAction
-                workflowStatus={normalizedWorkflowStatus}
-                createdAt={props.createdAt}
-                model={nextAction}
-                onVoid={
-                  props.onVoidDocument &&
-                  (normalizedWorkflowStatus === "sent" ||
-                    normalizedWorkflowStatus === "in_progress")
-                    ? props.onVoidDocument
-                    : undefined
-                }
-              />
-            ) : null}
-            {visibleProgress && (
-              <DocumentProgressRing progress={visibleProgress} />
-            )}
-            {signingRecipient && (
-              <InAppSigningSection
-                documentId={parseId("documents", props.documentId)}
-                recipient={signingRecipient}
-                fields={props.currentUserFields}
-                isOpen={props.openSections.has("your-signature")}
-                onOpenChange={() => props.toggleSection("your-signature")}
-                onFieldsRefetch={props.onCurrentUserFieldsRefetch}
-              />
-            )}
-            <RecipientsSection
-              recipients={props.recipients}
-              canAddRecipient={props.canAddRecipient}
-              isUserAlreadyRecipient={props.isUserAlreadyRecipient}
-              open={props.openSections.has("recipients")}
-              onOpenChange={() => props.toggleSection("recipients")}
-              onAddMyself={props.onAddMyself}
-              onAddRecipient={props.onAddRecipient}
-              onRecipientOptions={props.onRecipientOptions}
-              workflowStatus={normalizedWorkflowStatus}
-            />
-            <SignatureFieldsSection
-              recipients={props.recipients}
-              signatureFields={props.signatureFields}
-              canEdit={props.canEdit}
-              selectedFieldId={props.selectedFieldId}
-              open={props.openSections.has("fields")}
-              onOpenChange={() => props.toggleSection("fields")}
-              onFieldSelect={props.onFieldSelect}
-              onFieldDelete={props.onFieldDelete}
-              onFieldProperties={props.onFieldProperties}
-              placementSigners={placementSigners}
-              placementSignerId={props.placementSignerId}
-              onPlacementSignerChange={props.onPlacementSignerChange}
-            />
-            {isOversight && (
-              <DocumentDetailsSection
-                open={props.openSections.has("details")}
-                onOpenChange={() => props.toggleSection("details")}
-                fileSize={props.fileSize}
-                pageCount={props.pageCount}
-                numPages={props.numPages}
-                createdAt={props.createdAt}
-                sentAt={props.sentAt}
-                documentPublicId={props.documentPublicId}
-                signatureFields={props.signatureFields}
-                description={props.description}
-              />
-            )}
-            {isOversight && (
-              <ActivitySection
-                open={props.openSections.has("activity")}
-                onOpenChange={() => props.toggleSection("activity")}
-                activityEvents={props.activityEvents}
-              />
-            )}
-          </>
-        )}
+      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto [&>*]:shrink-0 sm:gap-4">
+      {props.railOpen ? (
+        props.railPanel
+      ) : (
+      <>
+      {/* SendSteps already covers add_people / place_fields — keep NextAction for send/block/sign/wait. */}
+      {nextAction.kind !== "add_people" &&
+      nextAction.kind !== "place_fields" ? (
+        <DocumentNextAction
+          workflowStatus={normalizedWorkflowStatus}
+          createdAt={props.createdAt}
+          model={nextAction}
+          onVoid={
+            props.onVoidDocument &&
+            (normalizedWorkflowStatus === "sent" ||
+              normalizedWorkflowStatus === "in_progress")
+              ? props.onVoidDocument
+              : undefined
+          }
+        />
+      ) : null}
+      {visibleProgress && <DocumentProgressRing progress={visibleProgress} />}
+      {signingRecipient && (
+        <InAppSigningSection
+          documentId={parseId("documents", props.documentId)}
+          recipient={signingRecipient}
+          fields={props.currentUserFields}
+          isOpen={props.openSections.has("your-signature")}
+          onOpenChange={() => props.toggleSection("your-signature")}
+          onFieldsRefetch={props.onCurrentUserFieldsRefetch}
+        />
+      )}
+      <RecipientsSection
+        recipients={props.recipients}
+        canAddRecipient={props.canAddRecipient}
+        isUserAlreadyRecipient={props.isUserAlreadyRecipient}
+        open={props.openSections.has("recipients")}
+        onOpenChange={() => props.toggleSection("recipients")}
+        onAddMyself={props.onAddMyself}
+        onAddRecipient={props.onAddRecipient}
+        onRecipientOptions={props.onRecipientOptions}
+        workflowStatus={normalizedWorkflowStatus}
+      />
+      <SignatureFieldsSection
+        recipients={props.recipients}
+        signatureFields={props.signatureFields}
+        canEdit={props.canEdit}
+        selectedFieldId={props.selectedFieldId}
+        open={props.openSections.has("fields")}
+        onOpenChange={() => props.toggleSection("fields")}
+        onFieldSelect={props.onFieldSelect}
+        onFieldDelete={props.onFieldDelete}
+        onFieldProperties={props.onFieldProperties}
+        placementSigners={placementSigners}
+        placementSignerId={props.placementSignerId}
+        onPlacementSignerChange={props.onPlacementSignerChange}
+      />
+      {isOversight && (
+        <DocumentDetailsSection
+          open={props.openSections.has("details")}
+          onOpenChange={() => props.toggleSection("details")}
+          fileSize={props.fileSize}
+          pageCount={props.pageCount}
+          numPages={props.numPages}
+          createdAt={props.createdAt}
+          sentAt={props.sentAt}
+          documentPublicId={props.documentPublicId}
+          signatureFields={props.signatureFields}
+          description={props.description}
+        />
+      )}
+      {isOversight && (
+        <ActivitySection
+          open={props.openSections.has("activity")}
+          onOpenChange={() => props.toggleSection("activity")}
+          activityEvents={props.activityEvents}
+        />
+      )}
+      </>
+      )}
       </div>
     </div>
   );

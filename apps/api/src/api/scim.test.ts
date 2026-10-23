@@ -8,7 +8,11 @@ import app from "../index.js";
 import { createAuth } from "../platform/auth.js";
 
 const origin = (
-  (env.ALLOWED_ORIGINS ?? env.BETTER_AUTH_URL ?? "http://localhost:8787")
+  (
+    env.ALLOWED_ORIGINS ??
+    env.BETTER_AUTH_URL ??
+    "http://localhost:8787"
+  )
     .toString()
     .split(",")[0] ?? "http://localhost:8787"
 ).trim();
@@ -35,9 +39,7 @@ async function getSessionCookie(): Promise<string> {
   return cookie;
 }
 
-async function createOrg(
-  cookie: string
-): Promise<{ id: string; slug: string }> {
+async function createOrg(cookie: string): Promise<{ id: string; slug: string }> {
   const slug = `scim-${crypto.randomUUID().slice(0, 8)}`;
   const res = await app.fetch(
     new Request(new URL("/api/auth/organization/create", origin), {

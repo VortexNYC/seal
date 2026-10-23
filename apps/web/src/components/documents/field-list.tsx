@@ -139,7 +139,9 @@ function FieldRow({
               <Text as="span" size="sm" variant="body">
                 {field.label || FIELD_LABELS[field.fieldType]}
               </Text>
-              <Badge variant="outline">Page {field.page}</Badge>
+              <Badge variant="outline">
+                Page {field.page}
+              </Badge>
             </div>
             {recipient ? (
               <div className="mt-1 space-y-0.5 text-xs">
@@ -194,33 +196,33 @@ function FieldRow({
         {canEdit && (
           <div className="flex shrink-0 items-center gap-1">
             <span title="Edit this field" className="inline-flex">
-              <Button
-                variant="ghost"
-                size="sm"
-                shape="square"
-                aria-label="Open field properties"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onFieldProperties?.(field._id);
-                }}
-                icon={Gear}
-              />
+            <Button
+              variant="ghost"
+              size="sm"
+              shape="square"
+              aria-label="Open field properties"
+              onClick={(e) => {
+                e.stopPropagation();
+                onFieldProperties?.(field._id);
+              }}
+              icon={Gear}
+            />
             </span>
             <span title="Delete this field" className="inline-flex">
-              <Button
-                variant="destructive"
-                size="sm"
-                shape="square"
-                aria-label="Delete this field"
-                icon={Trash}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onFieldSelect?.(field._id);
-                  setTimeout(() => {
-                    onFieldDelete?.(field._id);
-                  }, 0);
-                }}
-              />
+            <Button
+              variant="destructive"
+              size="sm"
+              shape="square"
+              aria-label="Delete this field"
+              icon={Trash}
+              onClick={(e) => {
+                e.stopPropagation();
+                onFieldSelect?.(field._id);
+                setTimeout(() => {
+                  onFieldDelete?.(field._id);
+                }, 0);
+              }}
+            />
             </span>
           </div>
         )}
