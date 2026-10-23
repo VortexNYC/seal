@@ -1,7 +1,7 @@
-import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Select } from "@cloudflare/kumo/components/select";
+import { Text } from "@cloudflare/kumo/components/text";
 import { Plus, Trash } from "@phosphor-icons/react";
 import type { JSX } from "react";
 import { useMemo } from "react";
@@ -121,14 +121,23 @@ export function DocumentSplitsPanel({
             ) : null}
           </div>
         </div>
-        <Text as="p" variant="secondary" size="xs">Assign pages to named groups — each group becomes its own draft
-          document.</Text>
+        <Text as="p" variant="secondary" size="xs">
+          Assign pages to named groups — each group becomes its own draft
+          document.
+        </Text>
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto p-3">
         {unassigned.length > 0 ? (
           <div className="border-kumo-line rounded-lg border border-dashed p-2">
-            <Text as="p" variant="secondary" size="xs" DANGEROUS_className="mb-2">Unassigned</Text>
+            <Text
+              as="p"
+              variant="secondary"
+              size="xs"
+              DANGEROUS_className="mb-2"
+            >
+              Unassigned
+            </Text>
             <div className="flex flex-wrap gap-1">
               {unassigned.map((page) => (
                 <PageChip
@@ -165,9 +174,16 @@ export function DocumentSplitsPanel({
                 <Trash className="size-3.5" />
               </Button>
             </div>
-            <Text as="p" variant="secondary" size="xs" DANGEROUS_className="tabular-nums">{group.pages.length === 0
+            <Text
+              as="p"
+              variant="secondary"
+              size="xs"
+              DANGEROUS_className="tabular-nums"
+            >
+              {group.pages.length === 0
                 ? "No pages"
-                : `Pages ${group.pages[0]}–${group.pages[group.pages.length - 1]} · ${group.pages.length}`}</Text>
+                : `Pages ${group.pages[0]}–${group.pages[group.pages.length - 1]} · ${group.pages.length}`}
+            </Text>
             <div className="flex flex-wrap gap-1">
               {group.pages.map((page) => (
                 <Button

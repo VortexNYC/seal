@@ -10,8 +10,13 @@
 import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Input } from "@cloudflare/kumo/components/input";
+import {
+  CaretRight as ChevronRight,
+  Folder as FolderIcon,
+  FolderPlus,
+  House as Home,
+} from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CaretRight as ChevronRight, Folder as FolderIcon, FolderPlus, House as Home } from "@phosphor-icons/react";
 import { useCallback, useMemo, useState } from "react";
 
 import { createFolder, getAllFolders, type ApiFolder } from "@/lib/api-client";
@@ -259,7 +264,9 @@ export function MoveToFolderDialog({
               <Input
                 label="Folder name"
                 value={folderName}
-                onChange={(event) => setFolderName(event.target.value.slice(0, 100))}
+                onChange={(event) =>
+                  setFolderName(event.target.value.slice(0, 100))
+                }
                 placeholder="e.g. Contracts"
                 maxLength={100}
                 onKeyDown={(event) => {

@@ -4,9 +4,9 @@ import { and, desc, eq, inArray, like, or } from "drizzle-orm";
 import { createD1 } from "../global/db.js";
 import { contacts, documents, recipients } from "../global/schema.js";
 import { syncContactsFromOrganizationRecipients } from "../platform/ensure-contacts.js";
-import { presentedWorkflowStatus } from "../platform/workflow-status.js";
 import { organizationMiddleware } from "../platform/organization-middleware.js";
 import type { Variables } from "../platform/types.js";
+import { presentedWorkflowStatus } from "../platform/workflow-status.js";
 
 const ContactSchema = z
   .object({

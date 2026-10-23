@@ -46,7 +46,11 @@ export function readOrgPrivacyNoticeText(
   }
   try {
     const parsed: unknown = JSON.parse(organizationMetadata);
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      Array.isArray(parsed)
+    ) {
       return null;
     }
     const record = parsed as Record<string, unknown>;

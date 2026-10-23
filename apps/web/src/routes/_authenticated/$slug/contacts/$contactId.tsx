@@ -115,7 +115,9 @@ function RelatedDocumentsContent({
 
   if ((documents ?? []).length === 0) {
     return (
-      <Text as="p" variant="secondary" size="sm" DANGEROUS_className="py-4">No documents found</Text>
+      <Text as="p" variant="secondary" size="sm" DANGEROUS_className="py-4">
+        No documents found
+      </Text>
     );
   }
 
@@ -135,7 +137,9 @@ function RelatedDocumentsContent({
           }
         >
           <div className="min-w-0 flex-1">
-            <Text as="p" size="sm" bold truncate>{doc.name}</Text>
+            <Text as="p" size="sm" bold truncate>
+              {doc.name}
+            </Text>
             <span className="capitalize">
               <Text as="p" variant="secondary" size="xs">
                 {doc.role}
@@ -214,7 +218,8 @@ function ContactDetailContent() {
                   variant="outline"
                   size="sm"
                   onClick={() => setEditOpen(true)}
-                 icon={PencilSimple}>
+                  icon={PencilSimple}
+                >
                   Edit
                 </Button>
               </LayerCard.Secondary>
@@ -243,7 +248,13 @@ function ContactDetailContent() {
                         <Text as="p" variant="secondary" size="xs">
                           Notes
                         </Text>
-                        <Text as="p" size="sm" DANGEROUS_className="whitespace-pre-wrap">{contact.notes}</Text>
+                        <Text
+                          as="p"
+                          size="sm"
+                          DANGEROUS_className="whitespace-pre-wrap"
+                        >
+                          {contact.notes}
+                        </Text>
                       </div>
                     </div>
                   </div>
@@ -312,7 +323,8 @@ function ContactDetailContent() {
                     variant="destructive"
                     size="sm"
                     onClick={() => setDeleteOpen(true)}
-                   icon={Trash}>
+                    icon={Trash}
+                  >
                     Delete Contact
                   </Button>
                 </div>
@@ -324,7 +336,11 @@ function ContactDetailContent() {
           <div className="lg:col-span-1">
             <LayerCard>
               <LayerCard.Secondary>
-                <Text as="h3" size="sm" DANGEROUS_className="flex items-center gap-2">
+                <Text
+                  as="h3"
+                  size="sm"
+                  DANGEROUS_className="flex items-center gap-2"
+                >
                   <FileText className="h-4 w-4" />
                   Related Documents
                 </Text>

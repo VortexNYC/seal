@@ -16,7 +16,15 @@ const lines = [
   "Signature: ______________________    Date: __________",
   "Print Name: ______________________",
 ];
-lines.forEach((t, i) => page.drawText(t, { x: 60, y: 700 - i * 22, size: 11, font, color: rgb(0,0,0) }));
+lines.forEach((t, i) =>
+  page.drawText(t, {
+    x: 60,
+    y: 700 - i * 22,
+    size: 11,
+    font,
+    color: rgb(0, 0, 0),
+  })
+);
 const bytes = await doc.save();
-await import("fs").then(fs => fs.writeFileSync("/tmp/audit-nda.pdf", bytes));
+await import("fs").then((fs) => fs.writeFileSync("/tmp/audit-nda.pdf", bytes));
 console.log("written", bytes.length);

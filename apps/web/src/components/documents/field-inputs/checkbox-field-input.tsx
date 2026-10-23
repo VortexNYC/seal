@@ -1,5 +1,5 @@
-import { Text } from "@cloudflare/kumo/components/text";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
+import { Text } from "@cloudflare/kumo/components/text";
 import { useCallback, useState } from "react";
 
 interface CheckboxFieldInputProps {
@@ -97,8 +97,10 @@ export function CheckboxFieldInput({
   if (isMultiOption) {
     return (
       <div className="space-y-2">
-        <Text as="p" size="sm" bold>{label}
-          {requiredMarker}</Text>
+        <Text as="p" size="sm" bold>
+          {label}
+          {requiredMarker}
+        </Text>
         <div className="space-y-2">
           {options.map((option) => (
             <Checkbox
@@ -112,9 +114,15 @@ export function CheckboxFieldInput({
           ))}
         </div>
         {helpText && !error && (
-          <Text as="p" variant="secondary" size="xs">{helpText}</Text>
+          <Text as="p" variant="secondary" size="xs">
+            {helpText}
+          </Text>
         )}
-        {error && <Text as="p" variant="error" size="xs">{error}</Text>}
+        {error && (
+          <Text as="p" variant="error" size="xs">
+            {error}
+          </Text>
+        )}
       </div>
     );
   }
@@ -132,9 +140,15 @@ export function CheckboxFieldInput({
         onCheckedChange={handleSingleChangeWithError}
       />
       {helpText && !error && (
-        <Text as="p" variant="secondary" size="xs" DANGEROUS_className="ml-6">{helpText}</Text>
+        <Text as="p" variant="secondary" size="xs" DANGEROUS_className="ml-6">
+          {helpText}
+        </Text>
       )}
-      {error && <Text as="p" variant="error" size="xs" DANGEROUS_className="ml-6">{error}</Text>}
+      {error && (
+        <Text as="p" variant="error" size="xs" DANGEROUS_className="ml-6">
+          {error}
+        </Text>
+      )}
     </div>
   );
 }

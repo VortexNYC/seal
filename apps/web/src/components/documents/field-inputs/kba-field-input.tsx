@@ -1,7 +1,7 @@
-import { Text } from "@cloudflare/kumo/components/text";
 import { Input } from "@cloudflare/kumo";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Label } from "@cloudflare/kumo/components/label";
+import { Text } from "@cloudflare/kumo/components/text";
 import { useState } from "react";
 
 interface KbaFieldInputProps {
@@ -48,9 +48,13 @@ export function KbaFieldInput({
         {label}
         {isRequired && <span className="text-kumo-danger ml-1">*</span>}
       </Label>
-      <Text as="p" variant="secondary" size="sm">{helpText ?? "Answer the knowledge-based authentication question."}</Text>
+      <Text as="p" variant="secondary" size="sm">
+        {helpText ?? "Answer the knowledge-based authentication question."}
+      </Text>
       {submitted ? (
-        <Text as="p" variant="success" size="sm">Answers recorded</Text>
+        <Text as="p" variant="success" size="sm">
+          Answers recorded
+        </Text>
       ) : (
         <>
           <Input

@@ -2,8 +2,8 @@
  * Dashboard Needs Attention — blocker surface with framed next actions.
  */
 
-import { Text } from "@cloudflare/kumo/components/text";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Text } from "@cloudflare/kumo/components/text";
 import {
   ArrowRight,
   Clock,
@@ -43,12 +43,16 @@ export function NeedsAttention({
             className="text-kumo-warning size-4 shrink-0"
             weight="fill"
           />
-          <Text as="h3" variant="heading">Needs you</Text>
+          <Text as="h3" variant="heading">
+            Needs you
+          </Text>
           <span className="bg-kumo-warning/10 text-kumo-warning rounded-md px-1.5 py-0.5 text-xs font-medium tabular-nums">
             {attention.totalIssues}
           </span>
         </div>
-        <Text as="p" variant="secondary" size="xs" DANGEROUS_className="mt-1">Open the document and take the action — resend, fix email, or nudge.</Text>
+        <Text as="p" variant="secondary" size="xs" DANGEROUS_className="mt-1">
+          Open the document and take the action — resend, fix email, or nudge.
+        </Text>
       </LayerCard.Secondary>
       <LayerCard.Primary className="mx-1.5 mb-1.5 flex flex-col gap-0.5 px-3 pb-3">
         {attention.staleRecipients.map((item) => (
@@ -144,8 +148,12 @@ function AttentionRow({
     >
       {icon}
       <div className="min-w-0 flex-1">
-        <Text as="p" size="sm" truncate>{title}</Text>
-        <Text as="p" variant="secondary" size="xs">{detail}</Text>
+        <Text as="p" size="sm" truncate>
+          {title}
+        </Text>
+        <Text as="p" variant="secondary" size="xs">
+          {detail}
+        </Text>
       </div>
       <span className="text-kumo-default group-hover:text-kumo-link flex shrink-0 items-center gap-0.5 text-xs font-semibold">
         {action}

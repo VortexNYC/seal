@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   connectIdempotencyKey,
+  mintSignToPayCheckoutSession,
   presentVortexConnect,
   provisionConnectedAccount,
   readVortexConnect,
@@ -183,5 +184,72 @@ describe("provisionConnectedAccount", () => {
     );
     expect(record.merchantAccountId).toBe("ma_sub");
     expect(record.onboardingSessionId).toBeNull();
+  });
+
+  it("mints a sign-to-pay checkout session on Vortex (SEA-123 / SEA-124)", async () => {
+    let seenUrl = "";
+    let seenBody: Record<string, unknown> = {};
+    const fetchImpl: typeof fetch = async (input, init) => {
+      seenUrl = String(input);
+      seenBody = JSON.parse(String(init?.body ?? "{}")) as Record<
+        string,
+        unknown
+      >;
+      return new Response(
+        JSON.stringify({
+          data: {
+            checkoutSession: {
+              checkoutSessionId: "plink_123",
+              paymentRequestId: "preq_123",
+              checkoutUrl: "https://pay.vortex.nyc/pay/ptok_123",
+              invoiceNumbers: ["inv_123"],
+            },
+          },
+        }),
+        { status: 201 }
+      );
+    };
+    const result = await mintSignToPayCheckoutSession(
+      env,
+      {
+        merchantAccountId: "ma_sub",
+        idempotencyKey: "seal-pay-doc_1-cfg_1",
+        amountCents: 25000,
+        currency: "usd",
+        payerEmail: "signer@example.com",
+        dueDate: "2026-11-15T00:00:00.000Z",
+        description: "Service Agreement",
+      },
+      fetchImpl
+    );
+    expect(seenUrl).toBe(
+      "https://api.vortex.test/v1/checkout/sessions?environment=sandbox"
+    );
+    expect(seenBody.environment).toBe("sandbox");
+    expect(seenBody.amountCents).toBe(25000);
+    expect(seenBody.payerEmail).toBe("signer@example.com");
+    expect(result).toEqual({
+      checkoutSessionId: "plink_123",
+      paymentRequestId: "preq_123",
+      checkoutUrl: "https://pay.vortex.nyc/pay/ptok_123",
+      providerInvoiceId: "inv_123",
+    });
+
+    await mintSignToPayCheckoutSession(
+      { ...env, VORTEX_API_KEY: "vp_live_123" },
+      {
+        merchantAccountId: "ma_sub",
+        idempotencyKey: "seal-pay-doc_1-cfg_1",
+        amountCents: 25000,
+        currency: "usd",
+        payerEmail: "signer@example.com",
+        description: "Service Agreement",
+      },
+      fetchImpl
+    );
+    expect(seenUrl).toBe(
+      "https://api.vortex.test/v1/checkout/sessions?environment=production"
+    );
+    expect(seenBody.environment).toBe("production");
   });
 });

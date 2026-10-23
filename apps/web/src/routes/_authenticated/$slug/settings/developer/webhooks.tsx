@@ -109,7 +109,9 @@ function WebhooksPage() {
               }))}
               deliveries={[]}
               showDeliveries={false}
-              eventOptions={(eventTypes ?? []).map((eventType) => eventType.type)}
+              eventOptions={(eventTypes ?? []).map(
+                (eventType) => eventType.type
+              )}
               canManage={isAdmin}
               onCreate={async (input) => {
                 const created = await createMutation.mutateAsync(input);

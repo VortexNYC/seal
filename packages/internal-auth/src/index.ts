@@ -46,10 +46,7 @@ export function isInternetFacingHostname(hostname: string): boolean {
 
 export function verifyInternalApiKey(c: InternalAuthContext): boolean {
   const configured = c.env.INTERNAL_API_KEY;
-  if (
-    configured == null ||
-    configured.length < MIN_INTERNAL_API_KEY_LENGTH
-  ) {
+  if (configured == null || configured.length < MIN_INTERNAL_API_KEY_LENGTH) {
     return false;
   }
   const provided = c.req.header("x-internal-api-key");

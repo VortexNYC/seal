@@ -175,9 +175,7 @@ export async function buildCertificateOfCompletionPdf(
         (party.privacyNoticeTextHash
           ? ` · privacy ${party.privacyNoticeTextHash.slice(0, 18)}…`
           : "") +
-        (party.esignOptOutAt
-          ? ` · ESIGN opt-out ${party.esignOptOutAt}`
-          : "") +
+        (party.esignOptOutAt ? ` · ESIGN opt-out ${party.esignOptOutAt}` : "") +
         (party.esignOptOutMethod
           ? ` · opt-out ${party.esignOptOutMethod}`
           : ""),
@@ -204,11 +202,9 @@ export async function buildCertificateOfCompletionPdf(
     }
     draw(`${event.at}  ${event.action}`, 8, { bold: true });
     y -= 11;
-    draw(
-      `${event.actor}${event.detail ? ` - ${event.detail}` : ""}`,
-      8,
-      { color: muted }
-    );
+    draw(`${event.actor}${event.detail ? ` - ${event.detail}` : ""}`, 8, {
+      color: muted,
+    });
     y -= 14;
   }
 
@@ -224,11 +220,9 @@ export async function buildCertificateOfCompletionPdf(
   y -= 14;
   draw(input.verificationUrl, 8, { color: accent });
   y -= 14;
-  draw(
-    "Open this URL to confirm the envelope is a Seal-completed record.",
-    8,
-    { color: muted }
-  );
+  draw("Open this URL to confirm the envelope is a Seal-completed record.", 8, {
+    color: muted,
+  });
   y -= 20;
   draw(
     "This certificate summarizes the audit trail. It is not a cryptographic seal of the PDF bytes (see SEA-49).",

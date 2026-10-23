@@ -11,8 +11,8 @@ import { Button } from "@cloudflare/kumo/components/button";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Link } from "@cloudflare/kumo/components/link";
 import { Text } from "@cloudflare/kumo/components/text";
-import { createFileRoute } from "@tanstack/react-router";
 import { FileArrowUp as FileUpIcon } from "@phosphor-icons/react";
+import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useRef, useState } from "react";
 
 import { DropSurface } from "@/components/kumo-docs/file-upload";

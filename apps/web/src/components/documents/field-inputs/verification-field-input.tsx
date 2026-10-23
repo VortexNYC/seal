@@ -1,6 +1,6 @@
-import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Label } from "@cloudflare/kumo/components/label";
+import { Text } from "@cloudflare/kumo/components/text";
 import { useState } from "react";
 
 interface VerificationFieldInputProps {
@@ -39,10 +39,14 @@ export function VerificationFieldInput({
         {label}
         {isRequired && <span className="text-kumo-danger ml-1">*</span>}
       </Label>
-      <Text as="p" variant="secondary" size="sm">{helpText ??
-          "Complete identity verification to continue. Provider wiring lands with CompAI / SEA auth."}</Text>
+      <Text as="p" variant="secondary" size="sm">
+        {helpText ??
+          "Complete identity verification to continue. Provider wiring lands with CompAI / SEA auth."}
+      </Text>
       {done ? (
-        <Text as="p" variant="success" size="sm">Verification recorded</Text>
+        <Text as="p" variant="success" size="sm">
+          Verification recorded
+        </Text>
       ) : (
         <Button type="button" onClick={complete}>
           Start verification

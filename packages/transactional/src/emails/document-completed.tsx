@@ -185,7 +185,9 @@ export function DocumentCompleted({
         {/* CTA Button — download first (Documenso-class), dashboard second */}
         <Section style={emailStyles.ctaSection}>
           <Button style={emailStyles.ctaButton} href={primaryUrl}>
-            {downloadUrl ? "Download signed document" : "View Completed Document"}
+            {downloadUrl
+              ? "Download signed document"
+              : "View Completed Document"}
           </Button>
         </Section>
 

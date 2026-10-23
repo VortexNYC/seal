@@ -1,4 +1,3 @@
-import { Text } from "@cloudflare/kumo/components/text";
 import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
@@ -12,15 +11,19 @@ import { Popover } from "@cloudflare/kumo/components/popover";
 import { Select } from "@cloudflare/kumo/components/select";
 import { Switch } from "@cloudflare/kumo/components/switch";
 import { Tabs } from "@cloudflare/kumo/components/tabs";
+import { Text } from "@cloudflare/kumo/components/text";
+import {
+  Calendar as CalendarIcon,
+  CreditCard as CreditCardIcon,
+  Plus as PlusIcon,
+  Trash as TrashIcon,
+} from "@phosphor-icons/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { format, parse } from "date-fns";
-import { Calendar as CalendarIcon, CreditCard as CreditCardIcon, Plus as PlusIcon, Trash as TrashIcon } from "@phosphor-icons/react";
 import { useCallback, useEffect, useState } from "react";
 
 import type { ApiPaymentConfigDetail } from "@/lib/api-client";
 import { getPaymentConfig, upsertPaymentConfig } from "@/lib/api-client";
-import { finishPaymentSave } from "./document-rail";
-import { RailBack } from "./rail-back";
 import {
   allocate,
   applyRate,
@@ -34,6 +37,8 @@ import { toast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
 
 import { InputCurrency, parseCurrencyToMinorUnits } from "../ui/input-currency";
+import { finishPaymentSave } from "./document-rail";
+import { RailBack } from "./rail-back";
 
 const MONEY_ROUNDING = "half-up" as const;
 const DRAFT_CURRENCY = "USD";
@@ -812,7 +817,9 @@ function RecurringScheduleSection({
 }) {
   return (
     <LayerCard className="space-y-4 p-4">
-      <Text size="sm" bold>Recurring Schedule</Text>
+      <Text size="sm" bold>
+        Recurring Schedule
+      </Text>
       <div className="flex items-center gap-2">
         <span className="text-sm">Every</span>
         <Input
@@ -925,7 +932,9 @@ function InstallmentPlanSection({
 }) {
   return (
     <LayerCard className="space-y-4 p-4">
-      <Text size="sm" bold>Installment Plan</Text>
+      <Text size="sm" bold>
+        Installment Plan
+      </Text>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Number of Payments</Label>
@@ -1019,7 +1028,9 @@ function DepositBalanceSection({
   ).amount;
   return (
     <LayerCard className="space-y-4 p-4">
-      <Text size="sm" bold>Deposit & Balance</Text>
+      <Text size="sm" bold>
+        Deposit & Balance
+      </Text>
       <div className="grid grid-cols-2 gap-4">
         <DepositPercentInput draft={draft} setDraftField={setDraftField} />
         <BalanceDueDaysInput draft={draft} setDraftField={setDraftField} />
@@ -1107,7 +1118,9 @@ function LateFeesSection({
       <div className="flex items-center justify-between">
         <div>
           <Label>Late Fees</Label>
-          <Text as="p" variant="secondary" size="xs">Charge fees for overdue payments</Text>
+          <Text as="p" variant="secondary" size="xs">
+            Charge fees for overdue payments
+          </Text>
         </div>
         <Switch
           checked={draft.lateFeeEnabled}
@@ -1268,9 +1281,7 @@ function PaymentMethodsSection({ form }: { readonly form: PaymentConfigForm }) {
             key={key}
             label={label}
             checked={form.draft.paymentMethods[key]}
-            onCheckedChange={(checked) =>
-              form.setPaymentMethod(key, !!checked)
-            }
+            onCheckedChange={(checked) => form.setPaymentMethod(key, !!checked)}
           />
         ))}
       </div>
@@ -1290,7 +1301,9 @@ function TaxSection({
       <div className="flex items-center justify-between">
         <div>
           <Label>Tax</Label>
-          <Text as="p" variant="secondary" size="xs">Enable automatic tax calculation through Vortex Payments</Text>
+          <Text as="p" variant="secondary" size="xs">
+            Enable automatic tax calculation through Vortex Payments
+          </Text>
         </div>
         <Switch
           checked={draft.taxEnabled}
@@ -1355,9 +1368,7 @@ function PaymentConfigFooter({
   return (
     <div className="mt-4 flex items-center justify-between gap-2 border-t pt-4">
       <div className="flex flex-1 items-center gap-2">
-        <Badge variant="neutral">
-          Total: {formatCents(total)}
-        </Badge>
+        <Badge variant="neutral">Total: {formatCents(total)}</Badge>
       </div>
       <div className="flex items-center gap-2">
         <Button variant="outline" onClick={onCancel} disabled={isSaving}>

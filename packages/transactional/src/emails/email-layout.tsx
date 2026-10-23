@@ -15,11 +15,9 @@ import type { ReactNode } from "react";
 import { containers, email, fonts, status, surfaces, text } from "../styles.js";
 
 /** Hosted from apps/web/public after deploy. */
-const SEAL_LOCKUP_LIGHT_URL =
-  "https://app.seal.nyc/logo/seal-lockup-light.png";
+const SEAL_LOCKUP_LIGHT_URL = "https://app.seal.nyc/logo/seal-lockup-light.png";
 const SEAL_LOCKUP_DARK_URL = "https://app.seal.nyc/logo/seal-lockup-dark.png";
-const HEDVIG_SANS_URL =
-  "https://app.seal.nyc/fonts/hedvig-letters-sans.woff2";
+const HEDVIG_SANS_URL = "https://app.seal.nyc/fonts/hedvig-letters-sans.woff2";
 const HEDVIG_SERIF_URL =
   "https://app.seal.nyc/fonts/hedvig-letters-serif.woff2";
 

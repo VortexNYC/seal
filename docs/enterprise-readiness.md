@@ -1,6 +1,6 @@
 # Enterprise / regulated readiness — Seal foundation backlog
 
-Working notes after SEA-51 HIPAA scoping. CompAI findings on *other* Vortex
+Working notes after SEA-51 HIPAA scoping. CompAI findings on _other_ Vortex
 products (Pile enterprise table, Vortex privacy cluster) are **reference only** —
 patterns to steal, not a joint-customer roadmap.
 
@@ -22,29 +22,29 @@ do not design Seal features “so Pile users also have SSO.”
 
 ## Gap list (what DocuSign-class buyers ask for)
 
-| Gap | Why it matters for Seal alone | Track |
-| --- | --- | --- |
-| Human prod access to PDFs/DB without logged break-glass | Who *read* the record | SEA-68 **done** — session/signing downloads audited; `/internal/break-glass/document-read` + [runbook](./runbooks/break-glass-data-access.md) |
-| No customer-held encryption keys | Only platform/Cloudflare keys | Later |
-| Egress via email / webhooks / convert-AI | Extra copies of names + file bytes | SEA-70 **done** — `egress.webhook_payload_mode` / `allow_convert` + enforce `ai.enabled`; [egress docs](../apps/docs/docs/getting-started/egress.mdx) |
-| Signing audit strong; file-access audit weak | Lifecycle ≠ every storage read | SEA-44 done; SEA-68 extends |
-| SIEM / stream export | Enterprise security teams pipe logs out | SEA-67 **done** — push `audit.entry.created` webhooks + NDJSON `/audit/export` |
-| SAML SSO advertised, not implemented | Plan flag + marketing ahead of product | SEA-66 **done** — `@better-auth/sso` + domain verification + `ssoEnforced`; [SSO docs](../apps/docs/docs/getting-started/sso.mdx) |
-| Public subprocessors / DPA stub / breach runbook | RFP blank pages | SEA-69 **done** |
-| External pen test | SEA-54 | External firm |
-| Counsel on consent/retention | SEA-57 | Attorney |
+| Gap                                                     | Why it matters for Seal alone           | Track                                                                                                                                                 |
+| ------------------------------------------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Human prod access to PDFs/DB without logged break-glass | Who _read_ the record                   | SEA-68 **done** — session/signing downloads audited; `/internal/break-glass/document-read` + [runbook](./runbooks/break-glass-data-access.md)         |
+| No customer-held encryption keys                        | Only platform/Cloudflare keys           | Later                                                                                                                                                 |
+| Egress via email / webhooks / convert-AI                | Extra copies of names + file bytes      | SEA-70 **done** — `egress.webhook_payload_mode` / `allow_convert` + enforce `ai.enabled`; [egress docs](../apps/docs/docs/getting-started/egress.mdx) |
+| Signing audit strong; file-access audit weak            | Lifecycle ≠ every storage read          | SEA-44 done; SEA-68 extends                                                                                                                           |
+| SIEM / stream export                                    | Enterprise security teams pipe logs out | SEA-67 **done** — push `audit.entry.created` webhooks + NDJSON `/audit/export`                                                                        |
+| SAML SSO advertised, not implemented                    | Plan flag + marketing ahead of product  | SEA-66 **done** — `@better-auth/sso` + domain verification + `ssoEnforced`; [SSO docs](../apps/docs/docs/getting-started/sso.mdx)                     |
+| Public subprocessors / DPA stub / breach runbook        | RFP blank pages                         | SEA-69 **done**                                                                                                                                       |
+| External pen test                                       | SEA-54                                  | External firm                                                                                                                                         |
+| Counsel on consent/retention                            | SEA-57                                  | Attorney                                                                                                                                              |
 
 ## Optional reference (other products’ CompAI — steal ideas, don’t couple)
 
-| Theme | Seen elsewhere | Seal action |
-| --- | --- | --- |
-| SAML SSO | Pile CompAI | SEA-66 — build for Seal buyers |
-| Audit + SIEM | Pile CompAI | SEA-67 — Seal already has sealed logs; add export |
+| Theme                     | Seen elsewhere       | Seal action                                                                                                           |
+| ------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| SAML SSO                  | Pile CompAI          | SEA-66 — build for Seal buyers                                                                                        |
+| Audit + SIEM              | Pile CompAI          | SEA-67 — Seal already has sealed logs; add export                                                                     |
 | SCIM / residency / bounty | Pile / Vortex CompAI | SEA-71 **done** — `@better-auth/scim` + VDP docs; residency = self-host (no fake hosted EU SKU); paid bounty deferred |
-| Privacy surface | Vortex CompAI | SEA-69 **done** |
-| Pen test | Vortex / SEA-54 | External |
+| Privacy surface           | Vortex CompAI        | SEA-69 **done**                                                                                                       |
+| Pen test                  | Vortex / SEA-54      | External                                                                                                              |
 
-Engineering may reuse a Vortex Auth SSO *library* if it already exists (wiring,
+Engineering may reuse a Vortex Auth SSO _library_ if it already exists (wiring,
 not a multi-product SKU). That is internal reuse — not “prepare for dual seat.”
 
 ## Suggested Seal attack order

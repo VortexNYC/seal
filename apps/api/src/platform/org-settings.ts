@@ -246,9 +246,7 @@ function redactUnknown(value: unknown): unknown {
     return value;
   }
   const out: Record<string, unknown> = {};
-  for (const [key, child] of Object.entries(
-    value as Record<string, unknown>
-  )) {
+  for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
     if (!MINIMAL_WEBHOOK_KEY.test(key)) continue;
     out[key] = redactUnknown(child);
   }

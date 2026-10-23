@@ -10,7 +10,11 @@ import { z } from "zod";
 
 import { hashToken } from "./api-token-auth.js";
 
-export const SIGNER_AUTH_METHODS = ["none", "access_code", "email_otp"] as const;
+export const SIGNER_AUTH_METHODS = [
+  "none",
+  "access_code",
+  "email_otp",
+] as const;
 export type SignerAuthMethod = (typeof SIGNER_AUTH_METHODS)[number];
 
 export const signerAuthMethodSchema = z.enum(SIGNER_AUTH_METHODS);
@@ -25,10 +29,7 @@ const challengeSchema = z.object({
   attempts: z.number().int().nonnegative(),
 });
 
-const verifiedMethodSchema = z.enum([
-  ...SIGNER_AUTH_METHODS,
-  "session",
-]);
+const verifiedMethodSchema = z.enum([...SIGNER_AUTH_METHODS, "session"]);
 
 const authStateSchema = z.object({
   challenge: challengeSchema.optional(),
@@ -92,7 +93,9 @@ export function sessionMatchesRecipient(
   if (!sessionEmail || !recipientEmail) {
     return false;
   }
-  return sessionEmail.trim().toLowerCase() === recipientEmail.trim().toLowerCase();
+  return (
+    sessionEmail.trim().toLowerCase() === recipientEmail.trim().toLowerCase()
+  );
 }
 
 export function markSessionVerified(): SignerAuthState {

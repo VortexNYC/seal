@@ -2,10 +2,7 @@ import { and, eq } from "drizzle-orm";
 
 import type { D1Client } from "../global/db.js";
 import { documents } from "../global/schema.js";
-import {
-  sendForwardedDocumentEmail,
-  type EmailEnv,
-} from "./email.js";
+import { sendForwardedDocumentEmail, type EmailEnv } from "./email.js";
 
 /** One "Forward of" prefix, so a forward of a forward does not stack. */
 export function forwardedEnvelopeName(name: string): string {
@@ -21,7 +18,9 @@ export async function forwardCompletedDocument(params: {
   sourcePublicId: string;
   to: string;
   senderName: string;
-}): Promise<"sent" | "not_found" | "not_completed" | "no_file" | "email_failed"> {
+}): Promise<
+  "sent" | "not_found" | "not_completed" | "no_file" | "email_failed"
+> {
   const rows = await params.db
     .select({
       name: documents.name,
@@ -65,10 +64,7 @@ export async function startEnvelopeFromCompleted(params: {
   ownerId: string;
   sourcePublicId: string;
 }): Promise<
-  | { id: string; publicId: string }
-  | "not_found"
-  | "not_completed"
-  | "no_file"
+  { id: string; publicId: string } | "not_found" | "not_completed" | "no_file"
 > {
   const rows = await params.db
     .select()

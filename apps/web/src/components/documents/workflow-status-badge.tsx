@@ -60,7 +60,10 @@ export function WorkflowStatusBadge({
   const { label, variant } = config[workflowStatus];
 
   return (
-    <Badge variant={variant} className={`px-3.5 py-1.5 text-base ${className ?? ""}`}>
+    <Badge
+      variant={variant}
+      className={`px-3.5 py-1.5 text-base ${className ?? ""}`}
+    >
       {label}
     </Badge>
   );

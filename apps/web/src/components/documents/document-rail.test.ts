@@ -299,7 +299,8 @@ describe("Send", () => {
         canSend: false,
         canEdit: true,
         signerCount: 2,
-        blockedReason: "The following signers need at least one signature field: Sam",
+        blockedReason:
+          "The following signers need at least one signature field: Sam",
       })
     ).toEqual({
       kind: "blocked",
@@ -399,9 +400,7 @@ describe("send readiness", () => {
           { recipientId: null, fieldType: "text" },
         ],
       }).tooltip
-    ).toBe(
-      "1 field is not assigned to a recipient. Assign it before sending."
-    );
+    ).toBe("1 field is not assigned to a recipient. Assign it before sending.");
   });
 
   it("pluralizes several unassigned fields", () => {
@@ -433,7 +432,9 @@ describe("send readiness", () => {
         ],
         fields: [{ recipientId: "s1", fieldType: "signature" }],
       }).tooltip
-    ).toBe("sue@ex.com needs a signature or initials field before this can be sent.");
+    ).toBe(
+      "sue@ex.com needs a signature or initials field before this can be sent."
+    );
   });
 
   it("does not treat a text field as something a signer can sign", () => {
@@ -444,9 +445,7 @@ describe("send readiness", () => {
         recipients: [signer],
         fields: [{ recipientId: "s1", fieldType: "text" }],
       }).tooltip
-    ).toBe(
-      "Sam needs a signature or initials field before this can be sent."
-    );
+    ).toBe("Sam needs a signature or initials field before this can be sent.");
   });
 
   it("counts a signature, initials, or free signature", () => {

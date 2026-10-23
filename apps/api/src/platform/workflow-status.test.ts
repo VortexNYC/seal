@@ -34,10 +34,16 @@ describe("presented workflow status", () => {
 
   it("lets a sent envelope become a template", () => {
     expect(saveAsTemplateBlock("sent", "active", "uploads/doc")).toBeNull();
-    expect(saveAsTemplateBlock("completed", "active", "uploads/doc")).toBeNull();
+    expect(
+      saveAsTemplateBlock("completed", "active", "uploads/doc")
+    ).toBeNull();
     expect(saveAsTemplateBlock("draft", "active", "uploads/doc")).toBeNull();
-    expect(saveAsTemplateBlock("voided", "active", "uploads/doc")).toBe("closed");
-    expect(saveAsTemplateBlock("sent", "deleted", "uploads/doc")).toBe("closed");
+    expect(saveAsTemplateBlock("voided", "active", "uploads/doc")).toBe(
+      "closed"
+    );
+    expect(saveAsTemplateBlock("sent", "deleted", "uploads/doc")).toBe(
+      "closed"
+    );
     expect(saveAsTemplateBlock("sent", "active", null)).toBe("missing_file");
   });
 });

@@ -4,8 +4,8 @@ import { z } from "zod";
 
 import { createD1 } from "../../global/db.js";
 import { documents } from "../../global/schema.js";
-import { isEnvelopeClosed } from "../../platform/workflow-status.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
+import { isEnvelopeClosed } from "../../platform/workflow-status.js";
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;

@@ -4,8 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 
-import { OversightFrame } from "@/components/oversight-frame";
 import { WorkflowStatusBadge } from "@/components/documents/workflow-status-badge";
+import { OversightFrame } from "@/components/oversight-frame";
 import { getDocumentRecipients, getDocumentSharing } from "@/lib/api-client";
 import {
   recipientFacingStatus,

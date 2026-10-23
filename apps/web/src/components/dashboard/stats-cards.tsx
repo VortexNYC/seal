@@ -5,8 +5,14 @@
 
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
+import {
+  CheckCircle as CheckCircle2Icon,
+  Clock as ClockIcon,
+  FileText as FileTextIcon,
+  type Icon,
+  TrendUp as TrendingUpIcon,
+} from "@phosphor-icons/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { CheckCircle as CheckCircle2Icon, Clock as ClockIcon, FileText as FileTextIcon, type Icon, TrendUp as TrendingUpIcon } from "@phosphor-icons/react";
 
 import { getDocumentStats } from "@/lib/api-client";
 import { cn } from "@/lib/utils";

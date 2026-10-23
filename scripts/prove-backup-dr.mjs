@@ -4,8 +4,8 @@
  * Uses wrangler against production bindings (seal-documents / seal-global).
  */
 import { execFileSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const apiDir = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),

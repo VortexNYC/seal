@@ -215,7 +215,9 @@ for (const path of ["privacy", "consent"]) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.success) {
-    throw new Error(`${path} failed: HTTP ${res.status} ${JSON.stringify(data)}`);
+    throw new Error(
+      `${path} failed: HTTP ${res.status} ${JSON.stringify(data)}`
+    );
   }
   console.log(`PASS  ${path}`);
 }

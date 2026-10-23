@@ -45,7 +45,11 @@ describe("writeDailyAuditBackup (SEA-55)", () => {
     const parsed = JSON.parse((await object!.text()) as string) as {
       kind: string;
       tipCount: number;
-      tips: Array<{ organizationId: string; tipHash: string; sequence: number }>;
+      tips: Array<{
+        organizationId: string;
+        tipHash: string;
+        sequence: number;
+      }>;
     };
     expect(parsed.kind).toBe("seal-audit-chain-tips");
     expect(parsed.tipCount).toBe(1);

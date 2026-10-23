@@ -235,7 +235,9 @@ export const updateRecipientSchema = z.object({
       "New email. On a sent envelope this rotates the signing link and sends it when it is their turn."
     ),
   name: z.string().optional().describe("New display name"),
-  role: recipientRoleSchema.optional().describe("New recipient role. Draft only."),
+  role: recipientRoleSchema
+    .optional()
+    .describe("New recipient role. Draft only."),
   order: z.number().optional().describe("New signing order"),
   message: z.string().optional().describe("New custom message"),
 });
@@ -1171,7 +1173,9 @@ export const forwardDocumentSchema = z.object({
   email: z
     .string()
     .email()
-    .describe("Recipient of the completed PDF. They are not added as a signer."),
+    .describe(
+      "Recipient of the completed PDF. They are not added as a signer."
+    ),
 });
 export type ForwardDocumentInput = z.infer<typeof forwardDocumentSchema>;
 

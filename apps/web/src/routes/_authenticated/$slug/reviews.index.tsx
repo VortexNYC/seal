@@ -3,7 +3,6 @@
  * Route: /{slug}/reviews
  */
 
-import { Text } from "@cloudflare/kumo/components/text";
 import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
@@ -12,9 +11,15 @@ import { Empty } from "@cloudflare/kumo/components/empty";
 import { Input, Textarea } from "@cloudflare/kumo/components/input";
 import { Select } from "@cloudflare/kumo/components/select";
 import { Table } from "@cloudflare/kumo/components/table";
+import { Text } from "@cloudflare/kumo/components/text";
+import {
+  Package as PackageIcon,
+  Plus as PlusIcon,
+  Scales as ScaleIcon,
+  Trash as TrashIcon,
+} from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Package as PackageIcon, Plus as PlusIcon, Scales as ScaleIcon, Trash as TrashIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
@@ -244,7 +249,9 @@ function NewReviewDialog({
               <Select.Option value="custom">Custom columns…</Select.Option>
             </Select>
             {selectedPack?.description ? (
-              <Text as="p" variant="secondary" size="xs">{selectedPack.description}</Text>
+              <Text as="p" variant="secondary" size="xs">
+                {selectedPack.description}
+              </Text>
             ) : null}
           </div>
 
@@ -305,7 +312,14 @@ function NewReviewDialog({
             </span>
             <div className="border-kumo-line flex max-h-48 flex-col gap-2 overflow-y-auto rounded-md border p-3">
               {docs.length === 0 ? (
-                <Text as="p" variant="secondary" size="xs" DANGEROUS_className="p-3">No draft documents — upload one first.</Text>
+                <Text
+                  as="p"
+                  variant="secondary"
+                  size="xs"
+                  DANGEROUS_className="p-3"
+                >
+                  No draft documents — upload one first.
+                </Text>
               ) : (
                 docs.map((d) => (
                   <Checkbox

@@ -1,12 +1,12 @@
 #!/usr/bin/env node
+import { execSync } from "node:child_process";
 /**
  * Local identity dogfood: sender → two signers (OTP + account) → complete.
  * Emails go to miniflare EMAIL capture; OTP is scraped from HTML.
  */
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { execSync } from "node:child_process";
+import { join } from "node:path";
 
 const API = process.env.SEAL_API_URL ?? "http://127.0.0.1:8787";
 const APP = process.env.SEAL_APP_URL ?? "http://localhost:5180";
@@ -122,7 +122,11 @@ function latestOtpFor(email, sinceMs) {
       const st = statSync(full);
       if (st.mtimeMs < sinceMs - 1000) continue;
       const html = readFileSync(full, "utf8");
-      if (!html.toLowerCase().includes(email.toLowerCase()) && !html.includes("Verification") && !html.includes("code")) {
+      if (
+        !html.toLowerCase().includes(email.toLowerCase()) &&
+        !html.includes("Verification") &&
+        !html.includes("code")
+      ) {
         // still allow if it's an OTP template without address
       }
       const match = html.match(/\b(\d{6})\b/);
@@ -286,7 +290,9 @@ async function main() {
       throw new Error(`missing token for ${signer.email}`);
     }
     const token = rec.signingToken;
-    console.log(`\n--- ${signer.name} (${signer.email}) token=${token.slice(0, 10)}…`);
+    console.log(
+      `\n--- ${signer.name} (${signer.email}) token=${token.slice(0, 10)}…`
+    );
 
     // OTP challenge
     const since = Date.now();
@@ -314,13 +320,14 @@ async function main() {
     console.log("OTP verified");
 
     // Account for this email
-    const signerJar = await ensureUser(signer.email, signer.name, signer.password);
+    const signerJar = await ensureUser(
+      signer.email,
+      signer.name,
+      signer.password
+    );
 
     // Privacy + consent
-    const tokenData = await api(
-      signerJar,
-      `/api/public/signing/${token}`
-    );
+    const tokenData = await api(signerJar, `/api/public/signing/${token}`);
     const consentText =
       tokenData.signingSettings?.esignConsentText ?? "consent";
     const privacyText =
@@ -390,10 +397,7 @@ async function main() {
     console.log(`UI link: ${APP}/sign/${token}`);
   }
 
-  const finalDoc = await api(
-    senderJar,
-    `/api/documents/${SLUG}/${publicId}`
-  );
+  const finalDoc = await api(senderJar, `/api/documents/${SLUG}/${publicId}`);
   console.log("\n=== DONE ===");
   console.log({
     status: finalDoc.status ?? finalDoc.workflowStatus,

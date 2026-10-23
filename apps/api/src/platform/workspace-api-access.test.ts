@@ -10,7 +10,10 @@ describe("workspaceApiAccessAllows", () => {
 
   it("rejects an address outside the settings-screen list", () => {
     const metadata = JSON.stringify({
-      securitySettings: { ipAllowlist: ["203.0.113.0/24"], allowApiAccess: true },
+      securitySettings: {
+        ipAllowlist: ["203.0.113.0/24"],
+        allowApiAccess: true,
+      },
     });
     expect(workspaceApiAccessAllows(metadata, "203.0.113.9")).toBe(true);
     expect(workspaceApiAccessAllows(metadata, "198.51.100.8")).toBe(false);

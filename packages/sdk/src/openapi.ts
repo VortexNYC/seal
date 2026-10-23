@@ -4,4170 +4,4192 @@
  */
 
 export interface paths {
-    "/documents": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List documents
-         * @description Returns a paginated list of documents in your organization. Use the `next_cursor` from the response to fetch the next page.
-         */
-        get: operations["listDocuments"];
-        put?: never;
-        /**
-         * Create a document
-         * @description Creates a new document in `draft` status. You must first upload the PDF with the Uploads API to obtain a `storage_id`.
-         */
-        post: operations["createDocument"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/documents/get": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get a document */
-        get: operations["getDocument"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/documents/interaction": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get InteractionSession for a document (human handoff)
-         * @description Returns a Vortex InteractionSession for signing (ADR-004 / SEA-61).
-         *     Agents show or open `url`, then poll this endpoint until `status` is
-         *     not `pending`. Never forge the human signature. Requires
-         *     `documents:write` to include `url` (signing link).
-         */
-        get: operations["getDocumentInteraction"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/documents/update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Update a document
-         * @description Updates document metadata. Only works for `draft` documents.
-         */
-        put: operations["updateDocument"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/documents/delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Delete a document
-         * @description Permanently deletes a draft document. For sent documents, use `POST /documents/void` instead.
-         */
-        delete: operations["deleteDocument"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/documents/apply-bindings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Apply structured values by binding_key
-         * @description For each document field with `properties.binding_key`, set `default_value` from the provided map. Draft documents only. This is the Seal-side of proposal→document sync (GitHub #604) without OCR.
-         */
-        post: operations["applyDocumentBindings"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/documents/fields": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List document fields (with binding_key) */
-        get: operations["listDocumentFields"];
-        put?: never;
-        /**
-         * Create a document field (percent-of-page geometry)
-         * @description Place a signature or data field on a draft document. Coordinates are percent-of-page (0–100), matching the web editor. Optional `binding_key` enables later `POST /documents/apply-bindings`.
-         */
-        post: operations["createDocumentField"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/documents/fields/update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Update a document field */
-        put: operations["updateDocumentField"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/documents/fields/delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Delete a document field */
-        post: operations["deleteDocumentField"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/documents/place-candidates": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Place fields from detected field_candidates
-         * @description Creates signature fields from anydoc field_candidates (with suggested bounding boxes). Agents use this instead of a UI click loop.
-         */
-        post: operations["placeDocumentFieldCandidates"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/documents/field-suggestions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get pending field suggestions with bounding boxes */
-        get: operations["getDocumentFieldSuggestions"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/documents/field-suggestions/apply": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Apply field suggestions onto a draft document */
-        post: operations["applyDocumentFieldSuggestions"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/documents/annotations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get bbox citation annotations for contract review */
-        get: operations["getDocumentAnnotations"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/documents/annotations/generate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Generate bbox citations from parsed text */
-        post: operations["generateDocumentAnnotations"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/documents/annotations/dismiss": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Dismiss active annotations */
-        post: operations["dismissDocumentAnnotations"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/documents/preview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Agent preview (markdown, structured, pdf, or original office/CSV) */
-        get: operations["previewDocument"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/documents/split": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Split a draft PDF into child documents by page ranges */
-        post: operations["splitDocument"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/documents/pdf/annotate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Bake highlight/text/rect/redact ops onto a draft PDF */
-        post: operations["annotateDocumentPdf"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/documents/send": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Send a document
-         * @description Sends the document and transitions it from `draft` to `sent`. The document must have at least one recipient. `signing_mode` `sequential` invites only the current signer group.
-         */
-        post: operations["sendDocument"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/documents/void": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Void a document
-         * @description Cancels a document and notifies all recipients. Cannot void a document that is already `completed`.
-         */
-        post: operations["voidDocument"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/documents/download": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get download URL
-         * @description Returns a short-lived pre-signed URL to download the document. If the document is completed, this returns the signed PDF. Otherwise it returns the original uploaded file.
-         */
-        get: operations["downloadDocument"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/documents/certificate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Download Certificate of Completion
-         * @description Returns the Certificate of Completion PDF for a completed envelope (CompAI EVID-2 / SEA-50). Includes parties, emails, IPs, auth method, timestamps, document hash, and a verification URL. Only available when the document status is `completed`. Lazy-generates the PDF if missing.
-         */
-        get: operations["downloadCertificateOfCompletion"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/recipients": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List recipients */
-        get: operations["listRecipients"];
-        put?: never;
-        /**
-         * Add a recipient
-         * @description Adds a recipient to a draft document.
-         */
-        post: operations["addRecipient"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/recipients/get": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get a recipient */
-        get: operations["getRecipient"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/recipients/update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Update a recipient
-         * @description Updates a recipient on a draft document.
-         */
-        put: operations["updateRecipient"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/recipients/delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Remove a recipient
-         * @description Removes a recipient from a draft document.
-         */
-        delete: operations["removeRecipient"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/recipients/remind": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Send a reminder
-         * @description Sends a reminder email to a recipient who has not yet completed their action. Only works for `sent` or `in_progress` documents.
-         */
-        post: operations["sendReminder"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/templates": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List templates */
-        get: operations["listTemplates"];
-        put?: never;
-        /**
-         * Create a template
-         * @description Creates a reusable template from an existing completed document. The document's field layout is copied to the template.
-         */
-        post: operations["createTemplate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/templates/get": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get a template */
-        get: operations["getTemplate"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/templates/fields": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get template fields
-         * @description Returns all field definitions for a template. Fields define where signatures, text inputs, and other data entry points are located on the document.
-         */
-        get: operations["getTemplateFields"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/templates/fields/update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Update a template field (including binding_key)
-         * @description Patch label/required/properties on a template field. Set `properties.binding_key` to bind the field to an external proposal key (GitHub #604).
-         */
-        put: operations["updateTemplateField"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/templates/update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Update a template */
-        put: operations["updateTemplate"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/templates/delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Delete a template */
-        delete: operations["deleteTemplate"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/templates/use": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create document from template
-         * @description Creates a new draft document pre-populated with the template's field layout. Add recipients and send when ready.
-         */
-        post: operations["useTemplate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/signatures": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List signatures
-         * @description Returns all signatures collected for a document.
-         */
-        get: operations["listSignatures"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/signatures/get": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get a signature */
-        get: operations["getSignature"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/signatures/verify": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Verify document integrity
-         * @description Verifies the cryptographic integrity of all signatures on a document. Returns whether the document has been tampered with since it was signed.
-         */
-        get: operations["verifyDocument"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/signatures/audit": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get audit trail
-         * @description Returns the complete activity log for a document, including when it was viewed, signed, completed, and any other notable events.
-         */
-        get: operations["getAuditTrail"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/uploads/generate-url": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Generate upload URL
-         * @description Returns a short-lived upload URL. `POST` the file bytes to that URL with the matching `Content-Type`. Accepted types: `application/pdf`, DOCX, XLSX, PPTX, and CSV. Non-PDF office/CSV uploads are converted to a fixed-layout PDF via the convert worker before storage; the original is retained under an `originals/` key. Pass the returned `storageId` to `POST /documents`.
-         */
-        post: operations["generateUploadUrl"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/uploads": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Upload a document file
-         * @description Upload file bytes to the URL from `POST /uploads/generate-url` (pass the token as a query param). PDFs are stored as-is. DOCX/XLSX/PPTX/CSV are converted to PDF via the convert worker; originals are kept. Requires a valid upload token (not a normal API key on this path).
-         */
-        post: operations["uploadFile"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contacts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List contacts */
-        get: operations["listContacts"];
-        put?: never;
-        /** Create a contact */
-        post: operations["createContact"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contacts/get": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get a contact */
-        get: operations["getContact"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contacts/delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Delete a contact */
-        delete: operations["deleteContact"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/contacts/update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Update a contact */
-        put: operations["updateContact"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/folders": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List folders */
-        get: operations["listFolders"];
-        put?: never;
-        /** Create a folder */
-        post: operations["createFolder"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/folders/breadcrumbs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Folder breadcrumbs */
-        get: operations["getFolderBreadcrumbs"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/imports": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List import jobs */
-        get: operations["listImports"];
-        put?: never;
-        /**
-         * Create an import job
-         * @description Creates an import job in `pending_approval` status. Call approve to run it.
-         */
-        post: operations["createImport"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/imports/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get an import job */
-        get: operations["getImport"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/imports/{id}/approve": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Approve and run an import job */
-        post: operations["approveImport"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/imports/{id}/resume": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Resume an in-progress import job */
-        post: operations["resumeImport"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/webhooks": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List webhook endpoints */
-        get: operations["listWebhooks"];
-        put?: never;
-        /** Create a webhook endpoint */
-        post: operations["createWebhook"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/webhooks/get": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get a webhook endpoint */
-        get: operations["getWebhook"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/webhooks/update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Update a webhook endpoint */
-        put: operations["updateWebhook"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/webhooks/delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Delete a webhook endpoint */
-        delete: operations["deleteWebhook"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/webhooks/rotate-secret": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Rotate webhook signing secret */
-        post: operations["rotateWebhookSecret"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/webhooks/event-types": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List supported webhook event types */
-        get: operations["listWebhookEventTypes"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/webhooks/deliveries": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List recent webhook delivery attempts */
-        get: operations["listWebhookDeliveries"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/members": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List organization members */
-        get: operations["listMembers"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/members/get": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get a member */
-        get: operations["getMember"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/settings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get organization settings */
-        get: operations["getSettings"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update organization settings */
-        patch: operations["updateSettings"];
-        trace?: never;
-    };
-    "/account": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get account / organization summary */
-        get: operations["getAccount"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/analytics": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get signing analytics for a period */
-        get: operations["getAnalytics"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/audit-log": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List workspace audit / activity entries */
-        get: operations["listAuditLog"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/search": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Search documents, contacts, and templates */
-        get: operations["search"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/documents/access": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get document sharing mode */
-        get: operations["getDocumentAccess"];
-        /** Update document sharing mode */
-        put: operations["updateDocumentAccess"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/documents/bulk-send": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Send multiple documents */
-        post: operations["bulkSendDocuments"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/documents/bulk-void": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Void multiple documents */
-        post: operations["bulkVoidDocuments"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/organizations/{organizationSlug}/tokens": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List API tokens for an organization */
-        get: operations["listApiTokens"];
-        put?: never;
-        /**
-         * Create an API token
-         * @description Returns the full `seal_…` secret once. Store it — it cannot be retrieved again. Requires admin/owner (or a token with the `admin` scope).
-         */
-        post: operations["createApiToken"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/organizations/{organizationSlug}/tokens/{tokenId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Revoke an API token */
-        delete: operations["revokeApiToken"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
+  "/documents": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List documents
+     * @description Returns a paginated list of documents in your organization. Use the `next_cursor` from the response to fetch the next page.
+     */
+    get: operations["listDocuments"];
+    put?: never;
+    /**
+     * Create a document
+     * @description Creates a new document in `draft` status. You must first upload the PDF with the Uploads API to obtain a `storage_id`.
+     */
+    post: operations["createDocument"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/documents/get": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get a document */
+    get: operations["getDocument"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/documents/interaction": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get InteractionSession for a document (human handoff)
+     * @description Returns a Vortex InteractionSession for signing (ADR-004 / SEA-61).
+     *     Agents show or open `url`, then poll this endpoint until `status` is
+     *     not `pending`. Never forge the human signature. Requires
+     *     `documents:write` to include `url` (signing link).
+     */
+    get: operations["getDocumentInteraction"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/documents/update": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Update a document
+     * @description Updates document metadata. Only works for `draft` documents.
+     */
+    put: operations["updateDocument"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/documents/delete": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Delete a document
+     * @description Permanently deletes a draft document. For sent documents, use `POST /documents/void` instead.
+     */
+    delete: operations["deleteDocument"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/documents/apply-bindings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Apply structured values by binding_key
+     * @description For each document field with `properties.binding_key`, set `default_value` from the provided map. Draft documents only. This is the Seal-side of proposal→document sync (GitHub #604) without OCR.
+     */
+    post: operations["applyDocumentBindings"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/documents/fields": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List document fields (with binding_key) */
+    get: operations["listDocumentFields"];
+    put?: never;
+    /**
+     * Create a document field (percent-of-page geometry)
+     * @description Place a signature or data field on a draft document. Coordinates are percent-of-page (0–100), matching the web editor. Optional `binding_key` enables later `POST /documents/apply-bindings`.
+     */
+    post: operations["createDocumentField"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/documents/fields/update": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Update a document field */
+    put: operations["updateDocumentField"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/documents/fields/delete": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Delete a document field */
+    post: operations["deleteDocumentField"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/documents/place-candidates": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Place fields from detected field_candidates
+     * @description Creates signature fields from anydoc field_candidates (with suggested bounding boxes). Agents use this instead of a UI click loop.
+     */
+    post: operations["placeDocumentFieldCandidates"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/documents/field-suggestions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get pending field suggestions with bounding boxes */
+    get: operations["getDocumentFieldSuggestions"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/documents/field-suggestions/apply": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Apply field suggestions onto a draft document */
+    post: operations["applyDocumentFieldSuggestions"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/documents/annotations": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get bbox citation annotations for contract review */
+    get: operations["getDocumentAnnotations"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/documents/annotations/generate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Generate bbox citations from parsed text */
+    post: operations["generateDocumentAnnotations"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/documents/annotations/dismiss": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Dismiss active annotations */
+    post: operations["dismissDocumentAnnotations"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/documents/preview": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Agent preview (markdown, structured, pdf, or original office/CSV) */
+    get: operations["previewDocument"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/documents/split": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Split a draft PDF into child documents by page ranges */
+    post: operations["splitDocument"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/documents/pdf/annotate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Bake highlight/text/rect/redact ops onto a draft PDF */
+    post: operations["annotateDocumentPdf"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/documents/send": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Send a document
+     * @description Sends the document and transitions it from `draft` to `sent`. The document must have at least one recipient. `signing_mode` `sequential` invites only the current signer group.
+     */
+    post: operations["sendDocument"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/documents/void": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Void a document
+     * @description Cancels a document and notifies all recipients. Cannot void a document that is already `completed`.
+     */
+    post: operations["voidDocument"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/documents/download": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get download URL
+     * @description Returns a short-lived pre-signed URL to download the document. If the document is completed, this returns the signed PDF. Otherwise it returns the original uploaded file.
+     */
+    get: operations["downloadDocument"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/documents/certificate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Download Certificate of Completion
+     * @description Returns the Certificate of Completion PDF for a completed envelope (CompAI EVID-2 / SEA-50). Includes parties, emails, IPs, auth method, timestamps, document hash, and a verification URL. Only available when the document status is `completed`. Lazy-generates the PDF if missing.
+     */
+    get: operations["downloadCertificateOfCompletion"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/recipients": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List recipients */
+    get: operations["listRecipients"];
+    put?: never;
+    /**
+     * Add a recipient
+     * @description Adds a recipient to a draft document.
+     */
+    post: operations["addRecipient"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/recipients/get": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get a recipient */
+    get: operations["getRecipient"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/recipients/update": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Update a recipient
+     * @description Updates a recipient on a draft document.
+     */
+    put: operations["updateRecipient"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/recipients/delete": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Remove a recipient
+     * @description Removes a recipient from a draft document.
+     */
+    delete: operations["removeRecipient"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/recipients/remind": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Send a reminder
+     * @description Sends a reminder email to a recipient who has not yet completed their action. Only works for `sent` or `in_progress` documents.
+     */
+    post: operations["sendReminder"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/templates": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List templates */
+    get: operations["listTemplates"];
+    put?: never;
+    /**
+     * Create a template
+     * @description Creates a reusable template from an existing completed document. The document's field layout is copied to the template.
+     */
+    post: operations["createTemplate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/templates/get": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get a template */
+    get: operations["getTemplate"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/templates/fields": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get template fields
+     * @description Returns all field definitions for a template. Fields define where signatures, text inputs, and other data entry points are located on the document.
+     */
+    get: operations["getTemplateFields"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/templates/fields/update": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Update a template field (including binding_key)
+     * @description Patch label/required/properties on a template field. Set `properties.binding_key` to bind the field to an external proposal key (GitHub #604).
+     */
+    put: operations["updateTemplateField"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/templates/update": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Update a template */
+    put: operations["updateTemplate"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/templates/delete": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete a template */
+    delete: operations["deleteTemplate"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/templates/use": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create document from template
+     * @description Creates a new draft document pre-populated with the template's field layout. Add recipients and send when ready.
+     */
+    post: operations["useTemplate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/signatures": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List signatures
+     * @description Returns all signatures collected for a document.
+     */
+    get: operations["listSignatures"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/signatures/get": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get a signature */
+    get: operations["getSignature"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/signatures/verify": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Verify document integrity
+     * @description Verifies the cryptographic integrity of all signatures on a document. Returns whether the document has been tampered with since it was signed.
+     */
+    get: operations["verifyDocument"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/signatures/audit": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get audit trail
+     * @description Returns the complete activity log for a document, including when it was viewed, signed, completed, and any other notable events.
+     */
+    get: operations["getAuditTrail"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/uploads/generate-url": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Generate upload URL
+     * @description Returns a short-lived upload URL. `POST` the file bytes to that URL with the matching `Content-Type`. Accepted types: `application/pdf`, DOCX, XLSX, PPTX, and CSV. Non-PDF office/CSV uploads are converted to a fixed-layout PDF via the convert worker before storage; the original is retained under an `originals/` key. Pass the returned `storageId` to `POST /documents`.
+     */
+    post: operations["generateUploadUrl"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/uploads": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Upload a document file
+     * @description Upload file bytes to the URL from `POST /uploads/generate-url` (pass the token as a query param). PDFs are stored as-is. DOCX/XLSX/PPTX/CSV are converted to PDF via the convert worker; originals are kept. Requires a valid upload token (not a normal API key on this path).
+     */
+    post: operations["uploadFile"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/contacts": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List contacts */
+    get: operations["listContacts"];
+    put?: never;
+    /** Create a contact */
+    post: operations["createContact"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/contacts/get": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get a contact */
+    get: operations["getContact"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/contacts/delete": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete a contact */
+    delete: operations["deleteContact"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/contacts/update": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Update a contact */
+    put: operations["updateContact"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/folders": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List folders */
+    get: operations["listFolders"];
+    put?: never;
+    /** Create a folder */
+    post: operations["createFolder"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/folders/breadcrumbs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Folder breadcrumbs */
+    get: operations["getFolderBreadcrumbs"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/imports": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List import jobs */
+    get: operations["listImports"];
+    put?: never;
+    /**
+     * Create an import job
+     * @description Creates an import job in `pending_approval` status. Call approve to run it.
+     */
+    post: operations["createImport"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/imports/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get an import job */
+    get: operations["getImport"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/imports/{id}/approve": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Approve and run an import job */
+    post: operations["approveImport"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/imports/{id}/resume": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Resume an in-progress import job */
+    post: operations["resumeImport"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/webhooks": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List webhook endpoints */
+    get: operations["listWebhooks"];
+    put?: never;
+    /** Create a webhook endpoint */
+    post: operations["createWebhook"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/webhooks/get": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get a webhook endpoint */
+    get: operations["getWebhook"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/webhooks/update": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Update a webhook endpoint */
+    put: operations["updateWebhook"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/webhooks/delete": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete a webhook endpoint */
+    delete: operations["deleteWebhook"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/webhooks/rotate-secret": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Rotate webhook signing secret */
+    post: operations["rotateWebhookSecret"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/webhooks/event-types": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List supported webhook event types */
+    get: operations["listWebhookEventTypes"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/webhooks/deliveries": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List recent webhook delivery attempts */
+    get: operations["listWebhookDeliveries"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/members": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List organization members */
+    get: operations["listMembers"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/members/get": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get a member */
+    get: operations["getMember"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/settings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get organization settings */
+    get: operations["getSettings"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Update organization settings */
+    patch: operations["updateSettings"];
+    trace?: never;
+  };
+  "/account": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get account / organization summary */
+    get: operations["getAccount"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/analytics": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get signing analytics for a period */
+    get: operations["getAnalytics"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/audit-log": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List workspace audit / activity entries */
+    get: operations["listAuditLog"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/search": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Search documents, contacts, and templates */
+    get: operations["search"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/documents/access": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get document sharing mode */
+    get: operations["getDocumentAccess"];
+    /** Update document sharing mode */
+    put: operations["updateDocumentAccess"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/documents/bulk-send": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Send multiple documents */
+    post: operations["bulkSendDocuments"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/documents/bulk-void": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Void multiple documents */
+    post: operations["bulkVoidDocuments"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/organizations/{organizationSlug}/tokens": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List API tokens for an organization */
+    get: operations["listApiTokens"];
+    put?: never;
+    /**
+     * Create an API token
+     * @description Returns the full `seal_…` secret once. Store it — it cannot be retrieved again. Requires admin/owner (or a token with the `admin` scope).
+     */
+    post: operations["createApiToken"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/organizations/{organizationSlug}/tokens/{tokenId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Revoke an API token */
+    delete: operations["revokeApiToken"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        /**
-         * @description Current workflow status of a document
-         * @enum {string}
-         */
-        DocumentStatus: "draft" | "sent" | "in_progress" | "completed" | "cancelled" | "declined";
-        /**
-         * @description - `signer` — must provide a signature to complete the document
-         *     - `approver` — must click Approve; no signature drawn
-         *     - `viewer` — receives a copy but has no action required
-         * @enum {string}
-         */
-        RecipientRole: "signer" | "approver" | "viewer";
-        /** @enum {string} */
-        RecipientStatus: "pending" | "viewed" | "signed" | "approved" | "declined";
-        /** @enum {string} */
-        TemplateStatus: "active" | "archived";
-        /** @enum {string} */
-        SignatureMethod: "draw" | "type" | "upload";
-        /** @enum {string} */
-        FieldType: "signature" | "text" | "date" | "checkbox" | "dropdown" | "radio" | "attachment";
-        Document: {
-            /** @description Unique document identifier */
-            id: string;
-            title: string;
-            description?: string;
-            status: components["schemas"]["DocumentStatus"];
-            /** Format: date-time */
-            created_at: string;
-            /** Format: date-time */
-            updated_at: string;
-            /** @description Total number of recipients */
-            recipients_count: number;
-            /** @description Number of recipients who have completed their action */
-            signed_count: number;
-            /**
-             * Format: date-time
-             * @description Signing deadline
-             */
-            deadline?: string;
-            /**
-             * Format: uri
-             * @description Pre-signed URL to download the document PDF
-             */
-            download_url?: string;
-            /** @description Public folder ID this document belongs to, or null if unfiled */
-            folder_id?: string | null;
-            /** @description Vortex order form to execute when this document is signed, or null if unset */
-            vortex_order_form_id?: string | null;
-            /** @description Recipient list (only included when include_recipients=true) */
-            recipients?: components["schemas"]["Recipient"][];
-        };
-        /**
-         * @description Vortex human-handoff object (ADR-004). Agents open/show `url` and poll
-         *     until `status` is terminal. Seal signing is the first producer.
-         */
-        InteractionSession: {
-            /** @description Stable session id (e.g. sign:{document_id}) */
-            id: string;
-            /** @description Interaction kind (sign, approve, unlock, pay, …) */
-            kind: string;
-            /**
-             * Format: uri
-             * @description Temporary human page; null if not available yet
-             */
-            url?: string | null;
-            /** @enum {string} */
-            status: "pending" | "completed" | "cancelled" | "declined" | "expired";
-            /** Format: date-time */
-            expires_at?: string | null;
-            /** @description One-line instruction for the host/human */
-            message: string;
-            poll: {
-                path: string;
-                interval_ms: number;
-            };
-            result?: {
-                document_id?: string;
-                document_status?: string;
-                title?: string | null;
-            };
-        };
-        Recipient: {
-            id: string;
-            /** Format: email */
-            email: string;
-            name: string;
-            role: components["schemas"]["RecipientRole"];
-            status: components["schemas"]["RecipientStatus"];
-            /** @description Position in sequential signing order */
-            order?: number;
-            /** Format: date-time */
-            signed_at?: string;
-            /** Format: date-time */
-            viewed_at?: string;
-            /** Format: date-time */
-            declined_at?: string;
-            decline_reason?: string;
-        };
-        Template: {
-            id: string;
-            name: string;
-            description?: string;
-            status: components["schemas"]["TemplateStatus"];
-            /** Format: date-time */
-            created_at: string;
-            /** Format: date-time */
-            updated_at: string;
-            /** @description Number of documents created from this template */
-            use_count: number;
-            field_count?: number;
-        };
-        TemplateField: {
-            id: string;
-            field_type: components["schemas"]["FieldType"];
-            label?: string;
-            is_required: boolean;
-            /** @description Page number (1-indexed) */
-            page: number;
-            /** @description X position as a fraction of page width (0–1) */
-            x: number;
-            /** @description Y position as a fraction of page height (0–1) */
-            y: number;
-            /** @description Width as a fraction of page width (0–1) */
-            width: number;
-            /** @description Height as a fraction of page height (0–1) */
-            height: number;
-            /** @description Free-form field properties. Use `binding_key` to bind a fillable field to an external proposal/deal key (programmatic sync instead of agentic OCR reconstruction — see GitHub #604). */
-            properties?: {
-                placeholder?: string;
-                default_value?: string;
-                options?: string[];
-                /** @description External structured-data key (e.g. a Vortex Payments proposal field). When set, agents/integrations write this field from the bound source instead of guessing via OCR. */
-                binding_key?: string;
-            };
-        };
-        Signature: {
-            id: string;
-            field_id: string;
-            recipient_id: string;
-            document_id: string;
-            signature_method: components["schemas"]["SignatureMethod"];
-            /** Format: date-time */
-            signed_at: string;
-            /** Format: uri */
-            signature_image_url?: string;
-            /** @description SHA-256 hash of the signature data */
-            signature_hash?: string;
-            ip_address?: string;
-            user_agent?: string;
-        };
-        AuditEntry: {
-            id: string;
-            /** @description Dot-separated action identifier, e.g. `document.viewed`, `recipient.signed`, `document.completed` */
-            event_type: string;
-            /** Format: email */
-            actor_email?: string;
-            actor_name?: string;
-            /** Format: date-time */
-            timestamp: string;
-            ip_address?: string;
-            user_agent?: string;
-            details?: {
-                [key: string]: unknown;
-            };
-        };
-        VerificationResult: {
-            /** @description True if all signatures are cryptographically valid */
-            is_valid: boolean;
-            /** @description SHA-256 hash of the current document */
-            document_hash: string;
-            /** Format: date-time */
-            verification_timestamp: string;
-            signatures: {
-                id: string;
-                /** Format: email */
-                recipient_email: string;
-                is_valid: boolean;
-                /** Format: date-time */
-                signed_at: string;
-                signature_hash: string;
-            }[];
-        };
-        PaginatedDocuments: {
-            data: components["schemas"]["Document"][];
-            has_more: boolean;
-            next_cursor?: string;
-        };
-        PaginatedTemplates: {
-            data: components["schemas"]["Template"][];
-            has_more: boolean;
-            next_cursor?: string;
-        };
-        /** @enum {string} */
-        ContactStatus: "active" | "inactive" | "lead";
-        Contact: {
-            id: string;
-            first_name: string;
-            last_name: string;
-            full_name: string;
-            /** Format: email */
-            email: string;
-            phone?: string;
-            company?: string;
-            title?: string;
-            status: components["schemas"]["ContactStatus"];
-            notes?: string;
-            tags?: string[];
-            /** Format: date-time */
-            last_contacted_at?: string;
-            /** Format: date-time */
-            created_at: string;
-            /** Format: date-time */
-            updated_at: string;
-        };
-        PaginatedContacts: {
-            data: components["schemas"]["Contact"][];
-            has_more: boolean;
-            next_cursor?: string;
-        };
-        Folder: {
-            id: string;
-            name: string;
-            /** @enum {string} */
-            type: "document" | "template";
-            parent_id: string | null;
-            /** @enum {string} */
-            visibility: "everyone" | "members" | "restricted";
-            pinned: boolean;
-            /** Format: date-time */
-            created_at: string;
-            /** Format: date-time */
-            updated_at: string;
-        };
-        ImportJob: {
-            id: string;
-            /** @enum {string} */
-            adapter: "pdf" | "docusign" | "pandadoc";
-            status: string;
-            payload: unknown;
-            processed_count: number;
-            total_count?: number | null;
-            cursor?: string | null;
-            error?: string | null;
-            approved_by?: string | null;
-            /** Format: date-time */
-            approved_at?: string | null;
-            created_by: string;
-            /** Format: date-time */
-            created_at: string;
-            /** Format: date-time */
-            updated_at: string;
-        };
-        /** @enum {string} */
-        WebhookStatus: "active" | "paused" | "disabled";
-        WebhookEndpoint: {
-            id: string;
-            name: string;
-            /** Format: uri */
-            url: string;
-            status: components["schemas"]["WebhookStatus"];
-            events: string[];
-            description?: string;
-            secret_prefix: string;
-            /** Format: date-time */
-            created_at: string;
-            /** Format: date-time */
-            updated_at: string;
-            stats: {
-                total_deliveries: number;
-                successful: number;
-                failed: number;
-                success_rate: number;
-            };
-        };
-        WebhookEventType: {
-            type: string;
-            category: string;
-            description: string;
-        };
-        /** @enum {string} */
-        MemberRole: "owner" | "admin" | "member" | "viewer";
-        Member: {
-            id: string;
-            user_id: string;
-            name: string;
-            /** Format: email */
-            email: string;
-            /** Format: uri */
-            avatar_url?: string;
-            role: components["schemas"]["MemberRole"];
-            status: string;
-            /** Format: date-time */
-            joined_at: string;
-        };
-        Settings: {
-            signing: {
-                allowed_signature_types: ("draw" | "type" | "upload")[];
-                default_deadline_days: number;
-                esign_consent_text: string | null;
-            };
-            notifications: {
-                reminder_schedule: number[];
-                expiration_alert_days: number;
-                send_completion_email: boolean;
-                send_viewed_notification: boolean;
-            };
-            ai: {
-                enabled: boolean;
-                auto_analyze: boolean;
-            };
-            security: {
-                ip_allowlist: string[];
-                allow_api_access: boolean;
-                require_mfa: boolean;
-                session_timeout_minutes: number | null;
-            };
-        };
-        AccountInfo: {
-            name: string;
-            slug: string;
-            /** @enum {string} */
-            type: "personal" | "group" | "company";
-            timezone: string;
-            /** @enum {string} */
-            status: "active" | "suspended" | "deleted";
-            members: {
-                [key: string]: unknown;
-            };
-            documents: {
-                [key: string]: unknown;
-            };
-            signing_settings?: {
-                [key: string]: unknown;
-            };
-            ai_enabled?: boolean;
-        };
-        Analytics: {
-            period: {
-                /** Format: date-time */
-                from: string;
-                /** Format: date-time */
-                to: string;
-            };
-            documents: {
-                [key: string]: unknown;
-            };
-            workspace_snapshot: {
-                [key: string]: unknown;
-            };
-        };
-        AuditLogEntry: {
-            id: string;
-            event_type: string;
-            actor_email?: string;
-            actor_name?: string;
-            /** Format: date-time */
-            timestamp: string;
-            ip_address?: string;
-            user_agent?: string;
-            details?: {
-                [key: string]: unknown;
-            };
-        };
-        /** @enum {string} */
-        DocumentSharingMode: "private" | "workspace" | "specific";
-        DocumentAccess: {
-            sharing_mode: components["schemas"]["DocumentSharingMode"];
-        };
-        BulkOperationSummary: {
-            succeeded: number;
-            failed: number;
-            errors?: {
-                [key: string]: unknown;
-            }[];
-        };
-        /** @description Search result row (document, contact, or template) */
-        SearchHit: {
-            [key: string]: unknown;
-        };
-        /** @enum {string} */
-        ApiTokenScope: "read" | "write" | "sign" | "admin";
-        ApiToken: {
-            id: string;
-            publicId: string;
-            name: string;
-            scopes: components["schemas"]["ApiTokenScope"][];
-            /** Format: date-time */
-            lastUsedAt?: string | null;
-            /** Format: date-time */
-            revokedAt?: string | null;
-            /** Format: date-time */
-            createdAt: string;
-            /** @description Full secret — only returned once on create */
-            token?: string;
-        };
-        Error: {
-            /**
-             * @description Machine-readable error code
-             * @example VALIDATION_ERROR
-             */
-            type: string;
-            /**
-             * @description HTTP status code
-             * @example 400
-             */
-            status: number;
-            /** @description Human-readable error message */
-            title: string;
-            /** @description Field-level validation errors */
-            details?: {
-                [key: string]: unknown;
-            };
-        };
+  schemas: {
+    /**
+     * @description Current workflow status of a document
+     * @enum {string}
+     */
+    DocumentStatus:
+      | "draft"
+      | "sent"
+      | "in_progress"
+      | "completed"
+      | "cancelled"
+      | "declined";
+    /**
+     * @description - `signer` — must provide a signature to complete the document
+     *     - `approver` — must click Approve; no signature drawn
+     *     - `viewer` — receives a copy but has no action required
+     * @enum {string}
+     */
+    RecipientRole: "signer" | "approver" | "viewer";
+    /** @enum {string} */
+    RecipientStatus: "pending" | "viewed" | "signed" | "approved" | "declined";
+    /** @enum {string} */
+    TemplateStatus: "active" | "archived";
+    /** @enum {string} */
+    SignatureMethod: "draw" | "type" | "upload";
+    /** @enum {string} */
+    FieldType:
+      | "signature"
+      | "text"
+      | "date"
+      | "checkbox"
+      | "dropdown"
+      | "radio"
+      | "attachment";
+    Document: {
+      /** @description Unique document identifier */
+      id: string;
+      title: string;
+      description?: string;
+      status: components["schemas"]["DocumentStatus"];
+      /** Format: date-time */
+      created_at: string;
+      /** Format: date-time */
+      updated_at: string;
+      /** @description Total number of recipients */
+      recipients_count: number;
+      /** @description Number of recipients who have completed their action */
+      signed_count: number;
+      /**
+       * Format: date-time
+       * @description Signing deadline
+       */
+      deadline?: string;
+      /**
+       * Format: uri
+       * @description Pre-signed URL to download the document PDF
+       */
+      download_url?: string;
+      /** @description Public folder ID this document belongs to, or null if unfiled */
+      folder_id?: string | null;
+      /** @description Vortex order form to execute when this document is signed, or null if unset */
+      vortex_order_form_id?: string | null;
+      /** @description Recipient list (only included when include_recipients=true) */
+      recipients?: components["schemas"]["Recipient"][];
     };
-    responses: {
-        /** @description Missing or invalid API key */
-        Unauthorized: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                /**
-                 * @example {
-                 *       "type": "AUTH_ERROR",
-                 *       "status": 401,
-                 *       "title": "Missing or invalid API key"
-                 *     }
-                 */
-                "application/json": components["schemas"]["Error"];
-            };
-        };
-        /** @description Resource not found */
-        NotFound: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                /**
-                 * @example {
-                 *       "type": "NOT_FOUND",
-                 *       "status": 404,
-                 *       "title": "Document not found"
-                 *     }
-                 */
-                "application/json": components["schemas"]["Error"];
-            };
-        };
-        /** @description Invalid request parameters */
-        ValidationError: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                /**
-                 * @example {
-                 *       "type": "VALIDATION_ERROR",
-                 *       "status": 400,
-                 *       "title": "Validation failed",
-                 *       "details": {
-                 *         "email": [
-                 *           "Must be a valid email address"
-                 *         ]
-                 *       }
-                 *     }
-                 */
-                "application/json": components["schemas"]["Error"];
-            };
-        };
+    /**
+     * @description Vortex human-handoff object (ADR-004). Agents open/show `url` and poll
+     *     until `status` is terminal. Seal signing is the first producer.
+     */
+    InteractionSession: {
+      /** @description Stable session id (e.g. sign:{document_id}) */
+      id: string;
+      /** @description Interaction kind (sign, approve, unlock, pay, …) */
+      kind: string;
+      /**
+       * Format: uri
+       * @description Temporary human page; null if not available yet
+       */
+      url?: string | null;
+      /** @enum {string} */
+      status: "pending" | "completed" | "cancelled" | "declined" | "expired";
+      /** Format: date-time */
+      expires_at?: string | null;
+      /** @description One-line instruction for the host/human */
+      message: string;
+      poll: {
+        path: string;
+        interval_ms: number;
+      };
+      result?: {
+        document_id?: string;
+        document_status?: string;
+        title?: string | null;
+      };
     };
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+    Recipient: {
+      id: string;
+      /** Format: email */
+      email: string;
+      name: string;
+      role: components["schemas"]["RecipientRole"];
+      status: components["schemas"]["RecipientStatus"];
+      /** @description Position in sequential signing order */
+      order?: number;
+      /** Format: date-time */
+      signed_at?: string;
+      /** Format: date-time */
+      viewed_at?: string;
+      /** Format: date-time */
+      declined_at?: string;
+      decline_reason?: string;
+    };
+    Template: {
+      id: string;
+      name: string;
+      description?: string;
+      status: components["schemas"]["TemplateStatus"];
+      /** Format: date-time */
+      created_at: string;
+      /** Format: date-time */
+      updated_at: string;
+      /** @description Number of documents created from this template */
+      use_count: number;
+      field_count?: number;
+    };
+    TemplateField: {
+      id: string;
+      field_type: components["schemas"]["FieldType"];
+      label?: string;
+      is_required: boolean;
+      /** @description Page number (1-indexed) */
+      page: number;
+      /** @description X position as a fraction of page width (0–1) */
+      x: number;
+      /** @description Y position as a fraction of page height (0–1) */
+      y: number;
+      /** @description Width as a fraction of page width (0–1) */
+      width: number;
+      /** @description Height as a fraction of page height (0–1) */
+      height: number;
+      /** @description Free-form field properties. Use `binding_key` to bind a fillable field to an external proposal/deal key (programmatic sync instead of agentic OCR reconstruction — see GitHub #604). */
+      properties?: {
+        placeholder?: string;
+        default_value?: string;
+        options?: string[];
+        /** @description External structured-data key (e.g. a Vortex Payments proposal field). When set, agents/integrations write this field from the bound source instead of guessing via OCR. */
+        binding_key?: string;
+      };
+    };
+    Signature: {
+      id: string;
+      field_id: string;
+      recipient_id: string;
+      document_id: string;
+      signature_method: components["schemas"]["SignatureMethod"];
+      /** Format: date-time */
+      signed_at: string;
+      /** Format: uri */
+      signature_image_url?: string;
+      /** @description SHA-256 hash of the signature data */
+      signature_hash?: string;
+      ip_address?: string;
+      user_agent?: string;
+    };
+    AuditEntry: {
+      id: string;
+      /** @description Dot-separated action identifier, e.g. `document.viewed`, `recipient.signed`, `document.completed` */
+      event_type: string;
+      /** Format: email */
+      actor_email?: string;
+      actor_name?: string;
+      /** Format: date-time */
+      timestamp: string;
+      ip_address?: string;
+      user_agent?: string;
+      details?: {
+        [key: string]: unknown;
+      };
+    };
+    VerificationResult: {
+      /** @description True if all signatures are cryptographically valid */
+      is_valid: boolean;
+      /** @description SHA-256 hash of the current document */
+      document_hash: string;
+      /** Format: date-time */
+      verification_timestamp: string;
+      signatures: {
+        id: string;
+        /** Format: email */
+        recipient_email: string;
+        is_valid: boolean;
+        /** Format: date-time */
+        signed_at: string;
+        signature_hash: string;
+      }[];
+    };
+    PaginatedDocuments: {
+      data: components["schemas"]["Document"][];
+      has_more: boolean;
+      next_cursor?: string;
+    };
+    PaginatedTemplates: {
+      data: components["schemas"]["Template"][];
+      has_more: boolean;
+      next_cursor?: string;
+    };
+    /** @enum {string} */
+    ContactStatus: "active" | "inactive" | "lead";
+    Contact: {
+      id: string;
+      first_name: string;
+      last_name: string;
+      full_name: string;
+      /** Format: email */
+      email: string;
+      phone?: string;
+      company?: string;
+      title?: string;
+      status: components["schemas"]["ContactStatus"];
+      notes?: string;
+      tags?: string[];
+      /** Format: date-time */
+      last_contacted_at?: string;
+      /** Format: date-time */
+      created_at: string;
+      /** Format: date-time */
+      updated_at: string;
+    };
+    PaginatedContacts: {
+      data: components["schemas"]["Contact"][];
+      has_more: boolean;
+      next_cursor?: string;
+    };
+    Folder: {
+      id: string;
+      name: string;
+      /** @enum {string} */
+      type: "document" | "template";
+      parent_id: string | null;
+      /** @enum {string} */
+      visibility: "everyone" | "members" | "restricted";
+      pinned: boolean;
+      /** Format: date-time */
+      created_at: string;
+      /** Format: date-time */
+      updated_at: string;
+    };
+    ImportJob: {
+      id: string;
+      /** @enum {string} */
+      adapter: "pdf" | "docusign" | "pandadoc";
+      status: string;
+      payload: unknown;
+      processed_count: number;
+      total_count?: number | null;
+      cursor?: string | null;
+      error?: string | null;
+      approved_by?: string | null;
+      /** Format: date-time */
+      approved_at?: string | null;
+      created_by: string;
+      /** Format: date-time */
+      created_at: string;
+      /** Format: date-time */
+      updated_at: string;
+    };
+    /** @enum {string} */
+    WebhookStatus: "active" | "paused" | "disabled";
+    WebhookEndpoint: {
+      id: string;
+      name: string;
+      /** Format: uri */
+      url: string;
+      status: components["schemas"]["WebhookStatus"];
+      events: string[];
+      description?: string;
+      secret_prefix: string;
+      /** Format: date-time */
+      created_at: string;
+      /** Format: date-time */
+      updated_at: string;
+      stats: {
+        total_deliveries: number;
+        successful: number;
+        failed: number;
+        success_rate: number;
+      };
+    };
+    WebhookEventType: {
+      type: string;
+      category: string;
+      description: string;
+    };
+    /** @enum {string} */
+    MemberRole: "owner" | "admin" | "member" | "viewer";
+    Member: {
+      id: string;
+      user_id: string;
+      name: string;
+      /** Format: email */
+      email: string;
+      /** Format: uri */
+      avatar_url?: string;
+      role: components["schemas"]["MemberRole"];
+      status: string;
+      /** Format: date-time */
+      joined_at: string;
+    };
+    Settings: {
+      signing: {
+        allowed_signature_types: ("draw" | "type" | "upload")[];
+        default_deadline_days: number;
+        esign_consent_text: string | null;
+      };
+      notifications: {
+        reminder_schedule: number[];
+        expiration_alert_days: number;
+        send_completion_email: boolean;
+        send_viewed_notification: boolean;
+      };
+      ai: {
+        enabled: boolean;
+        auto_analyze: boolean;
+      };
+      security: {
+        ip_allowlist: string[];
+        allow_api_access: boolean;
+        require_mfa: boolean;
+        session_timeout_minutes: number | null;
+      };
+    };
+    AccountInfo: {
+      name: string;
+      slug: string;
+      /** @enum {string} */
+      type: "personal" | "group" | "company";
+      timezone: string;
+      /** @enum {string} */
+      status: "active" | "suspended" | "deleted";
+      members: {
+        [key: string]: unknown;
+      };
+      documents: {
+        [key: string]: unknown;
+      };
+      signing_settings?: {
+        [key: string]: unknown;
+      };
+      ai_enabled?: boolean;
+    };
+    Analytics: {
+      period: {
+        /** Format: date-time */
+        from: string;
+        /** Format: date-time */
+        to: string;
+      };
+      documents: {
+        [key: string]: unknown;
+      };
+      workspace_snapshot: {
+        [key: string]: unknown;
+      };
+    };
+    AuditLogEntry: {
+      id: string;
+      event_type: string;
+      actor_email?: string;
+      actor_name?: string;
+      /** Format: date-time */
+      timestamp: string;
+      ip_address?: string;
+      user_agent?: string;
+      details?: {
+        [key: string]: unknown;
+      };
+    };
+    /** @enum {string} */
+    DocumentSharingMode: "private" | "workspace" | "specific";
+    DocumentAccess: {
+      sharing_mode: components["schemas"]["DocumentSharingMode"];
+    };
+    BulkOperationSummary: {
+      succeeded: number;
+      failed: number;
+      errors?: {
+        [key: string]: unknown;
+      }[];
+    };
+    /** @description Search result row (document, contact, or template) */
+    SearchHit: {
+      [key: string]: unknown;
+    };
+    /** @enum {string} */
+    ApiTokenScope: "read" | "write" | "sign" | "admin";
+    ApiToken: {
+      id: string;
+      publicId: string;
+      name: string;
+      scopes: components["schemas"]["ApiTokenScope"][];
+      /** Format: date-time */
+      lastUsedAt?: string | null;
+      /** Format: date-time */
+      revokedAt?: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** @description Full secret — only returned once on create */
+      token?: string;
+    };
+    Error: {
+      /**
+       * @description Machine-readable error code
+       * @example VALIDATION_ERROR
+       */
+      type: string;
+      /**
+       * @description HTTP status code
+       * @example 400
+       */
+      status: number;
+      /** @description Human-readable error message */
+      title: string;
+      /** @description Field-level validation errors */
+      details?: {
+        [key: string]: unknown;
+      };
+    };
+  };
+  responses: {
+    /** @description Missing or invalid API key */
+    Unauthorized: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        /**
+         * @example {
+         *       "type": "AUTH_ERROR",
+         *       "status": 401,
+         *       "title": "Missing or invalid API key"
+         *     }
+         */
+        "application/json": components["schemas"]["Error"];
+      };
+    };
+    /** @description Resource not found */
+    NotFound: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        /**
+         * @example {
+         *       "type": "NOT_FOUND",
+         *       "status": 404,
+         *       "title": "Document not found"
+         *     }
+         */
+        "application/json": components["schemas"]["Error"];
+      };
+    };
+    /** @description Invalid request parameters */
+    ValidationError: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        /**
+         * @example {
+         *       "type": "VALIDATION_ERROR",
+         *       "status": 400,
+         *       "title": "Validation failed",
+         *       "details": {
+         *         "email": [
+         *           "Must be a valid email address"
+         *         ]
+         *       }
+         *     }
+         */
+        "application/json": components["schemas"]["Error"];
+      };
+    };
+  };
+  parameters: never;
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    listDocuments: {
-        parameters: {
-            query?: {
-                /** @description Number of results per page */
-                limit?: number;
-                /** @description Pagination cursor from the previous response */
-                cursor?: string;
-                /** @description Filter documents by status */
-                status?: components["schemas"]["DocumentStatus"];
-                /** @description Filter by folder public ID. Pass an empty string to list unfiled documents only. */
-                folder_id?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaginatedDocuments"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    createDocument: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                /**
-                 * @example {
-                 *       "title": "Service Agreement Q1 2026",
-                 *       "storage_id": "kg2a7b3c8d9e0f1a2b3c",
-                 *       "file_size": 245760,
-                 *       "page_count": 3
-                 *     }
-                 */
-                "application/json": {
-                    /** @description Document title displayed to recipients */
-                    title: string;
-                    description?: string;
-                    /** @description Storage ID returned by the Uploads API */
-                    storage_id: string;
-                    /** @description File size in bytes */
-                    file_size: number;
-                    /** @default application/pdf */
-                    file_type?: string;
-                    /** @description Number of pages in the document */
-                    page_count?: number;
-                    /**
-                     * Format: date-time
-                     * @description Signing deadline — recipients cannot sign after this date
-                     */
-                    deadline?: string;
-                    /** @description Public folder ID to file this document under */
-                    folder_id?: string | null;
-                };
-            };
-        };
-        responses: {
-            /** @description Document created */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "id": "j572a8b1c2d3e4f5a6b7"
-                     *     }
-                     */
-                    "application/json": {
-                        id: string;
-                    };
-                };
-            };
-            400: components["responses"]["ValidationError"];
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    getDocument: {
-        parameters: {
-            query: {
-                /** @description Document ID */
-                id: string;
-                /** @description Include recipient list in response */
-                include_recipients?: boolean;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Document"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    getDocumentInteraction: {
-        parameters: {
-            query: {
-                /** @description Document ID */
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["InteractionSession"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    updateDocument: {
-        parameters: {
-            query: {
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    title?: string;
-                    description?: string;
-                    /** Format: date-time */
-                    deadline?: string;
-                    /** @description Move document into this folder, or null to unfile */
-                    folder_id?: string | null;
-                    /** @description Vortex order form to execute when this draft is signed. Null clears the link. */
-                    vortex_order_form_id?: string | null;
-                };
-            };
-        };
-        responses: {
-            /** @description Updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Document"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    deleteDocument: {
-        parameters: {
-            query: {
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Deleted */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        success?: boolean;
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    applyDocumentBindings: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    id: string;
-                    bindings: {
-                        [key: string]: string;
-                    };
-                };
-            };
-        };
-        responses: {
-            /** @description Applied */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        updated: number;
-                        unmatched_keys: string[];
-                    };
-                };
-            };
-            400: components["responses"]["ValidationError"];
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    listDocumentFields: {
-        parameters: {
-            query: {
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Fields */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    createDocumentField: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    id: string;
-                    /** @enum {string} */
-                    field_type: "signature" | "text" | "number" | "date" | "checkbox" | "dropdown" | "radio" | "attachment" | "payment";
-                    label: string;
-                    is_required?: boolean;
-                    page: number;
-                    x: number;
-                    y: number;
-                    width: number;
-                    height: number;
-                    recipient_id?: string;
-                    binding_key?: string;
-                    properties?: {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            400: components["responses"]["ValidationError"];
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    updateDocumentField: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    id: string;
-                    field_id: string;
-                    label?: string;
-                    is_required?: boolean;
-                    page?: number;
-                    x?: number;
-                    y?: number;
-                    width?: number;
-                    height?: number;
-                    recipient_id?: string | null;
-                    binding_key?: string | null;
-                    properties?: {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-        responses: {
-            /** @description Updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    deleteDocumentField: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    id: string;
-                    field_id: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Deleted */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    placeDocumentFieldCandidates: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    id: string;
-                    indices?: number[];
-                    recipient_id?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Placed */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        fieldIds: string[];
-                        count: number;
-                    };
-                };
-            };
-            400: components["responses"]["ValidationError"];
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    getDocumentFieldSuggestions: {
-        parameters: {
-            query: {
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Suggestions or null */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    applyDocumentFieldSuggestions: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    id: string;
-                    suggestion_id: string;
-                    selected_indices?: number[];
-                };
-            };
-        };
-        responses: {
-            /** @description Applied */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    getDocumentAnnotations: {
-        parameters: {
-            query: {
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Annotations or null */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    generateDocumentAnnotations: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    id: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Generated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    dismissDocumentAnnotations: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    id: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Dismissed */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    previewDocument: {
-        parameters: {
-            query: {
-                id: string;
-                format?: "markdown" | "structured" | "pdf" | "original";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Preview payload */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    splitDocument: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    id: string;
-                    splits: {
-                        title: string;
-                        pages: number[];
-                    }[];
-                };
-            };
-        };
-        responses: {
-            /** @description Child documents created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    annotateDocumentPdf: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    id: string;
-                    operations: {
-                        /** @enum {string} */
-                        op: "highlight" | "text" | "rect" | "redact";
-                        page: number;
-                        x?: number;
-                        y?: number;
-                        width?: number;
-                        height?: number;
-                        text?: string;
-                        size?: number;
-                        color?: string;
-                    }[];
-                };
-            };
-        };
-        responses: {
-            /** @description Annotated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    sendDocument: {
-        parameters: {
-            query: {
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    /** @description Custom message included in the invitation email */
-                    message?: string;
-                    /** @description Send invitation email. Defaults to true. */
-                    notify?: boolean;
-                    /**
-                     * @description How many days recipients have to sign.
-                     * @example 14
-                     */
-                    expires_in_days?: number;
-                    /**
-                     * @description parallel invites everyone still open. sequential invites only the earliest open signer group, then the next group after that group finishes.
-                     * @enum {string}
-                     */
-                    signing_mode?: "parallel" | "sequential";
-                    /**
-                     * @description When signing_mode is sequential, each signer may choose who signs next.
-                     */
-                    allow_dictate_next_signer?: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Sent */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        success?: boolean;
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    voidDocument: {
-        parameters: {
-            query: {
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** @description Reason for voiding the document */
-                    reason: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Voided */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        success?: boolean;
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    downloadDocument: {
-        parameters: {
-            query: {
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: uri */
-                        url: string;
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    downloadCertificateOfCompletion: {
-        parameters: {
-            query: {
-                /** @description Document id */
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Certificate of Completion PDF */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/pdf": string;
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-            /** @description Object storage not configured */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    listRecipients: {
-        parameters: {
-            query: {
-                document_id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        recipients?: components["schemas"]["Recipient"][];
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    addRecipient: {
-        parameters: {
-            query: {
-                document_id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                /**
-                 * @example {
-                 *       "email": "jane@acme.com",
-                 *       "name": "Jane Smith",
-                 *       "role": "signer",
-                 *       "order": 1
-                 *     }
-                 */
-                "application/json": {
-                    /** Format: email */
-                    email: string;
-                    name: string;
-                    role: components["schemas"]["RecipientRole"];
-                    /** @description Signing order position for sequential workflows */
-                    order?: number;
-                    /** @description Custom message for this recipient's invitation email */
-                    message?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Recipient added */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        id?: string;
-                    };
-                };
-            };
-            400: components["responses"]["ValidationError"];
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    getRecipient: {
-        parameters: {
-            query: {
-                document_id: string;
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Recipient"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    updateRecipient: {
-        parameters: {
-            query: {
-                document_id: string;
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    /** Format: email */
-                    email?: string;
-                    name?: string;
-                    role?: components["schemas"]["RecipientRole"];
-                    order?: number;
-                    message?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        success?: boolean;
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    removeRecipient: {
-        parameters: {
-            query: {
-                document_id: string;
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Removed */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        success?: boolean;
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    sendReminder: {
-        parameters: {
-            query: {
-                document_id: string;
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    /** @description Custom reminder message */
-                    message?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Reminder sent */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        success?: boolean;
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    listTemplates: {
-        parameters: {
-            query?: {
-                limit?: number;
-                cursor?: string;
-                status?: components["schemas"]["TemplateStatus"];
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaginatedTemplates"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    createTemplate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** @description Source document ID to create the template from */
-                    document_id: string;
-                    name: string;
-                    description?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Template created */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        id?: string;
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    getTemplate: {
-        parameters: {
-            query: {
-                id: string;
-                /** @description Include field definitions in response */
-                include_fields?: boolean;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Template"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    getTemplateFields: {
-        parameters: {
-            query: {
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        fields?: components["schemas"]["TemplateField"][];
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    updateTemplateField: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    template_id: string;
-                    field_id: string;
-                    label?: string;
-                    is_required?: boolean;
-                    properties?: {
-                        placeholder?: string;
-                        default_value?: string;
-                        options?: string[];
-                        binding_key?: string;
-                    };
-                };
-            };
-        };
-        responses: {
-            /** @description Updated field */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        field?: components["schemas"]["TemplateField"];
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    updateTemplate: {
-        parameters: {
-            query: {
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    name?: string;
-                    description?: string;
-                    status?: components["schemas"]["TemplateStatus"];
-                };
-            };
-        };
-        responses: {
-            /** @description Updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        success?: boolean;
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    deleteTemplate: {
-        parameters: {
-            query: {
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Deleted */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        success?: boolean;
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    useTemplate: {
-        parameters: {
-            query: {
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    /** @description Title for the new document (defaults to template name) */
-                    title?: string;
-                    description?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Document created */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        id?: string;
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    listSignatures: {
-        parameters: {
-            query: {
-                document_id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        signatures?: components["schemas"]["Signature"][];
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    getSignature: {
-        parameters: {
-            query: {
-                document_id: string;
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Signature"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    verifyDocument: {
-        parameters: {
-            query: {
-                document_id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Verification result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["VerificationResult"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    getAuditTrail: {
-        parameters: {
-            query: {
-                document_id: string;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        entries?: components["schemas"]["AuditEntry"][];
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    generateUploadUrl: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Upload URL generated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * Format: uri
-                         * @description Pre-signed URL — expires in 60 seconds
-                         */
-                        upload_url: string;
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    uploadFile: {
-        parameters: {
-            query: {
-                token: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/pdf": string;
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
-                "application/vnd.openxmlformats-officedocument.presentationml.presentation": string;
-                "text/csv": string;
-            };
-        };
-        responses: {
-            /** @description Stored (PDF bytes available at storageId) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        storageId: string;
-                    };
-                };
-            };
-            400: components["responses"]["ValidationError"];
-            401: components["responses"]["Unauthorized"];
-            /** @description Conversion failed */
-            502: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    listContacts: {
-        parameters: {
-            query?: {
-                limit?: number;
-                cursor?: string;
-                status?: components["schemas"]["ContactStatus"];
-                /** @description Search by name or email */
-                search?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Paginated contacts */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaginatedContacts"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    createContact: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    first_name: string;
-                    last_name: string;
-                    /** Format: email */
-                    email: string;
-                    phone?: string;
-                    company?: string;
-                    title?: string;
-                    status?: components["schemas"]["ContactStatus"];
-                    notes?: string;
-                    tags?: string[];
-                };
-            };
-        };
-        responses: {
-            /** @description Created */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        id: string;
-                    };
-                };
-            };
-            400: components["responses"]["ValidationError"];
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    getContact: {
-        parameters: {
-            query: {
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Contact */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Contact"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    deleteContact: {
-        parameters: {
-            query: {
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Deleted */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        success: boolean;
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    updateContact: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    id: string;
-                    first_name?: string;
-                    last_name?: string;
-                    /** Format: email */
-                    email?: string;
-                    phone?: string | null;
-                    company?: string | null;
-                    title?: string | null;
-                    status?: components["schemas"]["ContactStatus"];
-                    notes?: string | null;
-                    tags?: string[];
-                };
-            };
-        };
-        responses: {
-            /** @description Updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        success: boolean;
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    listFolders: {
-        parameters: {
-            query?: {
-                type?: "document" | "template";
-                /** @description Parent folder public ID; omit for root folders */
-                parent_id?: string;
-                /** @description When true, return all folders of the type (ignore parent) */
-                flat?: boolean;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Folders */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        folders: components["schemas"]["Folder"][];
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    createFolder: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    name: string;
-                    /**
-                     * @default document
-                     * @enum {string}
-                     */
-                    type?: "document" | "template";
-                    parent_id?: string;
-                    /**
-                     * @default everyone
-                     * @enum {string}
-                     */
-                    visibility?: "everyone" | "members" | "restricted";
-                    /** @default false */
-                    pinned?: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Folder"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    getFolderBreadcrumbs: {
-        parameters: {
-            query: {
-                /** @description Folder public ID */
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Breadcrumb trail from root to the folder */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        breadcrumbs: {
-                            id: string;
-                            name: string;
-                        }[];
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    listImports: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Import jobs */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data: components["schemas"]["ImportJob"][];
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    createImport: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** @enum {string} */
-                    adapter: "pdf" | "docusign" | "pandadoc";
-                    payload?: {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data: components["schemas"]["ImportJob"];
-                    };
-                };
-            };
-            400: components["responses"]["ValidationError"];
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    getImport: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Import job */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data: components["schemas"]["ImportJob"];
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    approveImport: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Import result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data: {
-                            publicId?: string;
-                            status?: string;
-                            processed_count?: number;
-                            total_count?: number | null;
-                            cursor?: string | null;
-                            error?: string | null;
-                        };
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-            /** @description Already approved or running */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    resumeImport: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Import result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data: {
-                            publicId?: string;
-                            status?: string;
-                            processed_count?: number;
-                            total_count?: number | null;
-                            cursor?: string | null;
-                            error?: string | null;
-                        };
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-            /** @description Import not resumable */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    listWebhooks: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Webhook endpoints */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WebhookEndpoint"][];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    createWebhook: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    name: string;
-                    /** Format: uri */
-                    url: string;
-                    events: string[];
-                    description?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Created (includes full secret once) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        id: string;
-                        secret: string;
-                    };
-                };
-            };
-            400: components["responses"]["ValidationError"];
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    getWebhook: {
-        parameters: {
-            query: {
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Webhook endpoint */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WebhookEndpoint"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    updateWebhook: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    id: string;
-                    name?: string;
-                    /** Format: uri */
-                    url?: string;
-                    events?: string[];
-                    description?: string;
-                    status?: components["schemas"]["WebhookStatus"];
-                };
-            };
-        };
-        responses: {
-            /** @description Updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        success: boolean;
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    deleteWebhook: {
-        parameters: {
-            query: {
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Deleted */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        success: boolean;
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    rotateWebhookSecret: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    id: string;
-                };
-            };
-        };
-        responses: {
-            /** @description New secret (returned once) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        secret: string;
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    listWebhookEventTypes: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Event types */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WebhookEventType"][];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    listWebhookDeliveries: {
-        parameters: {
-            query?: {
-                webhook_id?: string;
-                status?: string;
-                limit?: number;
-                offset?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Delivery attempts */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        id?: string;
-                        webhookId?: string;
-                        eventType?: string;
-                        status?: string;
-                        responseStatus?: number | null;
-                        /** Format: date-time */
-                        deliveredAt?: string | null;
-                        /** Format: date-time */
-                        createdAt?: string;
-                    }[];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    listMembers: {
-        parameters: {
-            query?: {
-                role?: components["schemas"]["MemberRole"];
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Members */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data: components["schemas"]["Member"][];
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    getMember: {
-        parameters: {
-            query: {
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Member */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Member"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    getSettings: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Settings */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Settings"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    updateSettings: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Settings"];
-            };
-        };
-        responses: {
-            /** @description Updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        success: boolean;
-                    };
-                };
-            };
-            400: components["responses"]["ValidationError"];
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    getAccount: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Account info */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AccountInfo"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    getAnalytics: {
-        parameters: {
-            query?: {
-                from?: string;
-                to?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Analytics */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Analytics"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    listAuditLog: {
-        parameters: {
-            query?: {
-                limit?: number;
-                cursor?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Audit entries */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data: components["schemas"]["AuditLogEntry"][];
-                        has_more: boolean;
-                        next_cursor?: string;
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    search: {
-        parameters: {
-            query: {
-                q: string;
-                /** @description Comma-separated — document,contact,template */
-                types?: string;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Search hits */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data: components["schemas"]["SearchHit"][];
-                    };
-                };
-            };
-            400: components["responses"]["ValidationError"];
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    getDocumentAccess: {
-        parameters: {
-            query: {
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Access settings */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DocumentAccess"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    updateDocumentAccess: {
-        parameters: {
-            query: {
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    sharing_mode: components["schemas"]["DocumentSharingMode"];
-                };
-            };
-        };
-        responses: {
-            /** @description Updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        success: boolean;
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    bulkSendDocuments: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    ids?: string[];
-                    document_ids?: string[];
-                    message?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Bulk summary */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BulkOperationSummary"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    bulkVoidDocuments: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    ids: string[];
-                    reason: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Bulk summary */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BulkOperationSummary"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    listApiTokens: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                organizationSlug: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Tokens (secrets never included) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiToken"][];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    createApiToken: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                organizationSlug: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    name: string;
-                    scopes: components["schemas"]["ApiTokenScope"][];
-                };
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiToken"];
-                };
-            };
-            400: components["responses"]["ValidationError"];
-            401: components["responses"]["Unauthorized"];
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    revokeApiToken: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                organizationSlug: string;
-                tokenId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Revoked */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        success: boolean;
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
+  listDocuments: {
+    parameters: {
+      query?: {
+        /** @description Number of results per page */
+        limit?: number;
+        /** @description Pagination cursor from the previous response */
+        cursor?: string;
+        /** @description Filter documents by status */
+        status?: components["schemas"]["DocumentStatus"];
+        /** @description Filter by folder public ID. Pass an empty string to list unfiled documents only. */
+        folder_id?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedDocuments"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+    };
+  };
+  createDocument: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "title": "Service Agreement Q1 2026",
+         *       "storage_id": "kg2a7b3c8d9e0f1a2b3c",
+         *       "file_size": 245760,
+         *       "page_count": 3
+         *     }
+         */
+        "application/json": {
+          /** @description Document title displayed to recipients */
+          title: string;
+          description?: string;
+          /** @description Storage ID returned by the Uploads API */
+          storage_id: string;
+          /** @description File size in bytes */
+          file_size: number;
+          /** @default application/pdf */
+          file_type?: string;
+          /** @description Number of pages in the document */
+          page_count?: number;
+          /**
+           * Format: date-time
+           * @description Signing deadline — recipients cannot sign after this date
+           */
+          deadline?: string;
+          /** @description Public folder ID to file this document under */
+          folder_id?: string | null;
+        };
+      };
+    };
+    responses: {
+      /** @description Document created */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "id": "j572a8b1c2d3e4f5a6b7"
+           *     }
+           */
+          "application/json": {
+            id: string;
+          };
+        };
+      };
+      400: components["responses"]["ValidationError"];
+      401: components["responses"]["Unauthorized"];
+    };
+  };
+  getDocument: {
+    parameters: {
+      query: {
+        /** @description Document ID */
+        id: string;
+        /** @description Include recipient list in response */
+        include_recipients?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Document"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  getDocumentInteraction: {
+    parameters: {
+      query: {
+        /** @description Document ID */
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InteractionSession"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  updateDocument: {
+    parameters: {
+      query: {
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          title?: string;
+          description?: string;
+          /** Format: date-time */
+          deadline?: string;
+          /** @description Move document into this folder, or null to unfile */
+          folder_id?: string | null;
+          /** @description Vortex order form to execute when this draft is signed. Null clears the link. */
+          vortex_order_form_id?: string | null;
+        };
+      };
+    };
+    responses: {
+      /** @description Updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Document"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  deleteDocument: {
+    parameters: {
+      query: {
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Deleted */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success?: boolean;
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  applyDocumentBindings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          id: string;
+          bindings: {
+            [key: string]: string;
+          };
+        };
+      };
+    };
+    responses: {
+      /** @description Applied */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            updated: number;
+            unmatched_keys: string[];
+          };
+        };
+      };
+      400: components["responses"]["ValidationError"];
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  listDocumentFields: {
+    parameters: {
+      query: {
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Fields */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  createDocumentField: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          id: string;
+          /** @enum {string} */
+          field_type:
+            | "signature"
+            | "text"
+            | "number"
+            | "date"
+            | "checkbox"
+            | "dropdown"
+            | "radio"
+            | "attachment"
+            | "payment";
+          label: string;
+          is_required?: boolean;
+          page: number;
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+          recipient_id?: string;
+          binding_key?: string;
+          properties?: {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components["responses"]["ValidationError"];
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  updateDocumentField: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          id: string;
+          field_id: string;
+          label?: string;
+          is_required?: boolean;
+          page?: number;
+          x?: number;
+          y?: number;
+          width?: number;
+          height?: number;
+          recipient_id?: string | null;
+          binding_key?: string | null;
+          properties?: {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+    responses: {
+      /** @description Updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  deleteDocumentField: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          id: string;
+          field_id: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Deleted */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  placeDocumentFieldCandidates: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          id: string;
+          indices?: number[];
+          recipient_id?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Placed */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            fieldIds: string[];
+            count: number;
+          };
+        };
+      };
+      400: components["responses"]["ValidationError"];
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  getDocumentFieldSuggestions: {
+    parameters: {
+      query: {
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Suggestions or null */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  applyDocumentFieldSuggestions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          id: string;
+          suggestion_id: string;
+          selected_indices?: number[];
+        };
+      };
+    };
+    responses: {
+      /** @description Applied */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  getDocumentAnnotations: {
+    parameters: {
+      query: {
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Annotations or null */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["Unauthorized"];
+    };
+  };
+  generateDocumentAnnotations: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          id: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Generated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  dismissDocumentAnnotations: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          id: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Dismissed */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  previewDocument: {
+    parameters: {
+      query: {
+        id: string;
+        format?: "markdown" | "structured" | "pdf" | "original";
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Preview payload */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  splitDocument: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          id: string;
+          splits: {
+            title: string;
+            pages: number[];
+          }[];
+        };
+      };
+    };
+    responses: {
+      /** @description Child documents created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  annotateDocumentPdf: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          id: string;
+          operations: {
+            /** @enum {string} */
+            op: "highlight" | "text" | "rect" | "redact";
+            page: number;
+            x?: number;
+            y?: number;
+            width?: number;
+            height?: number;
+            text?: string;
+            size?: number;
+            color?: string;
+          }[];
+        };
+      };
+    };
+    responses: {
+      /** @description Annotated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  sendDocument: {
+    parameters: {
+      query: {
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": {
+          /** @description Custom message included in the invitation email */
+          message?: string;
+          /** @description Send invitation email. Defaults to true. */
+          notify?: boolean;
+          /**
+           * @description How many days recipients have to sign.
+           * @example 14
+           */
+          expires_in_days?: number;
+          /**
+           * @description parallel invites everyone still open. sequential invites only the earliest open signer group, then the next group after that group finishes.
+           * @enum {string}
+           */
+          signing_mode?: "parallel" | "sequential";
+          /**
+           * @description When signing_mode is sequential, each signer may choose who signs next.
+           */
+          allow_dictate_next_signer?: boolean;
+        };
+      };
+    };
+    responses: {
+      /** @description Sent */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success?: boolean;
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  voidDocument: {
+    parameters: {
+      query: {
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          /** @description Reason for voiding the document */
+          reason: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Voided */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success?: boolean;
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  downloadDocument: {
+    parameters: {
+      query: {
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** Format: uri */
+            url: string;
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  downloadCertificateOfCompletion: {
+    parameters: {
+      query: {
+        /** @description Document id */
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Certificate of Completion PDF */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/pdf": string;
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+      /** @description Object storage not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  listRecipients: {
+    parameters: {
+      query: {
+        document_id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            recipients?: components["schemas"]["Recipient"][];
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  addRecipient: {
+    parameters: {
+      query: {
+        document_id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "email": "jane@acme.com",
+         *       "name": "Jane Smith",
+         *       "role": "signer",
+         *       "order": 1
+         *     }
+         */
+        "application/json": {
+          /** Format: email */
+          email: string;
+          name: string;
+          role: components["schemas"]["RecipientRole"];
+          /** @description Signing order position for sequential workflows */
+          order?: number;
+          /** @description Custom message for this recipient's invitation email */
+          message?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Recipient added */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            id?: string;
+          };
+        };
+      };
+      400: components["responses"]["ValidationError"];
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  getRecipient: {
+    parameters: {
+      query: {
+        document_id: string;
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Recipient"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  updateRecipient: {
+    parameters: {
+      query: {
+        document_id: string;
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": {
+          /** Format: email */
+          email?: string;
+          name?: string;
+          role?: components["schemas"]["RecipientRole"];
+          order?: number;
+          message?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success?: boolean;
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  removeRecipient: {
+    parameters: {
+      query: {
+        document_id: string;
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Removed */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success?: boolean;
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  sendReminder: {
+    parameters: {
+      query: {
+        document_id: string;
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": {
+          /** @description Custom reminder message */
+          message?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Reminder sent */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success?: boolean;
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  listTemplates: {
+    parameters: {
+      query?: {
+        limit?: number;
+        cursor?: string;
+        status?: components["schemas"]["TemplateStatus"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedTemplates"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+    };
+  };
+  createTemplate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          /** @description Source document ID to create the template from */
+          document_id: string;
+          name: string;
+          description?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Template created */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            id?: string;
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+    };
+  };
+  getTemplate: {
+    parameters: {
+      query: {
+        id: string;
+        /** @description Include field definitions in response */
+        include_fields?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Template"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  getTemplateFields: {
+    parameters: {
+      query: {
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            fields?: components["schemas"]["TemplateField"][];
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  updateTemplateField: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          template_id: string;
+          field_id: string;
+          label?: string;
+          is_required?: boolean;
+          properties?: {
+            placeholder?: string;
+            default_value?: string;
+            options?: string[];
+            binding_key?: string;
+          };
+        };
+      };
+    };
+    responses: {
+      /** @description Updated field */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            field?: components["schemas"]["TemplateField"];
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  updateTemplate: {
+    parameters: {
+      query: {
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": {
+          name?: string;
+          description?: string;
+          status?: components["schemas"]["TemplateStatus"];
+        };
+      };
+    };
+    responses: {
+      /** @description Updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success?: boolean;
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  deleteTemplate: {
+    parameters: {
+      query: {
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Deleted */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success?: boolean;
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  useTemplate: {
+    parameters: {
+      query: {
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": {
+          /** @description Title for the new document (defaults to template name) */
+          title?: string;
+          description?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Document created */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            id?: string;
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  listSignatures: {
+    parameters: {
+      query: {
+        document_id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            signatures?: components["schemas"]["Signature"][];
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  getSignature: {
+    parameters: {
+      query: {
+        document_id: string;
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Signature"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  verifyDocument: {
+    parameters: {
+      query: {
+        document_id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Verification result */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["VerificationResult"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  getAuditTrail: {
+    parameters: {
+      query: {
+        document_id: string;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            entries?: components["schemas"]["AuditEntry"][];
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  generateUploadUrl: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Upload URL generated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /**
+             * Format: uri
+             * @description Pre-signed URL — expires in 60 seconds
+             */
+            upload_url: string;
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+    };
+  };
+  uploadFile: {
+    parameters: {
+      query: {
+        token: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/pdf": string;
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation": string;
+        "text/csv": string;
+      };
+    };
+    responses: {
+      /** @description Stored (PDF bytes available at storageId) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            storageId: string;
+          };
+        };
+      };
+      400: components["responses"]["ValidationError"];
+      401: components["responses"]["Unauthorized"];
+      /** @description Conversion failed */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  listContacts: {
+    parameters: {
+      query?: {
+        limit?: number;
+        cursor?: string;
+        status?: components["schemas"]["ContactStatus"];
+        /** @description Search by name or email */
+        search?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Paginated contacts */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedContacts"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+    };
+  };
+  createContact: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          first_name: string;
+          last_name: string;
+          /** Format: email */
+          email: string;
+          phone?: string;
+          company?: string;
+          title?: string;
+          status?: components["schemas"]["ContactStatus"];
+          notes?: string;
+          tags?: string[];
+        };
+      };
+    };
+    responses: {
+      /** @description Created */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            id: string;
+          };
+        };
+      };
+      400: components["responses"]["ValidationError"];
+      401: components["responses"]["Unauthorized"];
+    };
+  };
+  getContact: {
+    parameters: {
+      query: {
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Contact */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Contact"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  deleteContact: {
+    parameters: {
+      query: {
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Deleted */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success: boolean;
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  updateContact: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          id: string;
+          first_name?: string;
+          last_name?: string;
+          /** Format: email */
+          email?: string;
+          phone?: string | null;
+          company?: string | null;
+          title?: string | null;
+          status?: components["schemas"]["ContactStatus"];
+          notes?: string | null;
+          tags?: string[];
+        };
+      };
+    };
+    responses: {
+      /** @description Updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success: boolean;
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  listFolders: {
+    parameters: {
+      query?: {
+        type?: "document" | "template";
+        /** @description Parent folder public ID; omit for root folders */
+        parent_id?: string;
+        /** @description When true, return all folders of the type (ignore parent) */
+        flat?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Folders */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            folders: components["schemas"]["Folder"][];
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+    };
+  };
+  createFolder: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          name: string;
+          /**
+           * @default document
+           * @enum {string}
+           */
+          type?: "document" | "template";
+          parent_id?: string;
+          /**
+           * @default everyone
+           * @enum {string}
+           */
+          visibility?: "everyone" | "members" | "restricted";
+          /** @default false */
+          pinned?: boolean;
+        };
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Folder"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  getFolderBreadcrumbs: {
+    parameters: {
+      query: {
+        /** @description Folder public ID */
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Breadcrumb trail from root to the folder */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            breadcrumbs: {
+              id: string;
+              name: string;
+            }[];
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  listImports: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Import jobs */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            data: components["schemas"]["ImportJob"][];
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+    };
+  };
+  createImport: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          /** @enum {string} */
+          adapter: "pdf" | "docusign" | "pandadoc";
+          payload?: {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            data: components["schemas"]["ImportJob"];
+          };
+        };
+      };
+      400: components["responses"]["ValidationError"];
+      401: components["responses"]["Unauthorized"];
+    };
+  };
+  getImport: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Import job */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            data: components["schemas"]["ImportJob"];
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  approveImport: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Import result */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            data: {
+              publicId?: string;
+              status?: string;
+              processed_count?: number;
+              total_count?: number | null;
+              cursor?: string | null;
+              error?: string | null;
+            };
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+      /** @description Already approved or running */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  resumeImport: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Import result */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            data: {
+              publicId?: string;
+              status?: string;
+              processed_count?: number;
+              total_count?: number | null;
+              cursor?: string | null;
+              error?: string | null;
+            };
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+      /** @description Import not resumable */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  listWebhooks: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Webhook endpoints */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WebhookEndpoint"][];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+    };
+  };
+  createWebhook: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          name: string;
+          /** Format: uri */
+          url: string;
+          events: string[];
+          description?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Created (includes full secret once) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            id: string;
+            secret: string;
+          };
+        };
+      };
+      400: components["responses"]["ValidationError"];
+      401: components["responses"]["Unauthorized"];
+    };
+  };
+  getWebhook: {
+    parameters: {
+      query: {
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Webhook endpoint */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WebhookEndpoint"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  updateWebhook: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          id: string;
+          name?: string;
+          /** Format: uri */
+          url?: string;
+          events?: string[];
+          description?: string;
+          status?: components["schemas"]["WebhookStatus"];
+        };
+      };
+    };
+    responses: {
+      /** @description Updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success: boolean;
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  deleteWebhook: {
+    parameters: {
+      query: {
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Deleted */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success: boolean;
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  rotateWebhookSecret: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          id: string;
+        };
+      };
+    };
+    responses: {
+      /** @description New secret (returned once) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            secret: string;
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  listWebhookEventTypes: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Event types */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WebhookEventType"][];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+    };
+  };
+  listWebhookDeliveries: {
+    parameters: {
+      query?: {
+        webhook_id?: string;
+        status?: string;
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Delivery attempts */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            id?: string;
+            webhookId?: string;
+            eventType?: string;
+            status?: string;
+            responseStatus?: number | null;
+            /** Format: date-time */
+            deliveredAt?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+          }[];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+    };
+  };
+  listMembers: {
+    parameters: {
+      query?: {
+        role?: components["schemas"]["MemberRole"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Members */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            data: components["schemas"]["Member"][];
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+    };
+  };
+  getMember: {
+    parameters: {
+      query: {
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Member */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Member"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  getSettings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Settings */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Settings"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+    };
+  };
+  updateSettings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Settings"];
+      };
+    };
+    responses: {
+      /** @description Updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success: boolean;
+          };
+        };
+      };
+      400: components["responses"]["ValidationError"];
+      401: components["responses"]["Unauthorized"];
+    };
+  };
+  getAccount: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Account info */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AccountInfo"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+    };
+  };
+  getAnalytics: {
+    parameters: {
+      query?: {
+        from?: string;
+        to?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Analytics */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Analytics"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+    };
+  };
+  listAuditLog: {
+    parameters: {
+      query?: {
+        limit?: number;
+        cursor?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Audit entries */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            data: components["schemas"]["AuditLogEntry"][];
+            has_more: boolean;
+            next_cursor?: string;
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+    };
+  };
+  search: {
+    parameters: {
+      query: {
+        q: string;
+        /** @description Comma-separated — document,contact,template */
+        types?: string;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Search hits */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            data: components["schemas"]["SearchHit"][];
+          };
+        };
+      };
+      400: components["responses"]["ValidationError"];
+      401: components["responses"]["Unauthorized"];
+    };
+  };
+  getDocumentAccess: {
+    parameters: {
+      query: {
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Access settings */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DocumentAccess"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  updateDocumentAccess: {
+    parameters: {
+      query: {
+        id: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          sharing_mode: components["schemas"]["DocumentSharingMode"];
+        };
+      };
+    };
+    responses: {
+      /** @description Updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success: boolean;
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  bulkSendDocuments: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          ids?: string[];
+          document_ids?: string[];
+          message?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Bulk summary */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BulkOperationSummary"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+    };
+  };
+  bulkVoidDocuments: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          ids: string[];
+          reason: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Bulk summary */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BulkOperationSummary"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+    };
+  };
+  listApiTokens: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        organizationSlug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Tokens (secrets never included) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ApiToken"][];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  createApiToken: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        organizationSlug: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          name: string;
+          scopes: components["schemas"]["ApiTokenScope"][];
+        };
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ApiToken"];
+        };
+      };
+      400: components["responses"]["ValidationError"];
+      401: components["responses"]["Unauthorized"];
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  revokeApiToken: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        organizationSlug: string;
+        tokenId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Revoked */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success: boolean;
+          };
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+    };
+  };
 }

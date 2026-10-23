@@ -70,9 +70,7 @@ export function envelopeCsv(input: {
     recipient.status,
     iso(recipient.signedAt),
   ]);
-  return [header, ...rows]
-    .map((row) => row.map(csvCell).join(","))
-    .join("\n");
+  return [header, ...rows].map((row) => row.map(csvCell).join(",")).join("\n");
 }
 
 export function envelopeCsvFilename(name: string): string {

@@ -1,9 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import {
-  createDocument,
-  deleteDocument,
-} from "../factories/document-factory";
+import { createDocument, deleteDocument } from "../factories/document-factory";
 import {
   addRecipient,
   getApiBaseUrl,

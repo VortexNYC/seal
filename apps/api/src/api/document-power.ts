@@ -24,11 +24,12 @@ import {
   pdfToOfficeBytes,
   pdfToText,
 } from "../platform/document-conversion.js";
+import { buildDocumentLayoutBlocks } from "../platform/document-layout-blocks.js";
 import {
   FeatureDisabledError,
   assertConvertEnabled,
 } from "../platform/org-settings.js";
-import { buildDocumentLayoutBlocks } from "../platform/document-layout-blocks.js";
+import { diffPageTexts } from "../platform/pdf-diff.js";
 import {
   annotatePdf,
   cropPdfPages,
@@ -41,7 +42,6 @@ import {
   splitPdfPages,
   watermarkPdf,
 } from "../platform/pdf-ops.js";
-import { diffPageTexts } from "../platform/pdf-diff.js";
 import { redactPdfRegions } from "../platform/pdf-redact.js";
 import {
   commitDocumentPdfRemap,
@@ -169,10 +169,7 @@ app.post("/split", async (c) => {
     });
   }
 
-  return c.json(
-    { parentPublicId: doc.publicId, documents: created },
-    201
-  );
+  return c.json({ parentPublicId: doc.publicId, documents: created }, 201);
 });
 
 app.get("/preview", async (c) => {
@@ -660,8 +657,7 @@ app.post("/merge-pdf", async (c) => {
   const now = new Date();
   const id = crypto.randomUUID();
   const newPublicId = crypto.randomUUID();
-  const title =
-    parsed.data.title ?? `Merged (${buffers.length} docs)`;
+  const title = parsed.data.title ?? `Merged (${buffers.length} docs)`;
 
   await db.insert(documents).values({
     id,
@@ -740,11 +736,7 @@ app.post("/organize-pdf", async (c) => {
     },
   });
 
-  const plan = await planOrganizeFieldRemap(
-    db,
-    doc.id,
-    organized.pageMap
-  );
+  const plan = await planOrganizeFieldRemap(db, doc.id, organized.pageMap);
 
   const claimed = await commitDocumentPdfRemap(db, {
     documentId: doc.id,
@@ -948,10 +940,7 @@ app.post("/crop-pdf", async (c) => {
 
   let cropped: Awaited<ReturnType<typeof cropPdfPages>>;
   try {
-    cropped = await cropPdfPages(
-      await object.arrayBuffer(),
-      parsed.data.crops
-    );
+    cropped = await cropPdfPages(await object.arrayBuffer(), parsed.data.crops);
   } catch (error) {
     const message = error instanceof Error ? error.message : "crop_failed";
     if (
@@ -1177,9 +1166,12 @@ const protectBodySchema = z
     allowFillingForms: z.boolean().optional(),
     allowAssembling: z.boolean().optional(),
   })
-  .refine((v) => v.userPassword !== undefined || v.ownerPassword !== undefined, {
-    message: "userPassword or ownerPassword required",
-  });
+  .refine(
+    (v) => v.userPassword !== undefined || v.ownerPassword !== undefined,
+    {
+      message: "userPassword or ownerPassword required",
+    }
+  );
 
 /**
  * Password-protect a draft PDF: produces an encrypted artifact the caller
@@ -1643,9 +1635,7 @@ app.post("/ocr-pdf", async (c) => {
   const publicId = publicIdFromPath(new URL(c.req.url).pathname);
   if (!publicId) return c.json({ error: "not_found" }, 404);
 
-  const parsed = ocrBodySchema.safeParse(
-    await c.req.json().catch(() => ({}))
-  );
+  const parsed = ocrBodySchema.safeParse(await c.req.json().catch(() => ({})));
   if (!parsed.success) return c.json({ error: "validation_error" }, 400);
 
   const db = createD1(c.env.D1);
@@ -1707,7 +1697,12 @@ app.post("/ocr-pdf", async (c) => {
     return c.json({ error: "document_version_conflict" }, 409);
   }
 
-  return c.json({ success: true, storageId, pageCount, lang: parsed.data.lang });
+  return c.json({
+    success: true,
+    storageId,
+    pageCount,
+    lang: parsed.data.lang,
+  });
 });
 
 const toPdfaBodySchema = z.object({

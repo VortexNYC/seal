@@ -4,16 +4,22 @@
  * Route: /{slug}/reviews/{matrixId}
  */
 
-import { Text } from "@cloudflare/kumo/components/text";
 import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Textarea } from "@cloudflare/kumo/components/input";
 import { Select } from "@cloudflare/kumo/components/select";
 import { Table } from "@cloudflare/kumo/components/table";
+import { Text } from "@cloudflare/kumo/components/text";
+import {
+  ArrowLeft as ArrowLeftIcon,
+  Check as CheckIcon,
+  FileText as FileTextIcon,
+  NotePencil as FilePenLineIcon,
+  X as XIcon,
+} from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft as ArrowLeftIcon, Check as CheckIcon, FileText as FileTextIcon, NotePencil as FilePenLineIcon, X as XIcon } from "@phosphor-icons/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
@@ -238,12 +244,16 @@ function CellDetail({
 
       <div className="mt-3 text-sm">
         <div className="font-medium">Summary</div>
-        <Text as="p" variant="secondary" DANGEROUS_className="mt-1">{cell.summary ?? "—"}</Text>
+        <Text as="p" variant="secondary" DANGEROUS_className="mt-1">
+          {cell.summary ?? "—"}
+        </Text>
       </div>
       {cell.reasoning ? (
         <div className="mt-3 text-sm">
           <div className="font-medium">Reasoning</div>
-          <Text as="p" variant="secondary" DANGEROUS_className="mt-1">{cell.reasoning}</Text>
+          <Text as="p" variant="secondary" DANGEROUS_className="mt-1">
+            {cell.reasoning}
+          </Text>
         </div>
       ) : null}
 
@@ -508,7 +518,9 @@ function RevisionsRail({
 
   return (
     <section className="mt-8">
-      <Text as="h2" variant="heading">Pending redlines ({pending.length})</Text>
+      <Text as="h2" variant="heading">
+        Pending redlines ({pending.length})
+      </Text>
       {[...byDoc.entries()].map(([docId, revs]) => (
         <div
           key={docId}
@@ -560,10 +572,19 @@ function RevisionsRail({
                 “{rev.anchor_quote}”
               </blockquote>
               {rev.proposed_text ? (
-                <Text as="p" size="xs" DANGEROUS_className="mt-1">→ {rev.proposed_text}</Text>
+                <Text as="p" size="xs" DANGEROUS_className="mt-1">
+                  → {rev.proposed_text}
+                </Text>
               ) : null}
               {rev.rationale ? (
-                <Text as="p" variant="secondary" size="xs" DANGEROUS_className="mt-1">{rev.rationale}</Text>
+                <Text
+                  as="p"
+                  variant="secondary"
+                  size="xs"
+                  DANGEROUS_className="mt-1"
+                >
+                  {rev.rationale}
+                </Text>
               ) : null}
             </div>
             <div className="flex shrink-0 gap-1">

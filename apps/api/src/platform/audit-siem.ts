@@ -11,11 +11,7 @@
 import { and, asc, eq, gt, isNotNull } from "drizzle-orm";
 
 import { createD1, type D1Client } from "../global/db.js";
-import {
-  auditLogs,
-  auditSiemCursors,
-  webhooks,
-} from "../global/schema.js";
+import { auditLogs, auditSiemCursors, webhooks } from "../global/schema.js";
 import { emitWebhookEvent, webhookSubscribesTo } from "./webhook-events.js";
 
 export const AUDIT_ENTRY_CREATED_EVENT = "audit.entry.created";
@@ -108,7 +104,10 @@ export function toAuditSiemPayload(row: {
 }
 
 function orgWantsAuditSiem(eventsJson: string | null): boolean {
-  return webhookSubscribesTo(parseEvents(eventsJson), AUDIT_ENTRY_CREATED_EVENT);
+  return webhookSubscribesTo(
+    parseEvents(eventsJson),
+    AUDIT_ENTRY_CREATED_EVENT
+  );
 }
 
 /** Organizations with at least one active webhook listening for audit SIEM. */

@@ -1,7 +1,7 @@
-import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Text } from "@cloudflare/kumo/components/text";
 import { ShieldCheck } from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type ReactElement } from "react";
@@ -84,11 +84,15 @@ export function SignerAuthGate({
       <LayerCard className="p-fluid w-full max-w-lg">
         <div className="mb-4 flex items-center gap-2">
           <ShieldCheck className="size-6 shrink-0" weight="duotone" />
-          <Text as="h1" variant="heading">{title}</Text>
+          <Text as="h1" variant="heading">
+            {title}
+          </Text>
         </div>
-        <Text as="p" variant="secondary" size="sm" DANGEROUS_className="mb-6">{challengeSent || method === "access_code"
+        <Text as="p" variant="secondary" size="sm" DANGEROUS_className="mb-6">
+          {challengeSent || method === "access_code"
             ? description
-            : "Sending a verification code…"}</Text>
+            : "Sending a verification code…"}
+        </Text>
 
         <form
           className="space-y-4"

@@ -19,7 +19,10 @@ export interface PdfDiffResult {
 }
 
 /** LCS dynamic programming over lines — O(n*m) but line-level: fine for docs. */
-function diffLines(a: string[], b: string[]): { added: string[]; removed: string[] } {
+function diffLines(
+  a: string[],
+  b: string[]
+): { added: string[]; removed: string[] } {
   const n = a.length;
   const m = b.length;
   // LCS length table (n+1)x(m+1) — cap work for absurd inputs.

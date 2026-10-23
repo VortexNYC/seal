@@ -15,7 +15,9 @@ describe("certificate-of-completion", () => {
   });
 
   it("sanitizes non-WinAnsi glyphs", () => {
-    expect(sanitizePdfText("NDA — Acme ↔ Vortex")).toBe("NDA ? Acme <-> Vortex");
+    expect(sanitizePdfText("NDA — Acme ↔ Vortex")).toBe(
+      "NDA ? Acme <-> Vortex"
+    );
   });
 
   it("produces a valid PDF with EVID-2 fields", async () => {

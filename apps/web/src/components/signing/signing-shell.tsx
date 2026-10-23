@@ -44,11 +44,7 @@ export function SigningShell({
             {title}
           </Text>
           {instruction ? (
-            <Text
-              variant="secondary"
-              size="xs"
-              DANGEROUS_className="truncate"
-            >
+            <Text variant="secondary" size="xs" DANGEROUS_className="truncate">
               {instruction}
             </Text>
           ) : null}

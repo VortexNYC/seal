@@ -7,7 +7,6 @@
  * before fields and consent (audit identity).
  */
 
-import { Text } from "@cloudflare/kumo/components/text";
 import { Textarea } from "@cloudflare/kumo";
 import { Button } from "@cloudflare/kumo/components/button";
 import { buttonVariants } from "@cloudflare/kumo/components/button";
@@ -17,6 +16,7 @@ import { Label } from "@cloudflare/kumo/components/label";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { SkeletonLine } from "@cloudflare/kumo/components/loader";
 import { Meter } from "@cloudflare/kumo/components/meter";
+import { Text } from "@cloudflare/kumo/components/text";
 import {
   CheckCircle,
   Clock,
@@ -39,7 +39,6 @@ import { EsignConsentDialog } from "@/components/documents/esign-consent-dialog"
 import { FieldInputManager } from "@/components/documents/field-input-manager";
 import { FillableFieldOverlay } from "@/components/documents/fillable-field-overlay";
 import { PdfSigningDocumentSurface } from "@/components/documents/pdf-signing-document-surface";
-import { warmPdfiumWasm } from "@/lib/pdf-utils";
 import { PrivacyNoticeDialog } from "@/components/documents/privacy-notice-dialog";
 import { SignatureCapture } from "@/components/documents/signature-capture";
 import { DictateNextSignerDialog } from "@/components/signing/dictate-next-signer-dialog";
@@ -71,6 +70,7 @@ import {
 } from "@/lib/guest-analytics";
 import { formatMoney, money } from "@/lib/money";
 import { payNowHref } from "@/lib/pay-now";
+import { warmPdfiumWasm } from "@/lib/pdf-utils";
 import { pageSEO } from "@/lib/seo";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -176,8 +176,9 @@ function useEmbeddedSigning(token: string) {
 function SigningErrorComponent({ error }: ErrorComponentProps) {
   const message = error instanceof Error ? error.message : "";
   const isVoided = /voided/i.test(message);
-  const isInvalidToken =
-    /invalid.*token|token.*invalid|not found/i.test(message);
+  const isInvalidToken = /invalid.*token|token.*invalid|not found/i.test(
+    message
+  );
 
   return (
     <div className="flex min-h-dvh items-center justify-center p-4">
@@ -187,12 +188,25 @@ function SigningErrorComponent({ error }: ErrorComponentProps) {
             <div className="bg-kumo-elevated mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
               <WarningCircle className="text-kumo-secondary h-6 w-6" />
             </div>
-            <Text as="h2" variant="heading">{isVoided ? "This document was voided" : isInvalidToken ? "Invalid Signing Link" : "Something went wrong"}</Text>
-            <Text as="p" variant="secondary" size="sm" DANGEROUS_className="mt-2">{isVoided
+            <Text as="h2" variant="heading">
+              {isVoided
+                ? "This document was voided"
+                : isInvalidToken
+                  ? "Invalid Signing Link"
+                  : "Something went wrong"}
+            </Text>
+            <Text
+              as="p"
+              variant="secondary"
+              size="sm"
+              DANGEROUS_className="mt-2"
+            >
+              {isVoided
                 ? "Signers can no longer finish it."
                 : isInvalidToken
-                ? "This signing link is invalid or has expired. Please check the link and try again, or contact the sender for a new link."
-                : "We encountered an error loading this document. Please try again or contact the sender."}</Text>
+                  ? "This signing link is invalid or has expired. Please check the link and try again, or contact the sender for a new link."
+                  : "We encountered an error loading this document. Please try again or contact the sender."}
+            </Text>
           </div>
           <div className="mt-6 flex justify-center gap-2">
             <Link
@@ -1073,24 +1087,34 @@ function SigningPage() {
             <Clock className="text-kumo-default size-8" />
           </div>
           <div className="flex flex-col gap-2">
-            <Text as="h1" variant="heading">Waiting for Previous Signers</Text>
-            <Text as="p" variant="secondary" size="sm">This document uses sequential signing.{" "}
+            <Text as="h1" variant="heading">
+              Waiting for Previous Signers
+            </Text>
+            <Text as="p" variant="secondary" size="sm">
+              This document uses sequential signing.{" "}
               {sequentialProgress
                 ? `Group ${sequentialProgress.currentGroup} of ${sequentialProgress.totalGroups} is currently signing.`
                 : "Previous recipients must complete their actions before you can proceed."}{" "}
-              You'll be notified by email when it's your turn.</Text>
+              You'll be notified by email when it's your turn.
+            </Text>
           </div>
           <div className="bg-kumo-elevated rounded-lg border p-4">
             <div className="flex items-center gap-3">
               <FileText className="text-kumo-secondary size-5 shrink-0" />
               <div className="min-w-0 text-left">
-                <Text as="p" size="sm" bold truncate>{doc.name}</Text>
-                <Text as="p" variant="secondary" size="xs">You're listed as a {recipient.role} on this document</Text>
+                <Text as="p" size="sm" bold truncate>
+                  {doc.name}
+                </Text>
+                <Text as="p" variant="secondary" size="xs">
+                  You're listed as a {recipient.role} on this document
+                </Text>
               </div>
             </div>
           </div>
-          <Text as="p" variant="secondary" size="xs">This page updates automatically. You can also close it and return
-            via the link in your email.</Text>
+          <Text as="p" variant="secondary" size="xs">
+            This page updates automatically. You can also close it and return
+            via the link in your email.
+          </Text>
         </div>
       </div>
     );
@@ -1168,37 +1192,39 @@ function SigningPage() {
                   {isCompleted
                     ? null
                     : fieldsOnPage.map((field) => (
-                    <FillableFieldOverlay
-                      key={field._id}
-                      ref={(el: HTMLButtonElement | null) => {
-                        if (el) {
-                          fieldRefs.current.set(field._id, el);
-                        } else {
-                          fieldRefs.current.delete(field._id);
-                        }
-                      }}
-                      fieldId={field._id}
-                      fieldType={field.fieldType}
-                      label={field.label}
-                      isRequired={field.isRequired}
-                      isMainSignature={field.isMainSignature}
-                      x={field.x}
-                      y={field.y}
-                      width={field.width}
-                      height={field.height}
-                      page={field.page}
-                      currentPage={pageNumber}
-                      pdfPageWidth={pageWidth}
-                      pdfPageHeight={pageHeight}
-                      isFilled={field.isFilled}
-                      currentValue={field.currentValue}
-                      currentSignatureImageUrl={field.currentSignatureImageUrl}
-                      isActive={!isCompleted && activeFieldId === field._id}
-                      signatureDetails={field.signatureDetails}
-                      paymentInfo={paymentInfoByFieldId.get(field._id)}
-                      onClick={isCompleted ? () => {} : handleFieldClick}
-                    />
-                  ))}
+                        <FillableFieldOverlay
+                          key={field._id}
+                          ref={(el: HTMLButtonElement | null) => {
+                            if (el) {
+                              fieldRefs.current.set(field._id, el);
+                            } else {
+                              fieldRefs.current.delete(field._id);
+                            }
+                          }}
+                          fieldId={field._id}
+                          fieldType={field.fieldType}
+                          label={field.label}
+                          isRequired={field.isRequired}
+                          isMainSignature={field.isMainSignature}
+                          x={field.x}
+                          y={field.y}
+                          width={field.width}
+                          height={field.height}
+                          page={field.page}
+                          currentPage={pageNumber}
+                          pdfPageWidth={pageWidth}
+                          pdfPageHeight={pageHeight}
+                          isFilled={field.isFilled}
+                          currentValue={field.currentValue}
+                          currentSignatureImageUrl={
+                            field.currentSignatureImageUrl
+                          }
+                          isActive={!isCompleted && activeFieldId === field._id}
+                          signatureDetails={field.signatureDetails}
+                          paymentInfo={paymentInfoByFieldId.get(field._id)}
+                          onClick={isCompleted ? () => {} : handleFieldClick}
+                        />
+                      ))}
                 </>
               );
             }}
@@ -1238,7 +1264,9 @@ function SigningPage() {
           className="border-kumo-hairline/50 bg-kumo-elevated rounded-lg border p-16 text-center shadow-sm"
           role="status"
         >
-          <Text as="p" variant="secondary" size="sm" DANGEROUS_className="mb-4">Loading document…</Text>
+          <Text as="p" variant="secondary" size="sm" DANGEROUS_className="mb-4">
+            Loading document…
+          </Text>
           <div className="mx-auto flex w-full max-w-sm flex-col gap-3">
             <SkeletonLine className="mx-auto h-4 w-1/3" />
             <SkeletonLine className="mx-auto h-4 w-1/2" />
@@ -1329,7 +1357,9 @@ function SigningPage() {
       {!isCompleted && fields.length > 0 && (
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
-            <Text as="p" size="sm" bold>{progressLabel}</Text>
+            <Text as="p" size="sm" bold>
+              {progressLabel}
+            </Text>
             <span className="text-kumo-secondary text-xs tabular-nums">
               {filledRequiredFields.length}/{requiredFields.length}
             </span>
@@ -1361,8 +1391,12 @@ function SigningPage() {
           <div className="flex items-start gap-2">
             <CreditCard className="text-kumo-default mt-0.5 h-4 w-4 shrink-0" />
             <div>
-              <Text as="p" size="sm" bold>Billed after signing</Text>
-              <Text as="p" variant="secondary" size="xs">This amount is due after every required signature.</Text>
+              <Text as="p" size="sm" bold>
+                Billed after signing
+              </Text>
+              <Text as="p" variant="secondary" size="xs">
+                This amount is due after every required signature.
+              </Text>
             </div>
           </div>
           {paymentConfigs
@@ -1431,7 +1465,9 @@ function SigningPage() {
                 : "You're done"}
             </span>
           </div>
-          <Text as="p" variant="secondary" size="sm">You&apos;re done — you can close this tab.</Text>
+          <Text as="p" variant="secondary" size="sm">
+            You&apos;re done — you can close this tab.
+          </Text>
           <Button
             variant="outline"
             size="lg"
@@ -1455,7 +1491,9 @@ function SigningPage() {
       )}
 
       {isCompleted && recipient.status === "declined" && (
-        <Text as="p" variant="secondary" size="sm">You declined this document.</Text>
+        <Text as="p" variant="secondary" size="sm">
+          You declined this document.
+        </Text>
       )}
 
       {isCompleted && isWaitingForPayment && paymentConfigs.length > 0 && (
@@ -1463,7 +1501,9 @@ function SigningPage() {
           <div className="flex items-start gap-2">
             <CreditCard className="text-kumo-default mt-0.5 h-4 w-4 shrink-0" />
             <div>
-              <Text as="p" size="sm" bold>Awaiting payment</Text>
+              <Text as="p" size="sm" bold>
+                Awaiting payment
+              </Text>
               <Text as="p" variant="secondary" size="xs">
                 {payHref
                   ? "Signatures are in. Pay to finish the contract."

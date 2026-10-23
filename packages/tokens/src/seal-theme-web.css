@@ -35,7 +35,7 @@
   --destructive-foreground: oklch(1 0 0);
   --border: oklch(0.92 0.01 75); /* taupe-200 */
   --input: oklch(0.92 0.01 75);
-  --ring: oklch(0.70 0.03 75); /* taupe-400 */
+  --ring: oklch(0.7 0.03 75); /* taupe-400 */
 
   /* Sidebar — same plane as main chrome (no two-tone shell) */
   --sidebar: oklch(0.98 0 75); /* taupe-50 = --background */
@@ -45,7 +45,7 @@
   --sidebar-accent: oklch(0.92 0.01 75);
   --sidebar-accent-foreground: oklch(0.28 0.02 75);
   --sidebar-border: oklch(0.92 0.01 75);
-  --sidebar-ring: oklch(0.70 0.03 75);
+  --sidebar-ring: oklch(0.7 0.03 75);
 
   /* Border radius — tighter, closer to Vortex hub */
   --radius: 0.375rem; /* 6px */
@@ -55,7 +55,7 @@
   --brand-100: oklch(0.96 0.01 75); /* #F5F3F0 */
   --brand-200: oklch(0.92 0.01 75); /* #E7E2DC */
   --brand-300: oklch(0.84 0.02 75); /* #D3CBC0 */
-  --brand-400: oklch(0.70 0.03 75); /* #AA9E8D */
+  --brand-400: oklch(0.7 0.03 75); /* #AA9E8D */
   --brand-500: oklch(0.58 0.03 75); /* #867865 */
   --brand-600: oklch(0.49 0.03 75); /* #6C6050 */
   --brand-700: oklch(0.42 0.03 75); /* #554B3E */
@@ -265,7 +265,9 @@
   /* Taupe void */
   --background: oklch(0.16 0.01 75); /* taupe void, a step under taupe-950 */
   --foreground: oklch(0.96 0.01 75); /* taupe-100 */
-  --card: oklch(0.16 0.01 75); /* same plane as background — no raised brown slabs */
+  --card: oklch(
+    0.16 0.01 75
+  ); /* same plane as background — no raised brown slabs */
   --card-foreground: oklch(0.96 0.01 75);
   --popover: oklch(0.28 0.02 75);
   --popover-foreground: oklch(0.96 0.01 75);
@@ -274,7 +276,7 @@
   --secondary: oklch(0.34 0.02 75); /* taupe-800 */
   --secondary-foreground: oklch(0.96 0.01 75);
   --muted: oklch(0.34 0.02 75);
-  --muted-foreground: oklch(0.70 0.03 75); /* taupe-400 */
+  --muted-foreground: oklch(0.7 0.03 75); /* taupe-400 */
   --accent: oklch(0.34 0.02 75);
   --accent-foreground: oklch(0.98 0 75);
   --destructive: oklch(0.577 0.245 27);

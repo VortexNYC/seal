@@ -5,19 +5,27 @@
  * (ETSI EN 319 122 / CAdES-B-B mandatory authenticated attribute).
  */
 
-import forgeImport from "node-forge";
 import { Signer, SignPdfError, convertBuffer } from "@signpdf/utils";
+import forgeImport from "node-forge";
 
 // node-forge's published types lag the runtime API we need (createBuffer args,
 // pkcs7 authenticatedAttributes value shapes). Narrow at the boundary.
 // Do NOT use createRequire — Workers deploy rejects import.meta.url as undefined.
 const forge = forgeImport as unknown as ForgeRuntime;
 
-type ForgeAsn1 = { tagClass: number; type: number; constructed: boolean; value: unknown };
+type ForgeAsn1 = {
+  tagClass: number;
+  type: number;
+  constructed: boolean;
+  value: unknown;
+};
 
 type ForgeRuntime = {
   util: {
-    createBuffer: (input?: string, encoding?: string) => { getBytes?: () => string };
+    createBuffer: (
+      input?: string,
+      encoding?: string
+    ) => { getBytes?: () => string };
   };
   asn1: {
     Class: { UNIVERSAL: number };
@@ -31,7 +39,14 @@ type ForgeRuntime = {
     fromDer: (bytes: unknown) => unknown;
     toDer: (asn1: unknown) => { getBytes: () => string };
   };
-  md: { sha256: { create: () => { update: (s: string) => void; digest: () => { getBytes: () => string } } } };
+  md: {
+    sha256: {
+      create: () => {
+        update: (s: string) => void;
+        digest: () => { getBytes: () => string };
+      };
+    };
+  };
   pki: {
     oids: Record<string, string>;
     certificateToAsn1: (cert: ForgeCert) => unknown;
@@ -42,7 +57,9 @@ type ForgeRuntime = {
       strict: boolean,
       passphrase: string
     ) => {
-      getBags: (opts: { bagType: string }) => Record<string, ForgeBag[] | undefined>;
+      getBags: (opts: {
+        bagType: string;
+      }) => Record<string, ForgeBag[] | undefined>;
     };
   };
   pkcs7: {
@@ -94,7 +111,9 @@ export type PadesP12SignerOptions = {
 
 /** Build SigningCertificateV2 ASN.1 (SHA-256 certHash; hashAlgorithm omitted = DEFAULT). */
 export function buildSigningCertificateV2Asn1(cert: ForgeCert): ForgeAsn1 {
-  const certDer = forge.asn1.toDer(forge.pki.certificateToAsn1(cert)).getBytes();
+  const certDer = forge.asn1
+    .toDer(forge.pki.certificateToAsn1(cert))
+    .getBytes();
   const md = forge.md.sha256.create();
   md.update(certDer);
   const certHash = md.digest().getBytes();

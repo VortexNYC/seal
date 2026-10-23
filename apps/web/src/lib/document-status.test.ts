@@ -99,6 +99,8 @@ describe("workflow status", () => {
   it("keeps signed and viewed in the same ink as the rest of the rail", () => {
     expect(recipientMarkClass("signed")).toBe(recipientMarkClass("viewed"));
     expect(recipientMarkClass("pending")).toBe(recipientMarkClass("signed"));
-    expect(recipientMarkClass("declined")).not.toBe(recipientMarkClass("signed"));
+    expect(recipientMarkClass("declined")).not.toBe(
+      recipientMarkClass("signed")
+    );
   });
 });

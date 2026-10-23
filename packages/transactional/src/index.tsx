@@ -9,13 +9,13 @@ import {
   type DocumentCompletedProps,
 } from "./emails/document-completed.js";
 import {
-  DocumentExpirationAlert,
-  type DocumentExpirationAlertProps,
-} from "./emails/document-expiration-alert.js";
-import {
   DocumentEsignOptOut,
   type DocumentEsignOptOutProps,
 } from "./emails/document-esign-opt-out.js";
+import {
+  DocumentExpirationAlert,
+  type DocumentExpirationAlertProps,
+} from "./emails/document-expiration-alert.js";
 import {
   DocumentExpired,
   type DocumentExpiredProps,
@@ -52,10 +52,7 @@ import {
   SigningComplete,
   type SigningCompleteProps,
 } from "./emails/signing-complete.js";
-import {
-  SigningOtp,
-  type SigningOtpProps,
-} from "./emails/signing-otp.js";
+import { SigningOtp, type SigningOtpProps } from "./emails/signing-otp.js";
 
 // Re-export components for direct use
 export {

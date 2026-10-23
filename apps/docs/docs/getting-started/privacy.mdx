@@ -19,11 +19,11 @@ Completed envelopes and sealed audit rows are retained as evidentiary records
 
 ## Subprocessors (hosted seal.nyc)
 
-| Subprocessor | Role | Data involved |
-| --- | --- | --- |
-| **Cloudflare** | API Workers, D1 database, R2 file storage, DNS, TLS, email routing hooks | Document bytes, metadata, account identifiers, logs |
-| **Vortex Auth / Better Auth stack** (as deployed with Seal) | Authentication and sessions | Email, session tokens, org membership |
-| **Transactional email** (Cloudflare Email / configured sender) | Invite and notification mail | Recipient email, document title, signing links |
+| Subprocessor                                                   | Role                                                                     | Data involved                                       |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------- |
+| **Cloudflare**                                                 | API Workers, D1 database, R2 file storage, DNS, TLS, email routing hooks | Document bytes, metadata, account identifiers, logs |
+| **Vortex Auth / Better Auth stack** (as deployed with Seal)    | Authentication and sessions                                              | Email, session tokens, org membership               |
+| **Transactional email** (Cloudflare Email / configured sender) | Invite and notification mail                                             | Recipient email, document title, signing links      |
 
 Self-host customers run the same software on **their** Cloudflare account — they
 are the operator; Seal Inc. is not in the data path unless they use hosted
@@ -31,10 +31,10 @@ are the operator; Seal Inc. is not in the data path unless they use hosted
 
 Optional features that send document bytes to additional workers when enabled:
 
-| Feature | Worker / service | When it runs | Kill switch |
-| --- | --- | --- | --- |
-| Office → PDF convert | Seal convert worker | Upload of DOCX/XLSX/PPTX/CSV | `egress.allow_convert` (PATCH `/api/v1/settings`) |
-| Document AI / field candidates | Seal anydoc worker | AI field tools / parse-on-create | `ai.enabled` |
+| Feature                        | Worker / service    | When it runs                     | Kill switch                                       |
+| ------------------------------ | ------------------- | -------------------------------- | ------------------------------------------------- |
+| Office → PDF convert           | Seal convert worker | Upload of DOCX/XLSX/PPTX/CSV     | `egress.allow_convert` (PATCH `/api/v1/settings`) |
+| Document AI / field candidates | Seal anydoc worker  | AI field tools / parse-on-create | `ai.enabled`                                      |
 
 Webhook deliveries also leave Seal with event metadata. Set
 `egress.webhook_payload_mode` to `minimal` to drop emails, names, titles, and
@@ -96,7 +96,7 @@ Security reports for hosted Seal go to the
 `/.well-known/security.txt` on `seal.nyc` and `docs.seal.nyc` is the
 machine-readable pointer.
 
-## What this page does *not* claim
+## What this page does _not_ claim
 
 - SOC 2 / ISO report availability (roadmap, not asserted here)
 - HIPAA compliance or BA relationship

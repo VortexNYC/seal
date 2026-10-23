@@ -27,10 +27,10 @@ Related: ADR-003 (agents operate; humans sign intent). First Seal proof:
 
 ### 1. Two workflows only
 
-| ID | Name | Use for | Never use for |
-| -- | ---- | ------- | ------------- |
-| **A** | HTTPS interaction URL + poll (canonical) | Sign, pay, unlock secret, third-party OAuth, any credential or legally binding act | — |
-| **B** | Form / in-host typed ask (secondary) | Non-sensitive clarifies: which template, confirm email, pick org | Passwords, API keys, signatures, payments |
+| ID    | Name                                     | Use for                                                                            | Never use for                             |
+| ----- | ---------------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------- |
+| **A** | HTTPS interaction URL + poll (canonical) | Sign, pay, unlock secret, third-party OAuth, any credential or legally binding act | —                                         |
+| **B** | Form / in-host typed ask (secondary)     | Non-sensitive clarifies: which template, confirm email, pick org                   | Passwords, API keys, signatures, payments |
 
 Stop inventing a third primary path.
 
@@ -63,12 +63,12 @@ Maps 1:1 to MCP **URL-mode elicitation** (`elicitation/create` with
 
 ### 3. Surfaces only differ in how the URL is shown
 
-| Surface | Show URL | Continue |
-| ------- | -------- | -------- |
-| CLI | `open(url)` / print | poll |
-| MCP (Claude Code, etc.) | URL elicitation or tool payload `interaction_url` | poll or elicitation complete |
-| Chat / Grok / ChatGPT | markdown link (optional ChatGPT widget later) | poll tools |
-| SDK | same objects; embed optional for in-product signers | poll / webhook |
+| Surface                 | Show URL                                            | Continue                     |
+| ----------------------- | --------------------------------------------------- | ---------------------------- |
+| CLI                     | `open(url)` / print                                 | poll                         |
+| MCP (Claude Code, etc.) | URL elicitation or tool payload `interaction_url`   | poll or elicitation complete |
+| Chat / Grok / ChatGPT   | markdown link (optional ChatGPT widget later)       | poll tools                   |
+| SDK                     | same objects; embed optional for in-product signers | poll / webhook               |
 
 ### 4. Host tool permissions are not our product HITL
 
@@ -80,11 +80,11 @@ reinvent them. Our HITL is the product act (sign / unlock / pay).
 
 This pattern is portfolio-wide (Seal, Veil, Pile, payments). Keep ownership clear:
 
-| Layer | Owns | Examples | Not owned here |
-| ----- | ---- | -------- | -------------- |
-| **Core / InteractionSession** | Short-lived URL, one job, status, wait/poll, optional completion signal, pre-filled payload so human only acts | `id`, `url`, `status`, `result`, `expires_at`; MCP URL elicitation; `seal wait` | Nudges, cron, product cockpits |
-| **Agent host / framework** | How the link is shown; whether to auto-open; reminding the human the agent is blocked; token spend on “hey you still need to do this” | Claude Code open URL; Grok Bot / Hermes / OpenClaw timers & pings | Product-specific inbox UX |
-| **Product** | What the human page *is* (sign vs unlock vs approve); copy; legal/compliance; optional “needs me” overview if that product wants one | Seal signing page; Veil unlock page | Replacing host reminders |
+| Layer                         | Owns                                                                                                                                  | Examples                                                                        | Not owned here                 |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------ |
+| **Core / InteractionSession** | Short-lived URL, one job, status, wait/poll, optional completion signal, pre-filled payload so human only acts                        | `id`, `url`, `status`, `result`, `expires_at`; MCP URL elicitation; `seal wait` | Nudges, cron, product cockpits |
+| **Agent host / framework**    | How the link is shown; whether to auto-open; reminding the human the agent is blocked; token spend on “hey you still need to do this” | Claude Code open URL; Grok Bot / Hermes / OpenClaw timers & pings               | Product-specific inbox UX      |
+| **Product**                   | What the human page _is_ (sign vs unlock vs approve); copy; legal/compliance; optional “needs me” overview if that product wants one  | Seal signing page; Veil unlock page                                             | Replacing host reminders       |
 
 **Universal (every Vortex product):** agent prepares → one clear human page → Done → agent resumes. Reduce friction between agent work and human act until it feels butter (pre-fill everything; human only signs intent / unlocks / approves).
 
@@ -94,30 +94,30 @@ This pattern is portfolio-wide (Seal, Veil, Pile, payments). Keep ownership clea
 
 Agent did the work. Human sees one job. Signs / unlocks / approves. Tab can close. Agent continues. No forge, no cockpit, no second workflow.
 
-### 7. How the human surface is *rendered* (not a new workflow)
+### 7. How the human surface is _rendered_ (not a new workflow)
 
 Same InteractionSession; different skins depending on where the human is:
 
-| Skin | What it is | When relevant |
-| ---- | ---------- | ------------- |
-| **HTTPS page** (canonical for sensitive) | Our short-lived URL | Sign, pay, unlock — always available |
-| **Host chat UI / MCP Apps** | Interactive card *inside* Claude/ChatGPT | Packaging: status + Open; not the trust boundary for signatures |
-| **TUI** (terminal UI) | Ink / Textual / Claude Code dialogs | Human is in a terminal host; form elicitation / confirm |
-| **AG-UI / generative UI** (e.g. CopilotKit AG-UI, Google A2UI, mcp-ui) | Event stream so *someone’s* frontend can render agent state live | Building *our* oversight or embeddable agent UI — complementary to MCP, not a replacement for URL handoff |
+| Skin                                                                   | What it is                                                       | When relevant                                                                                             |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| **HTTPS page** (canonical for sensitive)                               | Our short-lived URL                                              | Sign, pay, unlock — always available                                                                      |
+| **Host chat UI / MCP Apps**                                            | Interactive card _inside_ Claude/ChatGPT                         | Packaging: status + Open; not the trust boundary for signatures                                           |
+| **TUI** (terminal UI)                                                  | Ink / Textual / Claude Code dialogs                              | Human is in a terminal host; form elicitation / confirm                                                   |
+| **AG-UI / generative UI** (e.g. CopilotKit AG-UI, Google A2UI, mcp-ui) | Event stream so _someone’s_ frontend can render agent state live | Building _our_ oversight or embeddable agent UI — complementary to MCP, not a replacement for URL handoff |
 
 Tokens for generative UI are paid by whoever runs that agent/app. Vortex products still own the sensitive act page. Do not invent a fourth primary workflow just because a nicer renderer exists.
 
-North star for every skin: **minimum friction for agents *and* for the moment a human actually touches the UI** — across CLI, IDE, chat, and web.
+North star for every skin: **minimum friction for agents _and_ for the moment a human actually touches the UI** — across CLI, IDE, chat, and web.
 
 ## Platform expectations (research 2026-09-24)
 
-| Host | Sensitive / binding | Non-sensitive | Notes |
-| ---- | ------------------- | ------------- | ----- |
-| **MCP spec** | URL-mode elicitation; secrets must not use form mode | Form-mode elicitation (flat JSON Schema) | SEP-1036 URL mode Final; client shows domain + consent |
-| **Claude Code** | URL elicitation → system URL handler; confirm in CLI | Form dialog; `AskUserQuestion` | Official MCP client behavior |
-| **ChatGPT Apps / Plugins** | MCP OAuth 2.1 to link app; host confirm for destructive writes; optional in-chat widgets (checkout partners) | Widgets / tools | Do not punch out to a Seal cockpit as primary |
-| **Grok Bot** | Take computer control or secure secret request (masked, not in transcript); connector auth in browser | Approvals (Allow once / Deny / Always allow) | Shared Agent Computer |
-| **CLI / headless** | Print or open URL | Prompt or skip | Poll only in CI |
+| Host                       | Sensitive / binding                                                                                          | Non-sensitive                                | Notes                                                  |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------- | ------------------------------------------------------ |
+| **MCP spec**               | URL-mode elicitation; secrets must not use form mode                                                         | Form-mode elicitation (flat JSON Schema)     | SEP-1036 URL mode Final; client shows domain + consent |
+| **Claude Code**            | URL elicitation → system URL handler; confirm in CLI                                                         | Form dialog; `AskUserQuestion`               | Official MCP client behavior                           |
+| **ChatGPT Apps / Plugins** | MCP OAuth 2.1 to link app; host confirm for destructive writes; optional in-chat widgets (checkout partners) | Widgets / tools                              | Do not punch out to a Seal cockpit as primary          |
+| **Grok Bot**               | Take computer control or secure secret request (masked, not in transcript); connector auth in browser        | Approvals (Allow once / Deny / Always allow) | Shared Agent Computer                                  |
+| **CLI / headless**         | Print or open URL                                                                                            | Prompt or skip                               | Poll only in CI                                        |
 
 Sources:
 
@@ -153,12 +153,12 @@ Sources:
 
 ## Industry examples to follow
 
-| Pattern | Examples | Role for us |
-| ------- | -------- | ----------- |
-| Open URL + poll | DocuSign, Stripe Checkout, Plaid Link, Seal `signing_url` | **Canonical** |
-| MCP URL elicitation | MCP SEP-1036, Claude Code URL mode | Wire mapping for MCP hosts |
-| OAuth device flow | `gh auth`, Azure CLI | Auth only — not sign/pay |
-| Secure handoff | Grok “take control” / masked secret request | Host-owned; we still prefer our URL for product acts |
+| Pattern             | Examples                                                  | Role for us                                          |
+| ------------------- | --------------------------------------------------------- | ---------------------------------------------------- |
+| Open URL + poll     | DocuSign, Stripe Checkout, Plaid Link, Seal `signing_url` | **Canonical**                                        |
+| MCP URL elicitation | MCP SEP-1036, Claude Code URL mode                        | Wire mapping for MCP hosts                           |
+| OAuth device flow   | `gh auth`, Azure CLI                                      | Auth only — not sign/pay                             |
+| Secure handoff      | Grok “take control” / masked secret request               | Host-owned; we still prefer our URL for product acts |
 
 ## Open-source landscape: is there an “AI SDK for HITL”?
 
@@ -166,15 +166,15 @@ Short answer: **no mature cross-host equivalent to Vercel AI SDK / Chat SDK**
 that abstracts Claude Code + ChatGPT + Grok HITL the way AI SDK abstracts model
 providers. Closest building blocks:
 
-| Project | Stars (approx) | What it is | Fit for Vortex |
-| ------- | -------------- | ---------- | -------------- |
-| **MCP + official TypeScript SDK** | high | Wire protocol + `elicitation/create` form & URL | **Primary dependency.** Implement Workflow A as URL elicitation + poll. |
-| **elicitkit/elicitkit** | ~1 | Portable typed `Ask` vocabulary + MCP ref + conformance; progressive tiers `apps → url → elicitation → tui` | Study for Workflow B (typed non-sensitive asks). Early; not a substitute for InteractionSession. |
-| **LangChain MCP adapters** (`elicitation.ts`) | (via langchainjs) | Bridges MCP elicitation ↔ LangGraph `interrupt` | Pattern reference if we ever host agents in LangGraph; not a host adapter for Claude/ChatGPT. |
-| **cafitac/codex-channels** | ~2 | Codex-first local runtime for approvals / elicitation / Slack channels | Codex-specific; example of “interaction runtime,” not portfolio default. |
-| **mcp-use/mcp-elicitation-demo** | ~1 | Demo server for form + URL elicitation | Conformance / dogfood client testing. |
-| **Vercel AI SDK / ai-chatbot** | very high | Model + tool UX **inside your app** | Great for building *our* oversight chat; does **not** span Claude Code / ChatGPT host boundaries. |
-| **Paperclip** | very high | Agent ops app; has elicitation adapters in runner | Ops surface inspiration; not the product HITL contract. |
+| Project                                       | Stars (approx)    | What it is                                                                                                  | Fit for Vortex                                                                                    |
+| --------------------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| **MCP + official TypeScript SDK**             | high              | Wire protocol + `elicitation/create` form & URL                                                             | **Primary dependency.** Implement Workflow A as URL elicitation + poll.                           |
+| **elicitkit/elicitkit**                       | ~1                | Portable typed `Ask` vocabulary + MCP ref + conformance; progressive tiers `apps → url → elicitation → tui` | Study for Workflow B (typed non-sensitive asks). Early; not a substitute for InteractionSession.  |
+| **LangChain MCP adapters** (`elicitation.ts`) | (via langchainjs) | Bridges MCP elicitation ↔ LangGraph `interrupt`                                                             | Pattern reference if we ever host agents in LangGraph; not a host adapter for Claude/ChatGPT.     |
+| **cafitac/codex-channels**                    | ~2                | Codex-first local runtime for approvals / elicitation / Slack channels                                      | Codex-specific; example of “interaction runtime,” not portfolio default.                          |
+| **mcp-use/mcp-elicitation-demo**              | ~1                | Demo server for form + URL elicitation                                                                      | Conformance / dogfood client testing.                                                             |
+| **Vercel AI SDK / ai-chatbot**                | very high         | Model + tool UX **inside your app**                                                                         | Great for building _our_ oversight chat; does **not** span Claude Code / ChatGPT host boundaries. |
+| **Paperclip**                                 | very high         | Agent ops app; has elicitation adapters in runner                                                           | Ops surface inspiration; not the product HITL contract.                                           |
 
 ### Recommendation on SDKs
 

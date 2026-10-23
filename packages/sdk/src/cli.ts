@@ -1,6 +1,6 @@
+import { execFile } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { basename } from "node:path";
-import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
 import { createSealClient, type HttpMethod } from "./index.js";
@@ -92,19 +92,16 @@ type InteractionSession = {
   poll?: { path?: string; interval_ms?: number };
 };
 
-const TERMINAL = new Set([
-  "completed",
-  "cancelled",
-  "declined",
-  "expired",
-]);
+const TERMINAL = new Set(["completed", "cancelled", "declined", "expired"]);
 
 async function runWait(argv: string[]): Promise<void> {
   const documentId = flagValue(argv, "document");
   const urlFlag = flagValue(argv, "url");
   const shouldOpen = hasFlag(argv, "open");
   const intervalMs = Number(flagValue(argv, "interval") ?? "2000");
-  const timeoutMs = Number(flagValue(argv, "timeout") ?? String(15 * 60 * 1000));
+  const timeoutMs = Number(
+    flagValue(argv, "timeout") ?? String(15 * 60 * 1000)
+  );
 
   if (!documentId) {
     console.error("Error: seal wait requires --document <id>");

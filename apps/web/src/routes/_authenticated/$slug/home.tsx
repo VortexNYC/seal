@@ -3,9 +3,9 @@
  * Route: /{slug}/home
  */
 
-import { Text } from "@cloudflare/kumo/components/text";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { SkeletonLine } from "@cloudflare/kumo/components/loader";
+import { Text } from "@cloudflare/kumo/components/text";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Suspense } from "react";
@@ -74,10 +74,14 @@ function WorkspaceHome(): React.ReactElement {
     <PageWrapper title="Dashboard">
       <div className="flex flex-col gap-5" data-seal-stagger>
         <div className="flex flex-col gap-1">
-          <Text as="h2" variant="heading">{organization.name}</Text>
-          <Text as="p" variant="secondary" size="sm">{issueCount > 0
+          <Text as="h2" variant="heading">
+            {organization.name}
+          </Text>
+          <Text as="p" variant="secondary" size="sm">
+            {issueCount > 0
               ? `${issueCount} item${issueCount === 1 ? "" : "s"} need you`
-              : "What needs you — and what agents already moved"}</Text>
+              : "What needs you — and what agents already moved"}
+          </Text>
         </div>
 
         {attentionPending ? (
@@ -93,7 +97,9 @@ function WorkspaceHome(): React.ReactElement {
         </Suspense>
 
         <div className="flex items-baseline justify-between gap-3">
-          <Text as="p" variant="secondary" size="sm">Trends and team activity</Text>
+          <Text as="p" variant="secondary" size="sm">
+            Trends and team activity
+          </Text>
           <Link
             to="/$slug/analytics"
             params={{ slug }}

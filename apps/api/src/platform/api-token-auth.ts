@@ -80,10 +80,7 @@ export async function loadApiTokenContext<E extends CloudflareBindings>(
 
   const clientIp = requestClientIp(c.req.raw.headers);
   if (
-    !ipMatchesAllowlist(
-      clientIp,
-      parseApiTokenIpRanges(token.allowedIpRanges)
-    )
+    !ipMatchesAllowlist(clientIp, parseApiTokenIpRanges(token.allowedIpRanges))
   ) {
     return false;
   }

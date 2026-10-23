@@ -5,7 +5,6 @@ import { z } from "zod";
 
 import { createD1 } from "../../global/db.js";
 import { documents, organization, recipients } from "../../global/schema.js";
-import { refreshOpenRecipientLink } from "../document-send.js";
 import {
   getAuditActor,
   getAuditRequestMeta,
@@ -19,6 +18,7 @@ import {
   readOrgSigningCompliance,
   resolveRecipientAuthMethod,
 } from "../../platform/signing-settings.js";
+import { refreshOpenRecipientLink } from "../document-send.js";
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
@@ -510,8 +510,7 @@ async function handleUpdateRecipient(
   if (role !== undefined) updateValues.role = role;
   if (order !== undefined) updateValues.order = order;
   const emailChanged =
-    email !== undefined &&
-    email.toLowerCase() !== existing.email.toLowerCase();
+    email !== undefined && email.toLowerCase() !== existing.email.toLowerCase();
   if (emailChanged && existing.status === "declined") {
     updateValues.status = "pending";
     updateValues.declinedAt = null;

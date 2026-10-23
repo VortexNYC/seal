@@ -427,7 +427,10 @@ app.put("/fields/update", async (c) => {
   if (label !== undefined) updateValues.label = label;
   if (is_required !== undefined) updateValues.isRequired = is_required;
   if (properties !== undefined) {
-    updateValues.properties = mergeFieldProperties(field.properties, properties);
+    updateValues.properties = mergeFieldProperties(
+      field.properties,
+      properties
+    );
   }
 
   if (Object.keys(updateValues).length === 0) {

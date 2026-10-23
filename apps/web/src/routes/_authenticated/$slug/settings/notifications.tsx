@@ -10,9 +10,9 @@ import { Input } from "@cloudflare/kumo/components/input";
 import { Label } from "@cloudflare/kumo/components/label";
 import { Switch } from "@cloudflare/kumo/components/switch";
 import { Text } from "@cloudflare/kumo/components/text";
+import { Bell, FloppyDisk as Save, X } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Bell, FloppyDisk as Save, X } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
@@ -82,9 +82,16 @@ function NotificationSettings() {
             title="Workspace notifications"
             description="Workspace notification settings need admin access."
           >
-            <Text as="p" variant="secondary" size="sm" DANGEROUS_className="m-0">{error instanceof Error
+            <Text
+              as="p"
+              variant="secondary"
+              size="sm"
+              DANGEROUS_className="m-0"
+            >
+              {error instanceof Error
                 ? error.message
-                : "Your personal preferences are below."}</Text>
+                : "Your personal preferences are below."}
+            </Text>
           </SettingsSection>
           <YourPreferencesBlock />
         </SettingsBody>
@@ -181,7 +188,14 @@ function NotificationSettings() {
                 </span>
               ))}
               {formData.reminderSchedule.length === 0 ? (
-                <Text as="p" variant="secondary" size="sm" DANGEROUS_className="m-0">No reminders configured</Text>
+                <Text
+                  as="p"
+                  variant="secondary"
+                  size="sm"
+                  DANGEROUS_className="m-0"
+                >
+                  No reminders configured
+                </Text>
               ) : null}
             </div>
             <div className="flex items-end gap-2">
@@ -245,9 +259,7 @@ function NotificationSettings() {
               <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex flex-col gap-0.5">
-                    <Label htmlFor="completion-email">
-                      Completion email
-                    </Label>
+                    <Label htmlFor="completion-email">Completion email</Label>
                     <Text variant="secondary" size="xs">
                       When all recipients have signed
                     </Text>
@@ -301,8 +313,12 @@ function NotificationSettings() {
 function YourPreferencesBlock(): React.JSX.Element {
   return (
     <div id="your-preferences" className="flex flex-col gap-3">
-      <Text as="h2" variant="heading" DANGEROUS_className="m-0">Your preferences</Text>
-      <Text as="p" variant="secondary" size="sm" DANGEROUS_className="m-0">Email, in-app, and desktop choices for your account — not the workspace.</Text>
+      <Text as="h2" variant="heading" DANGEROUS_className="m-0">
+        Your preferences
+      </Text>
+      <Text as="p" variant="secondary" size="sm" DANGEROUS_className="m-0">
+        Email, in-app, and desktop choices for your account — not the workspace.
+      </Text>
       <UserNotificationPreferences />
     </div>
   );

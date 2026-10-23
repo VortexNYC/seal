@@ -2,8 +2,9 @@ import { Button } from "@cloudflare/kumo/components/button";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
 import { ArrowClockwise, House, Warning } from "@phosphor-icons/react";
-import { withPosthog } from "@/lib/posthog-client";
 import { Component, type ErrorInfo, type ReactNode } from "react";
+
+import { withPosthog } from "@/lib/posthog-client";
 
 interface ErrorBoundaryProps {
   children: ReactNode;

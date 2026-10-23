@@ -48,8 +48,7 @@ export async function recordAuditWriteFailure(
   reason: string
 ): Promise<number> {
   const now = new Date();
-  const truncated =
-    reason.length > 500 ? `${reason.slice(0, 497)}...` : reason;
+  const truncated = reason.length > 500 ? `${reason.slice(0, 497)}...` : reason;
 
   console.error("[audit] write failure", {
     organizationId,
@@ -118,16 +117,10 @@ export async function listAuditHealthAlertCandidates(
       lastFailureAt: auditHealth.lastFailureAt,
     })
     .from(auditHealth)
-    .innerJoin(
-      organization,
-      eq(organization.id, auditHealth.organizationId)
-    )
+    .innerJoin(organization, eq(organization.id, auditHealth.organizationId))
     .where(
       and(
-        gte(
-          auditHealth.consecutiveFailures,
-          AUDIT_FAILURE_ALERT_THRESHOLD
-        ),
+        gte(auditHealth.consecutiveFailures, AUDIT_FAILURE_ALERT_THRESHOLD),
         or(
           isNull(auditHealth.lastAlertAt),
           lt(auditHealth.lastAlertAt, cooldownBefore)

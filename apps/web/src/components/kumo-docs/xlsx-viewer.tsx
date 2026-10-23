@@ -1,5 +1,5 @@
-import { Text } from "@cloudflare/kumo/components/text";
 import { Tabs } from "@cloudflare/kumo/components/tabs";
+import { Text } from "@cloudflare/kumo/components/text";
 import type { JSX } from "react";
 import { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
@@ -102,11 +102,19 @@ export function XlsxViewer({
         />
       ) : null}
       {loading ? (
-        <Text as="p" variant="secondary" size="sm" DANGEROUS_className="p-4">Loading workbook…</Text>
+        <Text as="p" variant="secondary" size="sm" DANGEROUS_className="p-4">
+          Loading workbook…
+        </Text>
       ) : null}
-      {error ? <Text as="p" variant="error" size="sm" DANGEROUS_className="p-4">{error}</Text> : null}
+      {error ? (
+        <Text as="p" variant="error" size="sm" DANGEROUS_className="p-4">
+          {error}
+        </Text>
+      ) : null}
       {!loading && !error && sheets.length === 0 ? (
-        <Text as="p" variant="secondary" size="sm" DANGEROUS_className="p-4">No workbook loaded.</Text>
+        <Text as="p" variant="secondary" size="sm" DANGEROUS_className="p-4">
+          No workbook loaded.
+        </Text>
       ) : null}
       {csv ? <CsvViewer content={csv} className="max-h-128" /> : null}
     </div>

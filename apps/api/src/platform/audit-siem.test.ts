@@ -3,11 +3,7 @@ import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
 import { createD1 } from "../global/db.js";
-import {
-  organization,
-  webhookDeliveries,
-  webhooks,
-} from "../global/schema.js";
+import { organization, webhookDeliveries, webhooks } from "../global/schema.js";
 import { writeAuditLog } from "./audit-log.js";
 import {
   AUDIT_ENTRY_CREATED_EVENT,
@@ -56,9 +52,9 @@ async function createWebhook(
 
 describe("audit SIEM stream (SEA-67)", () => {
   it("matches audit.* and * subscriptions", () => {
-    expect(
-      webhookSubscribesTo(["audit.*"], AUDIT_ENTRY_CREATED_EVENT)
-    ).toBe(true);
+    expect(webhookSubscribesTo(["audit.*"], AUDIT_ENTRY_CREATED_EVENT)).toBe(
+      true
+    );
     expect(webhookSubscribesTo(["*"], AUDIT_ENTRY_CREATED_EVENT)).toBe(true);
     expect(
       webhookSubscribesTo(["audit.entry.created"], AUDIT_ENTRY_CREATED_EVENT)
@@ -108,9 +104,9 @@ describe("audit SIEM stream (SEA-67)", () => {
     expect(deliveries.map((d) => d.eventId).sort()).toEqual(
       [first.values.id, second.values.id].sort()
     );
-    expect(deliveries.every((d) => d.eventType === AUDIT_ENTRY_CREATED_EVENT)).toBe(
-      true
-    );
+    expect(
+      deliveries.every((d) => d.eventType === AUDIT_ENTRY_CREATED_EVENT)
+    ).toBe(true);
 
     const payload = JSON.parse(deliveries[0]?.payload ?? "{}") as {
       data: { ipAddress: string | null; sequence: number };

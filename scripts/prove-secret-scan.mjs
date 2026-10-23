@@ -7,8 +7,8 @@
  * `pnpm run scan:secrets` gate is clean locally.
  */
 import { execFileSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const REPO = "VortexNYC/seal";
@@ -22,9 +22,7 @@ function fail(msg) {
 }
 
 function gh(args) {
-  return JSON.parse(
-    execFileSync("gh", ["api", ...args], { encoding: "utf8" })
-  );
+  return JSON.parse(execFileSync("gh", ["api", ...args], { encoding: "utf8" }));
 }
 
 // 1. Branch protection still requires the `secretlint` context on main.
@@ -72,9 +70,7 @@ try {
   pass("secretlint clean (pnpm run scan:secrets)");
 } catch (err) {
   const stderr =
-    err && typeof err === "object" && "stderr" in err
-      ? String(err.stderr)
-      : "";
+    err && typeof err === "object" && "stderr" in err ? String(err.stderr) : "";
   fail(`secretlint failed${stderr ? `: ${stderr.slice(0, 500)}` : ""}`);
 }
 

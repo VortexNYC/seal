@@ -1,12 +1,10 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { PostHog } from "posthog-js";
-
-import {
-  setPosthogClientForTest,
-} from "@/lib/posthog-client";
 import { useState } from "react";
 import { afterEach, describe, expect, test, vi } from "vitest";
+
+import { setPosthogClientForTest } from "@/lib/posthog-client";
 
 import { ErrorBoundary, ErrorFallback } from "./error-boundary";
 

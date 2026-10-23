@@ -51,7 +51,11 @@ export function EnvelopeHistoryDialog({
         </ul>
         {completed ? (
           <div className="flex justify-end">
-            <Button type="button" variant="primary" onClick={onDownloadCertificate}>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={onDownloadCertificate}
+            >
               Download certificate
             </Button>
           </div>

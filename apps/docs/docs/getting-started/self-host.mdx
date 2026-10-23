@@ -14,10 +14,10 @@ No Vortex resource IDs. No Docker compose.
 
 Seal is a pnpm monorepo. On the Workers Builds setup screen:
 
-| Field | Value |
-| ----- | ----- |
-| Root directory | `/` |
-| Build command | `pnpm install` |
+| Field          | Value           |
+| -------------- | --------------- |
+| Root directory | `/`             |
+| Build command  | `pnpm install`  |
 | Deploy command | `pnpm selfhost` |
 
 ## CLI (recommended)
@@ -107,12 +107,12 @@ Vortex dogfood uses `noreply@seal.nyc` (domain already enabled on the account).
 
 ## Optional workers
 
-| Worker | Needed for |
-| ------ | ---------- |
-| API + web | Core upload → send → sign |
-| anydoc | Rich PDF field detection |
-| convert | DOCX → PDF (Containers) |
-| mcp | Agent MCP surface on your origin |
+| Worker    | Needed for                       |
+| --------- | -------------------------------- |
+| API + web | Core upload → send → sign        |
+| anydoc    | Rich PDF field detection         |
+| convert   | DOCX → PDF (Containers)          |
+| mcp       | Agent MCP surface on your origin |
 
 PDF upload and signature collection work without anydoc/convert.
 

@@ -2,9 +2,9 @@
  * Personal notification preferences — embedded on workspace Notifications.
  */
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
-import { Select } from "@cloudflare/kumo/components/select";
 import { Label } from "@cloudflare/kumo/components/label";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Select } from "@cloudflare/kumo/components/select";
 import { Text } from "@cloudflare/kumo/components/text";
 import { Bell, Clock, Desktop, EnvelopeSimple } from "@phosphor-icons/react";
 import { useMutation, useQuery } from "@tanstack/react-query";

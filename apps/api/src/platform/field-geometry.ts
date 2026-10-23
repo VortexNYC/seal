@@ -30,9 +30,7 @@ const LINE_BOTTOM_ANCHORED = new Set<PlaceableFieldType>([
   "stamp",
 ]);
 
-export {
-  mapCandidateTypeToFieldType,
-} from "./field-types";
+export { mapCandidateTypeToFieldType } from "./field-types";
 
 /**
  * Estimate page-percent geometry from a markdown line index.
@@ -46,8 +44,7 @@ export function geometryFromLine(
 ): FieldGeometry {
   const size = DEFAULT_FIELD_SIZE_PERCENT[fieldType];
   const clampedLine = Math.max(0, line);
-  const lineY =
-    Math.round((clampedLine / LINES_PER_PAGE) * 90 * 10) / 10;
+  const lineY = Math.round((clampedLine / LINES_PER_PAGE) * 90 * 10) / 10;
   const y = LINE_BOTTOM_ANCHORED.has(fieldType)
     ? Math.max(0, Math.min(100 - size.height, lineY - size.height))
     : Math.min(100 - size.height, lineY);

@@ -44,11 +44,7 @@ export function FormSkeleton({
 }
 
 /** Pending state that keeps the same header and column as the loaded page. */
-export function PageFormSkeleton({
-  title,
-}: {
-  title: string;
-}): ReactElement {
+export function PageFormSkeleton({ title }: { title: string }): ReactElement {
   return (
     <PageWrapper title={title}>
       <FormSkeleton />

@@ -36,10 +36,12 @@ const LEGAL_ENTITIES: { value: LegalEntityType; label: string }[] = [
   { value: "INDIVIDUAL", label: "Individual" },
 ];
 
-export const Route = createFileRoute("/_authenticated/$slug/settings/payments")({
-  component: PaymentsSettings,
-  pendingComponent: () => <PageFormSkeleton title="Payments" />,
-});
+export const Route = createFileRoute("/_authenticated/$slug/settings/payments")(
+  {
+    component: PaymentsSettings,
+    pendingComponent: () => <PageFormSkeleton title="Payments" />,
+  }
+);
 
 function PaymentsSettings() {
   const { slug } = Route.useParams();

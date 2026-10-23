@@ -34,13 +34,13 @@ import {
   getAuditRequestMeta,
   writeAuditLog,
 } from "../../platform/audit-log.js";
+import { certificateStorageKey } from "../../platform/certificate-of-completion.js";
+import { generateAndStoreCertificateOfCompletion } from "../../platform/certificate-store.js";
 import { copyDocument } from "../../platform/document-copy.js";
 import {
   forwardCompletedDocument,
   startEnvelopeFromCompleted,
 } from "../../platform/document-forward.js";
-import { certificateStorageKey } from "../../platform/certificate-of-completion.js";
-import { generateAndStoreCertificateOfCompletion } from "../../platform/certificate-store.js";
 import { buildSigningUrl } from "../../platform/email.js";
 import { validateFieldGeometry } from "../../platform/field-geometry.js";
 import {

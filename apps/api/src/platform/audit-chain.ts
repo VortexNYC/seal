@@ -31,7 +31,9 @@ export type CanonicalAuditPayload = {
   createdAtMs: number;
 };
 
-export function canonicalizeAuditPayload(payload: CanonicalAuditPayload): string {
+export function canonicalizeAuditPayload(
+  payload: CanonicalAuditPayload
+): string {
   // Stable key order — do not pretty-print.
   return JSON.stringify({
     id: payload.id,

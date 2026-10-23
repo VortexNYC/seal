@@ -31,7 +31,11 @@ export type SendIntent =
   | { readonly kind: "finish-field" }
   | { readonly kind: "open-send" }
   | { readonly kind: "open-add-recipient" }
-  | { readonly kind: "blocked"; readonly message: string; readonly openFields: boolean };
+  | {
+      readonly kind: "blocked";
+      readonly message: string;
+      readonly openFields: boolean;
+    };
 
 export type PlaceFieldsIntent = "add-recipient" | "open-fields" | "stay";
 
@@ -96,7 +100,9 @@ export function isFieldSetupOpen(input: {
   readonly showFieldOptions: boolean;
   readonly provisionalPaymentFieldPublicId: string | null;
 }): boolean {
-  return input.showFieldOptions || input.provisionalPaymentFieldPublicId !== null;
+  return (
+    input.showFieldOptions || input.provisionalPaymentFieldPublicId !== null
+  );
 }
 
 export function canLeaveFieldSetup(fieldSetupOpen: boolean): boolean {
@@ -114,7 +120,9 @@ export function signerForPlacement<T extends { readonly _id: string }>(
   selectedId: string | null | undefined
 ): T | null {
   if (signers.length === 0) return null;
-  return signers.find((signer) => signer._id === selectedId) ?? signers[0] ?? null;
+  return (
+    signers.find((signer) => signer._id === selectedId) ?? signers[0] ?? null
+  );
 }
 
 export function nextPlacementSignerId<
@@ -296,8 +304,7 @@ export function sendDocumentReadiness(input: {
     const signerNames = signersWithoutSigningField
       .map((signer) => signer.name || signer.email)
       .join(", ");
-    const noun =
-      signersWithoutSigningField.length === 1 ? "needs" : "need";
+    const noun = signersWithoutSigningField.length === 1 ? "needs" : "need";
     return {
       canSend: false,
       tooltip: `${signerNames} ${noun} a signature or initials field before this can be sent.`,

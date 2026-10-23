@@ -3,9 +3,14 @@ import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
+import {
+  Clock,
+  Link as Link2,
+  Plugs as Unplug,
+  Pulse as Activity,
+} from "@phosphor-icons/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Clock, Link as Link2, Plugs as Unplug, Pulse as Activity } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import { SettingsBody } from "@/components/settings-body";
@@ -135,8 +140,17 @@ function ConnectedAppsSection({ apps }: { apps: ApiConnectedApp[] }) {
         {apps.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <Unplug className="text-kumo-secondary/50 h-12 w-12" />
-            <Text as="p" variant="secondary" size="sm" DANGEROUS_className="mt-4">No connected apps</Text>
-            <Text as="p" variant="secondary" size="xs">Apps you authorize will appear here</Text>
+            <Text
+              as="p"
+              variant="secondary"
+              size="sm"
+              DANGEROUS_className="mt-4"
+            >
+              No connected apps
+            </Text>
+            <Text as="p" variant="secondary" size="xs">
+              Apps you authorize will appear here
+            </Text>
           </div>
         ) : (
           <div className="space-y-4">
@@ -234,8 +248,17 @@ function ActivityLogsSection({ logs }: { logs: ApiIntegrationActivityLog[] }) {
         {logs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <Clock className="text-kumo-secondary/50 h-12 w-12" />
-            <Text as="p" variant="secondary" size="sm" DANGEROUS_className="mt-4">No activity yet</Text>
-            <Text as="p" variant="secondary" size="xs">Integration activity will appear here</Text>
+            <Text
+              as="p"
+              variant="secondary"
+              size="sm"
+              DANGEROUS_className="mt-4"
+            >
+              No activity yet
+            </Text>
+            <Text as="p" variant="secondary" size="xs">
+              Integration activity will appear here
+            </Text>
           </div>
         ) : (
           <div className="space-y-3">
@@ -253,8 +276,10 @@ function ActivityLogsSection({ logs }: { logs: ApiIntegrationActivityLog[] }) {
                     </Badge>
                     <span className="font-medium">{log.integrationName}</span>
                   </div>
-                  <Text as="p" variant="secondary" size="sm">{log.action}
-                    {log.details && ` - ${log.details}`}</Text>
+                  <Text as="p" variant="secondary" size="sm">
+                    {log.action}
+                    {log.details && ` - ${log.details}`}
+                  </Text>
                 </div>
                 <span className="text-kumo-secondary text-xs whitespace-nowrap">
                   {formatRelativeTime(log.createdAt)}

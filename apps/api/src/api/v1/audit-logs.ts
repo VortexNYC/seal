@@ -9,7 +9,10 @@ import {
   parseApiTokenScopes,
 } from "../../platform/api-token-auth.js";
 import { verifyAuditChain } from "../../platform/audit-chain.js";
-import { listAuditEntriesForExport, flushAuditSiemStream } from "../../platform/audit-siem.js";
+import {
+  listAuditEntriesForExport,
+  flushAuditSiemStream,
+} from "../../platform/audit-siem.js";
 import { organizationMiddleware } from "../../platform/organization-middleware.js";
 import type { Variables } from "../../platform/types.js";
 
@@ -44,8 +47,7 @@ function canAdminister(c: {
   get: <K extends keyof Variables>(key: K) => Variables[K];
 }): boolean {
   const membership = c.get("membership");
-  const roleOk =
-    membership?.role === "admin" || membership?.role === "owner";
+  const roleOk = membership?.role === "admin" || membership?.role === "owner";
   if (!roleOk) {
     return false;
   }

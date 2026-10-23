@@ -12,7 +12,10 @@ import {
   buildAuditChainTipBatchItems,
   buildAuditChainTipRevertBatchItems,
 } from "./audit-chain.js";
-import { recordAuditWriteFailure, recordAuditWriteSuccess } from "./audit-health.js";
+import {
+  recordAuditWriteFailure,
+  recordAuditWriteSuccess,
+} from "./audit-health.js";
 import { prepareChainedAuditLogBatch } from "./audit-log.js";
 
 export const SCHEDULER_ACTOR = {
@@ -109,9 +112,7 @@ export async function commitDocumentExpiry(
           eq(recipients.status, "pending")
         )
       ),
-    ...chained.prepared.map((row) =>
-      db.insert(auditLogs).values(row.values)
-    ),
+    ...chained.prepared.map((row) => db.insert(auditLogs).values(row.values)),
     tipHead,
   ];
 

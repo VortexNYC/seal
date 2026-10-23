@@ -93,11 +93,15 @@ for (const file of readdirSync(v1Dir)) {
   if (name.endsWith(".test") || NON_ROUTES.has(name)) continue;
   const prefix = PREFIX[name];
   if (!prefix) {
-    problems.push(`v1/${file}: unmapped router — add it to PREFIX in this script`);
+    problems.push(
+      `v1/${file}: unmapped router — add it to PREFIX in this script`
+    );
     continue;
   }
   const src = readFileSync(resolve(v1Dir, file), "utf8");
-  for (const m of src.matchAll(/app\.(get|post|put|delete|patch)\("([^"]*)"/g)) {
+  for (const m of src.matchAll(
+    /app\.(get|post|put|delete|patch)\("([^"]*)"/g
+  )) {
     const [, method, sub] = m;
     const p = sub === "/" || sub === "" ? prefix : prefix + sub;
     codeRoutes.set(norm(p), (codeRoutes.get(norm(p)) ?? new Set()).add(method));
@@ -116,7 +120,9 @@ for (const [np, methods] of specNorm) {
   for (const method of methods) {
     if (method === "parameters") continue;
     if (!codeRoutes.has(np) || !codeRoutes.get(np).has(method)) {
-      problems.push(`spec ${method.toUpperCase()} ${np} — not implemented in v1`);
+      problems.push(
+        `spec ${method.toUpperCase()} ${np} — not implemented in v1`
+      );
     }
   }
 }

@@ -20,8 +20,7 @@ export function BulkSendDialog({
   const queryClient = useQueryClient();
   const drafts = useQuery({
     queryKey: ["documents", organizationSlug, "drafts"],
-    queryFn: () =>
-      getDocuments(organizationSlug, { workflowStatus: "draft" }),
+    queryFn: () => getDocuments(organizationSlug, { workflowStatus: "draft" }),
     enabled: open,
   });
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -64,7 +63,11 @@ export function BulkSendDialog({
           )}
         </div>
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+          >
             Cancel
           </Button>
           <Button

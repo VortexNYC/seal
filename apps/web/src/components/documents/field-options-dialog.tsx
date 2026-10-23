@@ -1,9 +1,16 @@
-import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Input } from "@cloudflare/kumo/components/input";
-import { CaretDown as ChevronDownIcon, CheckSquare as CheckSquareIcon, RadioButton as CircleDotIcon, DotsSixVertical as GripVerticalIcon, Plus as PlusIcon, X as XIcon } from "@phosphor-icons/react";
+import { Text } from "@cloudflare/kumo/components/text";
+import {
+  CaretDown as ChevronDownIcon,
+  CheckSquare as CheckSquareIcon,
+  RadioButton as CircleDotIcon,
+  DotsSixVertical as GripVerticalIcon,
+  Plus as PlusIcon,
+  X as XIcon,
+} from "@phosphor-icons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
@@ -235,134 +242,141 @@ export function FieldOptionsDialog({
 
   const optionsBody = (
     <>
-          <div className="relative px-5 pt-5 pb-4">
-            <Text as="p" size="sm" bold>
-              {config.title}
-            </Text>
-            <Text as="p" variant="secondary" size="xs">
-              {config.description}
-            </Text>
-            <Button
-              type="button"
-              variant="ghost"
-              shape="square"
-              size="sm"
-              icon={XIcon}
-              aria-label="Close"
-              className="absolute top-4 right-4"
-              onClick={() => onOpenChange(false)}
-            />
+      <div className="relative px-5 pt-5 pb-4">
+        <Text as="p" size="sm" bold>
+          {config.title}
+        </Text>
+        <Text as="p" variant="secondary" size="xs">
+          {config.description}
+        </Text>
+        <Button
+          type="button"
+          variant="ghost"
+          shape="square"
+          size="sm"
+          icon={XIcon}
+          aria-label="Close"
+          className="absolute top-4 right-4"
+          onClick={() => onOpenChange(false)}
+        />
+      </div>
+
+      {/* Body */}
+      <div className="max-h-vh-50 overflow-y-auto px-5 pb-5">
+        <div>
+          <div className="text-kumo-secondary mb-2 flex items-center gap-1.5 text-xs font-medium tracking-wide uppercase">
+            Options
           </div>
 
-          {/* Body */}
-          <div className="max-h-vh-50 overflow-y-auto px-5 pb-5">
-            <div>
-              <div className="text-kumo-secondary text-xs mb-2 flex items-center gap-1.5 font-medium tracking-wide uppercase">
-                Options
-              </div>
-
-              {options.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <Text as="p" variant="secondary" size="sm" DANGEROUS_className="max-w-55">{config.emptyText}</Text>
-                </div>
-              ) : (
-                <div className="bg-kumo-elevated flex flex-col gap-0.5 rounded-lg p-0.5">
-                  {options.map((option, index) => (
-                    <div
-                      key={option.id}
-                      className={cn(
-                        "group bg-kumo-base flex items-center gap-2 rounded-md px-2.5 py-2 transition-colors",
-                        draggedIndex === index && "opacity-50",
-                        dragOverIndex === index && "bg-kumo-elevated"
-                      )}
-                      draggable
-                      onDragStart={() => handleDragStart(index)}
-                      onDragOver={(e) => handleDragOver(e, index)}
-                      onDragEnd={handleDragEnd}
-                    >
-                      <div className="text-kumo-secondary flex h-4 w-4 cursor-grab items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
-                        <GripVerticalIcon className="h-3.5 w-3.5" />
-                      </div>
-                      <Input
-                        ref={index === options.length - 1 ? newInputRef : null}
-                        value={option.label}
-                        onChange={(e) =>
-                          handleOptionChange(option.id, e.target.value)
-                        }
-                        onKeyDown={(e) => handleKeyDown(e, index)}
-                        placeholder="Enter option label..."
-                        aria-label={`Option ${index + 1}`}
-                        autoComplete="off"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        shape="square"
-                        size="sm"
-                        className="opacity-0 group-hover:opacity-100"
-                        icon={XIcon}
-                        onClick={() => handleDeleteOption(option.id)}
-                        title="Remove option"
-                        aria-label="Remove option"
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <Button
-                type="button"
+          {options.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Text
+                as="p"
                 variant="secondary"
                 size="sm"
-                className="mt-2 w-full justify-start"
-                icon={PlusIcon}
-                onClick={handleAddOption}
+                DANGEROUS_className="max-w-55"
               >
-                Add Option
-              </Button>
+                {config.emptyText}
+              </Text>
             </div>
-
-            {/* Default option toggle - only for dropdown and radio */}
-            {fieldType !== "checkbox" &&
-              fieldType !== "multi_select" &&
-              options.length > 0 && (
-                <div className="border-kumo-line mt-4 border-t pt-4">
-                  <div className="text-kumo-secondary text-xs mb-2 flex items-center gap-1.5 font-medium tracking-wide uppercase">
-                    Default Selection
+          ) : (
+            <div className="bg-kumo-elevated flex flex-col gap-0.5 rounded-lg p-0.5">
+              {options.map((option, index) => (
+                <div
+                  key={option.id}
+                  className={cn(
+                    "group bg-kumo-base flex items-center gap-2 rounded-md px-2.5 py-2 transition-colors",
+                    draggedIndex === index && "opacity-50",
+                    dragOverIndex === index && "bg-kumo-elevated"
+                  )}
+                  draggable
+                  onDragStart={() => handleDragStart(index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragEnd={handleDragEnd}
+                >
+                  <div className="text-kumo-secondary flex h-4 w-4 cursor-grab items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
+                    <GripVerticalIcon className="h-3.5 w-3.5" />
                   </div>
-                  <Checkbox
-                    checked={!!defaultOptionId}
-                    onCheckedChange={(checked) => {
-                      if (checked && options[0]) {
-                        setDefaultOptionId(options[0].id);
-                      } else {
-                        setDefaultOptionId(undefined);
-                      }
-                    }}
-                    label="Pre-select first option"
+                  <Input
+                    ref={index === options.length - 1 ? newInputRef : null}
+                    value={option.label}
+                    onChange={(e) =>
+                      handleOptionChange(option.id, e.target.value)
+                    }
+                    onKeyDown={(e) => handleKeyDown(e, index)}
+                    placeholder="Enter option label..."
+                    aria-label={`Option ${index + 1}`}
+                    autoComplete="off"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    shape="square"
+                    size="sm"
+                    className="opacity-0 group-hover:opacity-100"
+                    icon={XIcon}
+                    onClick={() => handleDeleteOption(option.id)}
+                    title="Remove option"
+                    aria-label="Remove option"
                   />
                 </div>
-              )}
-          </div>
+              ))}
+            </div>
+          )}
 
-          {/* Footer */}
-          <div className="bg-kumo-base border-kumo-line flex items-center justify-end gap-2 border-t px-5 py-4">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="primary"
-              onClick={handleConfirm}
-              disabled={!canConfirm}
-            >
-              Save
-            </Button>
-          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="mt-2 w-full justify-start"
+            icon={PlusIcon}
+            onClick={handleAddOption}
+          >
+            Add Option
+          </Button>
+        </div>
+
+        {/* Default option toggle - only for dropdown and radio */}
+        {fieldType !== "checkbox" &&
+          fieldType !== "multi_select" &&
+          options.length > 0 && (
+            <div className="border-kumo-line mt-4 border-t pt-4">
+              <div className="text-kumo-secondary mb-2 flex items-center gap-1.5 text-xs font-medium tracking-wide uppercase">
+                Default Selection
+              </div>
+              <Checkbox
+                checked={!!defaultOptionId}
+                onCheckedChange={(checked) => {
+                  if (checked && options[0]) {
+                    setDefaultOptionId(options[0].id);
+                  } else {
+                    setDefaultOptionId(undefined);
+                  }
+                }}
+                label="Pre-select first option"
+              />
+            </div>
+          )}
+      </div>
+
+      {/* Footer */}
+      <div className="bg-kumo-base border-kumo-line flex items-center justify-end gap-2 border-t px-5 py-4">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => onOpenChange(false)}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          variant="primary"
+          onClick={handleConfirm}
+          disabled={!canConfirm}
+        >
+          Save
+        </Button>
+      </div>
     </>
   );
 

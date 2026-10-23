@@ -1,14 +1,9 @@
-import { eq } from "drizzle-orm";
 import { env } from "cloudflare:test";
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { createD1 } from "../global/db.js";
-import {
-  auditHealth,
-  member,
-  organization,
-  user,
-} from "../global/schema.js";
+import { auditHealth, member, organization, user } from "../global/schema.js";
 import {
   AUDIT_FAILURE_ALERT_THRESHOLD,
   listAuditHealthAlertCandidates,
@@ -75,9 +70,9 @@ describe("audit health (SEA-56)", () => {
     expect(await listAuditHealthAlertCandidates(db, stillCool)).toHaveLength(0);
 
     const afterCooldown = new Date(now.getTime() + 25 * 60 * 60 * 1000);
-    expect(await listAuditHealthAlertCandidates(db, afterCooldown)).toHaveLength(
-      1
-    );
+    expect(
+      await listAuditHealthAlertCandidates(db, afterCooldown)
+    ).toHaveLength(1);
   });
 
   it("resolves owner and admin emails", async () => {

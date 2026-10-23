@@ -14,9 +14,10 @@ export function isPlaceholderSelfhostUrl(value: string | undefined): boolean {
   }
 }
 
-export function selfhostUrlConfigError(
-  env: { APP_URL?: string; BETTER_AUTH_URL?: string }
-): string | null {
+export function selfhostUrlConfigError(env: {
+  APP_URL?: string;
+  BETTER_AUTH_URL?: string;
+}): string | null {
   if (isPlaceholderSelfhostUrl(env.APP_URL)) {
     return `APP_URL is a bare workers.dev placeholder (${env.APP_URL}). Redeploy via pnpm selfhost or: wrangler deploy --env selfhost --var APP_URL:https://seal-selfhost-web.<account>.workers.dev --var BETTER_AUTH_URL:https://seal-selfhost-api.<account>.workers.dev --var ALLOWED_ORIGINS:https://seal-selfhost-web.<account>.workers.dev`;
   }

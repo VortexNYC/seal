@@ -232,10 +232,14 @@ export function PdfSigningDocumentSurface({
         role="alert"
         data-testid="pdf-signing-error"
       >
-        <Text as="p" variant="error">Failed to load PDF</Text>
-        <Text as="p" variant="secondary" size="sm" DANGEROUS_className="mt-1">{loadError ??
+        <Text as="p" variant="error">
+          Failed to load PDF
+        </Text>
+        <Text as="p" variant="secondary" size="sm" DANGEROUS_className="mt-1">
+          {loadError ??
             engineError?.message ??
-            "Please try refreshing the page"}</Text>
+            "Please try refreshing the page"}
+        </Text>
       </div>
     );
   }
@@ -248,7 +252,9 @@ export function PdfSigningDocumentSurface({
         aria-live="polite"
         data-testid="pdf-signing-loading"
       >
-        <Text as="p" variant="secondary" size="sm" DANGEROUS_className="mb-4">Loading document…</Text>
+        <Text as="p" variant="secondary" size="sm" DANGEROUS_className="mb-4">
+          Loading document…
+        </Text>
         <div className="animate-pulse space-y-4">
           <div className="bg-kumo-hairline mx-auto h-4 w-1/3 rounded" />
           <div className="bg-kumo-hairline mx-auto h-4 w-1/2 rounded" />

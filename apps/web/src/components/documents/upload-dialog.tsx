@@ -1,12 +1,17 @@
 import { Banner } from "@cloudflare/kumo/components/banner";
-import { Loader } from "@cloudflare/kumo/components/loader";
-import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Label } from "@cloudflare/kumo/components/label";
+import { Loader } from "@cloudflare/kumo/components/loader";
 import { Meter } from "@cloudflare/kumo/components/meter";
+import { Text } from "@cloudflare/kumo/components/text";
+import {
+  CheckCircle as CheckCircle2,
+  File as FileIcon,
+  WarningCircle as AlertCircle,
+  X,
+} from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
-import { CheckCircle as CheckCircle2, File as FileIcon, WarningCircle as AlertCircle, X } from "@phosphor-icons/react";
 import { useState } from "react";
 import { type FileRejection } from "react-dropzone";
 
@@ -475,12 +480,16 @@ function FileDetails({
   return (
     <div className="min-w-0 flex-1">
       <div className="mb-1 flex items-center justify-between gap-2">
-        <Text as="p" size="sm" bold truncate>{fileWithStatus.file.name}</Text>
+        <Text as="p" size="sm" bold truncate>
+          {fileWithStatus.file.name}
+        </Text>
       </div>
       <FileMetadata fileWithStatus={fileWithStatus} />
       <UploadProgressBar fileWithStatus={fileWithStatus} />
       {fileWithStatus.status === "error" && fileWithStatus.error && (
-        <Text as="p" variant="error" size="xs" DANGEROUS_className="mt-1">{fileWithStatus.error}</Text>
+        <Text as="p" variant="error" size="xs" DANGEROUS_className="mt-1">
+          {fileWithStatus.error}
+        </Text>
       )}
     </div>
   );

@@ -1,6 +1,6 @@
 # Break-glass data access (SEA-68)
 
-Who *read* the PDF matters as much as who signed it. Session/API downloads now
+Who _read_ the PDF matters as much as who signed it. Session/API downloads now
 emit sealed `document.downloaded` rows. Human engineers must not pull customer
 objects from R2/D1 with raw Wrangler without a logged reason.
 
@@ -57,13 +57,13 @@ against production. Prefer API audit export / SIEM.
 
 ## What is already audited (app path)
 
-| Path | Action / via |
-| --- | --- |
-| Session `GET /api/documents/…/download` | `document.downloaded` / `session-download` |
-| Public signing PDF preview | `document.downloaded` / `signing-pdf-preview` |
-| Public signed PDF + certificate | `document.downloaded` / signing-* |
-| v1 certificate + download-file token | `document.downloaded` / v1-* |
-| Internal break-glass | `admin.break_glass.read` |
+| Path                                    | Action / via                                  |
+| --------------------------------------- | --------------------------------------------- |
+| Session `GET /api/documents/…/download` | `document.downloaded` / `session-download`    |
+| Public signing PDF preview              | `document.downloaded` / `signing-pdf-preview` |
+| Public signed PDF + certificate         | `document.downloaded` / signing-*             |
+| v1 certificate + download-file token    | `document.downloaded` / v1-*                  |
+| Internal break-glass                    | `admin.break_glass.read`                      |
 
 ## Prove
 

@@ -3,10 +3,7 @@
  * Secure-by-default: recipient auth + signer account unless an admin opts out.
  */
 
-import {
-  normalizeAuthMethod,
-  type SignerAuthMethod,
-} from "./signer-auth.js";
+import { normalizeAuthMethod, type SignerAuthMethod } from "./signer-auth.js";
 
 export type OrgSigningCompliance = {
   requireRecipientAuth: boolean;

@@ -744,10 +744,7 @@ app.openapi(updateSecurityRouteDef, async (c) => {
   };
   if (body.ssoEnforced !== undefined) {
     nextMetadata = JSON.parse(
-      withSSOEnforcedMetadata(
-        JSON.stringify(nextMetadata),
-        body.ssoEnforced
-      )
+      withSSOEnforcedMetadata(JSON.stringify(nextMetadata), body.ssoEnforced)
     ) as Record<string, unknown>;
   }
 
@@ -1432,10 +1429,7 @@ app.openapi(connectPaymentsRouteDef, async (c) => {
       })
       .where(eq(organization.id, org.id));
     return c.json(
-      await presentVortexConnect(
-        c.env,
-        withVortexConnect(org.metadata, record)
-      )
+      await presentVortexConnect(c.env, withVortexConnect(org.metadata, record))
     );
   } catch (error) {
     if (error instanceof VortexConnectError && error.status === 503) {

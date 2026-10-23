@@ -1,10 +1,4 @@
-import {
-  PDFDocument,
-  degrees,
-  rgb,
-  StandardFonts,
-  type RGB,
-} from "pdf-lib";
+import { PDFDocument, degrees, rgb, StandardFonts, type RGB } from "pdf-lib";
 import { z } from "zod";
 
 /** Percent-of-page (0–100) → PDF points (origin bottom-left). */
@@ -270,10 +264,7 @@ function sanitizeStampText(value: string): string {
     .replace(/[^\x09\x0A\x0D\x20-\x7E]/g, "?");
 }
 
-function resolvePageTargets(
-  count: number,
-  pages?: number[]
-): number[] {
+function resolvePageTargets(count: number, pages?: number[]): number[] {
   const targets =
     pages && pages.length > 0
       ? [...new Set(pages)].filter((p) => p >= 1 && p <= count)
@@ -400,8 +391,7 @@ export async function numberPdfPages(
     const page = doc.getPage(pageNum - 1);
     const { width: pw } = page.getSize();
     const display = startAt + i;
-    const body =
-      format === "n" ? String(display) : `${display} of ${count}`;
+    const body = format === "n" ? String(display) : `${display} of ${count}`;
     const label = sanitizeStampText(
       prefix.length > 0 ? `${prefix}${body}` : body
     );
@@ -527,4 +517,3 @@ export async function cropPdfPages(
   const bytes = await out.save();
   return { bytes, pageCount: srcCount, applied };
 }
-

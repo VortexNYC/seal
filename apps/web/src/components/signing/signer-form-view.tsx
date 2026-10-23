@@ -1,5 +1,5 @@
-import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
+import { Text } from "@cloudflare/kumo/components/text";
 import { CheckCircle, Circle } from "@phosphor-icons/react";
 import type { JSX } from "react";
 
@@ -44,14 +44,18 @@ export function SignerFormView({
         className="border-kumo-hairline/50 bg-kumo-elevated rounded-xl border p-6 text-center"
         data-testid="signer-form-view-empty"
       >
-        <Text as="p" variant="secondary" size="sm">No fields to complete on this document.</Text>
+        <Text as="p" variant="secondary" size="sm">
+          No fields to complete on this document.
+        </Text>
       </div>
     );
   }
 
   return (
     <div className="space-y-3" data-testid="signer-form-view">
-      <Text as="p" variant="secondary" size="sm">Tap a field to fill it. You can switch to the document anytime.</Text>
+      <Text as="p" variant="secondary" size="sm">
+        Tap a field to fill it. You can switch to the document anytime.
+      </Text>
       <ul className="divide-kumo-line border-kumo-line bg-kumo-canvas divide-y overflow-hidden rounded-xl border">
         {fields.map((field, index) => {
           const isActive = activeFieldId === field.id;

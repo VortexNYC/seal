@@ -5,7 +5,6 @@
  */
 
 import { Banner } from "@cloudflare/kumo/components/banner";
-import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Collapsible } from "@cloudflare/kumo/components/collapsible";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
@@ -14,8 +13,14 @@ import { Label } from "@cloudflare/kumo/components/label";
 import { Select } from "@cloudflare/kumo/components/select";
 import { Switch } from "@cloudflare/kumo/components/switch";
 import { Tabs } from "@cloudflare/kumo/components/tabs";
+import { Text } from "@cloudflare/kumo/components/text";
+import {
+  CaretDown as ChevronDownIcon,
+  CaretUp as ChevronUpIcon,
+  CreditCard as CreditCardIcon,
+  PaperPlaneTilt as SendIcon,
+} from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
-import { CaretDown as ChevronDownIcon, CaretUp as ChevronUpIcon, CreditCard as CreditCardIcon, PaperPlaneTilt as SendIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { z } from "zod";
 
@@ -270,285 +275,288 @@ export function SendDocumentDialog({
 
   const sendBody = (
     <>
-
-        <div className="-mx-6 flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-4">
-          {/* Payment Fields Summary */}
-          {paymentConfigs && paymentConfigs.length > 0 && (
-            <div className="border-kumo-info bg-kumo-info-tint rounded-md border p-4">
-              <div className="flex items-center gap-3">
-                <div className="bg-kumo-info-tint text-kumo-info flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
-                  <CreditCardIcon className="h-4 w-4" />
-                </div>
-                <div>
-                  <Text as="p" size="sm" bold>{paymentConfigs.length === 1
-                      ? "Payment will be included"
-                      : `${paymentConfigs.length} payments will be included`}</Text>
-                  <div className="mt-1 flex flex-col gap-0.5">
-                    {paymentConfigs.map((config) => (
-                      <p
-                        key={config.fieldId}
-                        className="text-kumo-info text-xs"
-                      >
-                        {formatMoney(
-                          money(
-                            config.totalAmountCents,
-                            config.currency.toUpperCase()
-                          )
-                        )}{" "}
-                        {config.currency.toUpperCase()}
-                      </p>
-                    ))}
-                  </div>
+      <div className="-mx-6 flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-4">
+        {/* Payment Fields Summary */}
+        {paymentConfigs && paymentConfigs.length > 0 && (
+          <div className="border-kumo-info bg-kumo-info-tint rounded-md border p-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-kumo-info-tint text-kumo-info flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+                <CreditCardIcon className="h-4 w-4" />
+              </div>
+              <div>
+                <Text as="p" size="sm" bold>
+                  {paymentConfigs.length === 1
+                    ? "Payment will be included"
+                    : `${paymentConfigs.length} payments will be included`}
+                </Text>
+                <div className="mt-1 flex flex-col gap-0.5">
+                  {paymentConfigs.map((config) => (
+                    <p key={config.fieldId} className="text-kumo-info text-xs">
+                      {formatMoney(
+                        money(
+                          config.totalAmountCents,
+                          config.currency.toUpperCase()
+                        )
+                      )}{" "}
+                      {config.currency.toUpperCase()}
+                    </p>
+                  ))}
                 </div>
               </div>
             </div>
-          )}
-
-          <div className="flex flex-col gap-2">
-            <Label>Recipients</Label>
-            <ul className="flex flex-col gap-1.5 rounded-md border p-3">
-              {pendingRecipients.map((recipient) => (
-                <li
-                  key={recipient._id}
-                  className="flex items-center justify-between gap-2 text-sm"
-                >
-                  <span className="min-w-0 truncate font-medium">
-                    {recipient.name || recipient.email}
-                  </span>
-                  <span className="text-kumo-secondary shrink-0 text-xs capitalize">
-                    {recipient.role}
-                    {fieldCountsByRecipient
-                      ? `· ${fieldCountsByRecipient.get(recipient._id) ?? 0} fields`
-                      : ""}
-                  </span>
-                </li>
-              ))}
-            </ul>
           </div>
+        )}
 
-          <Collapsible.Root
-            open={showMoreOptions}
-            onOpenChange={setShowMoreOptions}
-          >
-            <Collapsible.Trigger className="flex w-full items-center justify-between">
-              More options
-              {showMoreOptions ? (
-                <ChevronUpIcon className="size-4" />
-              ) : (
-                <ChevronDownIcon className="size-4" />
-              )}
-            </Collapsible.Trigger>
-            <Collapsible.Panel className="mt-3 flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-                <Label>
-                  Per-recipient messages
-                </Label>
-                {pendingRecipients.map((recipient) => (
-                  <Collapsible.Root
-                    key={recipient._id}
-                    open={expandedRecipient === recipient._id}
-                    onOpenChange={(isExpanded) =>
-                      setExpandedRecipient(isExpanded ? recipient._id : null)
-                    }
-                  >
-                    <div className="overflow-hidden rounded-md border">
-                      <Collapsible.Trigger className="flex w-full items-center justify-between p-3">
-                        <span className="truncate text-sm font-medium">
-                          {recipient.name || recipient.email}
-                        </span>
-                        {expandedRecipient === recipient._id ? (
-                          <ChevronUpIcon className="text-kumo-secondary size-4" />
-                        ) : (
-                          <ChevronDownIcon className="text-kumo-secondary size-4" />
-                        )}
-                      </Collapsible.Trigger>
-                      <Collapsible.Panel>
-                        <div className="flex flex-col gap-2 border-t p-3">
-                          <Textarea
-                            placeholder={`Custom message for ${recipient.name || recipient.email}...`}
-                            value={getRecipientMessage(recipient._id)}
-                            onChange={(e) =>
-                              setRecipientMessage(recipient._id, e.target.value)
-                            }
-                            className="min-h-20"
-                            maxLength={500}
-                            aria-label="Custom message"
-                          />
-                        </div>
-                      </Collapsible.Panel>
-                    </div>
-                  </Collapsible.Root>
-                ))}
-              </div>
+        <div className="flex flex-col gap-2">
+          <Label>Recipients</Label>
+          <ul className="flex flex-col gap-1.5 rounded-md border p-3">
+            {pendingRecipients.map((recipient) => (
+              <li
+                key={recipient._id}
+                className="flex items-center justify-between gap-2 text-sm"
+              >
+                <span className="min-w-0 truncate font-medium">
+                  {recipient.name || recipient.email}
+                </span>
+                <span className="text-kumo-secondary shrink-0 text-xs capitalize">
+                  {recipient.role}
+                  {fieldCountsByRecipient
+                    ? `· ${fieldCountsByRecipient.get(recipient._id) ?? 0} fields`
+                    : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
 
+        <Collapsible.Root
+          open={showMoreOptions}
+          onOpenChange={setShowMoreOptions}
+        >
+          <Collapsible.Trigger className="flex w-full items-center justify-between">
+            More options
+            {showMoreOptions ? (
+              <ChevronUpIcon className="size-4" />
+            ) : (
+              <ChevronDownIcon className="size-4" />
+            )}
+          </Collapsible.Trigger>
+          <Collapsible.Panel className="mt-3 flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label>Per-recipient messages</Label>
+              {pendingRecipients.map((recipient) => (
+                <Collapsible.Root
+                  key={recipient._id}
+                  open={expandedRecipient === recipient._id}
+                  onOpenChange={(isExpanded) =>
+                    setExpandedRecipient(isExpanded ? recipient._id : null)
+                  }
+                >
+                  <div className="overflow-hidden rounded-md border">
+                    <Collapsible.Trigger className="flex w-full items-center justify-between p-3">
+                      <span className="truncate text-sm font-medium">
+                        {recipient.name || recipient.email}
+                      </span>
+                      {expandedRecipient === recipient._id ? (
+                        <ChevronUpIcon className="text-kumo-secondary size-4" />
+                      ) : (
+                        <ChevronDownIcon className="text-kumo-secondary size-4" />
+                      )}
+                    </Collapsible.Trigger>
+                    <Collapsible.Panel>
+                      <div className="flex flex-col gap-2 border-t p-3">
+                        <Textarea
+                          placeholder={`Custom message for ${recipient.name || recipient.email}...`}
+                          value={getRecipientMessage(recipient._id)}
+                          onChange={(e) =>
+                            setRecipientMessage(recipient._id, e.target.value)
+                          }
+                          className="min-h-20"
+                          maxLength={500}
+                          aria-label="Custom message"
+                        />
+                      </div>
+                    </Collapsible.Panel>
+                  </div>
+                </Collapsible.Root>
+              ))}
+            </div>
+
+            <div>
+              <Label htmlFor="message">Default message (optional)</Label>
+              <Textarea
+                id="message"
+                placeholder="Add a personal message for all recipients..."
+                value={customMessage}
+                onChange={(e) => setCustomMessage(e.target.value)}
+                className="mt-2 min-h-20"
+                maxLength={500}
+                aria-label="Default message"
+              />
+            </div>
+
+            {recipients.length > 1 && (
               <div>
-                <Label htmlFor="message">
-                  Default message (optional)
-                </Label>
-                <Textarea
-                  id="message"
-                  placeholder="Add a personal message for all recipients..."
-                  value={customMessage}
-                  onChange={(e) => setCustomMessage(e.target.value)}
-                  className="mt-2 min-h-20"
-                  maxLength={500}
-                  aria-label="Default message"
-                />
-              </div>
-
-              {recipients.length > 1 && (
-                <div>
-                  <Label>Signing order</Label>
-                  <div className="mt-2">
-                    <Tabs
-                      variant="segmented"
-                      value={signingMode}
-                      onValueChange={(value) => {
-                        if (value === "parallel" || value === "sequential") {
-                          setSigningMode(value);
-                        }
-                      }}
-                      tabs={[
-                        { value: "parallel", label: "All at once" },
-                        {
-                          value: "sequential",
-                          label: hasOrderValues
-                            ? "In order, one group at a time"
-                            : "In order, one person at a time",
-                        },
-                      ]}
+                <Label>Signing order</Label>
+                <div className="mt-2">
+                  <Tabs
+                    variant="segmented"
+                    value={signingMode}
+                    onValueChange={(value) => {
+                      if (value === "parallel" || value === "sequential") {
+                        setSigningMode(value);
+                      }
+                    }}
+                    tabs={[
+                      { value: "parallel", label: "All at once" },
+                      {
+                        value: "sequential",
+                        label: hasOrderValues
+                          ? "In order, one group at a time"
+                          : "In order, one person at a time",
+                      },
+                    ]}
+                  />
+                </div>
+                {signingMode === "sequential" && (
+                  <div className="mt-3 flex items-start justify-between gap-4 rounded-md border p-3">
+                    <div className="flex flex-col gap-0.5">
+                      <Label>Signers choose next recipient</Label>
+                      <Text as="p" variant="secondary" size="xs">
+                        Allow each signer to designate who signs after them.
+                      </Text>
+                    </div>
+                    <Switch
+                      checked={allowDictateNextSigner}
+                      onCheckedChange={setAllowDictateNextSigner}
+                      aria-label="Signers choose next recipient"
                     />
                   </div>
-                  {signingMode === "sequential" && (
-                    <div className="mt-3 flex items-start justify-between gap-4 rounded-md border p-3">
-                      <div className="flex flex-col gap-0.5">
-                        <Label>
-                          Signers choose next recipient
-                        </Label>
-                        <Text as="p" variant="secondary" size="xs">Allow each signer to designate who signs after them.</Text>
-                      </div>
-                      <Switch
-                        checked={allowDictateNextSigner}
-                        onCheckedChange={setAllowDictateNextSigner}
-                        aria-label="Signers choose next recipient"
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-            </Collapsible.Panel>
-          </Collapsible.Root>
-
-          {/* Expiration Period */}
-          <div>
-            <Label>Deadline (optional)</Label>
-            <Text as="p" variant="secondary" size="xs" DANGEROUS_className="mb-2">How long recipients have to sign after send</Text>
-            <Select
-              value={expirationPreset}
-              onValueChange={(val) => {
-                if (!val) return;
-                setExpirationPreset(
-                  parseSelectValue(val, EXPIRATION_PRESETS) ?? expirationPreset
-                );
-              }}
-              renderValue={(value) =>
-                EXPIRATION_LABELS[value as ExpirationPreset]
-              }
-            >
-              <Select.Option value="none">No expiration</Select.Option>
-              <Select.Option value="7">7 days</Select.Option>
-              <Select.Option value="14">14 days</Select.Option>
-              <Select.Option value="30">30 days</Select.Option>
-              <Select.Option value="60">60 days</Select.Option>
-              <Select.Option value="90">90 days</Select.Option>
-              <Select.Option value="custom">Custom...</Select.Option>
-            </Select>
-
-            {expirationPreset === "custom" && (
-              <div className="mt-2 flex gap-2">
-                <Input
-                  type="number"
-                  min={1}
-                  max={365}
-                  value={String(customAmount)}
-                  onChange={(e) => {
-                    setCustomAmount(Number(e.target.value));
-                    if (expirationError) setExpirationError(null);
-                  }}
-                  className="w-24"
-                  aria-label="Custom expiration amount"
-                />
-                <Select
-                  value={customUnit}
-                  onValueChange={(val) => {
-                    if (!val) return;
-                    setCustomUnit(
-                      parseSelectValue(val, CUSTOM_UNITS) ?? customUnit
-                    );
-                  }}
-                  renderValue={(value) =>
-                    CUSTOM_UNIT_LABELS[value as CustomUnit]
-                  }
-                  className="w-32"
-                >
-                  <Select.Option value="day">Days</Select.Option>
-                  <Select.Option value="week">Weeks</Select.Option>
-                  <Select.Option value="month">Months</Select.Option>
-                </Select>
+                )}
               </div>
             )}
+          </Collapsible.Panel>
+        </Collapsible.Root>
 
-            {expirationError && (
-              <Text as="p" variant="error" size="sm" DANGEROUS_className="mt-1">{expirationError}</Text>
-            )}
-            {getExpirationText() && (
-              <Text as="p" variant="secondary" size="xs" DANGEROUS_className="mt-1.5">{getExpirationText()}</Text>
-            )}
-          </div>
+        {/* Expiration Period */}
+        <div>
+          <Label>Deadline (optional)</Label>
+          <Text as="p" variant="secondary" size="xs" DANGEROUS_className="mb-2">
+            How long recipients have to sign after send
+          </Text>
+          <Select
+            value={expirationPreset}
+            onValueChange={(val) => {
+              if (!val) return;
+              setExpirationPreset(
+                parseSelectValue(val, EXPIRATION_PRESETS) ?? expirationPreset
+              );
+            }}
+            renderValue={(value) =>
+              EXPIRATION_LABELS[value as ExpirationPreset]
+            }
+          >
+            <Select.Option value="none">No expiration</Select.Option>
+            <Select.Option value="7">7 days</Select.Option>
+            <Select.Option value="14">14 days</Select.Option>
+            <Select.Option value="30">30 days</Select.Option>
+            <Select.Option value="60">60 days</Select.Option>
+            <Select.Option value="90">90 days</Select.Option>
+            <Select.Option value="custom">Custom...</Select.Option>
+          </Select>
 
-          {/* Error box - No signature fields */}
-          {missingSigningField ? (
-            <Banner
-              variant="error"
-              size="sm"
-              title="Cannot send document without signature fields."
-              description="Add a signature or initials field before sending."
-            />
-          ) : null}
+          {expirationPreset === "custom" && (
+            <div className="mt-2 flex gap-2">
+              <Input
+                type="number"
+                min={1}
+                max={365}
+                value={String(customAmount)}
+                onChange={(e) => {
+                  setCustomAmount(Number(e.target.value));
+                  if (expirationError) setExpirationError(null);
+                }}
+                className="w-24"
+                aria-label="Custom expiration amount"
+              />
+              <Select
+                value={customUnit}
+                onValueChange={(val) => {
+                  if (!val) return;
+                  setCustomUnit(
+                    parseSelectValue(val, CUSTOM_UNITS) ?? customUnit
+                  );
+                }}
+                renderValue={(value) => CUSTOM_UNIT_LABELS[value as CustomUnit]}
+                className="w-32"
+              >
+                <Select.Option value="day">Days</Select.Option>
+                <Select.Option value="week">Weeks</Select.Option>
+                <Select.Option value="month">Months</Select.Option>
+              </Select>
+            </div>
+          )}
 
-          {/* Info box */}
-          {!missingSigningField ? (
-            <Banner
-              size="sm"
-              description={
-                getExpirationText()
-                  ? `Recipients will receive an email with a link to sign the document. ${getExpirationText()}`
-                  : "Recipients will receive an email with a link to sign the document."
-              }
-            />
-          ) : null}
+          {expirationError && (
+            <Text as="p" variant="error" size="sm" DANGEROUS_className="mt-1">
+              {expirationError}
+            </Text>
+          )}
+          {getExpirationText() && (
+            <Text
+              as="p"
+              variant="secondary"
+              size="xs"
+              DANGEROUS_className="mt-1.5"
+            >
+              {getExpirationText()}
+            </Text>
+          )}
         </div>
 
-        <div className="mt-4 flex flex-col-reverse justify-end gap-2 sm:flex-row">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isSending}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="primary"
-            onClick={handleSend}
-            disabled={isSending || missingSigningField}
-            loading={isSending}
-            icon={SendIcon}
-          >
-            {isSending ? "Sending..." : "Send Document"}
-          </Button>
-        </div>
+        {/* Error box - No signature fields */}
+        {missingSigningField ? (
+          <Banner
+            variant="error"
+            size="sm"
+            title="Cannot send document without signature fields."
+            description="Add a signature or initials field before sending."
+          />
+        ) : null}
+
+        {/* Info box */}
+        {!missingSigningField ? (
+          <Banner
+            size="sm"
+            description={
+              getExpirationText()
+                ? `Recipients will receive an email with a link to sign the document. ${getExpirationText()}`
+                : "Recipients will receive an email with a link to sign the document."
+            }
+          />
+        ) : null}
+      </div>
+
+      <div className="mt-4 flex flex-col-reverse justify-end gap-2 sm:flex-row">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => onOpenChange(false)}
+          disabled={isSending}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          variant="primary"
+          onClick={handleSend}
+          disabled={isSending || missingSigningField}
+          loading={isSending}
+          icon={SendIcon}
+        >
+          {isSending ? "Sending..." : "Send Document"}
+        </Button>
+      </div>
     </>
   );
 
@@ -556,7 +564,10 @@ export function SendDocumentDialog({
     if (!open) return null;
     return (
       <div data-testid="send-document-panel" className="flex flex-col gap-3">
-        <RailBack onBack={() => onOpenChange(false)} tip="Back to the document" />
+        <RailBack
+          onBack={() => onOpenChange(false)}
+          tip="Back to the document"
+        />
         <div>
           <Text as="p" size="sm" bold>
             Send for signature

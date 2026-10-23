@@ -280,11 +280,7 @@ await seal.request("POST", \`/documents/send?id=\${id}\`);`,
           price: "Custom",
           unit: "volume",
           blurb: "For volume, compliance, and procurement realities.",
-          features: [
-            "Volume pricing",
-            "SSO / SAML",
-            "Custom data retention",
-          ],
+          features: ["Volume pricing", "SSO / SAML", "Custom data retention"],
           cta: {
             label: "Get an API key",
             href: "https://app.seal.nyc/sign-up?next=developer",

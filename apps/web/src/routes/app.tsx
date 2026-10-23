@@ -96,7 +96,9 @@ function AuthenticatedRedirect() {
       <div className="flex min-h-dvh items-center justify-center">
         <div className="text-center">
           <Loader />
-          <Text as="p" variant="secondary" DANGEROUS_className="mt-4">{isFixing ? "Setting up your workspace..." : "Loading..."}</Text>
+          <Text as="p" variant="secondary" DANGEROUS_className="mt-4">
+            {isFixing ? "Setting up your workspace..." : "Loading..."}
+          </Text>
         </div>
       </div>
     );

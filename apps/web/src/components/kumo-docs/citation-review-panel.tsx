@@ -1,6 +1,6 @@
-import { Text } from "@cloudflare/kumo/components/text";
 import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
+import { Text } from "@cloudflare/kumo/components/text";
 import { Crosshair, MapPin } from "@phosphor-icons/react";
 import type { JSX } from "react";
 
@@ -60,7 +60,9 @@ export function CitationReviewPanel({
 
       <div className="flex-1 space-y-2 overflow-y-auto p-3">
         {fields.length === 0 ? (
-          <Text as="p" variant="secondary" size="sm">{emptyLabel}</Text>
+          <Text as="p" variant="secondary" size="sm">
+            {emptyLabel}
+          </Text>
         ) : (
           fields.map((field) => {
             const active = field.id === activeId;
@@ -78,9 +80,7 @@ export function CitationReviewPanel({
                   </span>
                   <div className="flex items-center gap-1">
                     {field.category ? (
-                      <Badge variant="secondary">
-                        {field.category}
-                      </Badge>
+                      <Badge variant="secondary">{field.category}</Badge>
                     ) : null}
                     {field.bbox ? (
                       <Button
@@ -103,7 +103,14 @@ export function CitationReviewPanel({
                     )}
                   </div>
                 </div>
-                <Text as="p" variant="secondary" size="xs" DANGEROUS_className="line-clamp-3">{field.value}</Text>
+                <Text
+                  as="p"
+                  variant="secondary"
+                  size="xs"
+                  DANGEROUS_className="line-clamp-3"
+                >
+                  {field.value}
+                </Text>
               </Button>
             );
           })

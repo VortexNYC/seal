@@ -2,10 +2,7 @@ import { and, count, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import type { createD1 } from "../global/db.js";
-import {
-  aiFieldSuggestions,
-  signatureFields,
-} from "../global/schema.js";
+import { aiFieldSuggestions, signatureFields } from "../global/schema.js";
 import {
   confidenceForCandidateType,
   geometryFromLine,
@@ -101,9 +98,7 @@ export async function materializeSuggestionsFromCandidates(
   }
   if (!Array.isArray(parsed) || parsed.length === 0) return null;
 
-  const fields = candidatesToSuggestionItems(
-    parsed as CandidateInput[]
-  );
+  const fields = candidatesToSuggestionItems(parsed as CandidateInput[]);
   if (fields.length === 0) return null;
 
   const id = crypto.randomUUID();

@@ -39,8 +39,7 @@ function canAdminister(c: {
   get: <K extends keyof Variables>(key: K) => Variables[K];
 }): boolean {
   const membership = c.get("membership");
-  const roleOk =
-    membership?.role === "admin" || membership?.role === "owner";
+  const roleOk = membership?.role === "admin" || membership?.role === "owner";
   if (!roleOk) {
     return false;
   }

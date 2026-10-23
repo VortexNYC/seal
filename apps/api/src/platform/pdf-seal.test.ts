@@ -1,5 +1,5 @@
-import { PDFDocument, rgb } from "pdf-lib";
 import forge from "node-forge";
+import { PDFDocument, rgb } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 
 import { flattenFieldsIntoPdf, sha256PdfBytes } from "./final-pdf.js";
@@ -25,9 +25,7 @@ function makeTestP12(passphrase: string): string {
   cert.serialNumber = "01";
   cert.validity.notBefore = new Date();
   cert.validity.notAfter = new Date();
-  cert.validity.notAfter.setFullYear(
-    cert.validity.notBefore.getFullYear() + 5
-  );
+  cert.validity.notAfter.setFullYear(cert.validity.notBefore.getFullYear() + 5);
   const attrs = [
     { name: "commonName", value: "Seal Platform Seal" },
     { name: "organizationName", value: "Seal" },
@@ -40,9 +38,14 @@ function makeTestP12(passphrase: string): string {
     { name: "keyUsage", keyCertSign: true, digitalSignature: true },
   ]);
   cert.sign(keys.privateKey, forge.md.sha256.create());
-  const p12Asn1 = forge.pkcs12.toPkcs12Asn1(keys.privateKey, [cert], passphrase, {
-    algorithm: "3des",
-  });
+  const p12Asn1 = forge.pkcs12.toPkcs12Asn1(
+    keys.privateKey,
+    [cert],
+    passphrase,
+    {
+      algorithm: "3des",
+    }
+  );
   const der = forge.asn1.toDer(p12Asn1).getBytes();
   return forge.util.encode64(der);
 }
@@ -53,9 +56,9 @@ describe("pdf-seal (SEA-49 L1b)", () => {
   });
 
   it("fails closed when only one sealing secret is set", () => {
-    expect(() =>
-      readPdfSealCredentials({ SEAL_SEALING_P12: "YWJj" })
-    ).toThrow(/both be set/);
+    expect(() => readPdfSealCredentials({ SEAL_SEALING_P12: "YWJj" })).toThrow(
+      /both be set/
+    );
     expect(() =>
       readPdfSealCredentials({ SEAL_SEALING_P12_PASSPHRASE: "x" })
     ).toThrow(/both be set/);
@@ -94,9 +97,7 @@ describe("pdf-seal (SEA-49 L1b)", () => {
     expect(sealed.sealed).toBe(true);
     expect(pdfHasEtsiCadesDetached(sealed.bytes)).toBe(true);
     expect(pdfHasByteRange(sealed.bytes)).toBe(true);
-    expect(await sha256PdfBytes(sealed.bytes)).not.toBe(
-      flattened.documentHash
-    );
+    expect(await sha256PdfBytes(sealed.bytes)).not.toBe(flattened.documentHash);
     // ESS signing-certificate-v2 OID 1.2.840.113549.1.9.16.2.47
     const cms = extractCmsDerFromSignedPdf(sealed.bytes);
     const essOid = Buffer.from([

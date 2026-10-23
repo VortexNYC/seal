@@ -43,7 +43,11 @@ function RouteComponent() {
         : "/post-sign-up";
 
   if (client === null) {
-    return <Text as="p" size="sm">Auth client not configured.</Text>;
+    return (
+      <Text as="p" size="sm">
+        Auth client not configured.
+      </Text>
+    );
   }
 
   return (

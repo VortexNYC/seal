@@ -1,5 +1,5 @@
-import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
+import { Text } from "@cloudflare/kumo/components/text";
 import type { JSX } from "react";
 
 import { cn } from "@/lib/utils";
@@ -63,7 +63,9 @@ export function LayoutBlocksPanel({
       </div>
       <div className="flex-1 space-y-1 overflow-y-auto p-2">
         {blocks.length === 0 ? (
-          <Text as="p" variant="secondary" size="sm" DANGEROUS_className="p-2">No blocks.</Text>
+          <Text as="p" variant="secondary" size="sm" DANGEROUS_className="p-2">
+            No blocks.
+          </Text>
         ) : (
           blocks.map((block) => {
             const active = block.id === activeId;
@@ -85,7 +87,13 @@ export function LayoutBlocksPanel({
                   </span>
                 </div>
                 {block.text ? (
-                  <Text as="p" variant="secondary" DANGEROUS_className="line-clamp-2">{block.text}</Text>
+                  <Text
+                    as="p"
+                    variant="secondary"
+                    DANGEROUS_className="line-clamp-2"
+                  >
+                    {block.text}
+                  </Text>
                 ) : null}
               </Button>
             );

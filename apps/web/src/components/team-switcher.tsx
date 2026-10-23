@@ -39,7 +39,7 @@ function WorkspaceMark({
   return (
     <span
       className={cn(
-        "text-xs grid size-full place-items-center rounded-md font-semibold uppercase",
+        "grid size-full place-items-center rounded-md text-xs font-semibold uppercase",
         className
       )}
       aria-hidden
