@@ -1380,6 +1380,21 @@ const paymentsRouteDef = createRoute({
   },
 });
 
+async function loadUserVortexMerchants(
+  db: ReturnType<typeof createD1>,
+  userId: string | undefined
+) {
+  if (!userId) {
+    return [];
+  }
+  const [userRow] = await db
+    .select({ metadata: userTable.metadata })
+    .from(userTable)
+    .where(eq(userTable.id, userId))
+    .limit(1);
+  return readUserVortexMerchants(userRow?.metadata);
+}
+
 app.openapi(paymentsRouteDef, async (c) => {
   const org = c.get("organization");
   const currentUser = c.get("user");
@@ -1387,14 +1402,10 @@ app.openapi(paymentsRouteDef, async (c) => {
     return c.json({ error: "Organization not found" }, 404);
   }
   const db = createD1(c.env.D1);
-  const [userRow] = currentUser
-    ? await db
-        .select({ metadata: userTable.metadata })
-        .from(userTable)
-        .where(eq(userTable.id, currentUser.user.id))
-        .limit(1)
-    : [];
-  const availableMerchants = readUserVortexMerchants(userRow?.metadata);
+  const availableMerchants = await loadUserVortexMerchants(
+    db,
+    currentUser?.user.id
+  );
   const view = await presentVortexConnect(c.env, org.metadata);
   return c.json({
     ...view,
@@ -1450,15 +1461,10 @@ app.openapi(connectPaymentsRouteDef, async (c) => {
   try {
     let record;
     if ("merchantAccountId" in body) {
-      const currentUser = c.get("user");
-      const [userRow] = currentUser
-        ? await db
-            .select({ metadata: userTable.metadata })
-            .from(userTable)
-            .where(eq(userTable.id, currentUser.user.id))
-            .limit(1)
-        : [];
-      const availableMerchants = readUserVortexMerchants(userRow?.metadata);
+      const availableMerchants = await loadUserVortexMerchants(
+        db,
+        c.get("user")?.user.id
+      );
       const isOwnedByCaller = availableMerchants.some(
         (m) => m.merchantAccountId === body.merchantAccountId
       );

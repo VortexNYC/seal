@@ -16,7 +16,7 @@ export const vortexOAuthOrganizationSummarySchema = z.object({
   organizationId: z.string().min(1),
   name: z.string().min(1),
   slug: z.string().min(1),
-  role: z.string().min(1),
+  role: z.enum(["owner", "admin"]),
   merchants: z.array(vortexOAuthMerchantSummarySchema).default([]),
 });
 

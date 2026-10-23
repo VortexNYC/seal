@@ -68,11 +68,11 @@ function RouteComponent() {
           onClick={() => {
             void betterAuthClient?.signIn.social({
               provider: "vortex",
-              callbackURL: "/app",
+              callbackURL: redirectTo,
             });
           }}
         >
-          Sign in with Vortex
+          Continue with Vortex
         </Button>
       </div>
     </AuthProvider>

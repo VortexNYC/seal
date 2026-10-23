@@ -143,7 +143,7 @@ export async function createAuth(env: CloudflareBindings) {
                   id: `mem_${orgId}_${session.userId}`,
                   organizationId: orgId,
                   userId: session.userId,
-                  role: "owner",
+                  role: firstOrg.role,
                   createdAt: now,
                 })
                 .onConflictDoNothing();
