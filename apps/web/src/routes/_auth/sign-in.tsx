@@ -1,10 +1,8 @@
-import { Button } from "@cloudflare/kumo/components/button";
 import { Text } from "@cloudflare/kumo/components/text";
 import { createFileRoute } from "@tanstack/react-router";
 import { AuthProvider, SignInForm } from "@vortex-api/better-auth-ui";
 
 import { AUTH_FORM_CARD_CLASS } from "@/lib/auth-form";
-import { betterAuthClient } from "@/lib/better-auth";
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { createPageMeta, pageSEO } from "@/lib/seo";
 
@@ -48,28 +46,13 @@ function RouteComponent() {
 
   return (
     <AuthProvider client={client}>
-      <div className="flex w-full max-w-md flex-col gap-3">
-        <SignInForm
-          className={AUTH_FORM_CARD_CLASS}
-          redirectTo={forceRedirectUrl}
-          forgotPasswordHref="/forgot-password"
-          signUpUrl="/sign-up"
-          providers={[]}
-        />
-        <Button
-          type="button"
-          variant="secondary"
-          data-testid="sign-in-with-vortex"
-          onClick={() => {
-            void betterAuthClient?.signIn.social({
-              provider: "vortex",
-              callbackURL: forceRedirectUrl,
-            });
-          }}
-        >
-          Sign in with Vortex
-        </Button>
-      </div>
+      <SignInForm
+        className={AUTH_FORM_CARD_CLASS}
+        redirectTo={forceRedirectUrl}
+        forgotPasswordHref="/forgot-password"
+        signUpUrl="/sign-up"
+        providers={[{ provider: "vortex", label: "Sign in with Vortex" }]}
+      />
     </AuthProvider>
   );
 }
