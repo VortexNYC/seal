@@ -1230,14 +1230,15 @@ app.openapi(submitRouteDef, async (c) => {
     }
 
     // "viewed" still owes a signature — counting only "pending" marks the
-    // document complete as soon as the first opener signs.
+    // document complete as soon as the first opener signs. Approvers hold
+    // the envelope open the same way signers do.
     const pendingSigners = await db
       .select({ value: count() })
       .from(recipients)
       .where(
         and(
           eq(recipients.documentId, doc.id),
-          eq(recipients.role, "signer"),
+          inArray(recipients.role, ["signer", "approver"]),
           inArray(recipients.status, ["pending", "viewed"])
         )
       );
