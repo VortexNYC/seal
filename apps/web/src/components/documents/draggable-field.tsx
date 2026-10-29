@@ -9,14 +9,27 @@ import {
   Transformer,
 } from "react-konva";
 
+import {
+  filledFieldText,
+  signatureCaptionOffset,
+  signatureMarkFrame,
+  signatureStamp,
+} from "@/lib/field-appearance";
+
+import {
+  FIELD_ICON_SIZE,
+  FIELD_PAD_X,
+  fieldChrome,
+  fieldDisplayLabel,
+  fieldTextOffset,
+} from "./document-surface";
+
+/** Same face as the rest of the product, and as the burned PDF. */
+const FIELD_FONT = "'Hedvig Letters Sans', ui-sans-serif, sans-serif";
 import { FIELD_TYPE_LABELS, type FieldType } from "@/lib/field-types";
 import { formatMoney, money } from "@/lib/money";
 
-import {
-  getRecipientColorById,
-  type RecipientColor,
-  UNASSIGNED_COLOR,
-} from "./recipient-colors";
+import { getRecipientColorById, UNASSIGNED_COLOR } from "./recipient-colors";
 
 function useSealIcon(): HTMLImageElement | null {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -28,11 +41,6 @@ function useSealIcon(): HTMLImageElement | null {
   }, []);
 
   return image;
-}
-
-// Helper to get field type label for display
-function getFieldTypeLabel(fieldType: FieldType): string {
-  return FIELD_TYPE_LABELS[fieldType] ?? fieldType;
 }
 
 export interface PlacedField {
@@ -67,17 +75,21 @@ export interface PlacedField {
 interface DraggableFieldProps {
   field: PlacedField;
   isSelected: boolean;
+  /** The page can be dragged as soon as it is placed, before a second click. */
+  draggable?: boolean;
   onSelect: () => void;
   onDragEnd: (x: number, y: number) => void;
   onTransformEnd: (x: number, y: number, width: number, height: number) => void;
+  pageWidth: number;
+  pageHeight: number;
+  documentRef?: string;
   /** Map of recipientId to index for color assignment */
   recipientIndexMap?: Map<string, number>;
   /** If true, use recipient colors instead of field type colors */
   useRecipientColors?: boolean;
 }
 
-/** Canvas field color palette — sourced from @seal/tokens */
-const FIELD_COLORS = canvas.fieldColors;
+const FIELD_CHROME: FieldColors = fieldChrome();
 
 type FieldColors = {
   readonly ink: string;
@@ -103,15 +115,16 @@ type StandardFieldProps = FieldRendererProps & {
   readonly sealIcon: HTMLImageElement | null;
 };
 
+type FieldContentProps = StandardFieldProps & {
+  readonly pageWidth: number;
+  readonly pageHeight: number;
+  readonly documentRef?: string;
+};
+
 type SidebarMetrics = {
   readonly iconSize: number;
   readonly sidebarWidth: number;
   readonly textOffsetX: number;
-};
-
-type FormattedSignatureDate = {
-  readonly date: string;
-  readonly time: string;
 };
 
 /**
@@ -128,42 +141,39 @@ const FIELD_LABELS: Record<FieldType, string> = {
 export { FIELD_DIMENSIONS } from "@/lib/field-types";
 
 /**
- * Convert RecipientColor to the color format used by field rendering
- */
-function recipientColorToFieldColors(
-  recipientColor: RecipientColor
-): FieldColors {
-  // Create a darker version of the hex color for the ink
-  const hex = recipientColor.hex;
-  // Simple darkening - we'll use the hex color as accent and a darker version as ink
-  return {
-    ink: hex,
-    accent: hex,
-    glow: recipientColor.hexLight,
-  };
-}
-
-/**
- * Draggable field component with craft-paper aesthetic
- * Renders on Konva canvas with transform handles
+ * Draggable field on the Konva page. One ink, one icon, no per-type color.
  */
 export function DraggableField({
   field,
   isSelected,
+  draggable = false,
   onSelect,
   onDragEnd,
   onTransformEnd,
+  pageWidth,
+  pageHeight,
+  documentRef,
   recipientIndexMap,
   useRecipientColors = false,
 }: DraggableFieldProps) {
   const shapeRef = useRef<Konva.Group>(null);
   const trRef = useRef<Konva.Transformer>(null);
+  const draggingRef = useRef(false);
   const sealIcon = useSealIcon();
   const renderState = getFieldRenderState(
     field,
     recipientIndexMap,
     useRecipientColors
   );
+  const [pos, setPos] = useState({
+    x: field.x,
+    y: field.y,
+  });
+
+  useEffect(() => {
+    if (draggingRef.current) return;
+    setPos({ x: field.x, y: field.y });
+  }, [field.x, field.y]);
 
   // Update transformer when selection changes
   useEffect(() => {
@@ -173,9 +183,18 @@ export function DraggableField({
     }
   }, [isSelected]);
 
-  const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
-    const node = e.target;
-    onDragEnd(node.x(), node.y());
+  const groupPoint = (): { x: number; y: number } | null => {
+    const node = shapeRef.current;
+    if (!node) return null;
+    return { x: node.x(), y: node.y() };
+  };
+
+  const handleDragEnd = () => {
+    draggingRef.current = false;
+    const point = groupPoint();
+    if (!point) return;
+    setPos(point);
+    onDragEnd(point.x, point.y);
   };
 
   const handleTransformEnd = () => {
@@ -200,13 +219,21 @@ export function DraggableField({
     <>
       <Group
         ref={shapeRef}
-        x={field.x}
-        y={field.y}
+        x={pos.x}
+        y={pos.y}
         width={field.width}
         height={field.height}
-        draggable={isSelected}
+        draggable={draggable}
         onClick={onSelect}
         onTap={onSelect}
+        onDragStart={() => {
+          draggingRef.current = true;
+          onSelect();
+        }}
+        onDragMove={() => {
+          const point = groupPoint();
+          if (point) setPos(point);
+        }}
         onDragEnd={handleDragEnd}
         onTransformEnd={handleTransformEnd}
       >
@@ -217,6 +244,9 @@ export function DraggableField({
           isUnassigned={renderState.isUnassigned}
           label={renderState.label}
           sealIcon={sealIcon}
+          pageWidth={pageWidth}
+          pageHeight={pageHeight}
+          documentRef={documentRef}
         />
       </Group>
 
@@ -232,12 +262,8 @@ export function DraggableField({
           }}
           enabledAnchors={[
             "top-left",
-            "top-center",
             "top-right",
-            "middle-left",
-            "middle-right",
             "bottom-left",
-            "bottom-center",
             "bottom-right",
           ]}
           rotateEnabled={false}
@@ -262,15 +288,12 @@ function getFieldRenderState(
   const recipientColor = useRecipientColors
     ? getRecipientColorById(field.recipientId, recipientIndexMap ?? new Map())
     : null;
-  const colors = recipientColor
-    ? recipientColorToFieldColors(recipientColor)
-    : FIELD_COLORS[field.fieldType];
   return {
-    colors,
+    colors: FIELD_CHROME,
     isUnassigned:
       useRecipientColors &&
       (!field.recipientId || recipientColor === UNASSIGNED_COLOR),
-    label: field.label || FIELD_LABELS[field.fieldType],
+    label: fieldDisplayLabel(FIELD_LABELS[field.fieldType], field.label),
   };
 }
 
@@ -281,7 +304,10 @@ function FieldContent({
   isUnassigned,
   label,
   sealIcon,
-}: StandardFieldProps) {
+  pageWidth,
+  pageHeight,
+  documentRef,
+}: FieldContentProps) {
   if (field.signatureData?.signedAt) {
     return (
       <FilledFieldStamp
@@ -289,6 +315,9 @@ function FieldContent({
         field={field}
         isSelected={isSelected}
         sealIcon={sealIcon}
+        pageWidth={pageWidth}
+        pageHeight={pageHeight}
+        documentRef={documentRef}
       />
     );
   }
@@ -381,13 +410,12 @@ function CheckboxGroupField({
         isSelected={isSelected}
         dashed
       />
-      <AccentRail
-        colors={colors}
-        field={field}
-        isSelected={isSelected}
-        unselectedOpacity={0.7}
-      />
-      {field.label && <CheckboxGroupTitle colors={colors} field={field} />}
+      {field.label ? (
+        <CheckboxGroupTitle
+          colors={colors}
+          label={fieldDisplayLabel(FIELD_LABELS[field.fieldType], field.label)}
+        />
+      ) : null}
       {options.map((option, index) => (
         <CheckboxOption
           key={option}
@@ -403,15 +431,15 @@ function CheckboxGroupField({
 
 function CheckboxGroupTitle({
   colors,
-  field,
-}: Pick<FieldRendererProps, "colors" | "field">) {
+  label,
+}: Pick<FieldRendererProps, "colors"> & { readonly label: string }) {
   return (
     <Text
-      x={12}
-      y={8}
-      text={field.label}
+      x={FIELD_PAD_X}
+      y={10}
+      text={label}
       fontSize={10}
-      fontFamily="'DM Sans', system-ui, sans-serif"
+      fontFamily={FIELD_FONT}
       fontStyle="600"
       fill={colors.ink}
       opacity={0.7}
@@ -432,10 +460,10 @@ function CheckboxOption({
   readonly option: string;
 }) {
   const checkboxSize = 14;
-  const padding = 8;
-  const yPos = (field.label ? padding + 16 : padding) + index * 22;
+  const padding = FIELD_PAD_X;
+  const yPos = (field.label ? padding + 18 : padding) + index * 24;
   return (
-    <Group x={padding + 4} y={yPos}>
+    <Group x={padding} y={yPos}>
       <Rect
         width={checkboxSize}
         height={checkboxSize}
@@ -461,7 +489,7 @@ function CheckboxOption({
         y={1}
         text={option}
         fontSize={11}
-        fontFamily="'DM Sans', system-ui, sans-serif"
+        fontFamily={FIELD_FONT}
         fill={canvas.chrome.optionText}
         listening={false}
       />
@@ -486,18 +514,7 @@ function StandardField({
         isSelected={isSelected}
         isUnassigned={isUnassigned}
       />
-      <AccentRail
-        colors={colors}
-        field={field}
-        isSelected={isSelected}
-        isUnassigned={isUnassigned}
-      />
-      <SealSidebar
-        colors={colors}
-        field={field}
-        metrics={metrics}
-        sealIcon={sealIcon}
-      />
+      <SealMark field={field} metrics={metrics} sealIcon={sealIcon} />
       <StandardFieldLabel
         colors={colors}
         field={field}
@@ -552,7 +569,7 @@ function FieldBackground({
       width={field.width}
       height={field.height}
       fill={canvas.chrome.background}
-      stroke={isSelected ? colors.accent : colors.ink}
+      stroke={isSelected ? canvas.chrome.ink : canvas.chrome.borderUnselected}
       strokeWidth={isSelected ? 2 : 1}
       cornerRadius={6}
       shadowColor={isSelected ? colors.glow : canvas.chrome.shadowCheckbox}
@@ -565,64 +582,25 @@ function FieldBackground({
   );
 }
 
-function AccentRail({
-  colors,
-  field,
-  isSelected,
-  isUnassigned,
-  unselectedOpacity = 0.9,
-}: Pick<FieldRendererProps, "colors" | "field" | "isSelected"> & {
-  readonly isUnassigned?: boolean;
-  readonly unselectedOpacity?: number;
-}) {
-  return (
-    <Rect
-      x={0}
-      y={0}
-      width={4}
-      height={field.height}
-      fill={colors.accent}
-      cornerRadius={[6, 0, 0, 6]}
-      opacity={isSelected ? 1 : isUnassigned ? 0.5 : unselectedOpacity}
-    />
-  );
-}
-
-function SealSidebar({
-  colors,
+function SealMark({
   field,
   metrics,
   sealIcon,
-}: Pick<FieldRendererProps, "colors" | "field"> & {
+}: {
+  readonly field: PlacedField;
   readonly metrics: SidebarMetrics;
   readonly sealIcon: HTMLImageElement | null;
 }) {
   if (!sealIcon) return null;
   return (
-    <Group x={4} y={0}>
-      <Rect
-        width={metrics.sidebarWidth}
-        height={field.height}
-        fill={colors.glow}
-        opacity={0.3}
-      />
-      <Rect
-        x={metrics.sidebarWidth}
-        y={0}
-        width={1}
-        height={field.height}
-        fill={colors.accent}
-        opacity={0.15}
-      />
-      <KonvaImage
-        image={sealIcon}
-        x={(metrics.sidebarWidth - metrics.iconSize) / 2}
-        y={(field.height - metrics.iconSize) / 2}
-        width={metrics.iconSize}
-        height={metrics.iconSize}
-        opacity={0.85}
-      />
-    </Group>
+    <KonvaImage
+      image={sealIcon}
+      x={FIELD_PAD_X}
+      y={(field.height - metrics.iconSize) / 2}
+      width={metrics.iconSize}
+      height={metrics.iconSize}
+      listening={false}
+    />
   );
 }
 
@@ -651,17 +629,18 @@ function StandardFieldLabel({
     <Text
       x={textOffsetX}
       y={0}
-      width={field.width - textOffsetX - 4}
+      width={Math.max(0, field.width - textOffsetX - FIELD_PAD_X)}
       height={field.height}
       text={isUnassigned ? `${label} (unassigned)` : label}
       fontSize={11}
-      fontFamily="'DM Sans', system-ui, sans-serif"
+      fontFamily={FIELD_FONT}
       fontStyle="600"
       fill={colors.ink}
-      opacity={isUnassigned ? 0.6 : 0.85}
+      opacity={isUnassigned ? 0.6 : 1}
       align="left"
       verticalAlign="middle"
-      letterSpacing={0.3}
+      wrap="none"
+      ellipsis
       listening={false}
     />
   );
@@ -687,7 +666,7 @@ function PaymentFieldLabel({
         height={field.height / 2 - 4}
         text={isUnassigned ? `${label} (unassigned)` : label}
         fontSize={10}
-        fontFamily="'DM Sans', system-ui, sans-serif"
+        fontFamily={FIELD_FONT}
         fontStyle="600"
         fill={colors.ink}
         opacity={isUnassigned ? 0.6 : 0.7}
@@ -703,7 +682,7 @@ function PaymentFieldLabel({
         height={field.height / 2}
         text={formatPaymentTotal(field.paymentTotalCents)}
         fontSize={16}
-        fontFamily="'DM Sans', system-ui, sans-serif"
+        fontFamily={FIELD_FONT}
         fontStyle="700"
         fill={colors.accent}
         opacity={0.9}
@@ -716,216 +695,127 @@ function PaymentFieldLabel({
   );
 }
 
+const SIGNATURE_CAPTION = "#595961";
+
 function FilledFieldStamp({
-  colors,
   field,
-  isSelected,
-  sealIcon,
+  pageWidth,
+  pageHeight,
+  documentRef,
 }: FieldRendererProps & {
   readonly sealIcon: HTMLImageElement | null;
+  readonly pageWidth: number;
+  readonly pageHeight: number;
+  readonly documentRef?: string;
 }) {
-  const metrics = sealSidebarMetrics(field, sealIcon, 8);
-  const availableWidth = field.width - metrics.textOffsetX - 4;
-  const availableHeight = field.height - 8;
-  const isSmallField = availableHeight < 40;
-  const titleFontSize = isSmallField ? 8 : 10;
-  const detailFontSize = isSmallField ? 7 : 9;
-  const formattedDate = formatSignatureDate(field.signatureData?.signedAt);
-  const signerName =
-    field.signatureData?.signerName ||
-    field.signatureData?.signerEmail ||
-    "Unknown";
-
-  return (
-    <>
-      <FilledStampBackground
-        colors={colors}
-        field={field}
-        isSelected={isSelected}
-      />
-      <FilledStampSidebar field={field} metrics={metrics} sealIcon={sealIcon} />
-      <Text
-        x={metrics.textOffsetX}
-        y={4}
-        width={availableWidth}
-        text={getFieldTypeLabel(field.fieldType)}
-        fontSize={titleFontSize}
-        fontStyle="bold"
-        fill={canvas.filled.titleText}
-        align="left"
-      />
-      <FilledStampDetails
-        availableWidth={availableWidth}
-        detailFontSize={detailFontSize}
-        formattedDate={formattedDate}
-        isSmallField={isSmallField}
-        signerName={signerName}
-        textOffsetX={metrics.textOffsetX}
-        titleFontSize={titleFontSize}
-      />
-    </>
-  );
-}
-
-function FilledStampBackground({
-  colors,
-  field,
-  isSelected,
-}: FieldRendererProps) {
+  const image = useLoadedImage(field.signatureData?.signatureImageUrl);
+  const text = filledFieldText(field.fieldType, field.signatureData?.value);
+  const isSignature =
+    field.fieldType === "signature" || field.fieldType === "free_signature";
+  if (image && isSignature && pageWidth > 0 && pageHeight > 0) {
+    const frame = signatureMarkFrame(field, {
+      width: pageWidth,
+      height: pageHeight,
+    });
+    const stamp = documentRef ? signatureStamp(documentRef) : "";
+    const roomForStamp = stamp ? 52 : 0;
+    const scale = Math.min(
+      Math.max(frame.width - roomForStamp, 8) / image.naturalWidth,
+      frame.height / image.naturalHeight
+    );
+    const drawW = image.naturalWidth * scale;
+    const drawH = image.naturalHeight * scale;
+    const captionOffset = signatureCaptionOffset(frame.height);
+    return (
+      <>
+        <Text
+          x={frame.x}
+          y={frame.y + captionOffset}
+          width={frame.width}
+          text="Signed by:"
+          fontSize={8}
+          fontFamily={FIELD_FONT}
+          fill={SIGNATURE_CAPTION}
+          listening={false}
+        />
+        <KonvaImage
+          image={image}
+          x={frame.x}
+          y={frame.y + frame.height - drawH}
+          width={drawW}
+          height={drawH}
+          listening={false}
+        />
+        {stamp ? (
+          <Text
+            x={frame.x + drawW + 3}
+            y={
+              captionOffset === 0
+                ? frame.y + frame.height - 8
+                : frame.y + frame.height + 1
+            }
+            width={Math.max(roomForStamp, 8)}
+            text={stamp}
+            fontSize={7}
+            fontFamily={FIELD_FONT}
+            fill={SIGNATURE_CAPTION}
+            listening={false}
+          />
+        ) : null}
+      </>
+    );
+  }
   return (
     <>
       <Rect
         width={field.width}
         height={field.height}
-        fill={canvas.chrome.background}
-        stroke={isSelected ? colors.accent : canvas.filled.stroke}
-        strokeWidth={isSelected ? 2 : 1}
-        cornerRadius={6}
-        shadowColor={isSelected ? colors.glow : canvas.filled.shadowColor}
-        shadowBlur={isSelected ? 12 : 4}
-        shadowOpacity={1}
-        shadowOffsetY={isSelected ? 0 : 2}
+        fill="#ffffff"
+        listening={false}
       />
-      <Rect
-        x={0}
-        y={0}
-        width={4}
-        height={field.height}
-        fill={canvas.filled.accent}
-        cornerRadius={[6, 0, 0, 6]}
-      />
-    </>
-  );
-}
-
-function FilledStampSidebar({
-  field,
-  metrics,
-  sealIcon,
-}: Pick<FieldRendererProps, "field"> & {
-  readonly metrics: SidebarMetrics;
-  readonly sealIcon: HTMLImageElement | null;
-}) {
-  if (!sealIcon) return null;
-  return (
-    <Group x={4} y={0}>
-      <Rect
-        width={metrics.sidebarWidth}
-        height={field.height}
-        fill={canvas.filled.accentTint}
-      />
-      <Rect
-        x={metrics.sidebarWidth}
-        y={0}
-        width={1}
-        height={field.height}
-        fill={canvas.filled.accent}
-        opacity={0.2}
-      />
-      <KonvaImage
-        image={sealIcon}
-        x={(metrics.sidebarWidth - metrics.iconSize) / 2}
-        y={(field.height - metrics.iconSize) / 2}
-        width={metrics.iconSize}
-        height={metrics.iconSize}
-        opacity={0.85}
-      />
-    </Group>
-  );
-}
-
-function FilledStampDetails({
-  availableWidth,
-  detailFontSize,
-  formattedDate,
-  isSmallField,
-  signerName,
-  textOffsetX,
-  titleFontSize,
-}: {
-  readonly availableWidth: number;
-  readonly detailFontSize: number;
-  readonly formattedDate: FormattedSignatureDate;
-  readonly isSmallField: boolean;
-  readonly signerName: string;
-  readonly textOffsetX: number;
-  readonly titleFontSize: number;
-}) {
-  return isSmallField ? (
-    <SmallFilledStampDetails
-      availableWidth={availableWidth}
-      detailFontSize={detailFontSize}
-      formattedDate={formattedDate}
-      signerName={signerName}
-      textOffsetX={textOffsetX}
-      titleFontSize={titleFontSize}
-    />
-  ) : (
-    <LargeFilledStampDetails
-      availableWidth={availableWidth}
-      detailFontSize={detailFontSize}
-      formattedDate={formattedDate}
-      signerName={signerName}
-      textOffsetX={textOffsetX}
-      titleFontSize={titleFontSize}
-    />
-  );
-}
-
-function LargeFilledStampDetails({
-  availableWidth,
-  detailFontSize,
-  formattedDate,
-  signerName,
-  textOffsetX,
-  titleFontSize,
-}: Omit<Parameters<typeof FilledStampDetails>[0], "isSmallField">) {
-  return (
-    <>
-      <Text
-        x={textOffsetX}
-        y={4 + titleFontSize + 2}
-        width={availableWidth}
-        text={`Signed by: ${signerName}`}
-        fontSize={detailFontSize}
-        fill={canvas.filled.detailText}
-        align="left"
-      />
-      {formattedDate.date && (
+      {image ? (
+        <KonvaImage
+          image={image}
+          x={2}
+          y={2}
+          width={Math.max(field.width - 4, 1)}
+          height={Math.max(field.height - 4, 1)}
+          listening={false}
+        />
+      ) : (
         <Text
-          x={textOffsetX}
-          y={4 + titleFontSize + detailFontSize + 4}
-          width={availableWidth}
-          text={`Date: ${formattedDate.date} at ${formattedDate.time}`}
-          fontSize={detailFontSize}
-          fill={canvas.filled.detailText}
-          align="left"
+          x={4}
+          y={2}
+          width={Math.max(field.width - 8, 1)}
+          height={Math.max(field.height - 4, 1)}
+          text={text}
+          fontSize={Math.min(12, Math.max(8, field.height * 0.45))}
+          fontFamily={FIELD_FONT}
+          fill={canvas.chrome.ink}
+          verticalAlign="middle"
+          wrap="word"
+          listening={false}
         />
       )}
     </>
   );
 }
 
-function SmallFilledStampDetails({
-  availableWidth,
-  detailFontSize,
-  formattedDate,
-  signerName,
-  textOffsetX,
-  titleFontSize,
-}: Omit<Parameters<typeof FilledStampDetails>[0], "isSmallField">) {
-  if (!formattedDate.date) return null;
-  return (
-    <Text
-      x={textOffsetX}
-      y={4 + titleFontSize + 2}
-      width={availableWidth}
-      text={`${signerName} - ${formattedDate.date}`}
-      fontSize={detailFontSize}
-      fill={canvas.filled.detailText}
-      align="left"
-    />
-  );
+function useLoadedImage(src: string | undefined): HTMLImageElement | null {
+  const [image, setImage] = useState<HTMLImageElement | null>(null);
+  useEffect(() => {
+    if (!src) {
+      setImage(null);
+      return;
+    }
+    const next = new Image();
+    next.onload = () => setImage(next);
+    next.src = src;
+    return () => {
+      next.onload = null;
+    };
+  }, [src]);
+  return image;
 }
 
 function sealSidebarMetrics(
@@ -933,34 +823,14 @@ function sealSidebarMetrics(
   sealIcon: HTMLImageElement | null,
   noIconTextOffsetX: number
 ): SidebarMetrics {
-  const iconSize = Math.max(10, Math.min(16, field.height * 0.35));
-  const sidebarWidth = iconSize + 16;
+  const iconSize = Math.min(FIELD_ICON_SIZE, Math.max(10, field.height - 16));
   return {
     iconSize,
-    sidebarWidth,
-    textOffsetX: sealIcon ? 4 + sidebarWidth + 10 : noIconTextOffsetX,
+    sidebarWidth: iconSize,
+    textOffsetX: sealIcon ? fieldTextOffset(true) : noIconTextOffsetX,
   };
 }
 
 function formatPaymentTotal(paymentTotalCents: number | undefined): string {
   return formatMoney(money(paymentTotalCents ?? 0, "USD"));
-}
-
-function formatSignatureDate(
-  timestamp: number | undefined
-): FormattedSignatureDate {
-  if (!timestamp) return { date: "", time: "" };
-  const date = new Date(timestamp);
-  return {
-    date: date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    }),
-    time: date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    }),
-  };
 }

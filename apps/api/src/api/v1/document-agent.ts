@@ -4,34 +4,56 @@
  */
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { and, desc, eq, ne } from "drizzle-orm";
+import { PDFDocument } from "pdf-lib";
 import { z } from "zod";
 
 import { createD1 } from "../../global/db.js";
-import {
-  aiDocumentAnnotations,
-  documents,
-} from "../../global/schema.js";
+import { aiDocumentAnnotations, documents } from "../../global/schema.js";
 import {
   extractAnnotationsFromMarkdown,
   annotationItemSchema,
 } from "../../platform/document-annotations.js";
 import {
+  ConversionError,
   convertBytesToPdf,
+  convertToPdfaBytes,
+  decryptPdfBytes,
+  encryptPdfBytes,
+  flattenPdfBytes,
   isConvertibleFileType,
+  ocrPdfBytes,
+  optimizePdfBytes,
+  pdfToImagesZip,
+  pdfToOfficeBytes,
+  pdfToText,
 } from "../../platform/document-conversion.js";
+import { buildDocumentLayoutBlocks } from "../../platform/document-layout-blocks.js";
+import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 import {
   FeatureDisabledError,
   assertConvertEnabled,
 } from "../../platform/org-settings.js";
-import { buildDocumentLayoutBlocks } from "../../platform/document-layout-blocks.js";
-import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
+import { documentChunks, MAX_CHUNKS } from "../../platform/pdf-chunks.js";
+import { diffPageTexts } from "../../platform/pdf-diff.js";
 import {
   annotatePdf,
+  cropPdfPages,
+  getPdfPageCount,
   mergePdfs,
+  numberPdfPages,
+  organizePdfPages,
   pdfAnnotateOpSchema,
   rotatePdfPages,
   splitPdfPages,
+  watermarkPdf,
 } from "../../platform/pdf-ops.js";
+import { redactPdfRegions } from "../../platform/pdf-redact.js";
+import {
+  commitDocumentPdfRemap,
+  planCropFieldRemap,
+  planOrganizeFieldRemap,
+  planRedactFieldRemap,
+} from "../../platform/remap-document-pages.js";
 import { createDownloadToken } from "./download-token.js";
 
 const app = new OpenAPIHono<{
@@ -199,7 +221,9 @@ app.post("/annotations/generate", async (c) => {
     return c.json({ error: "organization_required" }, 403);
   }
 
-  const body = z.object({ id: z.string().min(1) }).safeParse(await c.req.json());
+  const body = z
+    .object({ id: z.string().min(1) })
+    .safeParse(await c.req.json());
   if (!body.success) {
     return c.json({ error: "validation_error" }, 400);
   }
@@ -249,7 +273,9 @@ app.post("/annotations/dismiss", async (c) => {
   if (!organizationId) {
     return c.json({ error: "organization_required" }, 403);
   }
-  const body = z.object({ id: z.string().min(1) }).safeParse(await c.req.json());
+  const body = z
+    .object({ id: z.string().min(1) })
+    .safeParse(await c.req.json());
   if (!body.success) {
     return c.json({ error: "validation_error" }, 400);
   }
@@ -285,7 +311,9 @@ app.get("/preview", async (c) => {
   if (!id) {
     return c.json({ error: "missing_document_id" }, 400);
   }
-  if (!["pdf", "markdown", "original", "structured"].includes(format)) {
+  if (
+    !["pdf", "markdown", "original", "structured", "chunks"].includes(format)
+  ) {
     return c.json({ error: "invalid_format" }, 400);
   }
 
@@ -296,6 +324,32 @@ app.get("/preview", async (c) => {
   }
 
   const origin = new URL(c.req.url).origin;
+
+  if (format === "chunks") {
+    if (!doc.storageKey) return c.json({ error: "no_pdf" }, 404);
+    try {
+      await assertConvertEnabled(c.env, organizationId);
+      const chunks = await documentChunks(c.env, doc.storageKey);
+      return c.json({
+        format: "chunks",
+        title: doc.parsedTitle ?? doc.name,
+        page_count: doc.pageCount,
+        truncated: chunks.length >= MAX_CHUNKS,
+        chunks,
+      });
+    } catch (error) {
+      if (error instanceof FeatureDisabledError) {
+        return c.json({ error: error.code }, 403);
+      }
+      if (error instanceof ConversionError) {
+        return c.json(
+          { error: error.message },
+          error.statusCode === 504 ? 504 : 502
+        );
+      }
+      throw error;
+    }
+  }
 
   if (format === "markdown") {
     return c.json({
@@ -349,7 +403,10 @@ app.get("/preview", async (c) => {
       : (doc.contentType ?? "application/pdf");
 
   if (!storageKey) {
-    return c.json({ error: format === "original" ? "no_original" : "no_pdf" }, 404);
+    return c.json(
+      { error: format === "original" ? "no_original" : "no_pdf" },
+      404
+    );
   }
 
   const token = await createDownloadToken(c.env, {
@@ -589,7 +646,11 @@ app.post("/pdf/replace", async (c) => {
     })
     .where(eq(documents.id, doc.id));
 
-  return c.json({ success: true, storage_id: storageId, size: bytes.byteLength });
+  return c.json({
+    success: true,
+    storage_id: storageId,
+    size: bytes.byteLength,
+  });
 });
 
 app.get("/layout-blocks", async (c) => {
@@ -801,8 +862,7 @@ app.post("/pdf/merge", async (c) => {
   const now = new Date();
   const id = crypto.randomUUID();
   const publicId = crypto.randomUUID();
-  const title =
-    parsed.data.title ?? `Merged (${parsed.data.ids.length} docs)`;
+  const title = parsed.data.title ?? `Merged (${parsed.data.ids.length} docs)`;
 
   await db.insert(documents).values({
     id,
@@ -889,6 +949,1194 @@ app.post("/pdf/rotate", async (c) => {
     success: true,
     storage_id: storageId,
     page_count: rotated.pageCount,
+  });
+});
+
+app.post("/pdf/organize", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      id: z.string().min(1),
+      pages: z.array(z.number().int().min(1)).min(1).max(500),
+    })
+    .safeParse(await c.req.json());
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  let organized: Awaited<ReturnType<typeof organizePdfPages>>;
+  try {
+    organized = await organizePdfPages(
+      await object.arrayBuffer(),
+      parsed.data.pages
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "organize_failed";
+    if (message === "duplicate_pages" || message === "no_valid_pages") {
+      return c.json({ error: message }, 400);
+    }
+    throw error;
+  }
+
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, organized.bytes, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: mcp.sub,
+      organizedFrom: doc.storageKey,
+    },
+  });
+
+  const plan = await planOrganizeFieldRemap(db, doc.id, organized.pageMap);
+
+  const claimed = await commitDocumentPdfRemap(db, {
+    documentId: doc.id,
+    expectedStorageKey: doc.storageKey,
+    storageId,
+    size: organized.bytes.byteLength,
+    pageCount: organized.pageCount,
+    plan,
+  });
+  if (!claimed) {
+    return c.json({ error: "document_version_conflict" }, 409);
+  }
+
+  return c.json({
+    success: true,
+    storage_id: storageId,
+    page_count: organized.pageCount,
+    fields_removed: plan.removeIds.length,
+    fields_remapped: plan.updates.length,
+  });
+});
+
+app.post("/pdf/watermark", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      id: z.string().min(1),
+      text: z.string().min(1).max(120),
+      opacity: z.number().min(0.05).max(1).optional(),
+      position: z.enum(["diagonal", "center", "footer"]).optional(),
+      color: z.string().optional(),
+      size: z.number().min(6).max(120).optional(),
+      pages: z.array(z.number().int().min(1)).optional(),
+    })
+    .safeParse(await c.req.json());
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  let stamped: Awaited<ReturnType<typeof watermarkPdf>>;
+  try {
+    stamped = await watermarkPdf(await object.arrayBuffer(), {
+      text: parsed.data.text,
+      opacity: parsed.data.opacity,
+      position: parsed.data.position,
+      color: parsed.data.color,
+      size: parsed.data.size,
+      pages: parsed.data.pages,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "watermark_failed";
+    if (
+      message === "empty_watermark" ||
+      message === "watermark_too_long" ||
+      message === "no_valid_pages"
+    ) {
+      return c.json({ error: message }, 400);
+    }
+    throw error;
+  }
+
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, stamped.bytes, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: mcp.sub,
+      watermarkedFrom: doc.storageKey,
+    },
+  });
+
+  await db
+    .update(documents)
+    .set({
+      storageKey: storageId,
+      size: stamped.bytes.byteLength,
+      contentType: "application/pdf",
+      pageCount: stamped.pageCount,
+      updatedAt: new Date(),
+    })
+    .where(eq(documents.id, doc.id));
+
+  return c.json({
+    success: true,
+    storage_id: storageId,
+    page_count: stamped.pageCount,
+  });
+});
+
+app.post("/pdf/number-pages", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      id: z.string().min(1),
+      format: z.enum(["n", "n_of_m"]).optional(),
+      position: z
+        .enum(["footer-center", "footer-right", "footer-left"])
+        .optional(),
+      start_at: z.number().int().min(0).max(10_000).optional(),
+      prefix: z.string().max(40).optional(),
+      size: z.number().min(6).max(48).optional(),
+      color: z.string().optional(),
+      pages: z.array(z.number().int().min(1)).optional(),
+    })
+    .safeParse(await c.req.json());
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  let numbered: Awaited<ReturnType<typeof numberPdfPages>>;
+  try {
+    numbered = await numberPdfPages(await object.arrayBuffer(), {
+      format: parsed.data.format,
+      position: parsed.data.position,
+      startAt: parsed.data.start_at,
+      prefix: parsed.data.prefix,
+      size: parsed.data.size,
+      color: parsed.data.color,
+      pages: parsed.data.pages,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "number_failed";
+    if (message === "no_valid_pages") {
+      return c.json({ error: message }, 400);
+    }
+    throw error;
+  }
+
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, numbered.bytes, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: mcp.sub,
+      numberedFrom: doc.storageKey,
+    },
+  });
+
+  await db
+    .update(documents)
+    .set({
+      storageKey: storageId,
+      size: numbered.bytes.byteLength,
+      contentType: "application/pdf",
+      pageCount: numbered.pageCount,
+      updatedAt: new Date(),
+    })
+    .where(eq(documents.id, doc.id));
+
+  return c.json({
+    success: true,
+    storage_id: storageId,
+    page_count: numbered.pageCount,
+  });
+});
+
+const cropPageSchema = z.object({
+  page: z.number().int().min(1),
+  x: z.number().min(0).max(100),
+  y: z.number().min(0).max(100),
+  width: z.number().min(1).max(100),
+  height: z.number().min(1).max(100),
+});
+
+app.post("/pdf/crop", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      id: z.string().min(1),
+      crops: z.array(cropPageSchema).min(1).max(500),
+    })
+    .safeParse(await c.req.json());
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  let cropped: Awaited<ReturnType<typeof cropPdfPages>>;
+  try {
+    cropped = await cropPdfPages(await object.arrayBuffer(), parsed.data.crops);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "crop_failed";
+    if (
+      message === "no_crops" ||
+      message === "no_valid_pages" ||
+      message === "invalid_crop"
+    ) {
+      return c.json({ error: message }, 400);
+    }
+    throw error;
+  }
+
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, cropped.bytes, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: mcp.sub,
+      croppedFrom: doc.storageKey,
+    },
+  });
+
+  const plan = await planCropFieldRemap(db, doc.id, cropped.applied);
+
+  const claimed = await commitDocumentPdfRemap(db, {
+    documentId: doc.id,
+    expectedStorageKey: doc.storageKey,
+    storageId,
+    size: cropped.bytes.byteLength,
+    pageCount: cropped.pageCount,
+    plan,
+  });
+  if (!claimed) {
+    return c.json({ error: "document_version_conflict" }, 409);
+  }
+
+  return c.json({
+    success: true,
+    storage_id: storageId,
+    page_count: cropped.pageCount,
+    fields_removed: plan.removeIds.length,
+    fields_remapped: plan.updates.length,
+  });
+});
+
+/** Compress a draft PDF via convert-worker pdfengines optimize. */
+app.post("/pdf/compress", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      id: z.string().min(1),
+      image_quality: z.number().int().min(1).max(100).optional(),
+    })
+    .safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  try {
+    await assertConvertEnabled(c.env, organizationId);
+  } catch (error) {
+    if (error instanceof FeatureDisabledError) {
+      return c.json({ error: error.code }, 403);
+    }
+    throw error;
+  }
+
+  const srcBytes = await object.arrayBuffer();
+  let compressed: ArrayBuffer;
+  try {
+    compressed = await optimizePdfBytes(c.env, {
+      bytes: srcBytes,
+      imageQuality: parsed.data.image_quality,
+    });
+  } catch (error) {
+    if (error instanceof ConversionError) {
+      return c.json(
+        { error: error.message },
+        error.statusCode === 504 ? 504 : 502
+      );
+    }
+    throw error;
+  }
+
+  const pageCount = await getPdfPageCount(compressed);
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, compressed, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: mcp.sub,
+      compressedFrom: doc.storageKey,
+    },
+  });
+
+  const claimed = await commitDocumentPdfRemap(db, {
+    documentId: doc.id,
+    expectedStorageKey: doc.storageKey,
+    storageId,
+    size: compressed.byteLength,
+    pageCount,
+    plan: { removeIds: [], updates: [] },
+  });
+  if (!claimed) {
+    return c.json({ error: "document_version_conflict" }, 409);
+  }
+
+  return c.json({
+    success: true,
+    storage_id: storageId,
+    page_count: pageCount,
+    size_before: srcBytes.byteLength,
+    size_after: compressed.byteLength,
+  });
+});
+
+/**
+ * True redaction: removes content inside the given regions from the PDF
+ * bytes (not an overlay). Fields intersecting a region are removed; the
+ * response includes a scrub receipt.
+ */
+app.post("/pdf/redact", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      id: z.string().min(1),
+      regions: z
+        .array(
+          z.object({
+            page: z.number().int().min(1),
+            x: z.number().min(0).max(100),
+            y: z.number().min(0).max(100),
+            width: z.number().min(0.5).max(100),
+            height: z.number().min(0.5).max(100),
+          })
+        )
+        .min(1)
+        .max(200),
+    })
+    .safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  const result = await redactPdfRegions(
+    await object.arrayBuffer(),
+    parsed.data.regions
+  );
+
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, result.bytes, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: mcp.sub,
+      redactedFrom: doc.storageKey,
+    },
+  });
+
+  const plan = await planRedactFieldRemap(db, doc.id, parsed.data.regions);
+  const claimed = await commitDocumentPdfRemap(db, {
+    documentId: doc.id,
+    expectedStorageKey: doc.storageKey,
+    storageId,
+    size: result.bytes.byteLength,
+    pageCount: await getPdfPageCount(result.bytes),
+    plan,
+  });
+  if (!claimed) {
+    return c.json({ error: "document_version_conflict" }, 409);
+  }
+
+  return c.json({
+    success: true,
+    storage_id: storageId,
+    regions_applied: result.regionsApplied,
+    ops_scrubbed: result.opsScrubbed,
+    annots_scrubbed: result.annotsScrubbed,
+    fields_removed: plan.removeIds.length,
+    scrubbed_text: result.scrubbedStrings.join(" ").slice(0, 2000),
+    warnings: result.warnings,
+  });
+});
+
+/**
+ * Password-protect a draft PDF: produces a downloadable encrypted artifact.
+ * The working draft stays unencrypted — pdf-lib cannot read encrypted PDFs.
+ */
+app.post("/pdf/protect", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      id: z.string().min(1),
+      user_password: z.string().min(1).max(128).optional(),
+      owner_password: z.string().min(1).max(128).optional(),
+      allow_printing: z.boolean().optional(),
+      allow_copying: z.boolean().optional(),
+      allow_modifying: z.boolean().optional(),
+      allow_annotating: z.boolean().optional(),
+      allow_filling_forms: z.boolean().optional(),
+      allow_assembling: z.boolean().optional(),
+    })
+    .safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+  if (!parsed.data.user_password && !parsed.data.owner_password) {
+    return c.json({ error: "validation_error" }, 400);
+  }
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  try {
+    await assertConvertEnabled(c.env, organizationId);
+  } catch (error) {
+    if (error instanceof FeatureDisabledError) {
+      return c.json({ error: error.code }, 403);
+    }
+    throw error;
+  }
+
+  let encrypted: ArrayBuffer;
+  try {
+    encrypted = await encryptPdfBytes(c.env, {
+      bytes: await object.arrayBuffer(),
+      userPassword: parsed.data.user_password,
+      ownerPassword: parsed.data.owner_password,
+      allowPrinting: parsed.data.allow_printing,
+      allowCopying: parsed.data.allow_copying,
+      allowModifying: parsed.data.allow_modifying,
+      allowAnnotating: parsed.data.allow_annotating,
+      allowFillingForms: parsed.data.allow_filling_forms,
+      allowAssembling: parsed.data.allow_assembling,
+    });
+  } catch (error) {
+    if (error instanceof ConversionError) {
+      return c.json(
+        { error: error.message },
+        error.statusCode === 504 ? 504 : 502
+      );
+    }
+    throw error;
+  }
+
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, encrypted, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: mcp.sub,
+      protectedFrom: doc.storageKey,
+    },
+  });
+
+  const origin = new URL(c.req.url).origin;
+  const token = await createDownloadToken(c.env, {
+    userId: mcp.sub,
+    organizationId,
+    storageKey: storageId,
+    documentName: `${doc.name}-protected.pdf`,
+    documentId: doc.id,
+    actorType: "agent",
+  });
+
+  return c.json({
+    success: true,
+    storage_id: storageId,
+    size: encrypted.byteLength,
+    download_url: token
+      ? `${origin}/api/v1/documents/download-file?token=${encodeURIComponent(token)}`
+      : null,
+  });
+});
+
+/** Unlock an encrypted PDF at storageKey; usable bytes claim the doc. */
+app.post("/pdf/unlock", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      id: z.string().min(1),
+      password: z.string().min(1).max(128),
+    })
+    .safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  const srcBytes = await object.arrayBuffer();
+  try {
+    await PDFDocument.load(srcBytes);
+    return c.json({ error: "not_encrypted" }, 400);
+  } catch (error) {
+    // pdf-lib's EncryptedPDFError loses its prototype in the transpiled
+    // bundle (tslib __extends on Error) — match on the message.
+    const msg = error instanceof Error ? error.message : "";
+    if (!msg.includes("`PDFDocument.load` is encrypted")) {
+      return c.json({ error: "invalid_pdf" }, 400);
+    }
+  }
+
+  try {
+    await assertConvertEnabled(c.env, organizationId);
+  } catch (error) {
+    if (error instanceof FeatureDisabledError) {
+      return c.json({ error: error.code }, 403);
+    }
+    throw error;
+  }
+
+  let decrypted: ArrayBuffer;
+  try {
+    decrypted = await decryptPdfBytes(c.env, {
+      bytes: srcBytes,
+      password: parsed.data.password,
+    });
+  } catch (error) {
+    if (error instanceof ConversionError) {
+      return c.json(
+        { error: error.message },
+        error.statusCode === 504 ? 504 : error.statusCode === 400 ? 400 : 502
+      );
+    }
+    throw error;
+  }
+
+  const pageCount = await getPdfPageCount(decrypted);
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, decrypted, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: mcp.sub,
+      decryptedFrom: doc.storageKey,
+    },
+  });
+
+  const claimed = await commitDocumentPdfRemap(db, {
+    documentId: doc.id,
+    expectedStorageKey: doc.storageKey,
+    storageId,
+    size: decrypted.byteLength,
+    pageCount,
+    plan: { removeIds: [], updates: [] },
+  });
+  if (!claimed) {
+    return c.json({ error: "document_version_conflict" }, 409);
+  }
+
+  return c.json({
+    success: true,
+    storage_id: storageId,
+    page_count: pageCount,
+    warnings: ["libreoffice_roundtrip"],
+  });
+});
+
+/** Flatten annotations/AcroForms into page content. */
+app.post("/pdf/flatten", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({ id: z.string().min(1) })
+    .safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  try {
+    await assertConvertEnabled(c.env, organizationId);
+  } catch (error) {
+    if (error instanceof FeatureDisabledError) {
+      return c.json({ error: error.code }, 403);
+    }
+    throw error;
+  }
+
+  let flattened: ArrayBuffer;
+  try {
+    flattened = await flattenPdfBytes(c.env, await object.arrayBuffer());
+  } catch (error) {
+    if (error instanceof ConversionError) {
+      return c.json(
+        { error: error.message },
+        error.statusCode === 504 ? 504 : 502
+      );
+    }
+    throw error;
+  }
+
+  const pageCount = await getPdfPageCount(flattened);
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, flattened, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: mcp.sub,
+      flattenedFrom: doc.storageKey,
+    },
+  });
+
+  const claimed = await commitDocumentPdfRemap(db, {
+    documentId: doc.id,
+    expectedStorageKey: doc.storageKey,
+    storageId,
+    size: flattened.byteLength,
+    pageCount,
+    plan: { removeIds: [], updates: [] },
+  });
+  if (!claimed) {
+    return c.json({ error: "document_version_conflict" }, 409);
+  }
+
+  return c.json({
+    success: true,
+    storage_id: storageId,
+    page_count: pageCount,
+  });
+});
+
+/** Export every page of a draft PDF as images (ZIP artifact + download_url). */
+app.post("/pdf/export-images", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      id: z.string().min(1),
+      format: z.enum(["png", "jpeg"]).default("png"),
+      dpi: z.number().min(50).max(600).default(150),
+    })
+    .safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  try {
+    await assertConvertEnabled(c.env, organizationId);
+  } catch (error) {
+    if (error instanceof FeatureDisabledError) {
+      return c.json({ error: error.code }, 403);
+    }
+    throw error;
+  }
+
+  let zip: ArrayBuffer;
+  try {
+    zip = await pdfToImagesZip(c.env, {
+      bytes: await object.arrayBuffer(),
+      format: parsed.data.format,
+      dpi: parsed.data.dpi,
+    });
+  } catch (error) {
+    if (error instanceof ConversionError) {
+      return c.json(
+        { error: error.message },
+        error.statusCode === 504 ? 504 : 502
+      );
+    }
+    throw error;
+  }
+
+  const ext = parsed.data.format === "jpeg" ? "jpg" : "png";
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, zip, {
+    httpMetadata: { contentType: "application/zip" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: mcp.sub,
+      exportedFrom: doc.storageKey,
+    },
+  });
+
+  const origin = new URL(c.req.url).origin;
+  const token = await createDownloadToken(c.env, {
+    userId: mcp.sub,
+    organizationId,
+    storageKey: storageId,
+    documentName: `${doc.name}-${ext}-pages.zip`,
+    documentId: doc.id,
+    actorType: "agent",
+  });
+
+  return c.json({
+    success: true,
+    storage_id: storageId,
+    size: zip.byteLength,
+    format: parsed.data.format,
+    dpi: parsed.data.dpi,
+    download_url: token
+      ? `${origin}/api/v1/documents/download-file?token=${encodeURIComponent(token)}`
+      : null,
+  });
+});
+
+/**
+ * Convert a draft PDF to an Office format — docx/xlsx/pptx artifact +
+ * download_url. The working draft is untouched; fidelity is layout-locked
+ * (PDF imports into Draw — text boxes, not flowing prose).
+ */
+app.post("/pdf/to-office", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      id: z.string().min(1),
+      format: z.enum(["docx", "xlsx", "pptx"]).default("docx"),
+    })
+    .safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+  const format = parsed.data.format;
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  try {
+    await assertConvertEnabled(c.env, organizationId);
+  } catch (error) {
+    if (error instanceof FeatureDisabledError) {
+      return c.json({ error: error.code }, 403);
+    }
+    throw error;
+  }
+
+  let office: ArrayBuffer;
+  try {
+    office = await pdfToOfficeBytes(c.env, {
+      bytes: await object.arrayBuffer(),
+      format,
+    });
+  } catch (error) {
+    if (error instanceof ConversionError) {
+      return c.json(
+        { error: error.message },
+        error.statusCode === 504 ? 504 : 502
+      );
+    }
+    throw error;
+  }
+
+  const OFFICE_MIME: Record<"docx" | "xlsx" | "pptx", string> = {
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  };
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, office, {
+    httpMetadata: { contentType: OFFICE_MIME[format] },
+    customMetadata: {
+      organizationId,
+      uploadedBy: mcp.sub,
+      convertedFrom: doc.storageKey,
+    },
+  });
+
+  const origin = new URL(c.req.url).origin;
+  const token = await createDownloadToken(c.env, {
+    userId: mcp.sub,
+    organizationId,
+    storageKey: storageId,
+    documentName: `${doc.name}.${format}`,
+    documentId: doc.id,
+    actorType: "agent",
+  });
+
+  return c.json({
+    success: true,
+    storage_id: storageId,
+    format,
+    size: office.byteLength,
+    download_url: token
+      ? `${origin}/api/v1/documents/download-file?token=${encodeURIComponent(token)}`
+      : null,
+  });
+});
+
+/** OCR a draft PDF — text layer added to scanned pages (--skip-text). */
+app.post("/pdf/ocr", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      id: z.string().min(1),
+      lang: z
+        .string()
+        .regex(/^[a-z]{3}(\+[a-z]{3})*$/)
+        .default("eng"),
+    })
+    .safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  try {
+    await assertConvertEnabled(c.env, organizationId);
+  } catch (error) {
+    if (error instanceof FeatureDisabledError) {
+      return c.json({ error: error.code }, 403);
+    }
+    throw error;
+  }
+
+  let ocred: ArrayBuffer;
+  try {
+    ocred = await ocrPdfBytes(c.env, {
+      bytes: await object.arrayBuffer(),
+      lang: parsed.data.lang,
+    });
+  } catch (error) {
+    if (error instanceof ConversionError) {
+      return c.json(
+        { error: error.message },
+        error.statusCode === 504 ? 504 : 502
+      );
+    }
+    throw error;
+  }
+
+  const pageCount = await getPdfPageCount(ocred);
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, ocred, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: mcp.sub,
+      ocredFrom: doc.storageKey,
+    },
+  });
+
+  const claimed = await commitDocumentPdfRemap(db, {
+    documentId: doc.id,
+    expectedStorageKey: doc.storageKey,
+    storageId,
+    size: ocred.byteLength,
+    pageCount,
+    plan: { removeIds: [], updates: [] },
+  });
+  if (!claimed) {
+    return c.json({ error: "document_version_conflict" }, 409);
+  }
+
+  return c.json({
+    success: true,
+    storage_id: storageId,
+    page_count: pageCount,
+    lang: parsed.data.lang,
+  });
+});
+
+/** Convert a draft PDF to archival PDF/A (pdfengines /convert). */
+app.post("/pdf/to-pdfa", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:write")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      id: z.string().min(1),
+      format: z.enum(["PDF/A-1b", "PDF/A-2b", "PDF/A-3b"]).default("PDF/A-2b"),
+    })
+    .safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  if (!doc) return c.json({ error: "not_found" }, 404);
+  if (doc.status !== "draft") {
+    return c.json({ error: "document_not_editable" }, 400);
+  }
+  if (!doc.storageKey) return c.json({ error: "no_pdf" }, 400);
+
+  const object = await c.env.DOCUMENTS_BUCKET.get(doc.storageKey);
+  if (!object) return c.json({ error: "storage_missing" }, 404);
+
+  try {
+    await assertConvertEnabled(c.env, organizationId);
+  } catch (error) {
+    if (error instanceof FeatureDisabledError) {
+      return c.json({ error: error.code }, 403);
+    }
+    throw error;
+  }
+
+  let pdfa: ArrayBuffer;
+  try {
+    pdfa = await convertToPdfaBytes(c.env, {
+      bytes: await object.arrayBuffer(),
+      format: parsed.data.format,
+    });
+  } catch (error) {
+    if (error instanceof ConversionError) {
+      return c.json(
+        { error: error.message },
+        error.statusCode === 504 ? 504 : 502
+      );
+    }
+    throw error;
+  }
+
+  const pageCount = await getPdfPageCount(pdfa);
+  const storageId = `uploads/${crypto.randomUUID()}`;
+  await c.env.DOCUMENTS_BUCKET.put(storageId, pdfa, {
+    httpMetadata: { contentType: "application/pdf" },
+    customMetadata: {
+      organizationId,
+      uploadedBy: mcp.sub,
+      pdfaFrom: doc.storageKey,
+    },
+  });
+
+  const claimed = await commitDocumentPdfRemap(db, {
+    documentId: doc.id,
+    expectedStorageKey: doc.storageKey,
+    storageId,
+    size: pdfa.byteLength,
+    pageCount,
+    plan: { removeIds: [], updates: [] },
+  });
+  if (!claimed) {
+    return c.json({ error: "document_version_conflict" }, 409);
+  }
+
+  return c.json({
+    success: true,
+    storage_id: storageId,
+    page_count: pageCount,
+    format: parsed.data.format,
+  });
+});
+
+/** Text-level compare between two draft PDFs in the org (read-only). */
+app.post("/pdf/compare", async (c) => {
+  const mcp = c.get("mcp");
+  if (!mcpHasScope(mcp, "documents:read")) {
+    return c.json({ error: "insufficient_scope" }, 403);
+  }
+  const organizationId = mcp.organizationId;
+  if (!organizationId) return c.json({ error: "organization_required" }, 403);
+
+  const parsed = z
+    .object({
+      id: z.string().min(1),
+      other_id: z.string().min(1),
+    })
+    .safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: "validation_error" }, 400);
+
+  const db = createD1(c.env.D1);
+  const doc = await loadOrgDocument(db, organizationId, parsed.data.id);
+  const other = await loadOrgDocument(db, organizationId, parsed.data.other_id);
+  if (!doc || !other) return c.json({ error: "not_found" }, 404);
+  if (!doc.storageKey || !other.storageKey) {
+    return c.json({ error: "no_pdf" }, 400);
+  }
+
+  const [aObj, bObj] = await Promise.all([
+    c.env.DOCUMENTS_BUCKET.get(doc.storageKey),
+    c.env.DOCUMENTS_BUCKET.get(other.storageKey),
+  ]);
+  if (!aObj || !bObj) return c.json({ error: "storage_missing" }, 404);
+
+  try {
+    await assertConvertEnabled(c.env, organizationId);
+  } catch (error) {
+    if (error instanceof FeatureDisabledError) {
+      return c.json({ error: error.code }, 403);
+    }
+    throw error;
+  }
+
+  let diff;
+  try {
+    const [aText, bText] = await Promise.all([
+      pdfToText(c.env, await aObj.arrayBuffer()),
+      pdfToText(c.env, await bObj.arrayBuffer()),
+    ]);
+    diff = diffPageTexts(aText, bText);
+  } catch (error) {
+    if (error instanceof ConversionError) {
+      return c.json(
+        { error: error.message },
+        error.statusCode === 504 ? 504 : 502
+      );
+    }
+    throw error;
+  }
+
+  return c.json({
+    success: true,
+    document_a: { id: doc.id, public_id: doc.publicId, name: doc.name },
+    document_b: { id: other.id, public_id: other.publicId, name: other.name },
+    pages_different: diff.pagesDifferent,
+    lines_added: diff.linesAdded,
+    lines_removed: diff.linesRemoved,
+    pages: diff.pages,
   });
 });
 

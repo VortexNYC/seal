@@ -146,8 +146,14 @@ function registerUpdateDocumentTool(
     "Update document metadata. Only works for documents in draft status.",
     updateDocumentSchema.shape,
     async (args, extra) => {
-      const { id, title, description, deadline, folder_id } =
-        args as UpdateDocumentInput;
+      const {
+        id,
+        title,
+        description,
+        deadline,
+        folder_id,
+        vortex_order_form_id,
+      } = args as UpdateDocumentInput;
       const authToken = getAuthToken(extra);
       const response = await client.put<{ success: boolean }>(
         "/documents/update",
@@ -156,6 +162,9 @@ function registerUpdateDocumentTool(
           description,
           deadline: deadline ? new Date(deadline).getTime() : undefined,
           folder_id,
+          ...(vortex_order_form_id !== undefined
+            ? { vortex_order_form_id }
+            : {}),
         },
         { id },
         authToken
@@ -197,11 +206,12 @@ function registerSendDocumentTool(
     "Send a document for signing. The document must be in draft status and have at least one recipient.",
     sendDocumentSchema.shape,
     async (args, extra) => {
-      const { id, message } = args as SendDocumentInput;
+      const { id, message, signing_mode, allow_dictate_next_signer } =
+        args as SendDocumentInput;
       const authToken = getAuthToken(extra);
       const response = await client.post<{ success: boolean }>(
         "/documents/send",
-        { message },
+        { message, signing_mode, allow_dictate_next_signer },
         { id },
         authToken
       );

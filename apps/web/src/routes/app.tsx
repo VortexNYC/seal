@@ -1,3 +1,4 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -32,6 +33,7 @@ function AuthenticatedRedirect() {
     isError: isListError,
   } = useQuery({
     queryKey: ["auth", "organization", "list"],
+    enabled: sessionData != null,
     queryFn: async () => {
       const result = await betterAuthClient!.organization.list();
       if (result.error) {
@@ -83,7 +85,7 @@ function AuthenticatedRedirect() {
 
   const isLoading =
     isSessionPending ||
-    isListPending ||
+    (sessionData != null && isListPending) ||
     (organizations &&
       organizations.length > 0 &&
       !activeOrganizationSlug &&
@@ -94,9 +96,7 @@ function AuthenticatedRedirect() {
       <div className="flex min-h-dvh items-center justify-center">
         <div className="text-center">
           <Loader />
-          <p className="text-muted-foreground mt-4">
-            {isFixing ? "Setting up your workspace..." : "Loading..."}
-          </p>
+          <Text as="p" variant="secondary" DANGEROUS_className="mt-4">{isFixing ? "Setting up your workspace..." : "Loading..."}</Text>
         </div>
       </div>
     );

@@ -4,6 +4,7 @@
  * SEA-104/105/106/107: Signature Capture Interface
  */
 
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
@@ -82,8 +83,9 @@ export function SignatureCapture({
   const [activeTab, setActiveTab] = useState<TabType>(
     allowedTabs[0] ?? "drawn"
   );
-  const [pendingCapture, setPendingCapture] =
-    useState<ESignatureResult | null>(null);
+  const [pendingCapture, setPendingCapture] = useState<ESignatureResult | null>(
+    null
+  );
 
   const [selectedSavedSignature, setSelectedSavedSignature] = useState<
     string | null
@@ -125,7 +127,9 @@ export function SignatureCapture({
       setSaveAsDefault(true);
       if (!saveSignatureName.trim()) {
         setSaveSignatureName(
-          recipientName?.trim() ? `${recipientName.trim()}'s signature` : "My signature"
+          recipientName?.trim()
+            ? `${recipientName.trim()}'s signature`
+            : "My signature"
         );
       }
     }
@@ -282,10 +286,8 @@ export function SignatureCapture({
     return (
       <LayerCard className="mx-auto w-full max-w-2xl">
         <LayerCard.Primary>
-          <h3 className="text-base font-semibold">Sign Document</h3>
-          <p className="text-kumo-secondary text-sm">
-            No signature methods are currently available.
-          </p>
+          <Text as="h3" variant="heading">Sign Document</Text>
+          <Text as="p" variant="secondary" size="sm">No signature methods are currently available.</Text>
         </LayerCard.Primary>
         <div className="text-kumo-secondary p-6 pt-0 text-sm">
           Contact your organization administrator to re-enable signing methods.
@@ -305,7 +307,7 @@ export function SignatureCapture({
           {
             value: "saved",
             label: (
-              <span className="flex min-h-[44px] items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3">
+              <span className="flex min-h-11 items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3">
                 <Bookmark className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">Saved</span>
               </span>
@@ -318,7 +320,7 @@ export function SignatureCapture({
           {
             value: "drawn",
             label: (
-              <span className="flex min-h-[44px] items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3">
+              <span className="flex min-h-11 items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3">
                 <Pencil className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">Draw</span>
               </span>
@@ -331,7 +333,7 @@ export function SignatureCapture({
           {
             value: "typed",
             label: (
-              <span className="flex min-h-[44px] items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3">
+              <span className="flex min-h-11 items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3">
                 <TextT className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">Type</span>
               </span>
@@ -344,7 +346,7 @@ export function SignatureCapture({
           {
             value: "uploaded",
             label: (
-              <span className="flex min-h-[44px] items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3">
+              <span className="flex min-h-11 items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3">
                 <Image className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">Upload</span>
               </span>
@@ -360,10 +362,8 @@ export function SignatureCapture({
   return (
     <LayerCard className="mx-auto w-full max-w-2xl">
       <LayerCard.Primary>
-        <h3 className="text-base font-semibold">Sign Document</h3>
-        <p className="text-kumo-secondary text-sm">
-          Choose your preferred method to sign this document
-        </p>
+        <Text as="h3" variant="heading">Sign Document</Text>
+        <Text as="p" variant="secondary" size="sm">Choose your preferred method to sign this document</Text>
       </LayerCard.Primary>
       <div className="p-6 pt-0">
         <Tabs
@@ -381,11 +381,9 @@ export function SignatureCapture({
             {savedSignatures.length === 0 ? (
               <div className="text-kumo-secondary py-8 text-center">
                 <Bookmark className="mx-auto mb-4 h-12 w-12 opacity-50" />
-                <p className="text-sm">No saved signatures yet</p>
-                <p className="mt-1 text-xs">
-                  Create a signature using Draw, Type, or Upload and save it for
-                  quick reuse
-                </p>
+                <Text as="p" size="sm">No saved signatures yet</Text>
+                <Text as="p" size="xs" DANGEROUS_className="mt-1">Create a signature using Draw, Type, or Upload and save it for
+                  quick reuse</Text>
               </div>
             ) : (
               <div
@@ -422,7 +420,7 @@ export function SignatureCapture({
                             {sig.name}
                           </span>
                           {sig.isDefault ? (
-                            <Star className="fill-kumo-warning text-kumo-warning h-3 w-3 shrink-0" />
+                            <Star className="fill-kumo-default text-kumo-default h-3 w-3 shrink-0" />
                           ) : null}
                         </div>
                         <div className="text-kumo-secondary mt-1 text-xs">
@@ -433,46 +431,42 @@ export function SignatureCapture({
                         src={sig.signatureImageUrl}
                         alt={sig.name}
                         // vortex-allow-color: signature thumbnails represent white paper in both themes
-                        className="h-12 w-24 rounded border bg-white object-contain"
+                        className="h-12 w-24 rounded border bg-kumo-base object-contain"
                       />
                       <div className="flex flex-col gap-1">
                         {!sig.isDefault ? (
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-7 w-7"
+                            shape="square"
+                            icon={Star}
                             aria-label={`Set ${sig.name} as default signature`}
                             onClick={(e) => {
                               e.stopPropagation();
                               void handleSetDefault(sig.id);
                             }}
                             title="Set as default"
-                          >
-                            <Star className="h-3.5 w-3.5" />
-                          </Button>
+                          />
                         ) : null}
                         <Button
-                          variant="ghost"
+                          variant="destructive"
                           size="sm"
-                          className="text-destructive hover:text-destructive h-7 w-7"
+                          shape="square"
+                          icon={Trash}
                           aria-label={`Delete saved signature ${sig.name}`}
                           onClick={(e) => {
                             e.stopPropagation();
                             void handleDeleteSavedSignature(sig.id);
                           }}
                           title="Delete signature"
-                        >
-                          <Trash className="h-3.5 w-3.5" />
-                        </Button>
+                        />
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-            <p className="text-kumo-secondary text-xs">
-              {savedSignatures.length}/10 signatures saved
-            </p>
+            <Text as="p" variant="secondary" size="xs">{savedSignatures.length}/10 signatures saved</Text>
           </div>
         ) : null}
 
@@ -491,45 +485,48 @@ export function SignatureCapture({
           <Button
             variant="outline"
             onClick={onCancel}
-            className="h-12 min-h-[44px] flex-1 sm:h-11"
+            size="lg"
+            className="flex-1"
           >
             Cancel
           </Button>
           <Button
             onClick={handleAccept}
-            className="h-12 min-h-[44px] flex-1 sm:h-11"
-          >
-            <Check className="mr-2 h-4 w-4" />
+            size="lg"
+            className="flex-1"
+           icon={Check}>
             Accept & Sign
           </Button>
         </div>
 
-        <p className="text-kumo-secondary mt-4 text-center text-xs">
-          By clicking "Accept & Sign", you agree that this is a legal
-          representation of your signature.
-        </p>
+        <Text as="p" variant="secondary" size="xs" DANGEROUS_className="mt-4">By clicking "Accept & Sign", you agree that this is a legal
+          representation of your signature.</Text>
       </div>
 
       <Dialog.Root open={showSaveDialog} onOpenChange={setShowSaveDialog}>
-        <Dialog>
-          <Dialog.Title>
-            {isFirstAdopt ? "Adopt your signature" : "Save to Signature Library?"}
-          </Dialog.Title>
-          <Dialog.Description>
-            {isFirstAdopt
-              ? "Save this as your default signature so the next document is one click."
-              : "Would you like to save this signature for quick reuse in future documents?"}
-          </Dialog.Description>
+        <Dialog className="flex flex-col gap-4 p-6">
+          <div className="flex flex-col gap-1">
+            <Dialog.Title className="text-lg font-medium">
+              {isFirstAdopt
+                ? "Adopt your signature"
+                : "Save to Signature Library?"}
+            </Dialog.Title>
+            <Dialog.Description className="text-kumo-secondary text-sm">
+              {isFirstAdopt
+                ? "Save this as your default signature so the next document is one click."
+                : "Would you like to save this signature for quick reuse in future documents?"}
+            </Dialog.Description>
+          </div>
           <div className="space-y-4 py-4">
             {pendingSignatureData ? (
               <div
                 // vortex-allow-color: signature library preview represents white paper in both themes
-                className="border-kumo-hairline rounded-lg border bg-white p-4"
+                className="border-kumo-hairline rounded-lg border bg-kumo-base p-4"
               >
                 <img
                   src={pendingSignatureData.data}
                   alt="Signature preview"
-                  className="mx-auto max-h-[100px]"
+                  className="mx-auto max-h-25"
                 />
               </div>
             ) : null}
@@ -562,8 +559,7 @@ export function SignatureCapture({
               }}
               disabled={!saveSignatureName.trim()}
               className="flex-1"
-            >
-              <Plus className="mr-2 h-4 w-4" />
+             icon={Plus}>
               {isFirstAdopt ? "Adopt & Sign" : "Save & Sign"}
             </Button>
           </div>

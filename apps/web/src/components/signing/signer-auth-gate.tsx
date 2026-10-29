@@ -1,7 +1,8 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
-import { ShieldCheck, Spinner } from "@phosphor-icons/react";
+import { ShieldCheck } from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type ReactElement } from "react";
 
@@ -72,28 +73,22 @@ export function SignerAuthGate({
   }, [method, token]);
 
   const title =
-    method === "email_otp"
-      ? "Confirm your email"
-      : "Enter the access code";
+    method === "email_otp" ? "Confirm your email" : "Enter the access code";
   const description =
     method === "email_otp"
       ? `We sent a one-time code to ${maskedEmail ?? "your email"}. Enter it to continue signing.`
       : "This envelope requires an access code from the sender before you can sign.";
 
   return (
-    <div className="flex min-h-dvh w-full items-center justify-center px-[max(1rem,env(safe-area-inset-left))] py-8 pr-[max(1rem,env(safe-area-inset-right))]">
-      <LayerCard className="w-full max-w-lg p-[clamp(1rem,4vw,2rem)]">
+    <div className="px-safe flex min-h-dvh w-full items-center justify-center py-8">
+      <LayerCard className="p-fluid w-full max-w-lg">
         <div className="mb-4 flex items-center gap-2">
           <ShieldCheck className="size-6 shrink-0" weight="duotone" />
-          <h1 className="text-xl font-semibold tracking-tight text-balance">
-            {title}
-          </h1>
+          <Text as="h1" variant="heading">{title}</Text>
         </div>
-        <p className="text-muted-foreground mb-6 text-sm text-pretty">
-          {challengeSent || method === "access_code"
+        <Text as="p" variant="secondary" size="sm" DANGEROUS_className="mb-6">{challengeSent || method === "access_code"
             ? description
-            : "Sending a verification code…"}
-        </p>
+            : "Sending a verification code…"}</Text>
 
         <form
           className="space-y-4"
@@ -117,29 +112,28 @@ export function SignerAuthGate({
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder={method === "email_otp" ? "123456" : "Access code"}
-              className="min-h-12 w-full text-base"
+              className="w-full"
             />
           </div>
 
           <div className="flex w-full flex-col gap-3">
             <Button
               type="submit"
-              className="min-h-12 w-full text-base"
-              disabled={!code.trim() || verifyMutation.isPending}
+              size="lg"
+              className="w-full"
+              disabled={!code.trim()}
+              loading={verifyMutation.isPending}
               data-testid="signer-auth-verify"
             >
-              {verifyMutation.isPending ? (
-                <Spinner className="size-4 animate-spin" />
-              ) : (
-                "Continue"
-              )}
+              Continue
             </Button>
             {method === "email_otp" ? (
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-12 w-full text-base"
-                disabled={challengeMutation.isPending}
+                size="lg"
+                className="w-full"
+                loading={challengeMutation.isPending}
                 onClick={() => challengeMutation.mutate()}
                 data-testid="signer-auth-resend"
               >

@@ -1,8 +1,9 @@
+import { Banner } from "@cloudflare/kumo/components/banner";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Select } from "@cloudflare/kumo/components/select";
 import { useMutation } from "@tanstack/react-query";
-import { AlertTriangleIcon, ArrowRightLeftIcon } from "lucide-react";
+import { ArrowsLeftRight as ArrowRightLeftIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import { useOrganizationMembers } from "@/hooks/use-organization-members";
@@ -72,8 +73,8 @@ export function TransferOwnershipDialog({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog size="sm" className="p-6">
         <div className="flex flex-col items-center">
-          <div className="bg-info-surface mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full">
-            <ArrowRightLeftIcon className="text-info h-6 w-6" />
+          <div className="bg-kumo-info-tint mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full">
+            <ArrowRightLeftIcon className="text-kumo-info h-6 w-6" />
           </div>
           <Dialog.Title className="text-center">
             Transfer Ownership
@@ -97,7 +98,7 @@ export function TransferOwnershipDialog({
                 <span className="font-medium">
                   {member.name ?? member.email}
                 </span>
-                <span className="text-muted-foreground ml-2 text-xs capitalize">
+                <span className="text-kumo-secondary ml-2 text-xs capitalize">
                   {member.role}
                 </span>
               </Select.Option>
@@ -105,13 +106,11 @@ export function TransferOwnershipDialog({
           </Select>
 
           {isPrivate && selectedUserId && (
-            <div className="border-warning/30 bg-warning-surface flex gap-2 rounded-lg border p-3">
-              <AlertTriangleIcon className="text-warning mt-0.5 h-4 w-4 shrink-0" />
-              <p className="text-warning text-sm">
-                This document's sharing mode is <strong>Private</strong>. After
-                transfer, you will lose access to this document.
-              </p>
-            </div>
+            <Banner
+              variant="alert"
+              size="sm"
+              description="This document's sharing mode is Private. After transfer, you will lose access to this document."
+            />
           )}
         </div>
 

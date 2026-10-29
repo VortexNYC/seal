@@ -1,7 +1,7 @@
 /**
  * ADR-006 Phase 2 — review matrix contract (tabular legal extraction).
  *
- * Persistence + generate: `review-matrix-store.ts` + `POST/GET /api/v1/reviews`.
+ * Persistence + agent cell writes: `review-matrix-store.ts` + `POST/GET/PATCH /api/v1/reviews`.
  */
 
 import { z } from "zod";
@@ -20,6 +20,15 @@ export type ReviewFlag = (typeof REVIEW_FLAGS)[number];
 export const ZReviewCitation = z.object({
   documentId: z.string().min(1),
   page: z.number().int().positive().optional(),
+  /** Normalized 0–1 page geometry of the quoted span (best-effort). */
+  bbox: z
+    .object({
+      x: z.number(),
+      y: z.number(),
+      width: z.number(),
+      height: z.number(),
+    })
+    .optional(),
   quote: z.string().min(1),
 });
 export type ReviewCitation = z.infer<typeof ZReviewCitation>;
@@ -33,8 +42,10 @@ export type ReviewColumn = z.infer<typeof ZReviewColumn>;
 
 export const ZReviewMatrixCreate = z.object({
   title: z.string().min(1).max(200),
-  model: z.string().min(1).max(120),
-  columns: z.array(ZReviewColumn).min(1).max(32),
+  /** Optional when pack_id supplies columns. Explicit values win. */
+  columns: z.array(ZReviewColumn).min(1).max(32).optional(),
+  /** Review pack to expand into columns (builtin/* or pack_*). */
+  pack_id: z.string().min(1).max(64).optional(),
   documentIds: z.array(z.string().min(1)).min(1).max(100),
 });
 export type ReviewMatrixCreate = z.infer<typeof ZReviewMatrixCreate>;
@@ -68,3 +79,28 @@ export function matrixCellCount(
 ): number {
   return documentCount * columnCount;
 }
+
+/**
+ * Agent-authored cell write — the model doing the review is the caller's,
+ * not Seal's. Seal grounds `quote` against the row document's parsed text;
+ * ungrounded quotes collapse to not_found, never invent an anchor.
+ */
+export const ZReviewCellWrite = z.object({
+  /** Cell public id — or row_id + column_index. */
+  cell_id: z.string().min(1).optional(),
+  row_id: z.string().min(1).optional(),
+  column_index: z.number().int().nonnegative().optional(),
+  summary: z.string().max(500),
+  flag: z.enum(REVIEW_FLAGS).optional(),
+  reasoning: z.string().max(1000).optional(),
+  /** Verbatim excerpt — grounded server-side against the row document. */
+  quote: z.string().max(500),
+});
+export type ReviewCellWrite = z.infer<typeof ZReviewCellWrite>;
+
+export const ZReviewCellsWrite = z.object({
+  cells: z.array(ZReviewCellWrite).min(1).max(256),
+  /** Caller's model label, e.g. "claude-opus-4-6" — recorded, not billed. */
+  model_used: z.string().min(1).max(120).optional(),
+});
+export type ReviewCellsWrite = z.infer<typeof ZReviewCellsWrite>;

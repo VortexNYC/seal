@@ -314,7 +314,7 @@ describe("POST /api/v1/imports/:publicId/approve", () => {
     expect(body.data.cursor).not.toBeNull();
   });
 
-  it("fails when the adapter is not implemented", async () => {
+  it("rejects unknown adapters at creation", async () => {
     const privateJwk = await configureSigningKey();
     const { userId, orgId } = await seedOrgAndUser();
     const token = await setupToken(
@@ -329,18 +329,8 @@ describe("POST /api/v1/imports/:publicId/approve", () => {
       payload: { credentials: {} },
     });
 
-    const createBody = jobResponseSchema.parse(await createResponse.json());
-    const publicId = createBody.data.id;
-
-    const response = await indexApp.fetch(
-      new Request(`http://localhost:8787/api/v1/imports/${publicId}/approve`, {
-        method: "POST",
-        headers: { authorization: `Bearer ${token}` },
-      }),
-      env
-    );
-
-    expect(response.status).toBe(500);
+    expect(createResponse.status).toBeGreaterThanOrEqual(400);
+    expect(createResponse.status).toBeLessThan(500);
   });
 });
 

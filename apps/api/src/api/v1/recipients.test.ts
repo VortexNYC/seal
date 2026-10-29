@@ -1,4 +1,5 @@
 import { env } from "cloudflare:test";
+import { eq } from "drizzle-orm";
 import { exportJWK, generateKeyPair, importJWK, SignJWT, type JWK } from "jose";
 import { beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
@@ -342,5 +343,211 @@ describe("GET /api/v1/recipients", () => {
       .object({ success: z.boolean() })
       .parse(await deleteResponse.json());
     expect(deleteBody.success).toBe(true);
+  });
+
+  it("adds a signer to a sent envelope and issues a signing link", async () => {
+    const privateJwk = await configureSigningKey();
+    const { userId, orgId, db } = await seedOrgAndUser();
+    const docId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: docId,
+      publicId: crypto.randomUUID(),
+      organizationId: orgId,
+      ownerId: userId,
+      name: "Sent",
+      status: "sent",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const token = await signAccessToken(privateJwk, {
+      sub: userId,
+      organizationId: orgId,
+      scope: "mcp documents:write",
+      clientId: crypto.randomUUID(),
+      jti: crypto.randomUUID(),
+    });
+
+    const response = await indexApp.fetch(
+      new Request("http://localhost:8787/api/v1/recipients", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          document_id: docId,
+          email: "new@example.com",
+          name: "New Signer",
+          role: "signer",
+        }),
+      }),
+      env
+    );
+    expect(response.status).toBe(200);
+    const created = getResponseSchema.parse(await response.json());
+    const stored = await db
+      .select({ signingToken: recipients.signingToken, email: recipients.email })
+      .from(recipients)
+      .where(eq(recipients.id, created.id))
+      .limit(1);
+    expect(stored[0]?.email).toBe("new@example.com");
+    expect(stored[0]?.signingToken?.length).toBeGreaterThan(10);
+  });
+
+  it("rotates the signing link when a sent recipient's email changes", async () => {
+    const privateJwk = await configureSigningKey();
+    const { userId, orgId, db } = await seedOrgAndUser();
+    const docId = crypto.randomUUID();
+    const recipientId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: docId,
+      publicId: crypto.randomUUID(),
+      organizationId: orgId,
+      ownerId: userId,
+      name: "Sent",
+      status: "sent",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await db.insert(recipients).values({
+      id: recipientId,
+      publicId: crypto.randomUUID(),
+      documentId: docId,
+      email: "old@example.com",
+      name: "Signer",
+      role: "signer",
+      order: 0,
+      status: "pending",
+      signingToken: "old-token",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const token = await signAccessToken(privateJwk, {
+      sub: userId,
+      organizationId: orgId,
+      scope: "mcp documents:write",
+      clientId: crypto.randomUUID(),
+      jti: crypto.randomUUID(),
+    });
+
+    const response = await indexApp.fetch(
+      new Request("http://localhost:8787/api/v1/recipients/update", {
+        method: "PUT",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          document_id: docId,
+          id: recipientId,
+          email: "new@example.com",
+        }),
+      }),
+      env
+    );
+    expect(response.status).toBe(200);
+    const updated = getResponseSchema.parse(await response.json());
+    expect(updated.email).toBe("new@example.com");
+    const stored = await db
+      .select({ signingToken: recipients.signingToken })
+      .from(recipients)
+      .where(eq(recipients.id, recipientId))
+      .limit(1);
+    expect(stored[0]?.signingToken).not.toBe("old-token");
+    expect(stored[0]?.signingToken?.length).toBeGreaterThan(10);
+  });
+
+  it("rejects corrections on a finished envelope or a finished signer", async () => {
+    const privateJwk = await configureSigningKey();
+    const { userId, orgId, db } = await seedOrgAndUser();
+    const token = await signAccessToken(privateJwk, {
+      sub: userId,
+      organizationId: orgId,
+      scope: "mcp documents:write",
+      clientId: crypto.randomUUID(),
+      jti: crypto.randomUUID(),
+    });
+
+    const completedId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: completedId,
+      publicId: crypto.randomUUID(),
+      organizationId: orgId,
+      ownerId: userId,
+      name: "Done",
+      status: "completed",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    const closed = await indexApp.fetch(
+      new Request("http://localhost:8787/api/v1/recipients", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          document_id: completedId,
+          email: "late@example.com",
+          name: "Late",
+          role: "signer",
+        }),
+      }),
+      env
+    );
+    expect(closed.status).toBe(400);
+
+    const sentId = crypto.randomUUID();
+    const signedId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: sentId,
+      publicId: crypto.randomUUID(),
+      organizationId: orgId,
+      ownerId: userId,
+      name: "Sent",
+      status: "sent",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await db.insert(recipients).values({
+      id: signedId,
+      publicId: crypto.randomUUID(),
+      documentId: sentId,
+      email: "done@example.com",
+      name: "Done",
+      role: "signer",
+      order: 0,
+      status: "signed",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    const finished = await indexApp.fetch(
+      new Request("http://localhost:8787/api/v1/recipients/update", {
+        method: "PUT",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          document_id: sentId,
+          id: signedId,
+          email: "other@example.com",
+        }),
+      }),
+      env
+    );
+    expect(finished.status).toBe(400);
+    const body = z.object({ error: z.string() }).parse(await finished.json());
+    expect(body.error).toBe("recipient_already_finished");
   });
 });

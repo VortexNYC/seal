@@ -1,7 +1,8 @@
-import type { JSX } from "react";
+import { Text } from "@cloudflare/kumo/components/text";
+import { UploadSimple as Upload } from "@phosphor-icons/react";
+import type { ButtonHTMLAttributes, JSX, ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDropzone, type FileRejection } from "react-dropzone";
-import { Upload } from "lucide-react";
 
 import {
   DROPZONE_ACCEPT_TYPES,
@@ -28,6 +29,37 @@ export type FileUploadProps = {
   onFilesRejected?: (rejections: FileRejection[]) => void;
   onFilesChange?: (items: FileUploadItem[]) => void;
 };
+
+const DROP_SURFACE_CLASS =
+  "border-kumo-line text-kumo-default flex w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-6 py-8 text-center text-sm disabled:opacity-50";
+
+export function DropSurface({
+  title,
+  description,
+  className,
+  children,
+  type = "button",
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  title: string;
+  description?: string;
+  children?: ReactNode;
+}): JSX.Element {
+  return (
+    <button
+      type={type}
+      className={cn(DROP_SURFACE_CLASS, className)}
+      {...props}
+    >
+      {children}
+      <Upload className="size-5" aria-hidden />
+      <span>{title}</span>
+      {description ? (
+        <span className="text-kumo-secondary text-xs">{description}</span>
+      ) : null}
+    </button>
+  );
+}
 
 /**
  * Dropzone upload surface — Extend file-upload, Seal accept rules, Kumo chrome.
@@ -88,7 +120,7 @@ export function FileUpload({
     [multiple, onFilesAccepted, onFilesChange, onFilesRejected]
   );
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps } = useDropzone({
     accept,
     multiple,
     disabled,
@@ -97,38 +129,24 @@ export function FileUpload({
 
   return (
     <div data-kumo-docs="file-upload" className={cn("space-y-3", className)}>
-      <div
+      <DropSurface
         {...getRootProps()}
-        className={cn(
-          "border-border bg-muted/40 text-foreground flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-5 py-6 text-center transition-colors",
-          "hover:border-foreground/40 hover:bg-muted/60",
-          isDragActive && "border-primary bg-primary/10",
-          disabled && "cursor-not-allowed opacity-50"
-        )}
+        title={title}
+        description={description}
+        disabled={disabled}
       >
         <input {...getInputProps()} />
-        <div className="bg-background text-foreground border-border flex size-9 items-center justify-center rounded-full border">
-          <Upload className="size-4" aria-hidden />
-        </div>
-        <div>
-          <p className="text-foreground text-sm font-medium">{title}</p>
-          {description ? (
-            <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed">
-              {description}
-            </p>
-          ) : null}
-        </div>
-      </div>
-      {error ? <p className="text-destructive text-xs">{error}</p> : null}
+      </DropSurface>
+      {error ? <Text as="p" variant="error" size="xs">{error}</Text> : null}
       {showFileList && items.length > 0 ? (
         <ul className="space-y-1">
           {items.map((item) => (
             <li
               key={item.id}
-              className="border-border bg-card text-foreground flex items-center justify-between rounded-md border px-3 py-2 text-xs"
+              className="border-kumo-line bg-kumo-base text-kumo-default flex items-center justify-between rounded-md border px-3 py-2 text-xs"
             >
               <span className="truncate">{item.file.name}</span>
-              <span className="text-muted-foreground tabular-nums">
+              <span className="text-kumo-secondary tabular-nums">
                 {(item.file.size / 1024).toFixed(0)} KB
               </span>
             </li>

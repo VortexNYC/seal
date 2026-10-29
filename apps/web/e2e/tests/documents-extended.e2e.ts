@@ -248,7 +248,7 @@ test.describe("Document Editor - Zoom Controls", () => {
     await authenticatedPage.waitForTimeout(500);
   });
 
-  test("should reset zoom on document", async ({
+  test("should return zoom to 100 percent", async ({
     authenticatedPage,
     organizationSlug,
   }) => {
@@ -257,13 +257,18 @@ test.describe("Document Editor - Zoom Controls", () => {
     await documentPage.waitForDocumentLoad();
 
     if (!(await documentPage.hasDesktopOnlyZoomControls())) {
-      test.skip(true, "Reset zoom control is hidden on mobile layouts.");
+      test.skip(true, "Zoom menu is hidden on mobile layouts.");
     }
 
     await documentPage.zoomInButton.click();
-    await authenticatedPage.waitForTimeout(300);
-    await documentPage.resetZoomButton.click();
-    await authenticatedPage.waitForTimeout(500);
+    await expect
+      .poll(async () => documentPage.getVisibleZoomText(), { timeout: 8000 })
+      .not.toBe("100%");
+    await documentPage.zoomLevelSelect.click();
+    await authenticatedPage.getByRole("option", { name: "100%" }).click();
+    await expect
+      .poll(async () => documentPage.getVisibleZoomText(), { timeout: 8000 })
+      .toBe("100%");
   });
 
   test("should fit document to viewport", async ({

@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 
-import {
-  type ThumbnailPage,
-} from "@/components/kumo-docs";
+import { type ThumbnailPage } from "@/components/kumo-docs";
 import { generatePageThumbnailsFromUrl } from "@/lib/pdf-utils";
 
 /**

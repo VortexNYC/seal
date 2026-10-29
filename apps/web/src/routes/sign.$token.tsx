@@ -7,6 +7,7 @@
  * before fields and consent (audit identity).
  */
 
+import { Text } from "@cloudflare/kumo/components/text";
 import { Textarea } from "@cloudflare/kumo";
 import { Button } from "@cloudflare/kumo/components/button";
 import { buttonVariants } from "@cloudflare/kumo/components/button";
@@ -23,7 +24,6 @@ import {
   Download,
   FileText,
   Pen,
-  Spinner,
   WarningCircle,
   WifiSlash,
 } from "@phosphor-icons/react";
@@ -39,6 +39,7 @@ import { EsignConsentDialog } from "@/components/documents/esign-consent-dialog"
 import { FieldInputManager } from "@/components/documents/field-input-manager";
 import { FillableFieldOverlay } from "@/components/documents/fillable-field-overlay";
 import { PdfSigningDocumentSurface } from "@/components/documents/pdf-signing-document-surface";
+import { warmPdfiumWasm } from "@/lib/pdf-utils";
 import { PrivacyNoticeDialog } from "@/components/documents/privacy-notice-dialog";
 import { SignatureCapture } from "@/components/documents/signature-capture";
 import { DictateNextSignerDialog } from "@/components/signing/dictate-next-signer-dialog";
@@ -69,6 +70,7 @@ import {
   useGuestAnalyticsMute,
 } from "@/lib/guest-analytics";
 import { formatMoney, money } from "@/lib/money";
+import { payNowHref } from "@/lib/pay-now";
 import { pageSEO } from "@/lib/seo";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -172,9 +174,10 @@ function useEmbeddedSigning(token: string) {
 }
 
 function SigningErrorComponent({ error }: ErrorComponentProps) {
+  const message = error instanceof Error ? error.message : "";
+  const isVoided = /voided/i.test(message);
   const isInvalidToken =
-    error instanceof Error &&
-    /invalid.*token|token.*invalid|not found/i.test(error.message);
+    /invalid.*token|token.*invalid|not found/i.test(message);
 
   return (
     <div className="flex min-h-dvh items-center justify-center p-4">
@@ -184,14 +187,12 @@ function SigningErrorComponent({ error }: ErrorComponentProps) {
             <div className="bg-kumo-elevated mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
               <WarningCircle className="text-kumo-secondary h-6 w-6" />
             </div>
-            <h2 className="text-xl font-semibold">
-              {isInvalidToken ? "Invalid Signing Link" : "Something went wrong"}
-            </h2>
-            <p className="text-kumo-secondary mt-2 text-sm">
-              {isInvalidToken
+            <Text as="h2" variant="heading">{isVoided ? "This document was voided" : isInvalidToken ? "Invalid Signing Link" : "Something went wrong"}</Text>
+            <Text as="p" variant="secondary" size="sm" DANGEROUS_className="mt-2">{isVoided
+                ? "Signers can no longer finish it."
+                : isInvalidToken
                 ? "This signing link is invalid or has expired. Please check the link and try again, or contact the sender for a new link."
-                : "We encountered an error loading this document. Please try again or contact support."}
-            </p>
+                : "We encountered an error loading this document. Please try again or contact the sender."}</Text>
           </div>
           <div className="mt-6 flex justify-center gap-2">
             <Link
@@ -252,6 +253,9 @@ function SigningPage() {
   const { data } = useSuspenseQuery({
     queryKey: ["public-signing", token],
     queryFn: () => getSigningByToken(token),
+    retry: (failureCount, error) =>
+      !(error instanceof Error && /API error 4\d\d/.test(error.message)) &&
+      failureCount < 2,
   });
 
   const {
@@ -282,6 +286,12 @@ function SigningPage() {
     recipient.authVerified ??
       (!recipient.authMethod || recipient.authMethod === "none")
   );
+
+  // Prefetch the pdfium wasm while the signer works through gates — the PDF
+  // surface needs it immediately after, and the network is idle here.
+  useEffect(() => {
+    warmPdfiumWasm();
+  }, []);
   const [accountReady, setAccountReady] = useState(false);
   const markAccountReady = useCallback(() => {
     setAccountReady(true);
@@ -846,12 +856,8 @@ function SigningPage() {
   const isSigningActionDisabled =
     isCompleted ||
     submitSignatureMutation.isPending ||
-    hasUnpaidPayments ||
     !allRequiredFieldsFilled;
   const signingButtonLabel = useMemo(() => {
-    if (hasUnpaidPayments) {
-      return "Payment required";
-    }
     if (!allRequiredFieldsFilled) {
       return `Please complete ${unfilledRequiredCount} more required field${unfilledRequiredCount === 1 ? "" : "s"}`;
     }
@@ -872,7 +878,6 @@ function SigningPage() {
         : "Mark as Viewed";
   }, [
     allRequiredFieldsFilled,
-    hasUnpaidPayments,
     isMainSignatureFilled,
     fields,
     recipient.role,
@@ -885,6 +890,10 @@ function SigningPage() {
 
   // Check if document is waiting for payment (all signed, payment pending)
   const isWaitingForPayment = doc.workflowStatus === "waiting_for_payment";
+  const payHref = payNowHref(
+    paymentConfigs.find((config) => payNowHref(config.hostedInvoiceUrl))
+      ?.hostedInvoiceUrl
+  );
 
   // After page reloads with isCompleted=true, trigger the post-signing flow:
   // dictation first (if awaiting), then redirect (if configured), else standard thank-you.
@@ -1055,41 +1064,33 @@ function SigningPage() {
   if (waitingForPreviousGroup && !isCompleted) {
     return (
       <div
-        className="bg-background flex h-dvh flex-col items-center justify-center px-4"
+        className="bg-kumo-canvas flex h-dvh flex-col items-center justify-center px-4"
         role="status"
         aria-live="polite"
       >
         <div className="flex w-full max-w-md flex-col gap-6 text-center">
-          <div className="bg-kumo-warning-tint mx-auto flex size-16 items-center justify-center rounded-full">
-            <Clock className="text-kumo-warning size-8" />
+          <div className="bg-kumo-elevated mx-auto flex size-16 items-center justify-center rounded-full">
+            <Clock className="text-kumo-default size-8" />
           </div>
           <div className="flex flex-col gap-2">
-            <h1 className="text-xl font-semibold tracking-tight text-balance">
-              Waiting for Previous Signers
-            </h1>
-            <p className="text-kumo-secondary text-sm text-pretty">
-              This document uses sequential signing.{" "}
+            <Text as="h1" variant="heading">Waiting for Previous Signers</Text>
+            <Text as="p" variant="secondary" size="sm">This document uses sequential signing.{" "}
               {sequentialProgress
                 ? `Group ${sequentialProgress.currentGroup} of ${sequentialProgress.totalGroups} is currently signing.`
                 : "Previous recipients must complete their actions before you can proceed."}{" "}
-              You'll be notified by email when it's your turn.
-            </p>
+              You'll be notified by email when it's your turn.</Text>
           </div>
           <div className="bg-kumo-elevated rounded-lg border p-4">
             <div className="flex items-center gap-3">
               <FileText className="text-kumo-secondary size-5 shrink-0" />
               <div className="min-w-0 text-left">
-                <p className="truncate text-sm font-medium">{doc.name}</p>
-                <p className="text-kumo-secondary text-xs">
-                  You're listed as a {recipient.role} on this document
-                </p>
+                <Text as="p" size="sm" bold truncate>{doc.name}</Text>
+                <Text as="p" variant="secondary" size="xs">You're listed as a {recipient.role} on this document</Text>
               </div>
             </div>
           </div>
-          <p className="text-kumo-secondary text-xs">
-            This page updates automatically. You can also close it and return
-            via the link in your email.
-          </p>
+          <Text as="p" variant="secondary" size="xs">This page updates automatically. You can also close it and return
+            via the link in your email.</Text>
         </div>
       </div>
     );
@@ -1127,7 +1128,6 @@ function SigningPage() {
     return (
       <EsignConsentDialog
         recipientEmail={recipient.email}
-        ownerEmail={doc.ownerEmail}
         onAccept={handleConsentAccept}
         onDecline={handleConsentDecline}
         onDownloadPdf={handleDownload}
@@ -1165,7 +1165,9 @@ function SigningPage() {
               const fieldsOnPage = fields.filter((f) => f.page === pageNumber);
               return (
                 <>
-                  {fieldsOnPage.map((field) => (
+                  {isCompleted
+                    ? null
+                    : fieldsOnPage.map((field) => (
                     <FillableFieldOverlay
                       key={field._id}
                       ref={(el: HTMLButtonElement | null) => {
@@ -1189,6 +1191,8 @@ function SigningPage() {
                       pdfPageWidth={pageWidth}
                       pdfPageHeight={pageHeight}
                       isFilled={field.isFilled}
+                      currentValue={field.currentValue}
+                      currentSignatureImageUrl={field.currentSignatureImageUrl}
                       isActive={!isCompleted && activeFieldId === field._id}
                       signatureDetails={field.signatureDetails}
                       paymentInfo={paymentInfoByFieldId.get(field._id)}
@@ -1204,7 +1208,7 @@ function SigningPage() {
             fields.length === 0 &&
             recipient.status === "signed" && (
               <div className="border-kumo-hairline/50 bg-kumo-elevated mx-auto mt-4 max-w-md rounded-lg border p-4 shadow-sm">
-                <div className="text-kumo-success mb-3 flex items-center gap-2">
+                <div className="text-kumo-default mb-3 flex items-center gap-2">
                   <CheckCircle className="h-6 w-6" />
                   <span className="text-lg font-medium">Document Signed</span>
                 </div>
@@ -1234,7 +1238,7 @@ function SigningPage() {
           className="border-kumo-hairline/50 bg-kumo-elevated rounded-lg border p-16 text-center shadow-sm"
           role="status"
         >
-          <p className="text-kumo-secondary mb-4 text-sm">Loading document…</p>
+          <Text as="p" variant="secondary" size="sm" DANGEROUS_className="mb-4">Loading document…</Text>
           <div className="mx-auto flex w-full max-w-sm flex-col gap-3">
             <SkeletonLine className="mx-auto h-4 w-1/3" />
             <SkeletonLine className="mx-auto h-4 w-1/2" />
@@ -1258,7 +1262,8 @@ function SigningPage() {
             variant={viewMode === "fields" ? "primary" : "ghost"}
             data-testid="signer-view-fields"
             aria-pressed={viewMode === "fields"}
-            className="h-10 flex-1"
+            size="lg"
+            className="flex-1"
             onClick={() => {
               setViewMode("fields");
             }}
@@ -1270,7 +1275,8 @@ function SigningPage() {
             variant={viewMode === "document" ? "primary" : "ghost"}
             data-testid="signer-view-document"
             aria-pressed={viewMode === "document"}
-            className="h-10 flex-1"
+            size="lg"
+            className="flex-1"
             onClick={() => {
               setViewMode("document");
             }}
@@ -1310,10 +1316,10 @@ function SigningPage() {
     <div className="flex flex-col gap-4">
       {!isOnline && (
         <div
-          className="border-warning-surface bg-kumo-warning-tint motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-2 motion-safe:duration-200 rounded-lg border px-3 py-2"
+          className="border-kumo-line bg-kumo-elevated motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-2 rounded-lg border px-3 py-2 motion-safe:duration-200"
           role="status"
         >
-          <div className="text-kumo-warning flex items-center gap-2 text-sm">
+          <div className="text-kumo-default flex items-center gap-2 text-sm">
             <WifiSlash className="h-4 w-4 shrink-0" />
             <span>Offline — progress is saved locally.</span>
           </div>
@@ -1323,7 +1329,7 @@ function SigningPage() {
       {!isCompleted && fields.length > 0 && (
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-medium">{progressLabel}</p>
+            <Text as="p" size="sm" bold>{progressLabel}</Text>
             <span className="text-kumo-secondary text-xs tabular-nums">
               {filledRequiredFields.length}/{requiredFields.length}
             </span>
@@ -1337,8 +1343,8 @@ function SigningPage() {
             <Button
               type="button"
               variant="secondary"
-              size="sm"
-              className="h-10 w-full"
+              size="lg"
+              className="w-full"
               data-testid="signer-next-field"
               onClick={goToNextUnfilledField}
             >
@@ -1351,14 +1357,12 @@ function SigningPage() {
       )}
 
       {!isCompleted && hasUnpaidPayments && paymentConfigs.length > 0 && (
-        <div className="border-warning-surface bg-kumo-warning-tint/50 flex flex-col gap-2 rounded-xl border p-3">
+        <div className="border-kumo-line bg-kumo-elevated flex flex-col gap-2 rounded-xl border p-3">
           <div className="flex items-start gap-2">
-            <CreditCard className="text-kumo-warning mt-0.5 h-4 w-4 shrink-0" />
+            <CreditCard className="text-kumo-default mt-0.5 h-4 w-4 shrink-0" />
             <div>
-              <p className="text-sm font-medium">Payment required</p>
-              <p className="text-kumo-secondary text-xs">
-                Complete payment before signing.
-              </p>
+              <Text as="p" size="sm" bold>Billed after signing</Text>
+              <Text as="p" variant="secondary" size="xs">This amount is due after every required signature.</Text>
             </div>
           </div>
           {paymentConfigs
@@ -1385,7 +1389,8 @@ function SigningPage() {
         <div className="flex flex-col gap-2">
           <Button
             size="lg"
-            className="h-12 w-full text-base font-medium"
+            className="w-full"
+            icon={submitSignatureMutation.isPending ? undefined : Pen}
             style={
               branding?.brandColor
                 ? {
@@ -1398,20 +1403,15 @@ function SigningPage() {
             disabled={isSigningActionDisabled}
             aria-label={signingButtonLabel}
           >
-            {submitSignatureMutation.isPending ? (
-              "Submitting..."
-            ) : (
-              <>
-                <Pen className="mr-2 h-4 w-4" />
-                {signingButtonLabel}
-              </>
-            )}
+            {submitSignatureMutation.isPending
+              ? "Submitting..."
+              : signingButtonLabel}
           </Button>
           {!(isEmbedded && embedParams.hideDecline) && (
             <Button
               variant="ghost"
               size="sm"
-              className="text-kumo-secondary hover:text-kumo-primary w-full"
+              className="w-full"
               onClick={handleDeclineClick}
               disabled={declineMutation.isPending}
             >
@@ -1423,29 +1423,24 @@ function SigningPage() {
 
       {isCompleted && recipient.status !== "declined" && (
         <div className="flex flex-col gap-3" data-seal-success>
-          <div className="text-kumo-success flex items-center gap-2">
-            <CheckCircle className="h-5 w-5" weight="fill" />
+          <div className="text-kumo-default flex items-center gap-2">
+            <CheckCircle className="h-5 w-5" />
             <span className="text-sm font-semibold">
               {recipient.status === "approved"
                 ? "Document approved"
                 : "You're done"}
             </span>
           </div>
-          <p className="text-kumo-secondary text-sm">
-            You&apos;re done — you can close this tab.
-          </p>
+          <Text as="p" variant="secondary" size="sm">You&apos;re done — you can close this tab.</Text>
           <Button
             variant="outline"
             size="lg"
-            className="h-12 w-full"
+            className="w-full"
+            icon={Download}
+            loading={isDownloading}
             onClick={handleDownload}
             disabled={isDownloading}
           >
-            {isDownloading ? (
-              <Spinner className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="mr-2 h-4 w-4" />
-            )}
             {isDownloading ? "Preparing..." : "Download document"}
           </Button>
           {showRedirect && doc.redirectUrl && (
@@ -1460,22 +1455,33 @@ function SigningPage() {
       )}
 
       {isCompleted && recipient.status === "declined" && (
-        <p className="text-kumo-secondary text-sm">
-          You declined this document.
-        </p>
+        <Text as="p" variant="secondary" size="sm">You declined this document.</Text>
       )}
 
       {isCompleted && isWaitingForPayment && paymentConfigs.length > 0 && (
-        <div className="border-warning-surface bg-kumo-warning-tint/50 flex flex-col gap-2 rounded-xl border p-3">
+        <div className="border-kumo-line bg-kumo-elevated flex flex-col gap-2 rounded-xl border p-3">
           <div className="flex items-start gap-2">
-            <CreditCard className="text-kumo-warning mt-0.5 h-4 w-4 shrink-0" />
+            <CreditCard className="text-kumo-default mt-0.5 h-4 w-4 shrink-0" />
             <div>
-              <p className="text-sm font-medium">Payment still required</p>
-              <p className="text-kumo-secondary text-xs">
-                Signatures collected — complete payment below.
-              </p>
+              <Text as="p" size="sm" bold>Awaiting payment</Text>
+              <Text as="p" variant="secondary" size="xs">
+                {payHref
+                  ? "Signatures are in. Pay to finish the contract."
+                  : "Signatures are in. The payment link is not ready yet."}
+              </Text>
             </div>
           </div>
+          {payHref ? (
+            <a
+              href={payHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonVariants({ variant: "primary" })}
+              data-testid="signer-pay-now"
+            >
+              Pay now
+            </a>
+          ) : null}
         </div>
       )}
     </div>
@@ -1483,11 +1489,12 @@ function SigningPage() {
 
   return (
     <div
-      className="bg-background min-h-dvh"
+      className="bg-kumo-canvas min-h-dvh"
       style={brandStyle}
       data-embedded={isEmbedded ? "true" : undefined}
     >
       <SigningShell
+        embedded={isEmbedded}
         title={doc.name}
         instruction={
           isCompleted
@@ -1503,7 +1510,7 @@ function SigningPage() {
             <img
               src={branding.logoUrl}
               alt=""
-              className="h-8 max-w-[140px] object-contain"
+              className="h-8 max-w-35 object-contain"
             />
           ) : undefined
         }

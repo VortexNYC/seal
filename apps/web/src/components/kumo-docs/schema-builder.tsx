@@ -1,9 +1,10 @@
-import type { JSX } from "react";
-import { useMemo, useState } from "react";
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
 import { Select } from "@cloudflare/kumo/components/select";
 import { Plus, Trash } from "@phosphor-icons/react";
+import type { JSX } from "react";
+import { useMemo, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -92,10 +93,7 @@ export function SchemaBuilderPanel({
     [schema]
   );
 
-  function updateProp(
-    id: string,
-    patch: Partial<SchemaBuilderProperty>
-  ): void {
+  function updateProp(id: string, patch: Partial<SchemaBuilderProperty>): void {
     onChange({
       properties: schema.properties.map((p) =>
         p.id === id ? { ...p, ...patch } : p
@@ -114,7 +112,7 @@ export function SchemaBuilderPanel({
       data-kumo-docs="schema-builder"
       className={cn("flex h-full flex-col", className)}
     >
-      <div className="border-border flex items-center gap-2 border-b px-3 py-2">
+      <div className="border-kumo-line flex items-center gap-2 border-b px-3 py-2">
         <Button
           type="button"
           size="sm"
@@ -146,20 +144,18 @@ export function SchemaBuilderPanel({
       </div>
 
       {tab === "json" ? (
-        <pre className="font-mono flex-1 overflow-auto p-3 text-xs whitespace-pre-wrap">
+        <pre className="flex-1 overflow-auto p-3 font-mono text-xs whitespace-pre-wrap">
           {json}
         </pre>
       ) : (
         <div className="flex-1 space-y-2 overflow-y-auto p-3">
           {schema.properties.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              No properties yet. Add a field key to start the schema.
-            </p>
+            <Text as="p" variant="secondary" size="sm">No properties yet. Add a field key to start the schema.</Text>
           ) : (
             schema.properties.map((prop) => (
               <div
                 key={prop.id}
-                className="border-border grid gap-2 rounded-lg border p-2 sm:grid-cols-[1fr_8rem_1fr_auto]"
+                className="border-kumo-line sm:grid-cols-mid-8 grid gap-2 rounded-lg border p-2"
               >
                 <Input
                   aria-label="Property key"

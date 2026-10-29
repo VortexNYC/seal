@@ -45,10 +45,8 @@ export function NotFound({ children }: { children?: ReactNode }) {
         </LayerCard.Primary>
 
         <LayerCard.Primary className="text-center">
-          <p className="text-kumo-secondary text-sm">
-            The page may have been moved, deleted, or the URL might be
-            incorrect.
-          </p>
+          <Text as="p" variant="secondary" size="sm">The page may have been moved, deleted, or the URL might be
+            incorrect.</Text>
         </LayerCard.Primary>
 
         <LayerCard.Primary className="flex flex-col gap-2 sm:flex-row sm:justify-center">

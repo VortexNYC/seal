@@ -1,6 +1,5 @@
-import { cn } from "@/lib/utils";
-
 import { SealLogo } from "@/components/seal-logo";
+import { cn } from "@/lib/utils";
 
 interface SealLogoBadgeFixedProps {
   className?: string;
@@ -43,7 +42,7 @@ export function SealLogoBadgeFixed({
       <SealLogo size={markSize} variant="color" />
       {withText ? (
         <span
-          className="text-foreground font-serif tracking-tight"
+          className="text-kumo-default font-serif tracking-tight"
           style={{ fontSize: markSize * 0.55, lineHeight: 1 }}
         >
           Seal

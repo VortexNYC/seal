@@ -10,9 +10,7 @@ interface HeadingFieldInputProps {
 }
 
 /** Section heading text burned into the PDF (DocuSeal heading). */
-export function HeadingFieldInput(
-  props: HeadingFieldInputProps
-) {
+export function HeadingFieldInput(props: HeadingFieldInputProps) {
   return (
     <TextFieldInput
       {...props}

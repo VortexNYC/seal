@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { createD1 } from "../global/db.js";
 import { organization } from "../global/schema.js";
+import { ipMatchesAllowlist } from "./ip-allowlist.js";
 
 export type SealSettings = {
   signing: {
@@ -140,6 +141,60 @@ export function getSealSettings(metadata: string | null): SealSettings {
     egress: mergeCategory("egress", defaultSealSettings.egress),
     security: mergeCategory("security", defaultSealSettings.security),
   });
+}
+
+function stringList(value: unknown): string[] | null {
+  if (value === undefined) return [];
+  if (
+    !Array.isArray(value) ||
+    !value.every((item) => typeof item === "string")
+  ) {
+    return null;
+  }
+  return value;
+}
+
+/**
+ * Workspace API policy. Empty lists allow every address. A saved list, or
+ * API access turned off, rejects the call. Signing links and the signed-in
+ * app are not checked here.
+ *
+ * The settings screen stores `securitySettings`. The settings API stores
+ * `seal_settings.security`. Both have to allow the address.
+ */
+export function workspaceApiAccessAllows(
+  metadata: string | null,
+  ip: string | null
+): boolean {
+  const meta = parseOrganizationMetadata(metadata);
+  const saved = isRecord(meta.securitySettings) ? meta.securitySettings : {};
+  if (saved.allowApiAccess === false) return false;
+  const uiList = stringList(saved.ipAllowlist);
+  if (uiList === null || !ipMatchesAllowlist(ip, uiList)) return false;
+
+  try {
+    const seal = getSealSettings(metadata);
+    if (!seal.security.allow_api_access) return false;
+    return ipMatchesAllowlist(ip, seal.security.ip_allowlist);
+  } catch {
+    return false;
+  }
+}
+
+export async function workspaceApiAccessAllowsForOrganization(
+  env: CloudflareBindings,
+  organizationId: string,
+  ip: string | null
+): Promise<boolean> {
+  const db = createD1(env.D1);
+  const rows = await db
+    .select({ metadata: organization.metadata })
+    .from(organization)
+    .where(eq(organization.id, organizationId))
+    .limit(1);
+  const row = rows[0];
+  if (!row) return false;
+  return workspaceApiAccessAllows(row.metadata, ip);
 }
 
 export async function loadOrgSealSettings(

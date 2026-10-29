@@ -575,6 +575,10 @@ export const documents = sqliteTable(
       .notNull()
       .default(false),
     signingMode: text("signing_mode").notNull().default("parallel"),
+    /** Vortex order form this document executes when signing completes. */
+    vortexOrderFormId: text("vortex_order_form_id"),
+    /** Order created when that form is signed. Pointer only — billing stays in Vortex. */
+    vortexOrderId: text("vortex_order_id"),
     workflowStatus: text("workflow_status").notNull().default("draft"),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
@@ -1477,6 +1481,7 @@ export const apiTokens = sqliteTable(
     name: text("name").notNull(),
     tokenHash: text("token_hash").notNull().unique(),
     scopes: text("scopes").notNull().default("[]"),
+    allowedIpRanges: text("allowed_ip_ranges").notNull().default("[]"),
     lastUsedAt: integer("last_used_at", { mode: "timestamp_ms" }),
     revokedAt: integer("revoked_at", { mode: "timestamp_ms" }),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
@@ -1669,7 +1674,6 @@ export const reviewMatrices = sqliteTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
-    model: text("model").notNull(),
     status: text("status").notNull().default("draft"),
     columnsConfig: text("columns_config").notNull(),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
@@ -1721,6 +1725,11 @@ export const reviewCells = sqliteTable(
     flag: text("flag"),
     reasoning: text("reasoning"),
     citations: text("citations").notNull().default("[]"),
+    /** `provider/model` key used for this cell's generation. */
+    modelUsed: text("model_used"),
+    /** Total tokens billed for the cell's model call, when reported. */
+    tokensUsed: integer("tokens_used"),
+    processingTimeMs: integer("processing_time_ms"),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
@@ -1731,9 +1740,105 @@ export const reviewCells = sqliteTable(
   },
   (table) => [
     index("reviewCells_rowId_idx").on(table.rowId),
-    unique("reviewCells_rowColumn_uidx").on(
-      table.rowId,
-      table.columnIndex
+    unique("reviewCells_rowColumn_uidx").on(table.rowId, table.columnIndex),
+  ]
+);
+
+export const jobs = sqliteTable(
+  "jobs",
+  {
+    id: text("id").primaryKey(),
+    publicId: text("public_id").notNull().unique(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    /** Job type key — dispatch target for the runner. */
+    type: text("type").notNull(),
+    /** queued | running | done | error */
+    status: text("status").notNull().default("queued"),
+    /** JSON args for the executor. */
+    payload: text("payload").notNull().default("{}"),
+    /** JSON result payload on success. */
+    result: text("result"),
+    error: text("error"),
+    attempts: integer("attempts").notNull().default(0),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+    startedAt: integer("started_at", { mode: "timestamp_ms" }),
+    finishedAt: integer("finished_at", { mode: "timestamp_ms" }),
+  },
+  (table) => [
+    index("jobs_orgStatus_idx").on(table.organizationId, table.status),
+  ]
+);
+
+export const revisionSuggestions = sqliteTable(
+  "revision_suggestions",
+  {
+    id: text("id").primaryKey(),
+    publicId: text("public_id").notNull().unique(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    documentId: text("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    /** Optional link back to the review cell that produced it. */
+    reviewCellId: text("review_cell_id"),
+    /** insert | delete | replace */
+    kind: text("kind").notNull(),
+    /** pending | accepted | rejected */
+    status: text("status").notNull().default("pending"),
+    /** Verbatim quote from the document text the edit attaches to. */
+    anchorQuote: text("anchor_quote").notNull(),
+    anchorPage: integer("anchor_page"),
+    /** JSON {x,y,width,height} — normalized page geometry. */
+    anchorBbox: text("anchor_bbox"),
+    /** Replacement text for replace; inserted text for insert. */
+    proposedText: text("proposed_text"),
+    rationale: text("rationale"),
+    /** Set on accept — the derived counter-proposal draft. */
+    derivedDocumentId: text("derived_document_id"),
+    createdBy: text("created_by").notNull(), // agent | user
+    createdById: text("created_by_id"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    resolvedAt: integer("resolved_at", { mode: "timestamp_ms" }),
+  },
+  (table) => [
+    index("revisionSuggestions_doc_idx").on(table.documentId),
+    index("revisionSuggestions_orgStatus_idx").on(
+      table.organizationId,
+      table.status
     ),
   ]
+);
+
+export const reviewPacks = sqliteTable(
+  "review_packs",
+  {
+    id: text("id").primaryKey(),
+    publicId: text("public_id").notNull().unique(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    description: text("description"),
+    /** JSON array of {index, name, prompt} columns. */
+    columns: text("columns").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [index("reviewPacks_org_idx").on(table.organizationId)]
 );

@@ -7,6 +7,8 @@ export type NavPrimaryItem = {
   url: string;
   icon: Icon;
   isActive: boolean;
+  /** Envelopes that still need a person. Omitted when zero. */
+  badge?: number;
 };
 
 export type NavGroupItem = {
@@ -60,7 +62,7 @@ function NavGroup({ group }: { group: NavGroupItem }) {
               >
                 <span className="flex-1 truncate">{subItem.title}</span>
                 {subItem.locked ? (
-                  <Lock className="text-muted-foreground ml-auto h-3 w-3" />
+                  <Lock className="text-kumo-secondary ml-auto h-3 w-3" />
                 ) : null}
               </Sidebar.MenuSubButton>
             ))}
@@ -91,6 +93,9 @@ export function NavMain({
               href={item.url}
             >
               {item.title}
+              {item.badge !== undefined && item.badge > 0 ? (
+                <Sidebar.MenuBadge>{item.badge}</Sidebar.MenuBadge>
+              ) : null}
             </Sidebar.MenuButton>
           ))}
         </Sidebar.Menu>

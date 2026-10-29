@@ -5,16 +5,7 @@
  * document lists, and invitation lists.
  *
  * @example
- * ```tsx
- * // Default list with 3 items
- * <ListSkeleton />
- *
- * // List with custom item count
- * <ListSkeleton count={5} />
- *
- * // List without avatars
- * <ListSkeleton count={4} showAvatar={false} />
- * ```
+ * ```tsx * // Default list with 3 items * <ListSkeleton /> * * // List with custom item count * <ListSkeleton count={5} /> * * // List without avatars * <ListSkeleton count={4} showAvatar={false} /> *```
  */
 
 import { SkeletonLine } from "@cloudflare/kumo/components/loader";
@@ -39,9 +30,9 @@ export function ListSkeleton({
         <div key={i} className="flex items-center gap-3">
           {showAvatar && <SkeletonLine className="h-10 w-10 rounded-full" />}
           <div className="flex-1 space-y-2">
-            <SkeletonLine className="h-4 w-[200px] max-w-full" />
+            <SkeletonLine className="h-4 w-50 max-w-full" />
             {showSecondaryText && (
-              <SkeletonLine className="h-3 w-[160px] max-w-full" />
+              <SkeletonLine className="h-3 w-40 max-w-full" />
             )}
           </div>
         </div>

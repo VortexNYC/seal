@@ -20,6 +20,12 @@
       "max_instances": 5,
       "instance_type": "basic",
     },
+    {
+      "class_name": "PdfTools",
+      "image": "registry.cloudflare.com/953346ce1b4f27fa04a76d83aeccab28/seal-pdf-tools:v3",
+      "max_instances": 5,
+      "instance_type": "basic",
+    },
   ],
   "durable_objects": {
     "bindings": [
@@ -27,12 +33,20 @@
         "name": "CONVERTER",
         "class_name": "Converter",
       },
+      {
+        "name": "PDF_TOOLS",
+        "class_name": "PdfTools",
+      },
     ],
   },
   "migrations": [
     {
       "tag": "v1",
       "new_sqlite_classes": ["Converter"],
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": ["PdfTools"],
     },
   ],
   "env": {
@@ -45,6 +59,12 @@
           "max_instances": 5,
           "instance_type": "basic",
         },
+        {
+          "class_name": "PdfTools",
+          "image": "registry.cloudflare.com/953346ce1b4f27fa04a76d83aeccab28/seal-pdf-tools:v3",
+          "max_instances": 5,
+          "instance_type": "basic",
+        },
       ],
       "durable_objects": {
         "bindings": [
@@ -52,12 +72,20 @@
             "name": "CONVERTER",
             "class_name": "Converter",
           },
+          {
+            "name": "PDF_TOOLS",
+            "class_name": "PdfTools",
+          },
         ],
       },
       "migrations": [
         {
           "tag": "v1",
           "new_sqlite_classes": ["Converter"],
+        },
+        {
+          "tag": "v2",
+          "new_sqlite_classes": ["PdfTools"],
         },
       ],
     },

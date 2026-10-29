@@ -39,7 +39,7 @@ function WorkspaceMark({
   return (
     <span
       className={cn(
-        "grid size-full place-items-center rounded-md text-[0.7rem] font-semibold uppercase",
+        "text-xs grid size-full place-items-center rounded-md font-semibold uppercase",
         className
       )}
       aria-hidden
@@ -91,7 +91,7 @@ export function TeamSwitcher({
                   {active?.name ?? "Workspace"}
                 </span>
               </div>
-              <CaretDown className="text-muted-foreground ml-auto size-4 shrink-0" />
+              <CaretDown className="text-kumo-secondary ml-auto size-4 shrink-0" />
             </Sidebar.MenuButton>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content
@@ -133,10 +133,7 @@ export function TeamSwitcher({
               <>
                 <DropdownMenu.Separator />
                 <DropdownMenu.Group>
-                  <DropdownMenu.Item
-                    icon={Plus}
-                    onClick={onCreateOrganization}
-                  >
+                  <DropdownMenu.Item icon={Plus} onClick={onCreateOrganization}>
                     Create workspace
                   </DropdownMenu.Item>
                 </DropdownMenu.Group>

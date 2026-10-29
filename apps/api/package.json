@@ -42,17 +42,18 @@
     }
   },
   "dependencies": {
-    "@better-auth/scim": "1.7.6",
+    "@better-auth/scim": "1.7.14",
     "@better-auth/sso": "1.7.6",
     "@hono/zod-openapi": "^0.19.10",
     "@orama/orama": "^3.1.18",
+    "@pdf-lib/fontkit": "^1.1.1",
     "@seal/internal-auth": "workspace:*",
     "@seal/transactional": "workspace:*",
     "@signpdf/placeholder-plain": "3.3.0",
     "@signpdf/signer-p12": "3.3.0",
     "@signpdf/signpdf": "3.3.0",
     "@signpdf/utils": "3.3.0",
-    "@vortex-api/better-auth-ui": "0.2.15",
+    "@vortex-api/better-auth-ui": "0.2.24",
     "better-auth": "1.7.6",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.13.8",
@@ -61,12 +62,12 @@
     "pdf-lib": "^1.17.1",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "react-email": "6.9.5",
+    "react-email": "6.11.3",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "^0.22.0",
-    "@cloudflare/workers-types": "^5.20260916.1",
+    "@cloudflare/vitest-plugin": "^1.4.10",
+    "@cloudflare/workers-types": "^5.20261026.1",
     "@seal/tsconfig": "workspace:*",
     "@types/node-forge": "^1.3.14",
     "drizzle-kit": "^0.31.10",
@@ -74,6 +75,6 @@
     "tsx": "^4.23.13",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "wrangler": "^4.133.0"
+    "wrangler": "^4.153.0"
   }
 }

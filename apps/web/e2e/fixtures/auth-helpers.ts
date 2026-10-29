@@ -110,9 +110,18 @@ async function signUpWithPassword(
   await page
     .goto("/sign-up", { waitUntil: "domcontentloaded" })
     .catch(() => {});
-  await page.getByLabel(/^name$/i).fill(config.name).catch(() => {});
-  await page.getByLabel(/^email$/i).fill(config.email).catch(() => {});
-  await page.getByLabel(/^password$/i).fill(config.password).catch(() => {});
+  await page
+    .getByLabel(/^name$/i)
+    .fill(config.name)
+    .catch(() => {});
+  await page
+    .getByLabel(/^email$/i)
+    .fill(config.email)
+    .catch(() => {});
+  await page
+    .getByLabel(/^password$/i)
+    .fill(config.password)
+    .catch(() => {});
   await page
     .getByLabel(/confirm password/i)
     .fill(config.password)
@@ -137,6 +146,25 @@ async function completeOnboardingIfPresent(
     return;
   }
 
+  // Landing directly on the compliance step (org exists, defaults never
+  // saved): the Continue button persists signing settings and navigates home.
+  if (/\/[\w-]+\/onboarding\/compliance/.test(page.url())) {
+    const complianceContinue = page.locator(
+      '[data-testid="compliance-continue"]'
+    );
+    await complianceContinue
+      .waitFor({ state: "visible", timeout: 15000 })
+      .catch(() => {});
+    if (await complianceContinue.isVisible().catch(() => false)) {
+      await complianceContinue.click();
+      await page.waitForURL(/\/[\w-]+\/home/, {
+        timeout: 30000,
+        waitUntil: "domcontentloaded",
+      });
+      return;
+    }
+  }
+
   // Wait for either create form or workspace chooser to mount.
   await page
     .getByRole("heading", {
@@ -146,14 +174,25 @@ async function completeOnboardingIfPresent(
     .waitFor({ state: "visible", timeout: 15000 });
 
   // Newer onboarding: single "Create your workspace" form.
-  const workspaceName = page.locator("#org-name");
+  const namedWorkspace = page.getByRole("textbox", { name: "Workspace name" });
+  const workspaceName = (await page
+    .locator("#org-name")
+    .isVisible()
+    .catch(() => false))
+    ? page.locator("#org-name")
+    : namedWorkspace;
   if (await workspaceName.isVisible().catch(() => false)) {
     await workspaceName.click();
     await workspaceName.fill("");
     await workspaceName.pressSequentially(config.organizationName, {
       delay: 20,
     });
-    const slugField = page.locator("#org-slug");
+    const slugField = (await page
+      .locator("#org-slug")
+      .isVisible()
+      .catch(() => false))
+      ? page.locator("#org-slug")
+      : page.getByRole("textbox", { name: "Slug" });
     await slugField.click();
     await slugField.fill("");
     await slugField.pressSequentially(config.organizationSlug, { delay: 20 });
@@ -171,10 +210,28 @@ async function completeOnboardingIfPresent(
       );
     }
     await continueBtn.click();
-    await page.waitForURL(/\/[\w-]+\/home/, {
-      timeout: 30000,
-      waitUntil: "domcontentloaded",
-    });
+    const reachedHome = await page
+      .waitForURL(/\/[\w-]+\/home/, {
+        timeout: 30000,
+        waitUntil: "domcontentloaded",
+      })
+      .then(() => true)
+      .catch(() => false);
+    if (!reachedHome) {
+      // Slug already taken — the workspace exists mid-onboarding. Land on
+      // its compliance step and finish it instead of recreating.
+      await page
+        .goto(`/${config.organizationSlug}/onboarding/compliance`, {
+          waitUntil: "domcontentloaded",
+        })
+        .catch(() => {});
+      await completeOnboardingIfPresent(page, config);
+      if (!isWorkspaceHomeUrl(page.url())) {
+        throw new Error(
+          `[E2E] Workspace ${config.organizationSlug} exists but home never loaded after compliance. url=${page.url()}`
+        );
+      }
+    }
     return;
   }
 

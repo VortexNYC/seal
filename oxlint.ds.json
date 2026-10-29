@@ -1,0 +1,108 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json",
+  "jsPlugins": [
+    "@shadcn/lint"
+  ],
+  "ignorePatterns": [
+    "**/.blume/**",
+    "**/node_modules/**",
+    "**/routeTree.gen.ts",
+    "**/dist/**"
+  ],
+  "rules": {
+    "shadcn/no-raw-colors": [
+      "error",
+      {
+        "message": "Use the theme token (e.g. bg-*/text-* names from styles.css), or declare a new --color-* there. ADR-002.",
+        "allow": [
+          "text-label",
+          "*:text-label",
+          "text-lede",
+          "*:text-lede",
+          "text-lead",
+          "*:text-lead",
+          "text-display",
+          "*:text-display",
+          "bg-hero-glow",
+          "*:bg-hero-glow",
+          "bg-fade-muted",
+          "*:bg-fade-muted",
+          "border-field",
+          "*:border-field",
+          "bg-noise",
+          "*:bg-noise"
+        ]
+      }
+    ],
+    "shadcn/no-arbitrary-values": [
+      "error",
+      {
+        "message": "Off-token value \u2014 use the spacing scale, a --text-*/--radius-*/--tracking-* token, or a named @utility in styles.css."
+      }
+    ],
+    "shadcn/no-inline-styles": [
+      "error",
+      {
+        "allow": [
+          "left",
+          "top",
+          "right",
+          "bottom",
+          "width",
+          "height",
+          "minWidth",
+          "maxWidth",
+          "minHeight",
+          "maxHeight",
+          "transform",
+          "zIndex",
+          "paddingLeft",
+          "paddingRight",
+          "paddingTop",
+          "paddingBottom",
+          "marginLeft",
+          "marginRight",
+          "marginTop",
+          "marginBottom",
+          "fontFamily",
+          "fontSize",
+          "lineHeight",
+          "letterSpacing",
+          "background",
+          "backgroundColor",
+          "backgroundImage",
+          "color",
+          "opacity",
+          "animationDelay",
+          "transitionDelay",
+          "gridTemplate*",
+          "flex",
+          "gap",
+          "order",
+          "padding",
+          "borderRadius",
+          "borderColor",
+          "boxShadow",
+          "inset"
+        ],
+        "message": "Inline style \u2014 move static values to classes/tokens; the allow list covers runtime-computed props only."
+      }
+    ],
+    "shadcn/require-static-classes": "warn",
+    "shadcn/no-restyle": [
+      "warn",
+      {
+        "componentImports": [
+          "@cloudflare/kumo/components/*"
+        ],
+        "allow": [
+          "layout",
+          "spacing",
+          "typography",
+          "shape"
+        ],
+        "message": "Kumo primitives own their color/effects \u2014 prefer variant/size props; surface overrides are review-worthy, not blocked."
+      }
+    ]
+  }
+}

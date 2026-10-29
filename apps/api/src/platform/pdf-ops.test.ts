@@ -3,9 +3,13 @@ import { describe, expect, it } from "vitest";
 
 import {
   annotatePdf,
+  cropPdfPages,
   getPdfPageCount,
+  numberPdfPages,
+  organizePdfPages,
   percentToPdfRect,
   splitPdfPages,
+  watermarkPdf,
 } from "./pdf-ops.js";
 
 async function makePdf(pages = 3): Promise<Uint8Array> {
@@ -46,5 +50,72 @@ describe("pdf-ops", () => {
       { op: "text", page: 2, x: 10, y: 30, text: "Agent note" },
     ]);
     expect(await getPdfPageCount(out)).toBe(2);
+  });
+
+  it("reorders and deletes pages in one pass", async () => {
+    const src = await makePdf(4);
+    const { bytes, pageCount, pageMap } = await organizePdfPages(src, [
+      4, 1, 2,
+    ]);
+    expect(pageCount).toBe(3);
+    expect(await getPdfPageCount(bytes)).toBe(3);
+    expect(pageMap.get(4)).toBe(1);
+    expect(pageMap.get(1)).toBe(2);
+    expect(pageMap.get(2)).toBe(3);
+    expect(pageMap.has(3)).toBe(false);
+  });
+
+  it("rejects duplicate page order entries", async () => {
+    const src = await makePdf(3);
+    await expect(organizePdfPages(src, [1, 1, 2])).rejects.toThrow(
+      "duplicate_pages"
+    );
+  });
+
+  it("watermarks without changing page count", async () => {
+    const src = await makePdf(2);
+    const { bytes, pageCount } = await watermarkPdf(src, {
+      text: "DRAFT",
+      position: "diagonal",
+    });
+    expect(pageCount).toBe(2);
+    expect(await getPdfPageCount(bytes)).toBe(2);
+  });
+
+  it("rejects empty watermark text", async () => {
+    const src = await makePdf(1);
+    await expect(watermarkPdf(src, { text: "   " })).rejects.toThrow(
+      "empty_watermark"
+    );
+  });
+
+  it("numbers pages without changing page count", async () => {
+    const src = await makePdf(3);
+    const { bytes, pageCount } = await numberPdfPages(src, {
+      format: "n_of_m",
+      position: "footer-center",
+    });
+    expect(pageCount).toBe(3);
+    expect(await getPdfPageCount(bytes)).toBe(3);
+  });
+
+  it("crops a page into a smaller baked page", async () => {
+    const src = await makePdf(2);
+    const { bytes, pageCount, applied } = await cropPdfPages(src, [
+      { page: 1, x: 10, y: 10, width: 80, height: 80 },
+    ]);
+    expect(pageCount).toBe(2);
+    expect(await getPdfPageCount(bytes)).toBe(2);
+    expect(applied.get(1)?.width).toBe(80);
+
+    const cropped = await PDFDocument.load(bytes);
+    const page0 = cropped.getPage(0);
+    const page1 = cropped.getPage(1);
+    expect(page0.getWidth()).toBeLessThan(page1.getWidth());
+  });
+
+  it("rejects empty crop list", async () => {
+    const src = await makePdf(1);
+    await expect(cropPdfPages(src, [])).rejects.toThrow("no_crops");
   });
 });

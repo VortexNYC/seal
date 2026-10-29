@@ -116,13 +116,21 @@
     <style>
       html,
       body {
-        background: #f8fafc;
+        background: #fbfaf9;
       }
       @media (prefers-color-scheme: dark) {
         html,
         body {
-          background: #09090b;
+          background: #17130e;
         }
+      }
+      html[data-mode="light"],
+      html[data-mode="light"] body {
+        background: #fbfaf9;
+      }
+      html[data-mode="dark"],
+      html[data-mode="dark"] body {
+        background: #17130e;
       }
     </style>
 

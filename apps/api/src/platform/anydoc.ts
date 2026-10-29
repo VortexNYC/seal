@@ -83,14 +83,22 @@ export async function parseDocumentFromStorage(
     const response = await env.ANYDOC.fetch(
       new Request("http://anydoc/parse", {
         method: "POST",
-        body: object.body,
+        // Buffer first — a live R2 stream body arrives empty (400) through
+        // the service binding.
+        body: await object.arrayBuffer(),
         headers: {
           "x-internal-api-key": env.INTERNAL_API_KEY,
         },
       })
     );
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      console.error(
+        `anydoc parse failed: ${response.status} ${detail.slice(0, 200)} for ${storageKey}`
+      );
+      return null;
+    }
 
     const parsed = parseResultSchema.parse(await response.json());
     return {
@@ -107,7 +115,8 @@ export async function parseDocumentFromStorage(
       processingTimeMs: parsed.processingTimeMs ?? 0,
       fieldCandidates: parsed.fieldCandidates ?? [],
     };
-  } catch {
+  } catch (error) {
+    console.error(`anydoc parse threw for ${storageKey}:`, error);
     return null;
   }
 }

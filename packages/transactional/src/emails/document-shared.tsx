@@ -8,7 +8,6 @@ export interface DocumentSharedProps {
   recipientEmail: string;
   recipientName: string;
   sharerName: string;
-  sharerEmail: string;
   documentName: string;
   permissionLevel: "view" | "edit" | "manage";
   documentUrl: string;
@@ -30,7 +29,6 @@ export function DocumentShared({
   recipientEmail,
   recipientName,
   sharerName,
-  sharerEmail,
   documentName,
   permissionLevel,
   documentUrl,
@@ -80,14 +78,8 @@ export function DocumentShared({
         </Text>
 
         <Text style={{ ...emailStyles.bodyTextSpaced, textAlign: "center" }}>
-          <strong style={emailStyles.strong}>{sharerName}</strong> (
-          <Link
-            href={`mailto:${sharerEmail}`}
-            style={{ color: status.info, textDecoration: "none" }}
-          >
-            {sharerEmail}
-          </Link>
-          ) has shared a document with you on Seal.
+          <strong style={emailStyles.strong}>{sharerName}</strong> has shared a
+          document with you on Seal.
         </Text>
 
         {/* Document card */}

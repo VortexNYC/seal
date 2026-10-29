@@ -6,7 +6,6 @@ import {
   desc,
   asc,
   gte,
-  lt,
   inArray,
   isNull,
   not,
@@ -31,49 +30,77 @@ import {
   templates,
   user as userTable,
 } from "../global/schema.js";
+import { parseDocumentFromStorage } from "../platform/anydoc.js";
+import { recordUsageEvent } from "../platform/usage-events.js";
+import { emitWebhookEvent } from "../platform/webhook-events.js";
+import { syncVortexOrderForm } from "../platform/vortex-order-form.js";
 import {
-  convertBytesToPdf,
-  ConversionError,
-  isConvertibleFileType,
-} from "../platform/document-conversion.js";
-import { ensureContactsFromRecipients } from "../platform/ensure-contacts.js";
-import {
-  FeatureDisabledError,
-  assertConvertEnabled,
-} from "../platform/org-settings.js";
-import { generateAndStoreCertificateOfCompletion } from "../platform/certificate-store.js";
-import { generateAndStoreFinalPdf } from "../platform/final-pdf-store.js";
-import {
-  hashAccessCode,
-  normalizeAuthMethod,
-} from "../platform/signer-auth.js";
+  isEnvelopeClosed,
+  presentedWorkflowStatus,
+  saveAsTemplateBlock,
+} from "../platform/workflow-status.js";
 import {
   getAuditActor,
   getAuditRequestMeta,
   writeAuditLog,
 } from "../platform/audit-log.js";
-import {
-  readOrgSigningCompliance,
-  resolveRecipientAuthMethod,
-} from "../platform/signing-settings.js";
-import {
-  sendDocumentInvitationEmail,
-  sendOwnershipTransferredEmail,
-} from "../platform/email.js";
+import { certificateStorageKey } from "../platform/certificate-of-completion.js";
+import { generateAndStoreCertificateOfCompletion } from "../platform/certificate-store.js";
 import {
   auditMetaFromContext,
   tryAuditDocumentByteAccess,
 } from "../platform/document-access-audit.js";
-import { organizationMiddleware } from "../platform/organization-middleware.js";
-import type { Variables } from "../platform/types.js";
-import { FieldTypeEnum } from "../platform/field-types.js";
+import {
+  convertBytesToPdf,
+  ConversionError,
+  imageBytesToPdf,
+  isConvertibleFileType,
+  isImageFileType,
+} from "../platform/document-conversion.js";
+import {
+  sendDocumentInvitationEmail,
+  sendOwnershipTransferredEmail,
+} from "../platform/email.js";
+import { ensureContactsFromRecipients } from "../platform/ensure-contacts.js";
 import { ZFieldPropertiesFlat } from "../platform/field-meta.js";
+import { materializeSuggestionsFromCandidates } from "../platform/field-suggestions.js";
+import { FieldTypeEnum } from "../platform/field-types.js";
+import { copyDocument } from "../platform/document-copy.js";
+import { presentVortexConnect } from "../platform/vortex-connect.js";
+import {
+  forwardCompletedDocument,
+  startEnvelopeFromCompleted,
+} from "../platform/document-forward.js";
+import { downloadShouldBurnInk } from "../platform/final-pdf.js";
+import {
+  generateAndStoreFinalPdf,
+  renderFilledPdfBytes,
+} from "../platform/final-pdf-store.js";
+import {
+  FeatureDisabledError,
+  assertConvertEnabled,
+} from "../platform/org-settings.js";
+import { organizationMiddleware } from "../platform/organization-middleware.js";
+import {
+  hashAccessCode,
+  normalizeAuthMethod,
+} from "../platform/signer-auth.js";
+import {
+  readOrgSigningCompliance,
+  resolveRecipientAuthMethod,
+} from "../platform/signing-settings.js";
+import type { Variables } from "../platform/types.js";
 import ai from "./ai.js";
 import documentPower from "./document-power.js";
 import {
+  documentSigningPatch,
   generateSigningToken,
+  recipientsDueInvitation,
+  refreshOpenRecipientLink,
   sendDocumentForSigning,
+  signingProgress,
 } from "./document-send.js";
+import { materializeAnnotationsFromParsedText } from "./v1/document-agent.js";
 
 const DocumentSchema = z
   .object({
@@ -103,6 +130,14 @@ const DocumentSchema = z
     allowDictateNextSigner: z.boolean(),
     sentAt: z.number().nullable().optional(),
     deadline: z.number().nullable().optional(),
+    progress: z
+      .object({
+        signed: z.number().int(),
+        total: z.number().int(),
+        waitingOn: z.string().nullable(),
+      })
+      .nullable()
+      .optional(),
     createdAt: z.number(),
     updatedAt: z.number(),
   })
@@ -154,7 +189,7 @@ function documentResponse(doc: {
     description: doc.description,
     status: doc.documentStatus,
     documentStatus: doc.documentStatus,
-    workflowStatus: doc.status,
+    workflowStatus: presentedWorkflowStatus(doc.status),
     sharingMode: doc.sharingMode,
     signingMode: doc.signingMode,
     aiProcessingStatus: doc.aiProcessingStatus,
@@ -411,13 +446,17 @@ app.openapi(listRouteDef, async (c) => {
 
   const db = createD1(c.env.D1);
 
-  const conditions: SQL[] = [
-    eq(documents.organizationId, organizationId),
-    eq(documents.documentStatus, "active"),
-  ];
+  const conditions: SQL[] = [eq(documents.organizationId, organizationId)];
 
-  if (workflowStatus) {
-    conditions.push(eq(documents.status, workflowStatus));
+  if (workflowStatus === "deleted") {
+    conditions.push(eq(documents.documentStatus, "deleted"));
+  } else {
+    conditions.push(eq(documents.documentStatus, "active"));
+    if (workflowStatus === "cancelled") {
+      conditions.push(inArray(documents.status, ["cancelled", "voided"]));
+    } else if (workflowStatus) {
+      conditions.push(eq(documents.status, workflowStatus));
+    }
   }
 
   if (folderId) {
@@ -470,7 +509,38 @@ app.openapi(listRouteDef, async (c) => {
     .where(and(...conditions))
     .orderBy(desc(documents.createdAt));
 
-  return c.json(rows.map(documentResponse));
+  const docIds = rows.map((doc) => doc.id);
+  const recipientRows =
+    docIds.length === 0
+      ? []
+      : await db
+          .select({
+            id: recipients.id,
+            documentId: recipients.documentId,
+            name: recipients.name,
+            email: recipients.email,
+            role: recipients.role,
+            order: recipients.order,
+            status: recipients.status,
+          })
+          .from(recipients)
+          .where(inArray(recipients.documentId, docIds));
+  const partiesByDocument = new Map<string, typeof recipientRows>();
+  for (const recipient of recipientRows) {
+    const existing = partiesByDocument.get(recipient.documentId) ?? [];
+    existing.push(recipient);
+    partiesByDocument.set(recipient.documentId, existing);
+  }
+
+  return c.json(
+    rows.map((doc) => ({
+      ...documentResponse(doc),
+      progress: signingProgress(
+        doc.signingMode,
+        partiesByDocument.get(doc.id) ?? []
+      ),
+    }))
+  );
 });
 
 const DocumentStatsSchema = z
@@ -512,7 +582,13 @@ app.openapi(statsRouteDef, async (c) => {
     const result = await db
       .select({ value: count() })
       .from(documents)
-      .where(and(eq(documents.organizationId, organizationId), ...conditions));
+      .where(
+        and(
+          eq(documents.organizationId, organizationId),
+          eq(documents.documentStatus, "active"),
+          ...conditions
+        )
+      );
     return result[0]?.value ?? 0;
   };
 
@@ -626,6 +702,7 @@ app.openapi(trendsRouteDef, async (c) => {
       .where(
         and(
           eq(documents.organizationId, organizationId),
+          eq(documents.documentStatus, "active"),
           gte(documents.createdAt, startDay)
         )
       )
@@ -636,6 +713,7 @@ app.openapi(trendsRouteDef, async (c) => {
       .where(
         and(
           eq(documents.organizationId, organizationId),
+          eq(documents.documentStatus, "active"),
           eq(documents.status, "completed"),
           gte(documents.updatedAt, startDay)
         )
@@ -698,7 +776,12 @@ app.openapi(recentRouteDef, async (c) => {
   const docs = await db
     .select()
     .from(documents)
-    .where(eq(documents.organizationId, organizationId))
+    .where(
+      and(
+        eq(documents.organizationId, organizationId),
+        eq(documents.documentStatus, "active")
+      )
+    )
     .orderBy(desc(documents.createdAt))
     .limit(limit);
 
@@ -799,6 +882,7 @@ app.openapi(attentionRouteDef, async (c) => {
     .where(
       and(
         eq(documents.organizationId, organizationId),
+        eq(documents.documentStatus, "active"),
         inArray(documents.status, ["sent", "in_progress"])
       )
     );
@@ -937,7 +1021,6 @@ const updateDocumentBodySchema = z.object({
   redirectUrl: z.string().nullable().optional(),
   allowDictateNextSigner: z.boolean().optional(),
 });
-
 
 function validateFieldPosition(
   x: number,
@@ -1167,6 +1250,15 @@ app.openapi(uploadRouteDef, async (c) => {
     return c.json({ error: "Document not found" }, 404);
   }
 
+  // Seal-documents bucket is object-locked: a doc that already has content
+  // cannot be overwritten in place — a second upload must be a new document.
+  if (doc.storageKey) {
+    return c.json(
+      { error: "already_uploaded", message: "Document already has content — create a new draft to replace it." },
+      409
+    );
+  }
+
   const bytes = base64ToBytes(input.contentBase64);
   const contentType = input.contentType || "application/octet-stream";
 
@@ -1190,7 +1282,38 @@ app.openapi(uploadRouteDef, async (c) => {
   let finalBytes: ArrayBuffer | Uint8Array = bytes;
   let finalContentType = contentType;
 
-  if (isConvertibleFileType(contentType)) {
+  if (isImageFileType(contentType)) {
+    try {
+      const pdf = await imageBytesToPdf({
+        contentType,
+        bytes,
+        name: "document",
+      });
+      finalBytes = pdf;
+      finalContentType = "application/pdf";
+    } catch (error) {
+      const status = (
+        error instanceof ConversionError ? error.statusCode : 502
+      ) as ContentfulStatusCode;
+      const detail =
+        error instanceof ConversionError ? error.detail : undefined;
+      return c.json({ error: "conversion_failed", detail }, status);
+    }
+
+    const originalKey = r2OriginalKey(organizationId, publicId);
+    await bucket.put(originalKey, bytes, {
+      httpMetadata: { contentType },
+      customMetadata: metadata,
+    });
+    await bucket.put(key, finalBytes, {
+      httpMetadata: { contentType: finalContentType },
+      customMetadata: {
+        ...metadata,
+        originalContentType: contentType,
+        originalKey,
+      },
+    });
+  } else if (isConvertibleFileType(contentType)) {
     try {
       await assertConvertEnabled(c.env, organizationId);
       const pdf = await convertBytesToPdf(c.env, {
@@ -1234,15 +1357,44 @@ app.openapi(uploadRouteDef, async (c) => {
 
   // Keep pipeline status as draft — "uploaded" was stranding docs where the UI
   // canEdit/send gates only accept draft/expired (classic prepare → send path).
+  const parsedDoc = await parseDocumentFromStorage(c.env, key, {
+    organizationId,
+  });
   await db
     .update(documents)
     .set({
       storageKey: key,
       contentType: finalContentType,
       size: finalBytes.byteLength,
+      parsedText: parsedDoc?.markdown ?? null,
+      parsedTitle: parsedDoc?.title ?? null,
+      parsedFormat: parsedDoc?.format ?? null,
+      pdfType: parsedDoc?.pdfType ?? null,
+      pageCount: parsedDoc?.pageCount ?? doc.pageCount,
+      ocrRequired: parsedDoc?.pagesNeedingOcr?.length ? true : false,
+      fieldCandidates: parsedDoc?.fieldCandidates.length
+        ? JSON.stringify(parsedDoc.fieldCandidates)
+        : null,
       updatedAt: new Date(),
     })
     .where(eq(documents.id, doc.id));
+
+  // Same materialization tail as the v1 claim path — field suggestions and
+  // comment annotations ride along with the parse.
+  if (parsedDoc?.fieldCandidates.length) {
+    await materializeSuggestionsFromCandidates(db, {
+      documentId: doc.id,
+      organizationId,
+      candidatesJson: JSON.stringify(parsedDoc.fieldCandidates),
+    });
+  }
+  if (parsedDoc?.markdown) {
+    await materializeAnnotationsFromParsedText(db, {
+      documentId: doc.id,
+      organizationId,
+      parsedText: parsedDoc.markdown,
+    });
+  }
 
   return c.json({
     storageKey: key,
@@ -1256,6 +1408,9 @@ const downloadRouteDef = createRoute({
   path: "/{slug}/{publicId}/download",
   request: {
     params: z.object({ publicId: z.string() }),
+    query: z.object({
+      ink: z.enum(["0", "1"]).optional(),
+    }),
   },
   responses: {
     200: { description: "Document file" },
@@ -1267,6 +1422,7 @@ const downloadRouteDef = createRoute({
 app.openapi(downloadRouteDef, async (c) => {
   const organizationId = c.get("organization").id;
   const { publicId } = c.req.valid("param");
+  const { ink } = c.req.valid("query");
 
   const bucket = c.env.DOCUMENTS_BUCKET;
   if (!bucket) {
@@ -1309,6 +1465,29 @@ app.openapi(downloadRouteDef, async (c) => {
       },
       "session-download"
     );
+  }
+
+  if (downloadShouldBurnInk(ink === "1", doc.status) && doc.storageKey) {
+    try {
+      const filled = await renderFilledPdfBytes({
+        db,
+        bucket,
+        documentId: doc.id,
+        sourceKey: doc.originalStorageKey ?? doc.storageKey,
+        documentRef: doc.publicId,
+      });
+      if (filled) {
+        const body = new Uint8Array(filled);
+        return c.body(body, {
+          headers: {
+            "content-type": "application/pdf",
+            "content-length": String(body.byteLength),
+          },
+        });
+      }
+    } catch (err) {
+      console.error("[documents/download] filled PDF failed:", err);
+    }
   }
 
   const headers: Record<string, string> = {
@@ -1394,6 +1573,86 @@ const recipientResponse = (recipient: {
   updatedAt: recipient.updatedAt.getTime(),
 });
 
+const certificateRouteDef = createRoute({
+  method: "get",
+  path: "/{slug}/{publicId}/certificate",
+  request: {
+    params: z.object({ publicId: z.string() }),
+  },
+  responses: {
+    200: { description: "Certificate of Completion PDF" },
+    404: { description: "Certificate not available" },
+    503: { description: "Object storage not configured" },
+  },
+});
+
+app.openapi(certificateRouteDef, async (c) => {
+  const organizationId = c.get("organization").id;
+  const { publicId } = c.req.valid("param");
+  const bucket = c.env.DOCUMENTS_BUCKET;
+  if (!bucket) {
+    return c.json({ error: "Object storage not configured" }, 503);
+  }
+
+  const db = createD1(c.env.D1);
+  const rows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+  const doc = rows[0];
+  if (!doc || doc.status !== "completed") {
+    return c.json({ error: "Certificate not available until completed" }, 404);
+  }
+
+  const key = certificateStorageKey(doc.organizationId, doc.id);
+  let object = await bucket.get(key);
+  if ((!object || !object.body) && c.env.APP_URL) {
+    await generateAndStoreCertificateOfCompletion({
+      db,
+      bucket,
+      documentId: doc.id,
+      appUrl: c.env.APP_URL,
+    });
+    object = await bucket.get(key);
+  }
+  if (!object || !object.body) {
+    return c.json({ error: "Certificate not found" }, 404);
+  }
+
+  const sessionUser = c.get("user");
+  if (sessionUser?.user?.id) {
+    await tryAuditDocumentByteAccess(
+      db,
+      {
+        organizationId,
+        actor: { type: "user", id: sessionUser.user.id },
+        documentId: doc.id,
+        via: "session-certificate",
+        metadata: {
+          publicId: doc.publicId,
+          artifact: "certificate_of_completion",
+        },
+        ...auditMetaFromContext(c),
+      },
+      "session-certificate"
+    );
+  }
+
+  const filename = `${(doc.name || "document").replace(/["\r\n]/g, "")}-certificate.pdf`;
+  const headers: Record<string, string> = {
+    "content-type": "application/pdf",
+    "content-disposition": `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+  };
+  if (object.size) headers["content-length"] = String(object.size);
+  return c.body(object.body, { headers });
+});
+
 const addRecipientsBodySchema = z.object({
   recipients: z.array(
     z.object({
@@ -1459,7 +1718,11 @@ app.openapi(addRecipientsRouteDef, async (c) => {
     return c.json({ error: "Only the document owner can add recipients" }, 403);
   }
 
-  if (doc.status === "deleted" || doc.documentStatus !== "active") {
+  if (
+    doc.status === "deleted" ||
+    doc.documentStatus !== "active" ||
+    (doc.status !== "draft" && doc.status !== "sent")
+  ) {
     return c.json({ error: "Cannot add recipients to this document" }, 400);
   }
 
@@ -1575,6 +1838,19 @@ app.openapi(addRecipientsRouteDef, async (c) => {
     }),
     createdAt: now,
   });
+
+  if (doc.status === "sent") {
+    const senderName =
+      c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown";
+    for (const row of rows) {
+      await refreshOpenRecipientLink(db, c.env, {
+        documentId: doc.id,
+        recipientId: row.id,
+        senderName,
+        rotate: false,
+      });
+    }
+  }
 
   return c.json(rows.map(recipientResponse), 201);
 });
@@ -1773,6 +2049,16 @@ app.openapi(resendRecipientRouteDef, async (c) => {
       400
     );
   }
+  if (
+    doc.status === "voided" ||
+    doc.status === "cancelled" ||
+    doc.status === "completed"
+  ) {
+    return c.json(
+      { error: "Cannot resend email for this document" },
+      400
+    );
+  }
 
   const recipientRows = await db
     .select()
@@ -1797,7 +2083,32 @@ app.openapi(resendRecipientRouteDef, async (c) => {
     );
   }
 
+  const partyRows = await db
+    .select({
+      id: recipients.id,
+      role: recipients.role,
+      order: recipients.order,
+      status: recipients.status,
+    })
+    .from(recipients)
+    .where(eq(recipients.documentId, doc.id));
+  const parties = partyRows.map((row) =>
+    row.id === recipient.id && recipient.status === "declined"
+      ? { ...row, status: "pending" }
+      : row
+  );
+  const due = recipientsDueInvitation(doc.signingMode, parties);
+  if (!due.includes(recipient.id)) {
+    return c.json({ error: "It is not this person's turn yet" }, 400);
+  }
+
   const now = new Date();
+  if (recipient.status === "declined") {
+    await db
+      .update(recipients)
+      .set({ status: "pending", declinedAt: null, updatedAt: now })
+      .where(eq(recipients.id, recipient.id));
+  }
   const newToken = generateSigningToken();
   const newExpiration = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
@@ -1843,6 +2154,169 @@ app.openapi(resendRecipientRouteDef, async (c) => {
   });
 
   return c.json({ success: true });
+});
+
+const updateRecipientBodySchema = z.object({
+  email: z.string().email().optional(),
+  name: z.string().min(1).optional(),
+});
+
+const updateRecipientRouteDef = createRoute({
+  method: "patch",
+  path: "/{slug}/{publicId}/recipients/{recipientPublicId}",
+  request: {
+    params: z.object({
+      publicId: z.string(),
+      recipientPublicId: z.string(),
+    }),
+    body: {
+      content: {
+        "application/json": { schema: updateRecipientBodySchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: { "application/json": { schema: RecipientSchema } },
+      description: "Recipient email or name updated",
+    },
+    400: { description: "Cannot update recipient" },
+    403: { description: "Forbidden" },
+    404: { description: "Document or recipient not found" },
+  },
+});
+
+app.openapi(updateRecipientRouteDef, async (c) => {
+  const organizationId = c.get("organization").id;
+  const userId = c.get("user")!.user.id;
+  const { publicId, recipientPublicId } = c.req.valid("param");
+  const input = c.req.valid("json");
+
+  if (input.email === undefined && input.name === undefined) {
+    return c.json({ error: "Nothing to update" }, 400);
+  }
+
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+
+  if (doc.ownerId !== userId) {
+    return c.json(
+      { error: "Only the document owner can change recipients" },
+      403
+    );
+  }
+
+  if (doc.status !== "draft" && doc.status !== "sent") {
+    return c.json({ error: "Cannot change recipients on this document" }, 400);
+  }
+
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(
+      and(
+        eq(recipients.publicId, recipientPublicId),
+        eq(recipients.documentId, doc.id)
+      )
+    )
+    .limit(1);
+
+  const recipient = recipientRows[0];
+  if (!recipient) {
+    return c.json({ error: "Recipient not found" }, 404);
+  }
+
+  if (
+    doc.status === "sent" &&
+    (recipient.status === "signed" || recipient.status === "approved")
+  ) {
+    return c.json({ error: "This person already finished" }, 400);
+  }
+
+  const email =
+    input.email === undefined ? undefined : input.email.toLowerCase();
+  const emailChanged =
+    email !== undefined && email !== recipient.email.toLowerCase();
+
+  if (emailChanged) {
+    const siblings = await db
+      .select({ id: recipients.id, email: recipients.email })
+      .from(recipients)
+      .where(eq(recipients.documentId, doc.id));
+    if (
+      siblings.some(
+        (row) => row.id !== recipient.id && row.email.toLowerCase() === email
+      )
+    ) {
+      return c.json({ error: "That email is already on this envelope" }, 400);
+    }
+  }
+
+  const now = new Date();
+  await db
+    .update(recipients)
+    .set({
+      ...(emailChanged && email !== undefined ? { email } : {}),
+      ...(input.name !== undefined ? { name: input.name } : {}),
+      ...(emailChanged && recipient.status === "declined"
+        ? { status: "pending", declinedAt: null }
+        : {}),
+      updatedAt: now,
+    })
+    .where(eq(recipients.id, recipient.id));
+
+  if (doc.status === "sent" && emailChanged) {
+    const senderName =
+      c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown";
+    await refreshOpenRecipientLink(db, c.env, {
+      documentId: doc.id,
+      recipientId: recipient.id,
+      senderName,
+      rotate: true,
+    });
+  }
+
+  const updatedRows = await db
+    .select()
+    .from(recipients)
+    .where(eq(recipients.id, recipient.id))
+    .limit(1);
+  const updated = updatedRows[0];
+  if (!updated) {
+    return c.json({ error: "Recipient not found" }, 404);
+  }
+
+  await db.insert(activity).values({
+    id: crypto.randomUUID(),
+    organizationId,
+    action: "recipient.updated",
+    actorName:
+      c.get("user")!.user.name ?? c.get("user")!.user.email ?? "Unknown",
+    targetName: doc.name,
+    metadata: JSON.stringify({
+      documentId: doc.id,
+      publicId,
+      recipientId: recipient.id,
+      emailChanged,
+    }),
+    createdAt: now,
+  });
+
+  return c.json(recipientResponse(updated));
 });
 
 const FieldPropertiesSchema = ZFieldPropertiesFlat.nullable();
@@ -2267,6 +2741,19 @@ app.openapi(createSignatureFieldRouteDef, async (c) => {
   );
   if (!typeValidation.valid) {
     return c.json({ error: typeValidation.error }, 400);
+  }
+
+  if (input.fieldType === "payment") {
+    const connect = await presentVortexConnect(
+      c.env,
+      c.get("organization").metadata
+    );
+    if (!connect.chargesApproved) {
+      return c.json(
+        { error: "Charges are not approved for this workspace" },
+        403
+      );
+    }
   }
 
   let recipientId: string | null = null;
@@ -3709,16 +4196,17 @@ app.openapi(signRouteDef, async (c) => {
     createdAt: now,
   });
 
-  if (recipient.role === "signer") {
+  if (recipient.role === "signer" || recipient.role === "approver") {
     // "viewed" still owes a signature — counting only "pending" completes
     // early when co-signers have opened but not signed.
+    // Approvers hold the envelope open the same way signers do.
     const pendingSigners = await db
       .select({ value: count() })
       .from(recipients)
       .where(
         and(
           eq(recipients.documentId, doc.id),
-          eq(recipients.role, "signer"),
+          inArray(recipients.role, ["signer", "approver"]),
           inArray(recipients.status, ["pending", "viewed"])
         )
       );
@@ -3734,6 +4222,11 @@ app.openapi(signRouteDef, async (c) => {
           updatedAt: now,
         })
         .where(eq(documents.id, doc.id));
+
+      await syncVortexOrderForm(db, c.env, {
+        documentId: doc.id,
+        phase: "completed",
+      });
 
       const bucket = c.env.DOCUMENTS_BUCKET;
       const appUrl = c.env.APP_URL;
@@ -4158,6 +4651,66 @@ app.openapi(deleteRouteDef, async (c) => {
   return c.json({ success: true });
 });
 
+const restoreRouteDef = createRoute({
+  method: "post",
+  path: "/{slug}/{publicId}/restore",
+  request: {
+    params: z.object({ publicId: z.string() }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.object({ success: z.boolean() }) },
+      },
+      description: "Document restored to the documents list",
+    },
+    400: { description: "Document is not deleted" },
+    401: { description: "Unauthorized" },
+    403: { description: "Forbidden" },
+    404: { description: "Not found" },
+  },
+});
+
+app.openapi(restoreRouteDef, async (c) => {
+  const organizationId = c.get("organization").id;
+  const userId = c.get("user")!.user.id;
+  const { publicId } = c.req.valid("param");
+
+  const db = createD1(c.env.D1);
+  const rows = await db
+    .select({
+      id: documents.id,
+      ownerId: documents.ownerId,
+      documentStatus: documents.documentStatus,
+    })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.publicId, publicId),
+        eq(documents.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const doc = rows[0];
+  if (!doc) {
+    return c.json({ error: "Document not found" }, 404);
+  }
+  if (doc.ownerId !== userId) {
+    return c.json({ error: "Forbidden" }, 403);
+  }
+  if (doc.documentStatus !== "deleted") {
+    return c.json({ error: "Document is not deleted" }, 400);
+  }
+
+  await db
+    .update(documents)
+    .set({ documentStatus: "active", updatedAt: new Date() })
+    .where(eq(documents.id, doc.id));
+
+  return c.json({ success: true });
+});
+
 const sendDocumentBodySchema = z.object({
   expirationPeriod: z
     .object({
@@ -4166,6 +4719,9 @@ const sendDocumentBodySchema = z.object({
     })
     .optional(),
   recipientMessages: z.record(z.string(), z.string()).optional(),
+  customMessage: z.string().optional(),
+  signingMode: z.enum(["parallel", "sequential"]).optional(),
+  allowDictateNextSigner: z.boolean().optional(),
 });
 
 const sendRouteDef = createRoute({
@@ -4232,6 +4788,17 @@ app.openapi(sendRouteDef, async (c) => {
     );
   }
 
+  const signingPatch = documentSigningPatch({
+    signingMode: input.signingMode,
+    allowDictateNextSigner: input.allowDictateNextSigner,
+  });
+  if (signingPatch) {
+    await db
+      .update(documents)
+      .set({ ...signingPatch, updatedAt: new Date() })
+      .where(eq(documents.id, doc.id));
+  }
+
   const expirationMs = input.expirationPeriod
     ? input.expirationPeriod.amount *
       (input.expirationPeriod.unit === "day"
@@ -4280,6 +4847,7 @@ app.openapi(sendRouteDef, async (c) => {
       senderName,
       expirationMs,
       recipientMessages: input.recipientMessages,
+      defaultMessage: input.customMessage,
     }
   );
 
@@ -4368,8 +4936,8 @@ app.openapi(cancelRouteDef, async (c) => {
     return c.json({ error: "Forbidden" }, 403);
   }
 
-  const terminalStatuses = ["completed", "cancelled", "declined", "expired"];
-  if (terminalStatuses.includes(doc.status)) {
+  const terminalStatuses = ["completed", "declined", "expired"];
+  if (terminalStatuses.includes(doc.status) || isEnvelopeClosed(doc.status)) {
     return c.json(
       { error: `Cannot cancel document with status: ${doc.status}` },
       400
@@ -4470,6 +5038,351 @@ app.openapi(moveDocumentsRouteDef, async (c) => {
   }
 
   return c.json({ moved: matchedIds.length });
+});
+
+const copyRouteDef = createRoute({
+  method: "post",
+  path: "/{slug}/{publicId}/copy",
+  request: {
+    params: z.object({ publicId: z.string() }),
+  },
+  responses: {
+    201: {
+      content: {
+        "application/json": {
+          schema: z.object({ publicId: z.string() }),
+        },
+      },
+      description: "Draft copy created",
+    },
+    404: { description: "Document not found" },
+    503: { description: "Object storage not configured" },
+  },
+});
+
+app.openapi(copyRouteDef, async (c) => {
+  const bucket = c.env.DOCUMENTS_BUCKET;
+  if (!bucket) return c.json({ error: "storage_unavailable" }, 503);
+  const user = c.get("user");
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+  const db = createD1(c.env.D1);
+  const sourcePublicId = c.req.valid("param").publicId;
+  const copied = await copyDocument({
+    db,
+    bucket,
+    organizationId: c.get("organization").id,
+    ownerId: user.user.id,
+    sourcePublicId,
+  });
+  if (!copied) return c.json({ error: "not_found" }, 404);
+  const actor = getAuditActor({ user });
+  if (actor) {
+    await writeAuditLog(db, {
+      organizationId: c.get("organization").id,
+      actor,
+      action: "document.created",
+      resourceType: "document",
+      resourceId: copied.id,
+      metadata: { publicId: copied.publicId, copiedFrom: sourcePublicId },
+      ...getAuditRequestMeta(c),
+    });
+  }
+  return c.json({ publicId: copied.publicId }, 201);
+});
+
+const forwardBodySchema = z.object({
+  email: z.string().email(),
+});
+
+const forwardRouteDef = createRoute({
+  method: "post",
+  path: "/{slug}/{publicId}/forward",
+  request: {
+    params: z.object({ publicId: z.string() }),
+    body: {
+      content: { "application/json": { schema: forwardBodySchema } },
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.object({ sent: z.boolean() }) },
+      },
+      description: "Completed PDF forwarded",
+    },
+    404: { description: "Document not found" },
+    409: { description: "Document is not completed" },
+  },
+});
+
+app.openapi(forwardRouteDef, async (c) => {
+  const bucket = c.env.DOCUMENTS_BUCKET;
+  if (!bucket) return c.json({ error: "storage_unavailable" }, 503);
+  const user = c.get("user");
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+  const db = createD1(c.env.D1);
+  const organizationId = c.get("organization").id;
+  const sourcePublicId = c.req.valid("param").publicId;
+  const to = c.req.valid("json").email;
+  const senderName = user.user.name ?? user.user.email ?? "Someone";
+  const result = await forwardCompletedDocument({
+    db,
+    bucket,
+    env: c.env,
+    organizationId,
+    sourcePublicId,
+    to,
+    senderName,
+  });
+  if (result === "not_found" || result === "no_file") {
+    return c.json({ error: result }, 404);
+  }
+  if (result === "not_completed") return c.json({ error: result }, 409);
+  if (result === "email_failed") return c.json({ error: result }, 502);
+  const actor = getAuditActor({ user });
+  if (actor) {
+    const rows = await db
+      .select({ id: documents.id })
+      .from(documents)
+      .where(
+        and(
+          eq(documents.publicId, sourcePublicId),
+          eq(documents.organizationId, organizationId)
+        )
+      )
+      .limit(1);
+    const row = rows[0];
+    if (row) {
+      await writeAuditLog(db, {
+        organizationId,
+        actor,
+        action: "document.forwarded",
+        resourceType: "document",
+        resourceId: row.id,
+        metadata: { publicId: sourcePublicId, to },
+        ...getAuditRequestMeta(c),
+      });
+    }
+  }
+  return c.json({ sent: true });
+});
+
+const forwardEnvelopeRouteDef = createRoute({
+  method: "post",
+  path: "/{slug}/{publicId}/forward-envelope",
+  request: {
+    params: z.object({ publicId: z.string() }),
+  },
+  responses: {
+    201: {
+      content: {
+        "application/json": {
+          schema: z.object({ publicId: z.string() }),
+        },
+      },
+      description: "Draft envelope created from the executed PDF",
+    },
+    404: { description: "Document not found" },
+    409: { description: "Document is not completed" },
+    503: { description: "Object storage not configured" },
+  },
+});
+
+app.openapi(forwardEnvelopeRouteDef, async (c) => {
+  const bucket = c.env.DOCUMENTS_BUCKET;
+  if (!bucket) return c.json({ error: "storage_unavailable" }, 503);
+  const user = c.get("user");
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+  const db = createD1(c.env.D1);
+  const organizationId = c.get("organization").id;
+  const sourcePublicId = c.req.valid("param").publicId;
+  const created = await startEnvelopeFromCompleted({
+    db,
+    bucket,
+    organizationId,
+    ownerId: user.user.id,
+    sourcePublicId,
+  });
+  if (created === "not_found" || created === "no_file") {
+    return c.json({ error: created }, 404);
+  }
+  if (created === "not_completed") return c.json({ error: created }, 409);
+  const actor = getAuditActor({ user });
+  if (actor) {
+    await writeAuditLog(db, {
+      organizationId,
+      actor,
+      action: "document.created",
+      resourceType: "document",
+      resourceId: created.id,
+      metadata: { publicId: created.publicId, forwardedFrom: sourcePublicId },
+      ...getAuditRequestMeta(c),
+    });
+  }
+  return c.json({ publicId: created.publicId }, 201);
+});
+
+const bulkSendBodySchema = z.object({
+  documentIds: z.array(z.string()).min(1).max(50),
+  message: z.string().optional(),
+});
+
+const bulkSendRouteDef = createRoute({
+  method: "post",
+  path: "/{slug}/bulk-send",
+  request: {
+    body: {
+      content: { "application/json": { schema: bulkSendBodySchema } },
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            succeeded: z.number().int(),
+            failed: z.number().int(),
+            results: z.array(
+              z.object({
+                id: z.string(),
+                success: z.boolean(),
+                error: z.string().optional(),
+              })
+            ),
+          }),
+        },
+      },
+      description: "Drafts sent",
+    },
+  },
+});
+
+app.openapi(bulkSendRouteDef, async (c) => {
+  const { documentIds, message } = c.req.valid("json");
+  const db = createD1(c.env.D1);
+  const organizationId = c.get("organization").id;
+  const user = c.get("user");
+  const senderName = user?.user.name ?? user?.user.email ?? "your team";
+  const actor = getAuditActor({ user });
+  const compliance = readOrgSigningCompliance(c.get("organization").metadata);
+  const results = await Promise.all(
+    documentIds.map(async (publicId) => {
+      const rows = await db
+        .select({
+          id: documents.id,
+          publicId: documents.publicId,
+          name: documents.name,
+          status: documents.status,
+        })
+        .from(documents)
+        .where(
+          and(
+            eq(documents.publicId, publicId),
+            eq(documents.organizationId, organizationId),
+            eq(documents.documentStatus, "active")
+          )
+        )
+        .limit(1);
+      const row = rows[0];
+      if (!row) return { id: publicId, success: false, error: "Document not found" };
+      if (row.status !== "draft") {
+        return {
+          id: publicId,
+          success: false,
+          error: `Document is not a draft (current: ${row.status})`,
+        };
+      }
+      const recipientRows = await db
+        .select({
+          id: recipients.id,
+          role: recipients.role,
+          authMethod: recipients.authMethod,
+        })
+        .from(recipients)
+        .where(eq(recipients.documentId, row.id));
+      if (recipientRows.length === 0) {
+        return { id: publicId, success: false, error: "Document has no recipients" };
+      }
+      if (compliance.requireRecipientAuth) {
+        const unauthenticated = recipientRows.filter(
+          (recipient) =>
+            (recipient.role === "signer" || recipient.role === "approver") &&
+            normalizeAuthMethod(recipient.authMethod) === "none"
+        );
+        if (unauthenticated.length > 0) {
+          return {
+            id: publicId,
+            success: false,
+            error:
+              "Every signer and approver must use email OTP or an access code",
+          };
+        }
+      }
+      try {
+        const { sentAt, recipients: sentRecipients } =
+          await sendDocumentForSigning(db, c.env, {
+            documentId: row.id,
+            documentName: row.name,
+            senderName,
+            defaultMessage: message,
+          });
+        await db.insert(activity).values({
+          id: crypto.randomUUID(),
+          organizationId,
+          action: "document.sent",
+          actorName: senderName,
+          targetName: row.name,
+          metadata: JSON.stringify({
+            documentId: row.id,
+            publicId: row.publicId,
+            recipientCount: sentRecipients.length,
+          }),
+          createdAt: sentAt,
+        });
+        await recordUsageEvent(db, {
+          organizationId,
+          eventType: "document.sent",
+          metadata: { documentId: row.id, publicId: row.publicId },
+        });
+        if (actor) {
+          await writeAuditLog(db, {
+            organizationId,
+            actor,
+            action: "document.sent",
+            resourceType: "document",
+            resourceId: row.id,
+            metadata: {
+              publicId: row.publicId,
+              recipientCount: sentRecipients.length,
+            },
+            ...getAuditRequestMeta(c),
+          });
+        }
+        await emitWebhookEvent(c.env, {
+          organizationId,
+          eventType: "document.sent",
+          payload: {
+            documentId: row.id,
+            publicId: row.publicId,
+            name: row.name,
+            sentAt: sentAt.getTime(),
+          },
+        }).catch((err: unknown) => {
+          console.error("[webhooks] document.sent emit failed:", err);
+        });
+        return { id: publicId, success: true };
+      } catch (err) {
+        console.error("[documents/bulk-send] failed:", err);
+        return { id: publicId, success: false, error: "Could not send this document" };
+      }
+    })
+  );
+  const succeeded = results.filter((result) => result.success).length;
+  return c.json({
+    succeeded,
+    failed: results.length - succeeded,
+    results,
+  });
 });
 
 const updateThumbnailBodySchema = z.object({
@@ -5081,11 +5994,19 @@ app.openapi(saveAsTemplateRouteDef, async (c) => {
     );
   }
 
-  if (doc.status !== "draft") {
+  const templateBlock = saveAsTemplateBlock(
+    doc.status,
+    doc.documentStatus,
+    doc.storageKey
+  );
+  if (templateBlock === "closed") {
     return c.json(
-      { error: "Only draft documents can be saved as templates" },
+      { error: "This document cannot be saved as a template" },
       400
     );
+  }
+  if (templateBlock === "missing_file") {
+    return c.json({ error: "Document has no file" }, 400);
   }
 
   const fields = await db

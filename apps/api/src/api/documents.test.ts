@@ -54,6 +54,7 @@ const documentListSchema = z.array(documentSchema);
 describe("documents API", () => {
   beforeEach(async () => {
     const db = createD1(env.D1);
+    await db.delete(recipients);
     await db.delete(documents);
     await db.delete(folders);
     await db.delete(member);
@@ -123,6 +124,61 @@ describe("documents API", () => {
     const list = documentListSchema.parse(await parseJson(response));
     expect(list.length).toBe(1);
     expect(list[0]?.name).toBe("Contract A");
+  });
+
+  it("omits deleted documents from the list, recent feed, and stats", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+
+    await db.insert(documents).values({
+      id: crypto.randomUUID(),
+      publicId: crypto.randomUUID(),
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Live contract",
+      status: "draft",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await db.insert(documents).values({
+      id: crypto.randomUUID(),
+      publicId: crypto.randomUUID(),
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Deleted contract",
+      status: "uploaded",
+      documentStatus: "deleted",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const listResponse = await app.fetch(
+      new Request("http://localhost:8787/api/documents/test-org"),
+      env
+    );
+    const list = documentListSchema.parse(await parseJson(listResponse));
+    expect(list.map((doc) => doc.name)).toEqual(["Live contract"]);
+
+    const recentResponse = await app.fetch(
+      new Request("http://localhost:8787/api/documents/test-org/recent"),
+      env
+    );
+    const recent = z
+      .array(z.object({ name: z.string() }))
+      .parse(await parseJson(recentResponse));
+    expect(recent.map((doc) => doc.name)).toEqual(["Live contract"]);
+
+    const statsResponse = await app.fetch(
+      new Request("http://localhost:8787/api/documents/test-org/stats"),
+      env
+    );
+    const stats = z
+      .object({ total: z.number(), pending: z.number() })
+      .parse(await parseJson(statsResponse));
+    expect(stats).toMatchObject({ total: 1, pending: 1 });
   });
 
   it("filters documents by workflow status", async () => {
@@ -292,6 +348,133 @@ describe("documents API", () => {
       .from(documents)
       .where(eq(documents.publicId, publicId));
     expect(rows[0]?.documentStatus).toBe("deleted");
+
+    const hidden = documentListSchema.parse(
+      await parseJson(
+        await app.fetch(
+          new Request("http://localhost:8787/api/documents/test-org"),
+          env
+        )
+      )
+    );
+    expect(hidden.map((doc) => doc.name)).not.toContain("Delete Me");
+
+    const bin = documentListSchema.parse(
+      await parseJson(
+        await app.fetch(
+          new Request(
+            "http://localhost:8787/api/documents/test-org?workflowStatus=deleted"
+          ),
+          env
+        )
+      )
+    );
+    expect(bin.map((doc) => doc.name)).toEqual(["Delete Me"]);
+
+    const restored = z
+      .object({ success: z.boolean() })
+      .parse(
+        await parseJson(
+          await app.fetch(
+            new Request(
+              `http://localhost:8787/api/documents/test-org/${publicId}/restore`,
+              { method: "POST" }
+            ),
+            env
+          )
+        )
+      );
+    expect(restored.success).toBe(true);
+    const after = await db
+      .select({ documentStatus: documents.documentStatus })
+      .from(documents)
+      .where(eq(documents.publicId, publicId));
+    expect(after[0]?.documentStatus).toBe("active");
+  });
+
+  it("starts a draft envelope from the executed PDF", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+    const sourceId = crypto.randomUUID();
+    const publicId = crypto.randomUUID();
+    const signedKey = `org_1/final/${sourceId}`;
+    const originalKey = `org_1/originals/${sourceId}`;
+    const signedBytes = new TextEncoder().encode("executed-pdf");
+    const originalBytes = new TextEncoder().encode("unsigned-pdf");
+    await env.DOCUMENTS_BUCKET.put(signedKey, signedBytes);
+    await env.DOCUMENTS_BUCKET.put(originalKey, originalBytes);
+    await db.insert(documents).values({
+      id: sourceId,
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "GOF-TERM.pdf",
+      status: "completed",
+      documentStatus: "active",
+      sharingMode: "private",
+      storageKey: signedKey,
+      originalStorageKey: originalKey,
+      contentType: "application/pdf",
+      size: signedBytes.byteLength,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await db.insert(recipients).values({
+      id: crypto.randomUUID(),
+      publicId: crypto.randomUUID(),
+      documentId: sourceId,
+      email: "signer@example.com",
+      name: "Signer",
+      role: "signer",
+      order: 1,
+      status: "signed",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/test-org/${publicId}/forward-envelope`,
+        { method: "POST" }
+      ),
+      env
+    );
+    expect(response.status).toBe(201);
+    const created = z
+      .object({ publicId: z.string() })
+      .parse(await parseJson(response));
+    const rows = await db
+      .select()
+      .from(documents)
+      .where(eq(documents.publicId, created.publicId));
+    const draft = rows[0];
+    expect(draft?.status).toBe("draft");
+    expect(draft?.name).toBe("Forward of GOF-TERM.pdf");
+    expect(draft?.parentDocumentId).toBe(sourceId);
+    expect(draft?.storageKey).toBeTruthy();
+    expect(draft?.storageKey).not.toBe(signedKey);
+    const stored = await env.DOCUMENTS_BUCKET.get(draft!.storageKey!);
+    expect(new Uint8Array(await stored!.arrayBuffer())).toEqual(signedBytes);
+    const copiedRecipients = await db
+      .select({ id: recipients.id })
+      .from(recipients)
+      .where(eq(recipients.documentId, draft!.id));
+    expect(copiedRecipients).toEqual([]);
+
+    const source = await db
+      .select({ status: documents.status })
+      .from(documents)
+      .where(eq(documents.id, sourceId));
+    expect(source[0]?.status).toBe("completed");
+
+    const draftResponse = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/test-org/${created.publicId}/forward-envelope`,
+        { method: "POST" }
+      ),
+      env
+    );
+    expect(draftResponse.status).toBe(409);
   });
 
   it("sends a draft document", async () => {
@@ -1114,6 +1297,47 @@ describe("documents API", () => {
     expect(updated[0]?.signingToken).not.toBe(oldToken);
   });
 
+  it("refuses a payment field until charges are approved", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+    const publicId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: crypto.randomUUID(),
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Payment gate",
+      status: "draft",
+      documentStatus: "active",
+      sharingMode: "private",
+      pageCount: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/test-org/${publicId}/signature-fields`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fieldType: "payment",
+            label: "Pay",
+            isRequired: true,
+            x: 10,
+            y: 20,
+            width: 30,
+            height: 10,
+            page: 1,
+          }),
+        }
+      ),
+      env
+    );
+    expect(response.status).toBe(403);
+  });
+
   it("creates, repositions, assigns, and deletes a signature field", async () => {
     const app = createApp("org_1");
     const db = createD1(env.D1);
@@ -1224,5 +1448,189 @@ describe("documents API", () => {
       .object({ success: z.boolean() })
       .parse(await parseJson(deleteResponse));
     expect(deleted.success).toBe(true);
+  });
+
+  it("parses the uploaded file — parsedText and field metadata persist", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+
+    const publicId = `doc_${crypto.randomUUID().slice(0, 8)}`;
+    const docId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: docId,
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Upload me",
+      status: "draft",
+      workflowStatus: "draft",
+      documentStatus: "active",
+    });
+
+    const pdfBytes = Buffer.from(
+      "%PDF-1.4 " + "x".repeat(512) + " %%EOF"
+    ).toString("base64");
+    const res = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/test-org/${publicId}/upload`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contentBase64: pdfBytes,
+            contentType: "application/pdf",
+          }),
+        }
+      ),
+      env
+    );
+    expect(res.status).toBe(200);
+    const uploaded = z
+      .object({ storageKey: z.string() })
+      .parse(await parseJson(res));
+
+    const row = await db
+      .select()
+      .from(documents)
+      .where(eq(documents.id, docId))
+      .limit(1);
+    // anydoc mock returns markdown:"test" — proves parse ran on upload
+    expect(row[0]?.parsedText).toBe("test");
+    expect(row[0]?.parsedFormat).toBe("pdf");
+    expect(row[0]?.pageCount).toBe(1);
+    expect(uploaded.storageKey).toBeTruthy();
+  });
+
+  it("emails a new signer added to a sent envelope", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+    const publicId = crypto.randomUUID();
+    const docId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: docId,
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Sent",
+      status: "sent",
+      documentStatus: "active",
+      sharingMode: "private",
+      signingMode: "parallel",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/test-org/${publicId}/recipients`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            recipients: [{ email: "new@example.com", name: "New" }],
+          }),
+        }
+      ),
+      env
+    );
+    expect(response.status).toBe(201);
+    const rows = await db
+      .select({
+        email: recipients.email,
+        signingToken: recipients.signingToken,
+      })
+      .from(recipients)
+      .where(eq(recipients.documentId, docId));
+    expect(rows[0]?.email).toBe("new@example.com");
+    expect((rows[0]?.signingToken ?? "").length).toBeGreaterThan(10);
+  });
+
+  it("rejects a new signer on a finished envelope", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+    const publicId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: crypto.randomUUID(),
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Done",
+      status: "completed",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/test-org/${publicId}/recipients`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            recipients: [{ email: "late@example.com" }],
+          }),
+        }
+      ),
+      env
+    );
+    expect(response.status).toBe(400);
+  });
+
+  it("rotates the link when a sent recipient's email changes", async () => {
+    const app = createApp("org_1");
+    const db = createD1(env.D1);
+    const publicId = crypto.randomUUID();
+    const docId = crypto.randomUUID();
+    const recipientPublicId = crypto.randomUUID();
+    await db.insert(documents).values({
+      id: docId,
+      publicId,
+      organizationId: "org_1",
+      ownerId: "user_1",
+      name: "Sent",
+      status: "sent",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await db.insert(recipients).values({
+      id: crypto.randomUUID(),
+      publicId: recipientPublicId,
+      documentId: docId,
+      email: "old@example.com",
+      name: "Old",
+      role: "signer",
+      order: 1,
+      status: "pending",
+      signingToken: "old-token",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/documents/test-org/${publicId}/recipients/${recipientPublicId}`,
+        {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ email: "new@example.com" }),
+        }
+      ),
+      env
+    );
+    expect(response.status).toBe(200);
+    const rows = await db
+      .select({
+        email: recipients.email,
+        signingToken: recipients.signingToken,
+      })
+      .from(recipients)
+      .where(eq(recipients.documentId, docId));
+    expect(rows[0]?.email).toBe("new@example.com");
+    expect(rows[0]?.signingToken).not.toBe("old-token");
+    expect((rows[0]?.signingToken ?? "").length).toBeGreaterThan(10);
   });
 });

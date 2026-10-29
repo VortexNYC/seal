@@ -25,7 +25,7 @@ traces = { enabled = true, head_sampling_rate = 0.1 }
 [[d1_databases]]
 binding = "D1"
 database_name = "seal-dev"
-database_id = "87e149a4-908f-4380-a70f-cc2f02f68a07"
+database_id = "712fe47b-6d6c-4d00-a05e-2df5b3bcb683"
 migrations_dir = "migrations"
 
 [[send_email]]
@@ -44,6 +44,14 @@ service = "seal-anydoc-worker"
 binding = "SEAL_CONVERT_WORKER"
 service = "seal-convert-worker"
 
+[[durable_objects.bindings]]
+name = "JOB_RUNNER"
+class_name = "JobRunner"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["JobRunner"]
+
 [triggers]
 crons = ["0 9 * * *", "*/5 * * * *"]
 
@@ -59,6 +67,11 @@ EMAIL_FROM = "notifications@seal.nyc"
 APP_URL = "https://app.seal.nyc"
 MCP_SIGNING_KEY_ID = "mcp-key-1"
 
+# Smart Placement — colocates the worker beside single-region D1 so hot
+# paths skip the public-internet hop to the DB.
+[env.production.placement]
+mode = "smart"
+
 [env.production.observability]
 enabled = true
 logs = { enabled = true }
@@ -67,7 +80,7 @@ traces = { enabled = true, head_sampling_rate = 0.1 }
 [[env.production.d1_databases]]
 binding = "D1"
 database_name = "seal-global"
-database_id = "b49f3f65-510b-4b15-849e-8b64258a3d8e"
+database_id = "05d96228-f9cb-4486-8f6f-9f2c3de4ce4a"
 migrations_dir = "migrations"
 
 [[env.production.send_email]]
@@ -85,6 +98,14 @@ service = "seal-anydoc-worker"
 [[env.production.services]]
 binding = "SEAL_CONVERT_WORKER"
 service = "seal-convert-worker"
+
+[[env.production.durable_objects.bindings]]
+name = "JOB_RUNNER"
+class_name = "JobRunner"
+
+[[env.production.migrations]]
+tag = "v1"
+new_sqlite_classes = ["JobRunner"]
 
 [env.production.triggers]
 crons = ["0 9 * * *", "*/5 * * * *"]

@@ -1,3 +1,4 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { createFileRoute, Link } from "@tanstack/react-router";
 /**
  * Password reset completion — linked from the recovery email (?token=…).
@@ -23,10 +24,8 @@ function ResetPasswordRoute() {
   if (!token) {
     return (
       <div className="space-y-3 text-center">
-        <p className="text-sm">
-          This reset link is missing a token. Request a new password reset from
-          your profile or the sign-in page.
-        </p>
+        <Text as="p" size="sm">This reset link is missing a token. Request a new password reset from
+          your profile or the sign-in page.</Text>
         <Link className="text-sm underline underline-offset-4" to="/sign-in">
           Back to sign in
         </Link>
@@ -35,7 +34,7 @@ function ResetPasswordRoute() {
   }
 
   if (client === null) {
-    return <p className="text-center text-sm">Auth client not configured.</p>;
+    return <Text as="p" size="sm">Auth client not configured.</Text>;
   }
 
   return (

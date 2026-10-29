@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { createD1 } from "../../global/db.js";
 import { documents } from "../../global/schema.js";
+import { isEnvelopeClosed } from "../../platform/workflow-status.js";
 import { mcpHasScope, type McpAccessToken } from "../../platform/mcp-auth.js";
 
 const app = new OpenAPIHono<{
@@ -79,7 +80,9 @@ app.get("/", async (c) => {
   const totalCompleted = periodDocs.filter(
     (d) => d.status === "completed"
   ).length;
-  const totalCancelled = periodDocs.filter((d) => d.status === "voided").length;
+  const totalCancelled = periodDocs.filter((d) =>
+    isEnvelopeClosed(d.status ?? "")
+  ).length;
   const totalDeclined = periodDocs.filter(
     (d) => d.status === "declined"
   ).length;
@@ -113,7 +116,7 @@ app.get("/", async (c) => {
     else if (status === "sent") snapshot.sent++;
     else if (status === "in_progress") snapshot.in_progress++;
     else if (status === "completed") snapshot.completed++;
-    else if (status === "voided") snapshot.cancelled++;
+    else if (isEnvelopeClosed(status)) snapshot.cancelled++;
     else if (status === "declined") snapshot.declined++;
   }
 

@@ -25,8 +25,15 @@ import {
 } from "@phosphor-icons/react";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { Suspense, useCallback, useEffect, useState, type ReactElement } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useState,
+  type ReactElement,
+} from "react";
 
+import { ContactOversightPanel } from "@/components/contacts/contact-oversight-panel";
 import { ContactStatusBadge } from "@/components/contacts/contact-status-badge";
 import { CreateContactDialog } from "@/components/contacts/create-contact-dialog";
 import { EditContactDialog } from "@/components/contacts/edit-contact-dialog";
@@ -74,7 +81,7 @@ function ContactsTableSkeleton() {
       role="status"
       aria-label="Loading contacts"
     >
-      <Table className="min-w-[600px]">
+      <Table className="min-w-150">
         <Table.Header>
           <Table.Row>
             <Table.Head className="w-10" />
@@ -153,6 +160,9 @@ function ContactsTableContent({
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   const [editContact, setEditContact] = useState<ApiContact | null>(null);
+  const [inspectedId, setInspectedId] = useState<string | null>(null);
+  const inspected =
+    contacts.find((contact) => contact._id === inspectedId) ?? null;
 
   const handleDelete = (contactId: string, contactName: string) => {
     setDeleteDialog({ open: true, contactId, contactName });
@@ -234,7 +244,7 @@ function ContactsTableContent({
     if (hasFilters) {
       return (
         <Empty
-          icon={<MagnifyingGlass size={48} />}
+          icon={<MagnifyingGlass size={24} />}
           title="No contacts found"
           description="Try adjusting your search or filters to find what you're looking for."
         />
@@ -244,7 +254,7 @@ function ContactsTableContent({
     return (
       <div className="motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2 motion-safe:duration-300">
         <Empty
-          icon={<Users size={48} />}
+          icon={<Users size={24} />}
           title="No contacts yet"
           description="Optional address book — recipients also appear here after you send."
           contents={
@@ -262,10 +272,11 @@ function ContactsTableContent({
     selectedIds.size > 0 && selectedIds.size < contacts.length;
 
   return (
-    <>
+    <div className="flex items-stretch">
+    <div className="flex min-w-0 flex-1 flex-col gap-4">
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
-        <div className="bg-muted/50 flex items-center justify-between gap-2 rounded-lg border p-2">
+        <div className="bg-kumo-elevated/50 flex items-center justify-between gap-2 rounded-lg border p-2">
           <Text as="span" variant="secondary" size="sm">
             {selectedIds.size} selected
           </Text>
@@ -280,7 +291,7 @@ function ContactsTableContent({
       )}
 
       <div className="overflow-x-auto rounded-lg border">
-        <Table className="min-w-[600px]">
+        <Table className="min-w-150">
           <Table.Header>
             <Table.Row>
               <Table.Head className="w-10">
@@ -304,8 +315,12 @@ function ContactsTableContent({
               <Table.Row
                 key={contact._id}
                 className="cursor-pointer"
-                variant={selectedIds.has(contact._id) ? "selected" : "default"}
-                onClick={() => handleOpenContact(contact._id)}
+                variant={
+                  inspectedId === contact._id || selectedIds.has(contact._id)
+                    ? "selected"
+                    : "default"
+                }
+                onClick={() => setInspectedId(contact._id)}
               >
                 <Table.CheckCell
                   checked={selectedIds.has(contact._id)}
@@ -314,9 +329,7 @@ function ContactsTableContent({
                   onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 />
                 <Table.Cell>
-                  <p className="text-kumo-default font-medium">
-                    {contact.fullName}
-                  </p>
+                  <Text as="p" bold>{contact.fullName}</Text>
                 </Table.Cell>
                 <Table.Cell>
                   <Text as="p" variant="secondary" size="sm">
@@ -343,11 +356,10 @@ function ContactsTableContent({
                         variant="ghost"
                         size="sm"
                         aria-label={`Contact actions for ${contact.fullName ?? "selected contact"}`}
-                        className="h-8 w-8"
+                        shape="square"
+                        icon={DotsThreeVertical}
                         onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                      >
-                        <DotsThreeVertical className="h-4 w-4" />
-                      </Button>
+                      />
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Content
                       align="end"
@@ -474,7 +486,15 @@ function ContactsTableContent({
           }
         />
       )}
-    </>
+    </div>
+    {inspected ? (
+      <ContactOversightPanel
+        organizationSlug={slug}
+        contact={inspected}
+        onClose={() => setInspectedId(null)}
+      />
+    ) : null}
+    </div>
   );
 }
 
@@ -597,7 +617,7 @@ function ContactsPage() {
       <div className="flex w-full flex-col gap-4">
         <div className="flex flex-col gap-3">
           <div className="relative">
-            <MagnifyingGlass className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+            <MagnifyingGlass className="text-kumo-secondary absolute top-1/2 left-3 size-4 -translate-y-1/2" />
             <Input
               type="text"
               aria-label="Search contacts by name"
@@ -621,37 +641,37 @@ function ContactsPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+            <span className="text-kumo-secondary text-xs font-medium tracking-wide uppercase">
               Status
             </span>
-          <Button
-            size="sm"
-            variant={statusFilter === "all" ? "primary" : "outline"}
-            onClick={() => setStatusFilter("all")}
-          >
-            All
-          </Button>
-          <Button
-            size="sm"
-            variant={statusFilter === "active" ? "primary" : "outline"}
-            onClick={() => setStatusFilter("active")}
-          >
-            Active
-          </Button>
-          <Button
-            size="sm"
-            variant={statusFilter === "inactive" ? "primary" : "outline"}
-            onClick={() => setStatusFilter("inactive")}
-          >
-            Inactive
-          </Button>
-          <Button
-            size="sm"
-            variant={statusFilter === "lead" ? "primary" : "outline"}
-            onClick={() => setStatusFilter("lead")}
-          >
-            Lead
-          </Button>
+            <Button
+              size="sm"
+              variant={statusFilter === "all" ? "primary" : "outline"}
+              onClick={() => setStatusFilter("all")}
+            >
+              All
+            </Button>
+            <Button
+              size="sm"
+              variant={statusFilter === "active" ? "primary" : "outline"}
+              onClick={() => setStatusFilter("active")}
+            >
+              Active
+            </Button>
+            <Button
+              size="sm"
+              variant={statusFilter === "inactive" ? "primary" : "outline"}
+              onClick={() => setStatusFilter("inactive")}
+            >
+              Inactive
+            </Button>
+            <Button
+              size="sm"
+              variant={statusFilter === "lead" ? "primary" : "outline"}
+              onClick={() => setStatusFilter("lead")}
+            >
+              Lead
+            </Button>
           </div>
         </div>
 

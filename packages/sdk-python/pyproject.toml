@@ -2,7 +2,7 @@
 name = "vortex-api-seal"
 version = "0.1.0"
 description = "A client library for accessing Seal API"
-authors = [{ name = "Vortex", email = "hello@seal.nyc" }]
+authors = [{ name = "Vortex" }]
 requires-python = ">=3.11"
 readme = "README.md"
 dependencies = ["httpx>=0.23.1,<0.29.0", "attrs>=22.2.0"]

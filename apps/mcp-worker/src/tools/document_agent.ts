@@ -9,7 +9,9 @@ import { getAuthToken } from "../utils/auth";
 
 function createToolResponse(payload: unknown) {
   return {
-    content: [{ type: "text" as const, text: JSON.stringify(payload, null, 2) }],
+    content: [
+      { type: "text" as const, text: JSON.stringify(payload, null, 2) },
+    ],
   };
 }
 
@@ -66,11 +68,11 @@ export function registerDocumentAgentTools(
 
   server.tool(
     "seal_preview_document",
-    "Preview a document for agents. format=markdown (parsed text + field_candidates), structured (markdown + csv_rows when original is CSV), pdf or original (signed download URL for the PDF or pre-conversion office/CSV file).",
+    "Preview a document for agents. format=markdown (parsed text + field_candidates), structured (markdown + csv_rows when original is CSV), chunks (per-line anchored text with page+bbox — citation/redline targeting), pdf or original (signed download URL for the PDF or pre-conversion office/CSV file).",
     {
       id: z.string().describe("Document ID"),
       format: z
-        .enum(["markdown", "structured", "pdf", "original"])
+        .enum(["markdown", "structured", "chunks", "pdf", "original"])
         .optional()
         .describe("Preview format (default markdown)"),
     },
@@ -291,6 +293,358 @@ export function registerDocumentAgentTools(
       const authToken = getAuthToken(extra);
       const response = await client.post<unknown>(
         "/documents/pdf/rotate",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
+    "seal_organize_document_pdf",
+    "Reorder or delete pages of a draft PDF in place. Pass the new order as 1-based source page numbers (omit a page to delete it). Fields on deleted pages are removed; others are remapped.",
+    {
+      id: z.string().describe("Document ID"),
+      pages: z
+        .array(z.number().int().min(1))
+        .min(1)
+        .max(500)
+        .describe(
+          "New page order using original 1-based page numbers, e.g. [3,1,2] moves page 3 first and drops page 4+"
+        ),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/organize",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
+    "seal_watermark_document_pdf",
+    "Stamp a text watermark (e.g. DRAFT, CONFIDENTIAL) onto a draft PDF. Deterministic pdf-lib — not Seal AI.",
+    {
+      id: z.string().describe("Document ID"),
+      text: z.string().min(1).max(120).describe("Watermark text"),
+      opacity: z.number().min(0.05).max(1).optional(),
+      position: z.enum(["diagonal", "center", "footer"]).optional(),
+      color: z.string().optional().describe("Hex color"),
+      size: z.number().min(6).max(120).optional(),
+      pages: z
+        .array(z.number().int().min(1))
+        .optional()
+        .describe("1-based pages; omit for all"),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/watermark",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
+    "seal_number_document_pdf_pages",
+    "Stamp footer page numbers onto a draft PDF (`n` or `n_of_m`). Deterministic pdf-lib — not Seal AI.",
+    {
+      id: z.string().describe("Document ID"),
+      format: z.enum(["n", "n_of_m"]).optional(),
+      position: z
+        .enum(["footer-center", "footer-right", "footer-left"])
+        .optional(),
+      start_at: z.number().int().min(0).optional(),
+      prefix: z.string().max(40).optional().describe('e.g. "Page "'),
+      size: z.number().min(6).max(48).optional(),
+      color: z.string().optional(),
+      pages: z.array(z.number().int().min(1)).optional(),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/number-pages",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
+    "seal_crop_document_pdf",
+    "Crop draft PDF pages to a top-left percent rect (0–100, same space as fields). Bakes a smaller page. Fields outside the crop are removed; survivors remapped.",
+    {
+      id: z.string().describe("Document ID"),
+      crops: z
+        .array(
+          z.object({
+            page: z.number().int().min(1),
+            x: z.number().min(0).max(100),
+            y: z.number().min(0).max(100),
+            width: z.number().min(1).max(100),
+            height: z.number().min(1).max(100),
+          })
+        )
+        .min(1)
+        .max(500)
+        .describe(
+          "Per-page crops. Example: [{ page: 1, x: 5, y: 5, width: 90, height: 90 }] trims a 5% margin"
+        ),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/crop",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
+    "seal_compress_document_pdf",
+    "Compress a draft PDF in place (re-encodes images via convert-worker PDF engines — structure/text untouched, never enlarges). Returns size_before/size_after.",
+    {
+      id: z.string().describe("Document ID"),
+      image_quality: z
+        .number()
+        .int()
+        .min(1)
+        .max(100)
+        .optional()
+        .describe("JPEG quality for re-encoded images (default 80)"),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/compress",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
+    "seal_redact_document_pdf",
+    "Permanently redact regions of a draft PDF — removes text/images/paths inside each percent rect from the bytes (not an overlay). Returns a receipt (scrubbed_text). Fields inside regions are removed.",
+    {
+      id: z.string().describe("Document ID"),
+      regions: z
+        .array(
+          z.object({
+            page: z.number().int().min(1),
+            x: z.number().min(0).max(100),
+            y: z.number().min(0).max(100),
+            width: z.number().min(0.5).max(100),
+            height: z.number().min(0.5).max(100),
+          })
+        )
+        .min(1)
+        .max(200)
+        .describe("Percent rects to redact (same space as fields)"),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/redact",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
+    "seal_protect_document_pdf",
+    "Create a password-protected copy of a draft PDF (qpdf encrypt via convert-worker). Draft stays unencrypted; returns download_url for the encrypted artifact.",
+    {
+      id: z.string().describe("Document ID"),
+      user_password: z
+        .string()
+        .min(1)
+        .max(128)
+        .optional()
+        .describe("Password required to open"),
+      owner_password: z
+        .string()
+        .min(1)
+        .max(128)
+        .optional()
+        .describe("Owner password (full access)"),
+      allow_printing: z.boolean().optional(),
+      allow_copying: z.boolean().optional(),
+      allow_modifying: z.boolean().optional(),
+      allow_annotating: z.boolean().optional(),
+      allow_filling_forms: z.boolean().optional(),
+      allow_assembling: z.boolean().optional(),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/protect",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
+    "seal_export_document_pdf_images",
+    "Export every page of a draft PDF as images — returns a ZIP artifact (page-N.png|jpg) and download_url. Working draft unchanged.",
+    {
+      id: z.string().describe("Document ID"),
+      format: z.enum(["png", "jpeg"]).default("png").describe("Image format"),
+      dpi: z
+        .number()
+        .min(50)
+        .max(600)
+        .default(150)
+        .describe("Render DPI (50–600)"),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/export-images",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
+    "seal_compare_document_pdfs",
+    "Text-level compare between two draft PDFs — returns per-page added/removed lines (read-only; no storage changes).",
+    {
+      id: z.string().describe("First document ID (baseline)"),
+      other_id: z.string().describe("Second document ID (compare target)"),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/compare",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
+    "seal_convert_document_pdf_to_office",
+    "Convert a draft PDF to an Office file — docx/xlsx/pptx artifact with download_url. Layout-locked fidelity (Draw import); working draft unchanged.",
+    {
+      id: z.string().describe("Document ID"),
+      format: z
+        .enum(["docx", "xlsx", "pptx"])
+        .default("docx")
+        .describe("Output format"),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/to-office",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
+    "seal_ocr_document_pdf",
+    "OCR a draft PDF — adds a searchable text layer to scanned/image pages (ocrmypdf --skip-text; existing text preserved).",
+    {
+      id: z.string().describe("Document ID"),
+      lang: z
+        .string()
+        .regex(/^[a-z]{3}(\+[a-z]{3})*$/)
+        .default("eng")
+        .describe("Tesseract language code(s), e.g. eng or eng+fra"),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/ocr",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
+    "seal_convert_document_pdf_to_pdfa",
+    "Convert a draft PDF to archival PDF/A (1b/2b/3b via Gotenberg pdfengines/convert). The archival PDF replaces the document's stored PDF.",
+    {
+      id: z.string().describe("Document ID"),
+      format: z
+        .enum(["PDF/A-1b", "PDF/A-2b", "PDF/A-3b"])
+        .default("PDF/A-2b")
+        .describe("PDF/A flavour"),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/to-pdfa",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
+    "seal_flatten_document_pdf",
+    "Flatten annotations and AcroForm fields into page content (pdfengines/flatten). Seal signature fields (stored in the database) are unaffected.",
+    {
+      id: z.string().describe("Document ID"),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/flatten",
+        args as Record<string, unknown>,
+        undefined,
+        authToken
+      );
+      return createToolResponse(response);
+    }
+  );
+
+  server.tool(
+    "seal_unlock_document_pdf",
+    "Unlock a password-protected draft PDF in place (LibreOffice re-export — may shift complex layouts). Claims the usable bytes onto the document.",
+    {
+      id: z.string().describe("Document ID"),
+      password: z.string().min(1).max(128).describe("PDF open password"),
+    },
+    async (args, extra) => {
+      const authToken = getAuthToken(extra);
+      const response = await client.post<unknown>(
+        "/documents/pdf/unlock",
         args as Record<string, unknown>,
         undefined,
         authToken

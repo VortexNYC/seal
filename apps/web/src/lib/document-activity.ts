@@ -18,6 +18,7 @@ export type ActivityEvent = {
 type DocumentData = {
   name: string;
   createdAt: number;
+  sentAt?: number | null;
 };
 
 type Recipient = {
@@ -45,6 +46,14 @@ export function buildActivityEvents(
     timestamp: documentData.createdAt,
     description: `Document "${documentData.name}" was created`,
   });
+
+  if (documentData.sentAt) {
+    events.push({
+      type: "sent",
+      timestamp: documentData.sentAt,
+      description: `Document "${documentData.name}" was sent`,
+    });
+  }
 
   for (const recipient of recipients) {
     events.push({

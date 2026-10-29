@@ -1,10 +1,4 @@
 /**
- * Document Workspace — one roof for human SPA + agent tools.
- *
- * PDF-toolkit capabilities only: Fields, Mark up, Pages, Layout (+ read-only
- * view) share one EmbedPDF `DocumentCanvas` mount. Upload converts office/CSV
- * to PDF at intake — no in-app Word/Excel editor. New work extends this
- * registry — no peer “modes”.
  *
  * Agent MCP tool names are listed so the SPA and MCP stay the same surface.
  */
@@ -33,9 +27,13 @@ export const DOCUMENT_CAPABILITIES = [
   {
     id: "pages",
     label: "Pages",
-    description: "Rotate, combine, or split into drafts",
+    description: "Rotate, organize, crop, watermark, number, combine, or split",
     agentTools: [
       "seal_rotate_document_pdf",
+      "seal_organize_document_pdf",
+      "seal_crop_document_pdf",
+      "seal_watermark_document_pdf",
+      "seal_number_document_pdf_pages",
       "seal_merge_documents_pdf",
       "seal_split_document",
     ] as const,
@@ -57,7 +55,9 @@ export type DocumentCapabilityId = (typeof DOCUMENT_CAPABILITIES)[number]["id"];
 export function getDocumentCapability(
   id: DocumentCapabilityId
 ): (typeof DOCUMENT_CAPABILITIES)[number] {
-  const found = DOCUMENT_CAPABILITIES.find((capability) => capability.id === id);
+  const found = DOCUMENT_CAPABILITIES.find(
+    (capability) => capability.id === id
+  );
   if (!found) {
     return DOCUMENT_CAPABILITIES[0];
   }

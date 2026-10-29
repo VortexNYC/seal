@@ -2,7 +2,7 @@ import { Button } from "@cloudflare/kumo/components/button";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
 import { ArrowClockwise, House, Warning } from "@phosphor-icons/react";
-import posthog from "posthog-js";
+import { withPosthog } from "@/lib/posthog-client";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
 interface ErrorBoundaryProps {
@@ -44,10 +44,12 @@ export class ErrorBoundary extends Component<
     // Handled React render errors never hit window.onerror — send explicitly.
     // Do not attach componentStack (can include route params / emails).
     try {
-      posthog.captureException(error, {
-        $exception_source: "react_error_boundary",
-        handled: true,
-      });
+      withPosthog((posthog) =>
+        posthog.captureException(error, {
+          $exception_source: "react_error_boundary",
+          handled: true,
+        })
+      );
     } catch {
       // Analytics must never break the fallback UI.
     }
@@ -120,9 +122,11 @@ export function ErrorFallback({
         <LayerCard.Secondary className="space-y-3">
           {isDev && error && (
             <div className="bg-kumo-elevated rounded-lg p-4">
-              <Text as="p" size="sm" variant="error" DANGEROUS_className="mb-2">
-                Error Details (Development Only):
-              </Text>
+              <div className="mb-2">
+                <Text as="p" size="sm" variant="error">
+                  Error Details (Development Only):
+                </Text>
+              </div>
               <pre className="text-kumo-secondary overflow-auto text-xs">
                 {error.message}
               </pre>

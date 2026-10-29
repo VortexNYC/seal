@@ -1,6 +1,6 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { eq } from "drizzle-orm";
 import { env } from "cloudflare:test";
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 
@@ -11,11 +11,14 @@ import {
   auditLogs,
   documents,
   organization,
+  paymentFieldConfigs,
   recipients,
+  signatureFields,
   signatures,
   webhookDeliveries,
   webhooks,
 } from "../global/schema.js";
+import { sha256PdfBytes } from "../platform/final-pdf.js";
 import publicRoute from "./public.js";
 
 /** Existing public submit tests exercise token/auth gates without a Seal session. */
@@ -52,6 +55,8 @@ describe("public API", () => {
     await db.delete(activity);
     await db.delete(auditLogs);
     await db.delete(auditChainTips);
+    await db.delete(paymentFieldConfigs);
+    await db.delete(signatureFields);
     await db.delete(recipients);
     await db.delete(documents);
     await db.delete(organization);
@@ -213,6 +218,180 @@ describe("public API", () => {
     }
   });
 
+  it("verifies a sealed PDF by upload (hash match)", async () => {
+    const db = createD1(env.D1);
+
+    await db.insert(organization).values({
+      id: "org_verify_up",
+      name: "Verify Org",
+      slug: "verify-org-up",
+    });
+
+    const pdfBytes = new TextEncoder().encode("%PDF-1.4 fake-sealed-bytes");
+    const documentHash = await sha256PdfBytes(pdfBytes);
+    const completedAt = new Date();
+    await db.insert(documents).values({
+      id: "doc_verify_up",
+      publicId: "doc_pub_verify_up",
+      organizationId: "org_verify_up",
+      name: "Sealed Contract",
+      status: "completed",
+      documentStatus: "active",
+      sharingMode: "private",
+      documentHash,
+      completedAt,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await db.insert(recipients).values({
+      id: "rec_verify_up",
+      publicId: "rec_pub_verify_up",
+      documentId: "doc_verify_up",
+      name: "Bob Signer",
+      email: "bob@example.com",
+      role: "signer",
+      status: "signed",
+      signedAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const app = createApp();
+    const response = await app.fetch(
+      new Request("http://localhost:8787/api/public/verify-upload", {
+        method: "POST",
+        headers: { "content-type": "application/pdf" },
+        body: pdfBytes,
+      }),
+      env
+    );
+
+    expect(response.status).toBe(200);
+    const result = z
+      .object({
+        verified: z.literal(true),
+        hashMatch: z.literal(true),
+        documentName: z.string(),
+        signerCount: z.number(),
+        signers: z.array(
+          z.object({ name: z.string(), maskedEmail: z.string() })
+        ),
+      })
+      .parse(await response.json());
+    expect(result.documentName).toBe("Sealed Contract");
+    expect(result.signerCount).toBe(1);
+    expect(result.signers[0]?.maskedEmail).toBe("b****@example.com");
+  });
+
+  it("rejects tampered bytes — hash miss is unverified, not 404", async () => {
+    const app = createApp();
+    const response = await app.fetch(
+      new Request("http://localhost:8787/api/public/verify-upload", {
+        method: "POST",
+        headers: { "content-type": "application/pdf" },
+        body: new TextEncoder().encode("%PDF-1.4 altered"),
+      }),
+      env
+    );
+    expect(response.status).toBe(200);
+    const result = z
+      .object({ verified: z.literal(false), hashMatch: z.literal(false) })
+      .parse(await response.json());
+    expect(result.verified).toBe(false);
+  });
+
+  it("verify-upload rejects non-PDF bodies", async () => {
+    const app = createApp();
+    const response = await app.fetch(
+      new Request("http://localhost:8787/api/public/verify-upload", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "{}",
+      }),
+      env
+    );
+    expect(response.status).toBe(400);
+  });
+
+  it("returns the hosted pay link on the signer payment config", async () => {
+    const db = createD1(env.D1);
+    await db.insert(organization).values({
+      id: "org_link",
+      name: "Link Org",
+      slug: "link-org",
+      createdAt: new Date(),
+    });
+    await db.insert(documents).values({
+      id: "doc_link",
+      publicId: "doc_pub_link",
+      organizationId: "org_link",
+      name: "Link Document",
+      status: "waiting_for_payment",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    const token = "pay-link-token";
+    await db.insert(recipients).values({
+      id: "rec_link",
+      publicId: "rec_pub_link",
+      documentId: "doc_link",
+      email: "payer@example.com",
+      name: "Payer",
+      role: "signer",
+      status: "signed",
+      signingToken: token,
+      tokenExpiresAt: new Date(Date.now() + 60_000),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await db.insert(signatureFields).values({
+      id: "field_link",
+      publicId: "field_pub_link",
+      documentId: "doc_link",
+      fieldType: "payment",
+      label: "Pay",
+      x: 1,
+      y: 1,
+      width: 10,
+      height: 4,
+      page: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await db.insert(paymentFieldConfigs).values({
+      id: "cfg_link",
+      publicId: "cfg_pub_link",
+      fieldId: "field_link",
+      documentId: "doc_link",
+      organizationId: "org_link",
+      paymentType: "one_time",
+      items: "[]",
+      currency: "usd",
+      dueDateTerms: "on_receipt",
+      allowedPaymentMethods: "[]",
+      feeHandling: "merchant",
+      totalAmountCents: 2500,
+      hostedInvoiceUrl: "https://pay.vortex.nyc/example",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const app = createApp();
+    const response = await app.fetch(
+      new Request(
+        `http://localhost:8787/api/public/signing/${token}/payment-configs`
+      ),
+      env
+    );
+    expect(response.status).toBe(200);
+    const body = z
+      .array(z.object({ hostedInvoiceUrl: z.string().nullable() }))
+      .parse(await response.json());
+    expect(body[0]?.hostedInvoiceUrl).toBe("https://pay.vortex.nyc/example");
+  });
+
   it("returns null for an unknown qr token", async () => {
     const app = createApp();
     const response = await app.fetch(
@@ -332,6 +511,101 @@ describe("public API", () => {
       "document.completed",
       "recipient.signed",
     ]);
+  });
+
+  it("waits for payment after the last signature instead of completing", async () => {
+    const db = createD1(env.D1);
+    await db.insert(organization).values({
+      id: "org_pay",
+      name: "Pay Org",
+      slug: "pay-org",
+      metadata: ANONYMOUS_SIGN_ORG_METADATA,
+    });
+    await db.insert(documents).values({
+      id: "doc_pay",
+      publicId: "doc_pub_pay",
+      organizationId: "org_pay",
+      name: "Pay Document",
+      status: "sent",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    const token = "pay-token";
+    await db.insert(recipients).values({
+      id: "rec_pay",
+      publicId: "rec_pub_pay",
+      documentId: "doc_pay",
+      email: "payer@example.com",
+      name: "Payer",
+      role: "signer",
+      status: "pending",
+      signingToken: token,
+      tokenExpiresAt: new Date(Date.now() + 60_000),
+      ...consentFields,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await db.insert(signatureFields).values({
+      id: "field_pay",
+      publicId: "field_pub_pay",
+      documentId: "doc_pay",
+      recipientId: "rec_pay",
+      fieldType: "payment",
+      label: "Pay",
+      isRequired: true,
+      x: 10,
+      y: 10,
+      width: 20,
+      height: 8,
+      page: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await db.insert(paymentFieldConfigs).values({
+      id: "cfg_pay",
+      publicId: "cfg_pub_pay",
+      fieldId: "field_pay",
+      documentId: "doc_pay",
+      organizationId: "org_pay",
+      paymentType: "one_time",
+      items: "[]",
+      currency: "usd",
+      dueDateTerms: "on_receipt",
+      allowedPaymentMethods: "[]",
+      feeHandling: "merchant",
+      totalAmountCents: 2500,
+      paymentStatus: "pending",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const app = createApp();
+    const signed = await app.fetch(
+      new Request(`http://localhost:8787/api/public/signing/${token}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "signed",
+          signatureData: "Payer",
+          signatureType: "type",
+          ipAddress: "203.0.113.10",
+          userAgent: "seal-test/1.0",
+        }),
+      }),
+      env
+    );
+    expect(signed.status).toBe(200);
+
+    const [doc] = await db
+      .select({ status: documents.status })
+      .from(documents)
+      .where(eq(documents.id, "doc_pay"));
+    expect(doc?.status).toBe("waiting_for_payment");
+
+    const audits = await db.select().from(auditLogs);
+    expect(audits.map((row) => row.action)).not.toContain("document.completed");
   });
 
   it("rejects a second terminal submit (first-writer-wins)", async () => {

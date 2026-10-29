@@ -1,9 +1,8 @@
-import { Button, LinkButton } from "@cloudflare/kumo/components/button";
+import { Button } from "@cloudflare/kumo/components/button";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { Text } from "@cloudflare/kumo/components/text";
 import {
   ArrowClockwise,
-  EnvelopeSimple,
   House,
   SignOut,
   Warning,
@@ -17,7 +16,7 @@ import { betterAuthClient } from "@/lib/better-auth";
  * Route-level error component for TanStack Router
  *
  * This component is used when a route throws an error during loading or rendering.
- * It provides options to retry, go home, or contact support.
+ * It provides options to retry, go home, or sign out.
  */
 export function RouteErrorComponent({ error, reset }: ErrorComponentProps) {
   const router = useRouter();
@@ -63,15 +62,8 @@ export function RouteErrorComponent({ error, reset }: ErrorComponentProps) {
             return to the home page.
           </Text>
         </LayerCard.Primary>
-        <LayerCard.Primary className="space-y-4">
-          <div className="bg-kumo-elevated rounded-lg p-4 text-center">
-            <Text as="p" size="sm" variant="secondary">
-              If the problem persists, please contact our support team for
-              assistance.
-            </Text>
-          </div>
-
-          {isDev && (
+        {isDev ? (
+          <LayerCard.Primary className="space-y-4">
             <div className="border-kumo-danger/20 bg-kumo-danger/5 rounded-lg border p-4">
               <Text as="p" size="sm" variant="error">
                 Error Details (Development Only):
@@ -90,8 +82,8 @@ export function RouteErrorComponent({ error, reset }: ErrorComponentProps) {
                 </details>
               )}
             </div>
-          )}
-        </LayerCard.Primary>
+          </LayerCard.Primary>
+        ) : null}
         <LayerCard.Primary className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <Button onClick={handleRetry} variant="primary" icon={ArrowClockwise}>
             Try Again
@@ -103,13 +95,6 @@ export function RouteErrorComponent({ error, reset }: ErrorComponentProps) {
           >
             Go to Home
           </Button>
-          <LinkButton
-            href="mailto:support@seal.nyc"
-            variant="ghost"
-            icon={EnvelopeSimple}
-          >
-            Contact Support
-          </LinkButton>
           <Button
             onClick={() => void handleSignOut()}
             variant="ghost"

@@ -37,7 +37,7 @@ export type ImportPayload = z.infer<typeof importPayloadSchema>;
 const BATCH_SIZE = 2;
 
 export function getSupportedAdapters(): string[] {
-  return ["pdf", "docusign", "pandadoc"];
+  return ["pdf"];
 }
 
 function parsePayload(payload: unknown): ImportPayload {
@@ -78,18 +78,6 @@ function pdfAdapter(payload: unknown, cursor: string | null): ImportBatch {
   };
 }
 
-function docusignAdapter(): ImportBatch {
-  throw new Error(
-    "docusign import is migration-only and not configured (SEA-59: Seal is the only Vortex send path)"
-  );
-}
-
-function pandadocAdapter(): ImportBatch {
-  throw new Error(
-    "pandadoc import is migration-only and not configured (SEA-59: Seal is the only Vortex send path)"
-  );
-}
-
 export function fetchImportBatch(
   adapter: string,
   payload: unknown,
@@ -98,10 +86,6 @@ export function fetchImportBatch(
   switch (adapter) {
     case "pdf":
       return pdfAdapter(payload, cursor);
-    case "docusign":
-      return docusignAdapter();
-    case "pandadoc":
-      return pandadocAdapter();
     default:
       throw new Error(`unknown import adapter: ${adapter}`);
   }

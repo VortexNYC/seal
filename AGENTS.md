@@ -113,8 +113,10 @@ GitHub Actions kept here (narrow roles only):
 - `secrets.yml` — manual-dispatch upload/verify of Worker secrets
   (`wrangler secret put`). cloudflare-ci has no secrets path yet; when it does,
   delete this workflow.
-- `secret-scan.yml` — CompAI SEA-53 secretlint gate on PRs / main (not deploy).
 - `golden-path.yml` — hosted dogfood prove (skips without `SEAL_API_KEY`).
+
+The SEA-53 secretlint gate runs in cloudflare-ci checks (posts the
+`secretlint` check run — same context branch protection requires).
 
 Do not reintroduce `deploy.yml` / `migrate.yml` / `ci.yml`. Checks/tests gate
 locally via the `vp` pre-push hook; secretlint also runs on pre-commit.

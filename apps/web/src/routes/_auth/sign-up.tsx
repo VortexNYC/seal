@@ -1,3 +1,4 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { createFileRoute } from "@tanstack/react-router";
 import { AuthProvider, SignUpForm } from "@vortex-api/better-auth-ui";
 
@@ -42,7 +43,11 @@ function RouteComponent() {
         : "/post-sign-up";
 
   if (client === null) {
-    return <p className="text-center text-sm">Auth client not configured.</p>;
+    return (
+      <Text as="p" size="sm">
+        Auth client not configured.
+      </Text>
+    );
   }
 
   return (
@@ -51,7 +56,7 @@ function RouteComponent() {
         className={AUTH_FORM_CARD_CLASS}
         redirectTo={redirectTo}
         signInUrl="/sign-in"
-        providers={[]}
+        providers={[{ provider: "vortex", label: "Continue with Vortex" }]}
       />
     </AuthProvider>
   );

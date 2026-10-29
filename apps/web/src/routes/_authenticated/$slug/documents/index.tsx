@@ -1,3 +1,4 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
 import { DatePicker } from "@cloudflare/kumo/components/date-picker";
@@ -5,8 +6,9 @@ import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { DropdownMenu } from "@cloudflare/kumo/components/dropdown";
 import { Empty } from "@cloudflare/kumo/components/empty";
 import { Input } from "@cloudflare/kumo/components/input";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Loader, SkeletonLine } from "@cloudflare/kumo/components/loader";
 import { Popover } from "@cloudflare/kumo/components/popover";
-import { SkeletonLine } from "@cloudflare/kumo/components/loader";
 import { Table } from "@cloudflare/kumo/components/table";
 import { Tooltip } from "@cloudflare/kumo/components/tooltip";
 import {
@@ -21,34 +23,18 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 import Fuse, { type FuseResultMatch } from "fuse.js";
+import { ArrowDown as ArrowDownIcon, ArrowsLeftRight as ArrowRightLeftIcon, ArrowUp as ArrowUpIcon, Calendar as CalendarIcon, CaretLeft as ChevronLeftIcon, CaretRight as ChevronRightIcon, DotsThreeVertical as MoreVerticalIcon, DownloadSimple as DownloadIcon, File as FileIcon, FileText as FileTextIcon, Folder as FolderIcon, FolderSimple as FolderInputIcon, List as LayoutListIcon, MagnifyingGlass as SearchIcon, PaperPlaneTilt as SendIcon, Prohibit as BanIcon, ShareNetwork as Share2Icon, Sparkle as SparklesIcon, SquaresFour as LayoutGridIcon, Trash as TrashIcon, UploadSimple as UploadIcon, X as XIcon } from "@phosphor-icons/react";
 import {
-  ArrowDownIcon,
-  ArrowRightLeftIcon,
-  ArrowUpIcon,
-  BanIcon,
-  CalendarIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  DownloadIcon,
-  FileIcon,
-  FileTextIcon,
-  FolderIcon,
-  LayoutGridIcon,
-  LayoutListIcon,
-  Loader2Icon,
-  FolderInputIcon,
-  MoreVerticalIcon,
-  SearchIcon,
-  SendIcon,
-  SparklesIcon,
-  Share2Icon,
-  TrashIcon,
-  UploadIcon,
-  XIcon,
-} from "lucide-react";
-import { Suspense, useCallback, useEffect, useMemo, useState, type JSX } from "react";
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type JSX,
+} from "react";
 import type { DateRange } from "react-day-picker";
 
+import { DocumentOversightRail } from "@/components/documents/document-oversight-rail";
 import { DocumentThumbnail } from "@/components/documents/document-thumbnail";
 import { ShareDocumentDialog } from "@/components/documents/share-document-dialog";
 import { TransferOwnershipDialog } from "@/components/documents/transfer-ownership-dialog";
@@ -56,6 +42,7 @@ import { UploadDialog } from "@/components/documents/upload-dialog";
 import { WorkflowStatusBadge } from "@/components/documents/workflow-status-badge";
 import { CreateFolderDialog } from "@/components/folders/create-folder-dialog";
 import { FolderBreadcrumbs } from "@/components/folders/folder-breadcrumbs";
+import { BulkSendDialog } from "@/components/documents/bulk-send-dialog";
 import { MoveToFolderDialog } from "@/components/folders/move-to-folder-dialog";
 import {
   FileSystem,
@@ -68,6 +55,7 @@ import { useSuspenseOrganization } from "@/hooks/use-organization";
 import {
   cancelDocument as cancelDocumentApi,
   deleteDocument as deleteDocumentApi,
+  restoreDocument as restoreDocumentApi,
   downloadDocument,
   getDocuments,
   getFolders,
@@ -77,8 +65,12 @@ import {
   type ApiFolder,
 } from "@/lib/api-client";
 import {
+  listRowDate,
+  liveDocumentRefreshMs,
+  signerProgressLine,
   toWorkflowStatus,
   type DocumentWorkflowStatus,
+  type SigningProgress,
 } from "@/lib/document-status";
 import { pageSEO } from "@/lib/seo";
 import { toast } from "@/lib/toast";
@@ -122,15 +114,14 @@ function DocumentsSkeleton(): JSX.Element {
 type FilterType = "all" | "owned" | "shared";
 type WorkflowStatusFilter =
   | "all"
+  | "needs_you"
   | "draft"
-  | "sent"
-  | "in_progress"
-  | "completed"
-  | "cancelled"
-  | "expired";
+  | "outgoing"
+  | "done"
+  | "deleted";
 
 type ViewMode = "grid" | "table" | "finder";
-type SortField = "name" | "createdAt" | "workflowStatus";
+type SortField = "attention" | "name" | "createdAt" | "workflowStatus";
 type SortDirection = "asc" | "desc";
 
 // SEA-73: Fuse.js options for fuzzy search
@@ -173,7 +164,7 @@ function HighlightedText({
     }
     // Add highlighted matching text
     parts.push(
-      <mark key={`${start}-${end}`} className="bg-warning/30 rounded px-0.5">
+      <mark key={`${start}-${end}`} className="bg-kumo-warning/30 rounded px-0.5">
         {text.slice(start, end + 1)}
       </mark>
     );
@@ -226,6 +217,10 @@ type DocumentListItem = {
   readonly thumbnailDataUrl?: string;
   readonly pageCount?: number;
   readonly createdAt: number;
+  readonly sentAt?: number | null;
+  readonly deadline?: number | null;
+  readonly progress?: SigningProgress | null;
+  readonly activityAt: number;
   readonly fileSize: number;
   readonly workflowStatus?: DocumentWorkflowStatus;
   readonly aiProcessingStatus?: string;
@@ -247,6 +242,8 @@ type DocumentListActions = {
   readonly shareDocument: (documentId: string, documentName: string) => void;
   readonly moveToFolder: (documentId: string) => void;
   readonly deleteDocument: (documentId: string) => void;
+  readonly restoreDocument: (documentId: string) => void;
+  readonly inBin: boolean;
   readonly transferOwnership: (doc: {
     _id: string;
     name: string;
@@ -297,7 +294,7 @@ function confirmDialogContent(
       return {
         title: "Delete Document",
         description:
-          "Are you sure you want to delete this document? This action cannot be undone.",
+          "This document leaves the list. Open Deleted to put it back.",
       };
     case "send":
       return {
@@ -340,11 +337,65 @@ function filterDocumentsByStatusAndDate(
   dateRange: DateRange | undefined
 ): readonly DocumentListItem[] {
   return documents.filter((doc) => {
-    const workflowStatusMatches =
-      workflowStatusFilter === "all" ||
-      (doc.workflowStatus ?? "draft") === workflowStatusFilter;
-    return workflowStatusMatches && documentMatchesDateRange(doc, dateRange);
+    return (
+      documentMatchesFolder(doc.workflowStatus ?? "draft", workflowStatusFilter) &&
+      documentMatchesDateRange(doc, dateRange)
+    );
   });
+}
+
+function documentMatchesFolder(
+  status: DocumentWorkflowStatus,
+  filter: WorkflowStatusFilter
+): boolean {
+  if (filter === "all" || filter === "deleted") return true;
+  if (filter === "needs_you") {
+    return (
+      status === "sent" ||
+      status === "in_progress" ||
+      status === "waiting_for_payment" ||
+      status === "expired"
+    );
+  }
+  if (filter === "outgoing") {
+    return (
+      status === "sent" ||
+      status === "in_progress" ||
+      status === "waiting_for_payment" ||
+      status === "completed"
+    );
+  }
+  if (filter === "done") {
+    return (
+      status === "completed" ||
+      status === "cancelled" ||
+      status === "declined"
+    );
+  }
+  return status === filter;
+}
+
+function attentionRank(status: DocumentWorkflowStatus | undefined): number {
+  if (
+    status === "sent" ||
+    status === "in_progress" ||
+    status === "waiting_for_payment" ||
+    status === "expired"
+  ) {
+    return 0;
+  }
+  if (status === "draft") return 1;
+  if (status === "completed") return 2;
+  return 3;
+}
+
+function folderLabel(filter: WorkflowStatusFilter): string {
+  if (filter === "needs_you") return "Needs you";
+  if (filter === "outgoing") return "Sent";
+  if (filter === "done") return "Done";
+  if (filter === "draft") return "Drafts";
+  if (filter === "deleted") return "Deleted";
+  return "Any status";
 }
 
 function documentMatchesDateRange(
@@ -379,7 +430,20 @@ function sortDocuments(
   sortField: SortField,
   sortDirection: SortDirection
 ): readonly DocumentListItem[] {
-  if (searchQuery.trim() && sortField === "createdAt") return documents;
+  if (
+    searchQuery.trim() &&
+    (sortField === "createdAt" || sortField === "attention")
+  ) {
+    return documents;
+  }
+  if (sortField === "attention") {
+    return [...documents].toSorted((a, b) => {
+      const rank =
+        attentionRank(a.workflowStatus) - attentionRank(b.workflowStatus);
+      if (rank !== 0) return rank;
+      return b.activityAt - a.activityAt;
+    });
+  }
   return [...documents].toSorted((a, b) =>
     documentSortComparison(a, b, sortField, sortDirection)
   );
@@ -401,7 +465,7 @@ function documentSortValue(
   sortField: SortField
 ): number {
   if (sortField === "name") return a.name.localeCompare(b.name);
-  if (sortField === "createdAt") return a.createdAt - b.createdAt;
+  if (sortField === "createdAt") return a.activityAt - b.activityAt;
   return (a.workflowStatus ?? "draft").localeCompare(
     b.workflowStatus ?? "draft"
   );
@@ -444,31 +508,25 @@ function FolderTableRow({
   return (
     <Table.Row
       key={folder._id}
-      className="hover:bg-muted/50 cursor-pointer"
+      className="hover:bg-kumo-elevated/50 cursor-pointer"
       onClick={() => onFolderNavigate(folder._id)}
     >
-      <Table.Cell>
-        <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-md sm:h-12 sm:w-[60px]">
-          <FolderIcon className="text-muted-foreground h-5 w-5" />
-        </div>
-      </Table.Cell>
-      <Table.Cell className="max-w-[min(28rem,40vw)]">
-        <p className="truncate font-medium" title={folder.name}>
+      <Table.Cell className="max-w-sheet">
+        <p className="flex items-center gap-2 truncate font-medium" title={folder.name}>
+          <FolderIcon className="text-kumo-secondary h-4 w-4 shrink-0" />
           {folder.name}
         </p>
-        <p className="text-muted-foreground text-xs">Folder</p>
+        <Text as="p" variant="secondary" size="xs">Folder</Text>
       </Table.Cell>
-      <Table.Cell className="hidden sm:table-cell">
-        <div className="text-sm">
-          <p>{formatDate(folder.createdAt)}</p>
-        </div>
+      <Table.Cell className="hidden whitespace-nowrap sm:table-cell">
+        <p className="text-sm">{formatDate(folder.createdAt)}</p>
       </Table.Cell>
-      <Table.Cell>
-        <Badge variant="outline" className="text-xs">
+      <Table.Cell className="whitespace-nowrap">
+        <Badge variant="outline" className="px-3.5 py-1.5 text-base">
           Folder
         </Badge>
       </Table.Cell>
-      <Table.Cell className="text-right" />
+      <Table.Cell className="w-40" />
     </Table.Row>
   );
 }
@@ -478,81 +536,62 @@ function DocumentTableRow({
   delegateOwnership,
   doc,
   matches,
+  selected,
+  onInspect,
 }: {
   readonly actions: DocumentListActions;
   readonly delegateOwnership: boolean;
   readonly doc: DocumentListItem;
   readonly matches: readonly FuseResultMatch[] | undefined;
+  readonly selected: boolean;
+  readonly onInspect: (documentId: string) => void;
 }) {
-  const { slug } = Route.useParams();
   return (
     <Table.Row
       key={doc._id}
       data-testid="document-row"
-      className="hover:bg-muted/50 relative cursor-pointer"
+      variant={selected ? "selected" : "default"}
+      className="hover:bg-kumo-elevated/50 relative cursor-pointer"
+      onClick={() => onInspect(doc._id)}
     >
       <Table.Cell className="relative">
-        <Link
-          to="/$slug/documents/$documentId"
-          params={{ slug, documentId: doc._id }}
-          className="absolute inset-0 z-0"
-          aria-label={`Open ${doc.name}`}
-        />
-        <div className="pointer-events-none relative z-[1]">
-          <DocumentThumbnail
-            organizationSlug={slug}
-            publicId={doc._id}
-            thumbnailDataUrl={doc.thumbnailDataUrl}
-            name={doc.name}
-          />
-        </div>
-      </Table.Cell>
-      <Table.Cell className="relative">
-        <Link
-          to="/$slug/documents/$documentId"
-          params={{ slug, documentId: doc._id }}
-          className="absolute inset-0 z-0"
-          tabIndex={-1}
-          aria-hidden
-        />
-        <div className="pointer-events-none relative z-[1]">
+        <div className="relative z-1">
           <DocumentSummary doc={doc} matches={matches} />
         </div>
       </Table.Cell>
-      <Table.Cell className="relative hidden sm:table-cell">
-        <Link
-          to="/$slug/documents/$documentId"
-          params={{ slug, documentId: doc._id }}
-          className="absolute inset-0 z-0"
-          tabIndex={-1}
-          aria-hidden
-        />
-        <div className="pointer-events-none relative z-[1] text-sm">
-          <p>{formatDate(doc.createdAt)}</p>
-          <p className="text-muted-foreground">{formatBytes(doc.fileSize)}</p>
+      <Table.Cell className="relative hidden whitespace-nowrap sm:table-cell">
+        <div className="relative z-1 text-sm">
+          <DocumentListDate doc={doc} />
         </div>
       </Table.Cell>
-      <Table.Cell className="relative">
-        <Link
-          to="/$slug/documents/$documentId"
-          params={{ slug, documentId: doc._id }}
-          className="absolute inset-0 z-0"
-          tabIndex={-1}
-          aria-hidden
-        />
-        <div className="pointer-events-none relative z-[1] flex items-center gap-2">
+      <Table.Cell className="relative whitespace-nowrap">
+        <div className="relative z-1 flex items-center gap-2">
           <WorkflowStatusBadge status={doc.workflowStatus} />
           <DocumentAiStatus status={doc.aiProcessingStatus} tooltip />
         </div>
       </Table.Cell>
-      <Table.Cell className="relative z-[1] text-right">
-        <DocumentActionsMenu
-          actions={actions}
-          delegateOwnership={delegateOwnership}
-          doc={doc}
-          includeExpiredSend
-          includeTransferOwnership
-        />
+      <Table.Cell className="relative z-1 w-40">
+        <div className="flex items-center justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="shrink-0"
+            icon={DownloadIcon}
+            onClick={(event) => {
+              event.stopPropagation();
+              actions.downloadDocument(doc._id);
+            }}
+          >
+            Download
+          </Button>
+          <DocumentActionsMenu
+            actions={actions}
+            delegateOwnership={delegateOwnership}
+            doc={doc}
+            includeExpiredSend
+            includeTransferOwnership
+          />
+        </div>
       </Table.Cell>
     </Table.Row>
   );
@@ -565,13 +604,28 @@ function DocumentSummary({
   readonly doc: DocumentListItem;
   readonly matches: readonly FuseResultMatch[] | undefined;
 }) {
+  const progress = signerProgressLine(doc.workflowStatus, doc.progress);
+  const pages =
+    doc.pageCount !== undefined && doc.pageCount > 0
+      ? `${doc.pageCount} ${doc.pageCount === 1 ? "page" : "pages"}`
+      : null;
   return (
-    <div>
-      <p className="font-medium">
+    <div className="min-w-0">
+      <p className="truncate font-medium">
         <HighlightedText text={doc.name} matches={matches} fieldKey="name" />
+        {pages ? (
+          <Text as="span" variant="secondary" size="xs">
+            {` · ${pages}`}
+          </Text>
+        ) : null}
       </p>
+      {progress ? (
+        <Text as="p" variant="secondary" size="sm" DANGEROUS_className="truncate">
+          {progress}
+        </Text>
+      ) : null}
       {doc.description && (
-        <p className="text-muted-foreground line-clamp-1 text-sm">
+        <p className="text-kumo-secondary line-clamp-1 text-sm">
           <HighlightedText
             text={doc.description}
             matches={matches}
@@ -579,12 +633,35 @@ function DocumentSummary({
           />
         </p>
       )}
-      {doc.pageCount !== undefined && doc.pageCount > 0 && (
-        <p className="text-muted-foreground mt-1 text-xs">
-          {doc.pageCount} {doc.pageCount === 1 ? "page" : "pages"}
-        </p>
-      )}
     </div>
+  );
+}
+
+function DocumentListDate({ doc }: { readonly doc: DocumentListItem }) {
+  const date = listRowDate({
+    status: doc.workflowStatus,
+    createdAt: doc.createdAt,
+    sentAt: doc.sentAt,
+    deadline: doc.deadline,
+    now: Date.now(),
+  });
+  return (
+    <>
+      <p>{date.sent ? `Sent ${formatDate(date.at)}` : formatDate(date.at)}</p>
+      {date.dueAt ? (
+        <Text
+          as="p"
+          variant={date.overdue ? "error" : "secondary"}
+          size="xs"
+        >
+          {`Due ${formatDate(date.dueAt)}`}
+        </Text>
+      ) : date.sent ? null : (
+        <Text as="p" variant="secondary" size="xs">
+          {formatBytes(doc.fileSize)}
+        </Text>
+      )}
+    </>
   );
 }
 
@@ -596,22 +673,17 @@ function FolderGridCard({
   readonly onFolderNavigate: (folderId?: string) => void;
 }) {
   return (
-    <button
-      type="button"
-      key={folder._id}
-      className="border-border bg-card hover:bg-muted/40 flex cursor-pointer flex-col overflow-hidden rounded-xl border text-left transition-colors"
-      onClick={() => onFolderNavigate(folder._id)}
-    >
-      <div className="bg-muted flex h-32 w-full items-center justify-center border-b">
-        <FolderIcon className="text-muted-foreground h-10 w-10" />
-      </div>
-      <div className="flex flex-col gap-0.5 p-3">
-        <h3 className="line-clamp-2 text-sm font-medium break-all" title={folder.name}>
-          {folder.name}
-        </h3>
-        <p className="text-muted-foreground text-xs">Folder</p>
-      </div>
-    </button>
+    <LayerCard key={folder._id}>
+      <Button
+        type="button"
+        variant="ghost"
+        className="h-auto w-full justify-start"
+        icon={FolderIcon}
+        onClick={() => onFolderNavigate(folder._id)}
+      >
+        {folder.name}
+      </Button>
+    </LayerCard>
   );
 }
 
@@ -628,7 +700,7 @@ function DocumentGridCard({
   return (
     <div
       key={doc._id}
-      className="border-border bg-card relative flex flex-col overflow-hidden rounded-xl border transition-shadow hover:shadow-md"
+      className="border-kumo-line bg-kumo-base relative flex flex-col overflow-hidden rounded-xl border transition-shadow hover:shadow-md"
     >
       <Link
         to="/$slug/documents/$documentId"
@@ -636,7 +708,7 @@ function DocumentGridCard({
         className="absolute inset-0 z-0"
         aria-label={`Open ${doc.name}`}
       />
-      <div className="bg-muted pointer-events-none relative z-[1] h-36 w-full overflow-hidden border-b">
+      <div className="bg-kumo-elevated pointer-events-none relative z-1 h-36 w-full overflow-hidden border-b">
         <DocumentThumbnail
           organizationSlug={slug}
           publicId={doc._id}
@@ -645,10 +717,10 @@ function DocumentGridCard({
           className="h-full w-full rounded-none border-0"
         />
       </div>
-      <div className="relative z-[1] flex flex-col gap-2 p-3">
+      <div className="relative z-1 flex flex-col gap-2 p-3">
         <GridCardHeader actions={actions} doc={doc} matches={matches} />
         {doc.description ? (
-          <p className="text-muted-foreground pointer-events-none line-clamp-2 text-xs">
+          <p className="text-kumo-secondary pointer-events-none line-clamp-2 text-xs">
             <HighlightedText
               text={doc.description}
               matches={matches}
@@ -674,12 +746,16 @@ function GridCardHeader({
   return (
     <div className="flex items-start justify-between">
       <div className="pointer-events-none flex min-w-0 flex-1 items-start gap-2">
-        <FileIcon className="text-muted-foreground h-5 w-5" />
-        <h3 className="line-clamp-2 text-base leading-5 break-all">
+        <FileIcon className="text-kumo-secondary h-5 w-5" />
+        <Text
+          as="h3"
+          size="sm"
+          DANGEROUS_className="line-clamp-2 break-all"
+        >
           <HighlightedText text={doc.name} matches={matches} fieldKey="name" />
-        </h3>
+        </Text>
       </div>
-      <div className="relative z-[2]">
+      <div className="relative z-2">
         <DocumentActionsMenu actions={actions} doc={doc} />
       </div>
     </div>
@@ -687,12 +763,34 @@ function GridCardHeader({
 }
 
 function DocumentGridMetadata({ doc }: { readonly doc: DocumentListItem }) {
+  const progress = signerProgressLine(doc.workflowStatus, doc.progress);
+  const date = listRowDate({
+    status: doc.workflowStatus,
+    createdAt: doc.createdAt,
+    sentAt: doc.sentAt,
+    deadline: doc.deadline,
+    now: Date.now(),
+  });
   return (
-    <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+    <div className="text-kumo-secondary flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
       <WorkflowStatusBadge status={doc.workflowStatus} />
       <DocumentAiStatus status={doc.aiProcessingStatus} />
+      {progress ? (
+        <>
+          <span aria-hidden>·</span>
+          <span>{progress}</span>
+        </>
+      ) : null}
       <span aria-hidden>·</span>
-      <span>{formatDate(doc.createdAt)}</span>
+      <span>{date.sent ? `Sent ${formatDate(date.at)}` : formatDate(date.at)}</span>
+      {date.dueAt ? (
+        <>
+          <span aria-hidden>·</span>
+          <span className={date.overdue ? "text-kumo-danger" : undefined}>
+            {`Due ${formatDate(date.dueAt)}`}
+          </span>
+        </>
+      ) : null}
       <span aria-hidden>·</span>
       <span>{formatBytes(doc.fileSize)}</span>
     </div>
@@ -709,25 +807,25 @@ function DocumentAiStatus({
   if (status === "processing") {
     return tooltip ? (
       <Tooltip
-        content="AI analyzing document"
+        content="Analyzing document"
         render={<span className="inline-flex" />}
       >
-        <Loader2Icon className="text-ai-accent h-3 w-3 animate-spin" />
+        <Loader size="sm" className="text-kumo-brand" />
       </Tooltip>
     ) : (
-      <Loader2Icon className="text-ai-accent h-3 w-3 animate-spin" />
+      <Loader size="sm" className="text-kumo-brand" />
     );
   }
   if (status !== "completed") return null;
   return tooltip ? (
     <Tooltip
-      content="AI analysis complete"
+      content="Analysis complete"
       render={<span className="inline-flex" />}
     >
-      <SparklesIcon className="text-ai-accent h-3 w-3" />
+      <SparklesIcon className="text-kumo-brand h-3 w-3" />
     </Tooltip>
   ) : (
-    <SparklesIcon className="text-ai-accent h-3 w-3" />
+    <SparklesIcon className="text-kumo-brand h-3 w-3" />
   );
 }
 
@@ -758,70 +856,82 @@ function DocumentActionsMenu({
           shape="square"
           size="sm"
           aria-label={`Document actions for ${doc.name}`}
-          className="h-8 w-8 shrink-0"
+          className="shrink-0"
           onClick={(event) => event.stopPropagation()}
-        >
-          <MoreVerticalIcon className="h-4 w-4" />
-        </Button>
+          icon={MoreVerticalIcon}
+        />
       </DropdownMenu.Trigger>
       <DropdownMenu.Content
         align="end"
         onClick={(event) => event.stopPropagation()}
       >
-        <DropdownMenu.Item onClick={() => actions.openDocument(doc._id)}>
-          <FileTextIcon className="mr-2 h-4 w-4" />
+        <DropdownMenu.Item onClick={() => actions.openDocument(doc._id)} icon={FileTextIcon}>
           Open
         </DropdownMenu.Item>
-        {canSend && (
-          <DropdownMenu.Item onClick={() => actions.sendDocument(doc._id)}>
-            <SendIcon className="mr-2 h-4 w-4" />
+        {actions.inBin ? (
+          <DropdownMenu.Item onClick={() => actions.restoreDocument(doc._id)}>
+            Restore
+          </DropdownMenu.Item>
+        ) : null}
+        {!actions.inBin && canSend && (
+          <DropdownMenu.Item onClick={() => actions.sendDocument(doc._id)} icon={SendIcon}>
             {workflowStatus === "expired"
               ? "Re-send Document"
               : "Send Document"}
           </DropdownMenu.Item>
         )}
-        {canCancel && (
+        {!actions.inBin && canCancel && (
           <DropdownMenu.Item
             onClick={() => actions.cancelDocument(doc._id)}
             variant="danger"
-          >
-            <BanIcon className="mr-2 h-4 w-4" />
+           icon={BanIcon}>
             Cancel Document
           </DropdownMenu.Item>
         )}
-        <DropdownMenu.Item onClick={() => actions.downloadDocument(doc._id)}>
-          <DownloadIcon className="mr-2 h-4 w-4" />
-          Download
-        </DropdownMenu.Item>
-        <DropdownMenu.Item
-          onClick={() => actions.shareDocument(doc._id, doc.name)}
-        >
-          <Share2Icon className="mr-2 h-4 w-4" />
-          Share
-        </DropdownMenu.Item>
-        <DropdownMenu.Item onClick={() => actions.moveToFolder(doc._id)}>
-          <FolderInputIcon className="mr-2 h-4 w-4" />
-          Move to Folder
-        </DropdownMenu.Item>
-        {includeTransferOwnership && delegateOwnership && (
-          <DropdownMenu.Item onClick={() => actions.transferOwnership(doc)}>
-            <ArrowRightLeftIcon className="mr-2 h-4 w-4" />
+        {!actions.inBin ? (
+          <DropdownMenu.Item onClick={() => actions.downloadDocument(doc._id)} icon={DownloadIcon}>
+            Download
+          </DropdownMenu.Item>
+        ) : null}
+        {!actions.inBin ? (
+          <DropdownMenu.Item
+            onClick={() => actions.shareDocument(doc._id, doc.name)}
+           icon={Share2Icon}>
+            Share
+          </DropdownMenu.Item>
+        ) : null}
+        {!actions.inBin ? (
+          <DropdownMenu.Item onClick={() => actions.moveToFolder(doc._id)} icon={FolderInputIcon}>
+            Move to Folder
+          </DropdownMenu.Item>
+        ) : null}
+        {!actions.inBin && includeTransferOwnership && delegateOwnership && (
+          <DropdownMenu.Item onClick={() => actions.transferOwnership(doc)} icon={ArrowRightLeftIcon}>
             Transfer Ownership
           </DropdownMenu.Item>
         )}
-        <DropdownMenu.Item
-          onClick={() => actions.deleteDocument(doc._id)}
-          variant="danger"
-        >
-          <TrashIcon className="mr-2 h-4 w-4" />
-          Delete
-        </DropdownMenu.Item>
+        {!actions.inBin ? (
+          <DropdownMenu.Item
+            onClick={() => actions.deleteDocument(doc._id)}
+            variant="danger"
+           icon={TrashIcon}>
+            Delete
+          </DropdownMenu.Item>
+        ) : null}
       </DropdownMenu.Content>
     </DropdownMenu>
   );
 }
 
 function toDocumentListItem(doc: ApiDocument): DocumentListItem {
+  const workflowStatus = toWorkflowStatus(doc.workflowStatus);
+  const date = listRowDate({
+    status: workflowStatus,
+    createdAt: doc.createdAt,
+    sentAt: doc.sentAt,
+    deadline: doc.deadline,
+    now: Date.now(),
+  });
   return {
     _id: doc.publicId,
     name: doc.name,
@@ -830,8 +940,12 @@ function toDocumentListItem(doc: ApiDocument): DocumentListItem {
     thumbnailDataUrl: doc.thumbnailDataUrl ?? undefined,
     pageCount: doc.pageCount ?? undefined,
     createdAt: doc.createdAt,
+    sentAt: doc.sentAt,
+    deadline: doc.deadline,
+    progress: doc.progress,
+    activityAt: date.at,
     fileSize: doc.fileSize ?? doc.size ?? 0,
-    workflowStatus: toWorkflowStatus(doc.workflowStatus),
+    workflowStatus,
     aiProcessingStatus: doc.aiProcessingStatus ?? undefined,
     sharingMode: doc.sharingMode,
     ownerId: doc.ownerId,
@@ -880,9 +994,14 @@ function useDocumentsListData({
         filter,
         workflowStatus:
           workflowStatusFilter === "all" ? undefined : workflowStatusFilter,
-        folderId,
-        rootOnly: !folderId,
+        folderId: workflowStatusFilter === "deleted" ? undefined : folderId,
+        rootOnly: workflowStatusFilter === "deleted" ? false : !folderId,
       }),
+    refetchInterval: (query) =>
+      liveDocumentRefreshMs(
+        (query.state.data ?? []).map((doc) => doc.workflowStatus)
+      ),
+    refetchOnWindowFocus: true,
   });
   const { data: apiFolders, refetch: refetchFolders } = useSuspenseQuery({
     queryKey: ["api", "folders", "document", folderId, slug],
@@ -894,8 +1013,11 @@ function useDocumentsListData({
     [apiDocuments]
   );
   const subfolders = useMemo(
-    () => apiFolders?.map(toFolderListItem),
-    [apiFolders]
+    () =>
+      workflowStatusFilter === "deleted"
+        ? []
+        : apiFolders?.map(toFolderListItem),
+    [apiFolders, workflowStatusFilter]
   );
 
   const filteredByStatus = useMemo(
@@ -977,7 +1099,9 @@ function DocumentsListContent({
   data,
   delegateOwnership,
   documentActions,
+  inspected,
   onFolderNavigate,
+  onInspect,
   onSortChange,
   onUploadClick,
   searchQuery,
@@ -988,7 +1112,9 @@ function DocumentsListContent({
   readonly data: DocumentsListData;
   readonly delegateOwnership: boolean;
   readonly documentActions: DocumentListActions;
+  readonly inspected: DocumentListItem | null;
   readonly onFolderNavigate: (folderId?: string) => void;
+  readonly onInspect: (documentId: string | null) => void;
   readonly onSortChange: (field: SortField) => void;
   readonly onUploadClick: () => void;
   readonly searchQuery: string;
@@ -996,6 +1122,7 @@ function DocumentsListContent({
   readonly sortField: SortField;
   readonly viewMode: ViewMode;
 }) {
+  const { slug } = Route.useParams();
   if (
     data.sortedDocuments.length === 0 &&
     (!data.subfolders || data.subfolders.length === 0)
@@ -1009,13 +1136,16 @@ function DocumentsListContent({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex items-stretch gap-0">
+      <div className="min-w-0 flex-1 space-y-4">
       {viewMode === "table" ? (
         <DocumentsTable
           data={data}
           delegateOwnership={delegateOwnership}
           documentActions={documentActions}
+          inspectedId={inspected?._id ?? null}
           onFolderNavigate={onFolderNavigate}
+          onInspect={onInspect}
           onSortChange={onSortChange}
           searchQuery={searchQuery}
           sortDirection={sortDirection}
@@ -1037,6 +1167,17 @@ function DocumentsListContent({
         />
       )}
       <DocumentsPagination data={data} />
+      </div>
+      {inspected ? (
+        <DocumentOversightRail
+          organizationSlug={slug}
+          documentId={inspected._id}
+          name={inspected.name}
+          workflowStatus={inspected.workflowStatus}
+          progress={inspected.progress}
+          onClose={() => onInspect(null)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -1055,20 +1196,20 @@ function DocumentsEmptyState({
     >
       {hasFiltersOrSearch ? (
         <Empty
-          icon={<SearchIcon size={48} />}
+          icon={<SearchIcon size={24} />}
           title="No documents found"
           description="Try adjusting your search or filters to find what you're looking for."
         />
       ) : (
         <Empty
-          icon={<FileTextIcon size={48} />}
+          icon={<FileTextIcon size={24} />}
           title="Send your first document"
           description="Upload a PDF, add people, place fields, send. About a minute."
           contents={
             <Button
               onClick={onUploadClick}
               variant="primary"
-              icon={<UploadIcon className="h-4 w-4" />}
+              icon={UploadIcon}
             >
               Upload PDF
             </Button>
@@ -1083,7 +1224,9 @@ function DocumentsTable({
   data,
   delegateOwnership,
   documentActions,
+  inspectedId,
   onFolderNavigate,
+  onInspect,
   onSortChange,
   searchQuery,
   sortDirection,
@@ -1092,18 +1235,19 @@ function DocumentsTable({
   readonly data: DocumentsListData;
   readonly delegateOwnership: boolean;
   readonly documentActions: DocumentListActions;
+  readonly inspectedId: string | null;
   readonly onFolderNavigate: (folderId?: string) => void;
+  readonly onInspect: (documentId: string | null) => void;
   readonly onSortChange: (field: SortField) => void;
   readonly searchQuery: string;
   readonly sortDirection: SortDirection;
   readonly sortField: SortField;
 }) {
   return (
-    <div className="overflow-x-auto rounded-lg border">
-      <Table className="min-w-[600px]">
+    <div className="max-w-4xl overflow-x-auto rounded-lg border">
+      <Table>
         <Table.Header>
           <Table.Row>
-            <Table.Head className="w-[80px] sm:w-[100px]">Thumbnail</Table.Head>
             <Table.Head>
               <SortHeader
                 field="name"
@@ -1113,16 +1257,16 @@ function DocumentsTable({
                 sortField={sortField}
               />
             </Table.Head>
-            <Table.Head className="hidden sm:table-cell">
+            <Table.Head className="hidden w-44 sm:table-cell">
               <SortHeader
                 field="createdAt"
-                label="Upload Date"
+                label="Date"
                 onSortChange={onSortChange}
                 sortDirection={sortDirection}
                 sortField={sortField}
               />
             </Table.Head>
-            <Table.Head>
+            <Table.Head className="w-28">
               <SortHeader
                 field="workflowStatus"
                 label="Status"
@@ -1131,7 +1275,9 @@ function DocumentsTable({
                 sortField={sortField}
               />
             </Table.Head>
-            <Table.Head className="text-right">Actions</Table.Head>
+            <Table.Head className="w-40">
+              <span className="sr-only">Download</span>
+            </Table.Head>
           </Table.Row>
         </Table.Header>
         <Table.Body>
@@ -1150,6 +1296,8 @@ function DocumentsTable({
               delegateOwnership={delegateOwnership}
               doc={doc}
               matches={data.matchesMap.get(doc._id)}
+              selected={inspectedId === doc._id}
+              onInspect={onInspect}
             />
           ))}
         </Table.Body>
@@ -1188,7 +1336,7 @@ function DocumentsFinder({
   ];
 
   return (
-    <div className="border-border bg-card rounded-xl border">
+    <div className="border-kumo-line bg-kumo-base rounded-xl border">
       <FileSystem
         items={items}
         view="icons"
@@ -1239,7 +1387,7 @@ function DocumentsPagination({ data }: { readonly data: DocumentsListData }) {
   return (
     <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
       <p
-        className="text-muted-foreground text-center text-sm sm:text-left"
+        className="text-kumo-secondary text-center text-sm sm:text-left"
         aria-live="polite"
       >
         Showing {(data.currentPage - 1) * DOCUMENTS_PER_PAGE + 1} to{" "}
@@ -1255,9 +1403,8 @@ function DocumentsPagination({ data }: { readonly data: DocumentsListData }) {
           size="sm"
           onClick={() => data.setCurrentPage((prev) => Math.max(1, prev - 1))}
           disabled={data.currentPage === 1}
-          className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
+          icon={ChevronLeftIcon}
         >
-          <ChevronLeftIcon className="h-4 w-4" />
           <span className="hidden sm:inline">Previous</span>
         </Button>
         <div className="flex items-center gap-1">
@@ -1268,7 +1415,6 @@ function DocumentsPagination({ data }: { readonly data: DocumentsListData }) {
                 variant={page === data.currentPage ? "primary" : "outline"}
                 size="sm"
                 onClick={() => data.setCurrentPage(page)}
-                className="min-h-[44px] min-w-[44px] p-0 sm:h-8 sm:min-h-0 sm:min-w-[32px]"
               >
                 {page}
               </Button>
@@ -1282,10 +1428,9 @@ function DocumentsPagination({ data }: { readonly data: DocumentsListData }) {
             data.setCurrentPage((prev) => Math.min(data.totalPages, prev + 1))
           }
           disabled={data.currentPage === data.totalPages}
-          className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
+          icon={ChevronRightIcon}
         >
           <span className="hidden sm:inline">Next</span>
-          <ChevronRightIcon className="h-4 w-4" />
         </Button>
       </div>
     </div>
@@ -1303,15 +1448,17 @@ function SortHeader({
     <Button
       variant="ghost"
       onClick={() => onSortChange(field)}
-      className="h-auto p-0 hover:bg-transparent"
+      size="sm"
+      className="-ml-2"
+      icon={
+        sortField === field
+          ? sortDirection === "asc"
+            ? ArrowUpIcon
+            : ArrowDownIcon
+          : undefined
+      }
     >
-      <span className="font-medium">{label}</span>
-      {sortField === field &&
-        (sortDirection === "asc" ? (
-          <ArrowUpIcon className="ml-2 h-4 w-4" />
-        ) : (
-          <ArrowDownIcon className="ml-2 h-4 w-4" />
-        ))}
+      {label}
     </Button>
   );
 }
@@ -1361,6 +1508,7 @@ function DocumentConfirmationDialog({
 }
 
 function useDocumentListActions({
+  inBin,
   onMoveToFolder,
   onShareClick,
   onTransferOwnership,
@@ -1369,6 +1517,7 @@ function useDocumentListActions({
   DocumentsListProps,
   "onMoveToFolder" | "onShareClick" | "onTransferOwnership"
 > & {
+  readonly inBin: boolean;
   readonly refetch: () => void;
 }): {
   readonly confirmDialog: ConfirmDialogState;
@@ -1383,6 +1532,9 @@ function useDocumentListActions({
   const { track } = useAnalytics();
   const deleteDocument = useMutation({
     mutationFn: (publicId: string) => deleteDocumentApi(slug, publicId),
+  });
+  const restoreDocument = useMutation({
+    mutationFn: (publicId: string) => restoreDocumentApi(slug, publicId),
   });
   const sendDocument = useMutation({
     mutationFn: (publicId: string) => sendDocumentApi(slug, publicId),
@@ -1406,9 +1558,18 @@ function useDocumentListActions({
       params: { slug, documentId },
     });
   };
+  const handleRestore = async (documentId: string) => {
+    try {
+      await restoreDocument.mutateAsync(documentId);
+      toast.success("Document restored");
+      refetch();
+    } catch {
+      toast.error("Failed to restore document");
+    }
+  };
   const handleDownload = async (documentId: string) => {
     try {
-      const blob = await downloadDocument(slug, documentId);
+      const blob = await downloadDocument(slug, documentId, { ink: true });
       const url = window.URL.createObjectURL(blob);
       track.documentDownloaded({ documentId });
       window.open(url, "_blank");
@@ -1456,6 +1617,10 @@ function useDocumentListActions({
       shareDocument: onShareClick,
       moveToFolder: onMoveToFolder,
       deleteDocument: (documentId) => openConfirmDialog("delete", documentId),
+      restoreDocument: (documentId) => {
+        void handleRestore(documentId);
+      },
+      inBin,
       transferOwnership: onTransferOwnership,
     },
     handleConfirmAction,
@@ -1495,11 +1660,24 @@ function DocumentsList({
     handleConfirmAction,
     setConfirmDialog,
   } = useDocumentListActions({
+    inBin: workflowStatusFilter === "deleted",
     onMoveToFolder,
     onShareClick,
     onTransferOwnership,
     refetch: data.refetch,
   });
+  const [inspectedId, setInspectedId] = useState<string | null>(null);
+  const inspected =
+    data.sortedDocuments.find((doc) => doc._id === inspectedId) ?? null;
+
+  useEffect(() => {
+    if (
+      inspectedId !== null &&
+      !data.sortedDocuments.some((doc) => doc._id === inspectedId)
+    ) {
+      setInspectedId(null);
+    }
+  }, [data.sortedDocuments, inspectedId]);
 
   return (
     <>
@@ -1507,7 +1685,9 @@ function DocumentsList({
         data={data}
         delegateOwnership={delegateOwnership}
         documentActions={documentActions}
+        inspected={inspected}
         onFolderNavigate={onFolderNavigate}
+        onInspect={setInspectedId}
         onSortChange={onSortChange}
         onUploadClick={onUploadClick}
         searchQuery={searchQuery}
@@ -1548,7 +1728,7 @@ function DocumentsPage() {
 
   // SEA-68: View mode, sorting state
   const [viewMode, setViewMode] = useState<ViewMode>("table");
-  const [sortField, setSortField] = useState<SortField>("createdAt");
+  const [sortField, setSortField] = useState<SortField>("attention");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   // SEA-73: Fuzzy search state
@@ -1561,6 +1741,7 @@ function DocumentsPage() {
 
   // Folder: move-to-folder dialog state
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [bulkSendOpen, setBulkSendOpen] = useState(false);
   const [moveDocumentId, setMoveDocumentId] = useState<string | null>(null);
   const moveDocumentsToFolderMutation = useMutation({
     mutationFn: (options: { documentIds: string[]; folderId?: string }) =>
@@ -1658,11 +1839,22 @@ function DocumentsPage() {
         variant: "default",
       }}
       headerActions={
-        <CreateFolderDialog
-          organizationSlug={slug}
-          type="document"
-          parentId={folderId}
-        />
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            icon={SendIcon}
+            onClick={() => setBulkSendOpen(true)}
+          >
+            Bulk send
+          </Button>
+          <CreateFolderDialog
+            organizationSlug={slug}
+            type="document"
+            parentId={folderId}
+          />
+        </div>
       }
       headerCenter={
         <FolderBreadcrumbs
@@ -1673,11 +1865,11 @@ function DocumentsPage() {
       }
     >
       {/* Cap: intentional reading width — not a full-bleed ocean */}
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+      <div className="flex w-full flex-col gap-4">
         {/* SEA-99: flat toolbar — no nested filter cards */}
         <div className="flex flex-col gap-3">
           <div className="relative">
-            <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+            <SearchIcon className="text-kumo-secondary absolute top-1/2 left-3 size-4 -translate-y-1/2" />
             <Input
               type="text"
               aria-label="Search documents by name or description"
@@ -1725,53 +1917,46 @@ function DocumentsPage() {
                 Shared
               </Button>
             </div>
-            <div className="bg-muted/40 flex items-center gap-0.5 rounded-md p-0.5">
+            <div className="bg-kumo-elevated/40 flex items-center gap-0.5 rounded-md p-0.5">
               <Button
                 variant={viewMode === "table" ? "primary" : "ghost"}
                 shape="square"
                 size="sm"
-                className="size-8"
                 aria-label="Table view"
+                icon={LayoutListIcon}
                 onClick={() => setViewMode("table")}
-              >
-                <LayoutListIcon className="size-4" />
-              </Button>
+              />
               <Button
                 variant={viewMode === "grid" ? "primary" : "ghost"}
                 shape="square"
                 size="sm"
-                className="size-8"
                 aria-label="Grid view"
+                icon={LayoutGridIcon}
                 onClick={() => setViewMode("grid")}
-              >
-                <LayoutGridIcon className="size-4" />
-              </Button>
+              />
               <Button
                 variant={viewMode === "finder" ? "primary" : "ghost"}
                 shape="square"
                 size="sm"
-                className="size-8"
                 aria-label="Finder view"
+                icon={FolderIcon}
                 onClick={() => setViewMode("finder")}
-              >
-                <FolderIcon className="size-4" />
-              </Button>
+              />
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+            <span className="text-kumo-secondary text-xs font-medium tracking-wide uppercase">
               Status
             </span>
             {(
               [
-                ["all", "All"],
+                ["needs_you", "Needs you"],
                 ["draft", "Drafts"],
-                ["sent", "Sent"],
-                ["in_progress", "In Progress"],
-                ["completed", "Completed"],
-                ["cancelled", "Cancelled"],
-                ["expired", "Expired"],
+                ["outgoing", "Sent"],
+                ["done", "Done"],
+                ["deleted", "Deleted"],
+                ["all", "Any status"],
               ] as const
             ).map(([value, label]) => (
               <Button
@@ -1791,7 +1976,7 @@ function DocumentsPage() {
                     <Button
                       variant={dateRange?.from ? "primary" : "outline"}
                       size="sm"
-                      className="min-h-9 w-full gap-2 sm:w-auto"
+                      className="w-full sm:w-auto"
                     >
                       <CalendarIcon className="size-4" />
                       {dateRange?.from ? (
@@ -1857,44 +2042,47 @@ function DocumentsPage() {
             workflowStatusFilter !== "all" ||
             dateRange?.from) && (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-muted-foreground text-xs">Active</span>
+              <span className="text-kumo-secondary text-xs">Active</span>
               {searchQuery.trim() && (
                 <Badge variant="secondary" className="gap-1 pl-2">
                   Search: "{searchQuery}"
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
+                    shape="square"
+                    icon={XIcon}
+                    aria-label="Clear search"
                     onClick={() => setSearchQuery("")}
-                    className="hover:bg-muted ml-1 rounded-full p-0.5"
-                  >
-                    <XIcon className="h-3 w-3" />
-                  </button>
+                  />
                 </Badge>
               )}
               {filter !== "all" && (
                 <Badge variant="secondary" className="gap-1 pl-2 capitalize">
                   {filter === "owned" ? "Mine" : "Shared"}
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
+                    shape="square"
+                    icon={XIcon}
+                    aria-label="Clear ownership filter"
                     onClick={() => setFilter("all")}
-                    className="hover:bg-muted ml-1 rounded-full p-0.5"
-                  >
-                    <XIcon className="h-3 w-3" />
-                  </button>
+                  />
                 </Badge>
               )}
               {workflowStatusFilter !== "all" && (
-                <Badge variant="secondary" className="gap-1 pl-2 capitalize">
-                  Status:{" "}
-                  {workflowStatusFilter === "in_progress"
-                    ? "In Progress"
-                    : workflowStatusFilter}
-                  <button
+                <Badge variant="secondary" className="gap-1 pl-2">
+                  {folderLabel(workflowStatusFilter)}
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
+                    shape="square"
+                    icon={XIcon}
+                    aria-label="Clear status filter"
                     onClick={() => setWorkflowStatusFilter("all")}
-                    className="hover:bg-muted ml-1 rounded-full p-0.5"
-                  >
-                    <XIcon className="h-3 w-3" />
-                  </button>
+                  />
                 </Badge>
               )}
               {dateRange?.from && (
@@ -1905,23 +2093,21 @@ function DocumentsPage() {
                     day: "numeric",
                   })}
                   {dateRange.to &&
-                    ` - ${dateRange.to.toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })}`}
-                  <button
+                    `- ${dateRange.to.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
+                    shape="square"
+                    icon={XIcon}
+                    aria-label="Clear date filter"
                     onClick={() => setDateRange(undefined)}
-                    className="hover:bg-muted ml-1 rounded-full p-0.5"
-                  >
-                    <XIcon className="h-3 w-3" />
-                  </button>
+                  />
                 </Badge>
               )}
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-muted-foreground h-6 px-2"
                 onClick={() => {
                   setSearchQuery("");
                   setFilter("all");
@@ -1941,7 +2127,7 @@ function DocumentsPage() {
           fallback={
             viewMode === "table" ? (
               <div className="flex items-center justify-center rounded-lg border p-12">
-                <p className="text-muted-foreground">Loading documents...</p>
+                <Text as="p" variant="secondary">Loading documents...</Text>
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -1993,6 +2179,12 @@ function DocumentsPage() {
           onOpenChange={setShareDialogOpen}
         />
       )}
+
+      <BulkSendDialog
+        open={bulkSendOpen}
+        onOpenChange={setBulkSendOpen}
+        organizationSlug={slug}
+      />
 
       <MoveToFolderDialog
         open={moveDialogOpen}

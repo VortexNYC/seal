@@ -401,9 +401,13 @@ POST /api/v1/documents/send?id={id}
 
 ### Request Body
 
-| Field     | Type   | Required | Description                                     |
-| --------- | ------ | -------- | ----------------------------------------------- |
-| `message` | string | No       | Custom message to include in email notification |
+| Field                        | Type    | Required | Description                                                                                                      |
+| ---------------------------- | ------- | -------- | ---------------------------------------------------------------------------------------------------------------- |
+| `message`                    | string  | No       | Custom message to include in email notification                                                                  |
+| `notify`                     | boolean | No       | Send invitation email. Defaults to true.                                                                         |
+| `expires_in_days`            | number  | No       | How many days recipients have to sign (1–365).                                                                   |
+| `signing_mode`               | string  | No       | `parallel` invites everyone still open. `sequential` invites only the current group, then the next after they finish. |
+| `allow_dictate_next_signer` | boolean | No       | When `signing_mode` is `sequential`, each signer may choose who signs next.                                      |
 
 ### TypeScript Example
 
@@ -806,7 +810,7 @@ POST /api/v1/documents/bulk-send
 
 | Field          | Type     | Required | Description                             |
 | -------------- | -------- | -------- | --------------------------------------- |
-| `document_ids` | string[] | Yes      | IDs of draft documents to send (max 50) |
+| `document_ids` | string[] | Yes      | IDs of draft documents to send (max 50). `ids` is accepted as the same list. |
 
 ### TypeScript Example
 
@@ -867,9 +871,10 @@ curl -X POST "https://api.seal.nyc/api/v1/documents/bulk-send" \
 ```
 
 <Callout type="info">
-  Only `draft` documents with at least one recipient can be bulk-sent. Documents
-  that are already sent, completed, or cancelled will appear in `results` with
-  `success: false`.
+  Only `draft` documents with at least one recipient can be bulk-sent. Each one
+  is invited the same way as a single send. Sequential documents email only the
+  current signer group. Documents that are already sent, completed, or cancelled
+  appear in `results` with `success: false`.
 </Callout>
 
 ## Document Status Workflow

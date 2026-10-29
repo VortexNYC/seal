@@ -1,11 +1,19 @@
 import { renderPasswordReset } from "@seal/transactional";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { betterAuth } from "better-auth/minimal";
-import { organization, twoFactor } from "better-auth/plugins";
+import { genericOAuth, organization, twoFactor } from "better-auth/plugins";
+import { eq } from "drizzle-orm";
+import { z } from "zod";
 
 import { createD1 } from "../global/db.js";
 import * as schema from "../global/schema.js";
 import { sendEmail } from "./email.js";
+import {
+  attachConnectedAccount,
+  readUserVortexOrganizations,
+  vortexOAuthOrganizationSummarySchema,
+  withVortexConnect,
+} from "./vortex-connect.js";
 
 export async function createAuth(env: CloudflareBindings) {
   // samlify + SCIM graphs are heavy; lazy-import keeps cold-start CPU down.
@@ -72,6 +80,86 @@ export async function createAuth(env: CloudflareBindings) {
         metadata: { type: "json", required: false },
       },
     },
+    databaseHooks: {
+      session: {
+        create: {
+          after: async (session) => {
+            try {
+              const existingMemberships = await db
+                .select({ organizationId: schema.member.organizationId })
+                .from(schema.member)
+                .where(eq(schema.member.userId, session.userId))
+                .limit(1);
+              if (existingMemberships.length > 0) {
+                return;
+              }
+              const [userRow] = await db
+                .select({ metadata: schema.user.metadata })
+                .from(schema.user)
+                .where(eq(schema.user.id, session.userId))
+                .limit(1);
+              const vortexOrgs = readUserVortexOrganizations(userRow?.metadata);
+              const firstOrg = vortexOrgs[0];
+              if (!firstOrg) {
+                return;
+              }
+              const orgId = `vortex_${firstOrg.organizationId}`;
+              const slug = `${firstOrg.slug}-${firstOrg.organizationId.slice(0, 6)}`;
+              let orgMetadata = JSON.stringify({
+                complianceCompleted: true,
+                vortexOrganizationId: firstOrg.organizationId,
+              });
+              const approvedMerchants = firstOrg.merchants.filter(
+                (m) => m.chargesApproved
+              );
+              if (
+                approvedMerchants.length === 1 &&
+                approvedMerchants[0] &&
+                env.VORTEX_API_KEY
+              ) {
+                try {
+                  const verifiedRecord = await attachConnectedAccount(env, {
+                    merchantAccountId: approvedMerchants[0].merchantAccountId,
+                  });
+                  orgMetadata = withVortexConnect(orgMetadata, verifiedRecord);
+                } catch {
+                  // Leave unattached if live verification fails.
+                }
+              }
+              const now = new Date();
+              await db
+                .insert(schema.organization)
+                .values({
+                  id: orgId,
+                  name: firstOrg.name,
+                  slug,
+                  metadata: orgMetadata,
+                  createdAt: now,
+                })
+                .onConflictDoNothing();
+              await db
+                .insert(schema.member)
+                .values({
+                  id: `mem_${orgId}_${session.userId}`,
+                  organizationId: orgId,
+                  userId: session.userId,
+                  role: firstOrg.role,
+                  createdAt: now,
+                })
+                .onConflictDoNothing();
+              await db
+                .update(schema.session)
+                .set({ activeOrganizationId: orgId })
+                .where(eq(schema.session.id, session.id));
+            } catch (err) {
+              console.error("[auth] vortex workspace bootstrap failed", {
+                reason: err instanceof Error ? err.message : "unknown",
+              });
+            }
+          },
+        },
+      },
+    },
     plugins: [
       organization({
         teams: { enabled: false },
@@ -79,6 +167,34 @@ export async function createAuth(env: CloudflareBindings) {
       }),
       twoFactor({
         issuer: "Seal",
+      }),
+      genericOAuth({
+        config: [
+          {
+            providerId: "vortex",
+            clientId: "seal",
+            ...(env.VORTEX_OAUTH_CLIENT_SECRET
+              ? { clientSecret: env.VORTEX_OAUTH_CLIENT_SECRET }
+              : {}),
+            authorizationUrl: "https://auth.vortex.nyc/oauth/authorize",
+            tokenUrl: "https://auth.vortex.nyc/oauth/token",
+            userInfoUrl: "https://auth.vortex.nyc/oauth/userinfo",
+            pkce: true,
+            scopes: ["openid", "profile", "email", "merchants:read"],
+            mapProfileToUser: (profile) => {
+              const parsedOrgs = z
+                .array(vortexOAuthOrganizationSummarySchema)
+                .safeParse(profile.organizations);
+              return {
+                metadata: JSON.stringify({
+                  vortexOrganizations: parsedOrgs.success
+                    ? parsedOrgs.data
+                    : [],
+                }),
+              };
+            },
+          },
+        ],
       }),
       sso({
         domainVerification: { enabled: true },

@@ -2,11 +2,26 @@ openapi: 3.1.0
 info:
   title: Seal API
   description: >
-    Agent-native Seal REST API. Everything the product can do for signing
-    workflows is reachable here — documents, recipients, templates, signatures,
-    contacts, webhooks, members, settings, search, analytics, audit, and API
-    tokens. MCP, CLI, and the SDK are thin clients over this surface. Authenticate
-    with a `seal_…` API key (Bearer) from Settings → Developer → API Keys.
+    Seal is an agent-native document platform. Agents do the work; humans
+    sign. Three capabilities:
+
+    **Send & sign** — upload a PDF, place fields, add recipients, send. Track
+    status, remind, void, and download the completed document with its
+    certificate of completion. Audit trail on every action.
+
+    **Document tools** — deterministic PDF operations: preview text, split,
+    merge, compress, redact, watermark, OCR, convert, compare. No model
+    calls — pure document manipulation, safe to call from agents.
+
+    **Review** — build a matrix (documents × questions), let your own agent
+    read each document via `preview` and write answers via `cells`. Every
+    answer must carry a verbatim quote from the document — fabricated
+    citations collapse to `not_found`. Seal stores and grounds; the agent
+    does the reasoning on its own infrastructure.
+
+    MCP, CLI, and the SDK are thin clients over this same contract.
+    Authenticate with a `seal_…` API key (Bearer) from
+    Settings → Developer → API Keys.
   version: 1.0.0
   contact:
     name: Seal Support
@@ -100,6 +115,12 @@ components:
         id:
           type: string
           description: Unique document identifier
+        public_id:
+          type: string
+          description: >
+            Cross-surface document id — reviews, revisions, and the session
+            API key on this value. Either `id` or `public_id` is accepted
+            wherever a document identifier is required.
         title:
           type: string
         description:
@@ -130,6 +151,10 @@ components:
           type: string
           nullable: true
           description: Public folder ID this document belongs to, or null if unfiled
+        vortex_order_form_id:
+          type: string
+          nullable: true
+          description: Vortex order form to execute when this document is signed, or null if unset
         recipients:
           type: array
           items:
@@ -208,6 +233,13 @@ components:
           format: date-time
         decline_reason:
           type: string
+        authMethod:
+          type: string
+          enum: [none, access_code, email_otp]
+          description: Signer authentication tier required before this recipient can submit (SEA-48)
+        hasAccessCode:
+          type: boolean
+          description: Whether an access code is set for this recipient
 
     Template:
       type: object
@@ -396,14 +428,23 @@ components:
         next_cursor:
           type: string
 
-
     ContactStatus:
       type: string
       enum: [active, inactive, lead]
 
     Contact:
       type: object
-      required: [id, first_name, last_name, full_name, email, status, created_at, updated_at]
+      required:
+        [
+          id,
+          first_name,
+          last_name,
+          full_name,
+          email,
+          status,
+          created_at,
+          updated_at,
+        ]
       properties:
         id: { type: string }
         first_name: { type: string }
@@ -434,7 +475,8 @@ components:
 
     Folder:
       type: object
-      required: [id, name, type, parent_id, visibility, pinned, created_at, updated_at]
+      required:
+        [id, name, type, parent_id, visibility, pinned, created_at, updated_at]
       properties:
         id: { type: string }
         name: { type: string }
@@ -464,10 +506,63 @@ components:
       required: [documentId, quote]
       properties:
         documentId: { type: string }
-        page: { type: integer, minimum: 1 }
+        page:
+          type: integer
+          minimum: 1
+          description: Page the quote was located on (best-effort)
+        bbox:
+          type: object
+          description: Normalized 0–1 page geometry of the quoted span
+          properties:
+            x: { type: number }
+            y: { type: number }
+            width: { type: number }
+            height: { type: number }
         quote:
           type: string
           description: Contiguous excerpt from the document, or the literal `not_found`
+
+    ReviewPack:
+      type: object
+      required: [id, title, columns, builtin, created_at]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        columns:
+          type: array
+          items: { $ref: "#/components/schemas/ReviewColumn" }
+        builtin:
+          type: boolean
+          description: true for Vortex-authored packs shipped with the build
+        created_at: { type: string, format: date-time }
+
+    Revision:
+      type: object
+      required:
+        [id, document_id, kind, status, anchor_quote, created_by, created_at]
+      properties:
+        id: { type: string }
+        document_id: { type: string }
+        review_cell_id: { type: string, nullable: true }
+        kind: { type: string, enum: [insert, delete, replace] }
+        status: { type: string, enum: [pending, accepted, rejected] }
+        anchor_quote: { type: string }
+        anchor_page: { type: integer, nullable: true }
+        anchor_bbox:
+          type: object
+          nullable: true
+          properties:
+            x: { type: number }
+            y: { type: number }
+            width: { type: number }
+            height: { type: number }
+        proposed_text: { type: string, nullable: true }
+        rationale: { type: string, nullable: true }
+        derived_document_id: { type: string, nullable: true }
+        created_by: { type: string }
+        created_at: { type: string, format: date-time }
+        resolved_at: { type: string, format: date-time, nullable: true }
 
     ReviewColumn:
       type: object
@@ -479,7 +574,8 @@ components:
 
     ReviewCell:
       type: object
-      required: [id, row_id, column_index, status, summary, flag, reasoning, citations]
+      required:
+        [id, row_id, column_index, status, summary, flag, reasoning, citations]
       properties:
         id: { type: string }
         row_id: { type: string }
@@ -509,13 +605,10 @@ components:
 
     ReviewMatrix:
       type: object
-      required: [id, title, model, status, columns, rows, created_at, updated_at]
+      required: [id, title, status, columns, rows, created_at, updated_at]
       properties:
         id: { type: string }
         title: { type: string }
-        model:
-          type: string
-          description: Provider/model key, e.g. `echo/test` or `anthropic/claude-sonnet-4-5`
         status: { type: string }
         columns:
           type: array
@@ -525,6 +618,23 @@ components:
           items: { $ref: "#/components/schemas/ReviewRow" }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
+
+    Job:
+      type: object
+      required: [id, type, status, created_at]
+      properties:
+        id: { type: string }
+        type:
+          type: string
+          description: Job type key
+        status:
+          type: string
+          enum: [queued, running, done, error]
+        error: { type: string, nullable: true }
+        result: { type: object, nullable: true }
+        created_at: { type: string, format: date-time }
+        started_at: { type: string, format: date-time, nullable: true }
+        finished_at: { type: string, format: date-time, nullable: true }
 
     ImportJob:
       type: object
@@ -543,7 +653,7 @@ components:
         id: { type: string }
         adapter:
           type: string
-          enum: [pdf, docusign, pandadoc]
+          enum: [pdf]
         status: { type: string }
         payload: {}
         processed_count: { type: integer }
@@ -573,7 +683,18 @@ components:
 
     WebhookEndpoint:
       type: object
-      required: [id, name, url, status, events, secret_prefix, created_at, updated_at, stats]
+      required:
+        [
+          id,
+          name,
+          url,
+          status,
+          events,
+          secret_prefix,
+          created_at,
+          updated_at,
+          stats,
+        ]
       properties:
         id: { type: string }
         name: { type: string }
@@ -626,7 +747,8 @@ components:
       properties:
         signing:
           type: object
-          required: [allowed_signature_types, default_deadline_days, esign_consent_text]
+          required:
+            [allowed_signature_types, default_deadline_days, esign_consent_text]
           properties:
             allowed_signature_types:
               type: array
@@ -635,7 +757,13 @@ components:
             esign_consent_text: { type: string, nullable: true }
         notifications:
           type: object
-          required: [reminder_schedule, expiration_alert_days, send_completion_email, send_viewed_notification]
+          required:
+            [
+              reminder_schedule,
+              expiration_alert_days,
+              send_completion_email,
+              send_viewed_notification,
+            ]
           properties:
             reminder_schedule:
               type: array
@@ -650,9 +778,10 @@ components:
             enabled:
               type: boolean
               description: >
-                Org kill switch for AI / anydoc (field suggestions, document
-                parse). When false, AI routes return 403 `ai_disabled` and
-                anydoc parse is skipped (SEA-70).
+                Org kill switch for document-processing features (field
+                suggestions, text extraction via anydoc). Deterministic
+                enrichment only — Seal runs no hosted model. When false,
+                those routes return 403 `ai_disabled` (SEA-70).
             auto_analyze: { type: boolean }
         egress:
           type: object
@@ -672,12 +801,29 @@ components:
                 `convert_disabled`.
         security:
           type: object
-          required: [ip_allowlist, allow_api_access, require_mfa, session_timeout_minutes]
+          required:
+            [
+              ip_allowlist,
+              allow_api_access,
+              require_mfa,
+              session_timeout_minutes,
+            ]
           properties:
             ip_allowlist:
               type: array
               items: { type: string }
-            allow_api_access: { type: boolean }
+              description: >
+                CIDR ranges or exact addresses. Empty allows every address.
+                A non-empty list rejects API token and MCP calls from any
+                other address, including a call with no client IP. Signing
+                links and the signed-in app are not restricted. The settings
+                screen stores the same rule; both lists have to allow the
+                address.
+            allow_api_access:
+              type: boolean
+              description: >
+                When false, API token and MCP calls are rejected. Signing
+                links and the signed-in app stay available.
             require_mfa: { type: boolean }
             session_timeout_minutes: { type: integer, nullable: true }
 
@@ -774,6 +920,10 @@ components:
         scopes:
           type: array
           items: { $ref: "#/components/schemas/ApiTokenScope" }
+        allowedIpRanges:
+          type: array
+          items: { type: string }
+          description: CIDRs or addresses. Empty means the key is not limited by IP.
         lastUsedAt: { type: string, format: date-time, nullable: true }
         revokedAt: { type: string, format: date-time, nullable: true }
         createdAt: { type: string, format: date-time }
@@ -837,41 +987,58 @@ components:
 
 tags:
   - name: Documents
-    description: Create, manage, and send documents for signing
+    description: >
+      Upload a PDF, place fields, send for signature, track status. Deterministic
+      PDF tools live here too — preview, split, merge, redact, watermark, OCR,
+      compare, convert. All document operations are pure document manipulation;
+      no model inference.
   - name: Recipients
-    description: Manage the people who sign or review a document
+    description: Add and manage the people who sign, approve, or view a document
   - name: Templates
-    description: Reusable document layouts that speed up your workflow
+    description: Reusable document layouts — fields and pages saved for repeated sends
   - name: Signatures
-    description: Access signature data and verify document integrity
+    description: Read signature records and verify completed documents
+  - name: SCIM
+    description: >
+      SCIM 2.0 provisioning. Connection management is admin-authenticated;
+      the SCIM protocol surface itself lives under `/api/auth/scim/v2` and is
+      driven by the IdP with the bearer token minted here.
   - name: Uploads
-    description: Upload PDF files for use with the Documents API
+    description: Get a signed URL to upload a PDF directly to storage
   - name: Contacts
-    description: Workspace contact directory for recipients
+    description: Workspace directory — saved signers you can reuse
   - name: Folders
     description: Organize documents and templates into folders
   - name: Reviews
     description: >
-      Legal review matrices (ADR-006) — tabular extraction over documents with
-      citation-grounded cells. Agent/MCP first; no fat review UI.
+      Build a matrix — documents × questions — and let your agent fill each
+      cell via `PATCH /reviews/{id}/cells`. Every answer must carry a verbatim
+      quote from that document; fabricated quotes collapse to `not_found`.
+      Seal stores and grounds; your agent does the reasoning.
+  - name: Revisions
+    description: >
+      Track-change suggestions on a draft document. Agents propose redlines;
+      humans accept or reject. Nothing ships until a human approves.
+  - name: Jobs
+    description: Poll long-running operations (imports, bulk sends)
   - name: Imports
-    description: Import jobs from PDF batches or external e-sign providers
+    description: Bring documents in from PDF batches or external e-sign providers
   - name: Webhooks
-    description: Receive real-time events when document state changes
+    description: Get notified when documents are viewed, signed, completed, or voided
   - name: Members
-    description: Organization membership roster
+    description: Who is in this organization
   - name: Settings
-    description: Organization signing and notification settings
+    description: Signing defaults, notifications, security policy, AI enrichment kill switches
   - name: Account
-    description: Organization account summary
+    description: Organization summary
   - name: Analytics
     description: Signing funnel metrics for a time period
   - name: Audit
-    description: Workspace activity / audit log
+    description: Tamper-evident activity log — every action, hashed and chained
   - name: Search
-    description: Cross-resource search across documents, contacts, and templates
+    description: Search across documents, contacts, and templates
   - name: Tokens
-    description: Workspace-scoped API tokens (create / list / revoke)
+    description: Create, list, and revoke workspace API keys
 
 paths:
   # ──────────────────────────────────────────────────────────────────────────
@@ -1045,6 +1212,12 @@ paths:
           $ref: "#/components/responses/NotFound"
 
   /documents/update:
+    post:
+      tags: [Documents]
+      deprecated: true
+      summary: Update a document (legacy alias — use PUT)
+      responses:
+        "200": { description: Updated }
     put:
       tags: [Documents]
       operationId: updateDocument
@@ -1074,6 +1247,10 @@ paths:
                   type: string
                   nullable: true
                   description: Move document into this folder, or null to unfile
+                vortex_order_form_id:
+                  type: string
+                  nullable: true
+                  description: Vortex order form to execute when this draft is signed. Null clears the link.
       responses:
         "200":
           description: Updated
@@ -1087,6 +1264,12 @@ paths:
           $ref: "#/components/responses/NotFound"
 
   /documents/delete:
+    post:
+      tags: [Documents]
+      deprecated: true
+      summary: Delete a document (legacy alias — use DELETE)
+      responses:
+        "200": { description: Deleted }
     delete:
       tags: [Documents]
       operationId: deleteDocument
@@ -1429,7 +1612,7 @@ paths:
     get:
       tags: [Documents]
       operationId: previewDocument
-      summary: Agent preview (markdown, structured, pdf, or original office/CSV)
+      summary: Agent preview (markdown, structured, chunks, pdf, or original office/CSV)
       parameters:
         - name: id
           in: query
@@ -1439,7 +1622,10 @@ paths:
           in: query
           schema:
             type: string
-            enum: [markdown, structured, pdf, original]
+            enum: [markdown, structured, chunks, pdf, original]
+            description: >
+              `chunks` returns per-line text with {page, bbox} anchors —
+              the citation/redline targeting substrate.
       responses:
         "200": { description: Preview payload }
   /documents/split:
@@ -1501,6 +1687,797 @@ paths:
                       color: { type: string }
       responses:
         "200": { description: Annotated }
+  /documents/pdf/organize:
+    post:
+      tags: [Documents]
+      operationId: organizeDocumentPdf
+      summary: Reorder or delete pages of a draft PDF in place
+      description: >
+        Rebuilds the draft PDF from an ordered list of 1-based source page
+        numbers. Omit a page to delete it; permute to reorder. Signature fields
+        on deleted pages are removed; survivors are remapped to the new page
+        indices. Does not create child documents (use `/documents/split` for that).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, pages]
+              properties:
+                id: { type: string }
+                pages:
+                  type: array
+                  minItems: 1
+                  maxItems: 500
+                  items: { type: integer, minimum: 1 }
+                  description: New page order using original 1-based page numbers
+      responses:
+        "200":
+          description: Organized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  storage_id: { type: string }
+                  page_count: { type: integer }
+                  fields_removed: { type: integer }
+                  fields_remapped: { type: integer }
+        "400":
+          description: Invalid page order (empty, duplicate, or out of range)
+  /documents/pdf/watermark:
+    post:
+      tags: [Documents]
+      operationId: watermarkDocumentPdf
+      summary: Stamp a text watermark onto a draft PDF
+      description: >
+        Draws a Helvetica-bold text stamp on selected pages (default: all).
+        Positions: diagonal (default), center, or footer. Deterministic pdf-lib
+        — no Seal-hosted model inference.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, text]
+              properties:
+                id: { type: string }
+                text: { type: string, maxLength: 120 }
+                opacity: { type: number, minimum: 0.05, maximum: 1 }
+                position:
+                  type: string
+                  enum: [diagonal, center, footer]
+                color: { type: string, description: "Hex color, e.g. #888888" }
+                size: { type: number, minimum: 6, maximum: 120 }
+                pages:
+                  type: array
+                  items: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Watermarked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  storage_id: { type: string }
+                  page_count: { type: integer }
+  /documents/pdf/number-pages:
+    post:
+      tags: [Documents]
+      operationId: numberDocumentPdfPages
+      summary: Stamp page numbers onto a draft PDF
+      description: >
+        Footer page numbers via pdf-lib. Format `n` or `n_of_m` (default).
+        Optional prefix (e.g. "Page ").
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string }
+                format:
+                  type: string
+                  enum: [n, n_of_m]
+                position:
+                  type: string
+                  enum: [footer-center, footer-right, footer-left]
+                start_at: { type: integer, minimum: 0 }
+                prefix: { type: string, maxLength: 40 }
+                size: { type: number, minimum: 6, maximum: 48 }
+                color: { type: string }
+                pages:
+                  type: array
+                  items: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Numbered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  storage_id: { type: string }
+                  page_count: { type: integer }
+  /documents/pdf/crop:
+    post:
+      tags: [Documents]
+      operationId: cropDocumentPdf
+      summary: Crop pages of a draft PDF (baked into new page size)
+      description: >
+        For each listed page, keep only the top-left percent-of-page rect
+        (`x`,`y`,`width`,`height` in 0–100 — same space as fields). Content is
+        baked into a smaller page via pdf-lib. Fields fully inside the crop are
+        remapped; fields that intersect the cut edge are removed. Unlisted pages
+        are copied unchanged.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, crops]
+              properties:
+                id: { type: string }
+                crops:
+                  type: array
+                  minItems: 1
+                  maxItems: 500
+                  items:
+                    type: object
+                    required: [page, x, y, width, height]
+                    properties:
+                      page: { type: integer, minimum: 1 }
+                      x: { type: number, minimum: 0, maximum: 100 }
+                      y: { type: number, minimum: 0, maximum: 100 }
+                      width: { type: number, minimum: 1, maximum: 100 }
+                      height: { type: number, minimum: 1, maximum: 100 }
+      responses:
+        "200":
+          description: Cropped
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  storage_id: { type: string }
+                  page_count: { type: integer }
+                  fields_removed: { type: integer }
+                  fields_remapped: { type: integer }
+        "400":
+          description: Invalid crop rect or page
+
+  /documents/pdf/compress:
+    post:
+      tags: [Documents]
+      operationId: compressDocumentPdf
+      summary: Compress a draft PDF in place
+      description: >
+        Re-encodes embedded images to JPEG via the convert-worker PDF engines
+        (qpdf/pdfcpu — not Seal AI). Text, vectors, fonts, and structure are
+        untouched; the engine never enlarges the file. Fields are unaffected.
+        Honours the org `egress.allow_convert` gate since bytes leave the API
+        worker for the conversion container.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string }
+                image_quality:
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+                  description: JPEG quality for re-encoded images (default 80)
+      responses:
+        "200":
+          description: Compressed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  storage_id: { type: string }
+                  page_count: { type: integer }
+                  size_before: { type: integer }
+                  size_after: { type: integer }
+        "403":
+          description: Org egress disallows conversion
+
+  /documents/pdf/redact:
+    post:
+      tags: [Documents]
+      operationId: redactDocumentPdf
+      summary: Permanently redact regions of a draft PDF
+      description: >
+        Removes content-stream operators inside each region — text runs,
+        images, fully-contained vector paths, and annotations are deleted
+        from the emitted bytes (not just painted over). Signature fields
+        intersecting a region are removed. Document metadata is purged.
+        Response includes a redaction receipt (`scrubbed_text`) listing the
+        literal strings that were removed. Percent rects share the same
+        0–100 space as signature fields. Deterministic in-worker engine —
+        not Seal AI.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, regions]
+              properties:
+                id: { type: string }
+                regions:
+                  type: array
+                  minItems: 1
+                  maxItems: 200
+                  items:
+                    type: object
+                    required: [page, x, y, width, height]
+                    properties:
+                      page: { type: integer, minimum: 1 }
+                      x: { type: number, minimum: 0, maximum: 100 }
+                      y: { type: number, minimum: 0, maximum: 100 }
+                      width: { type: number, minimum: 0.5, maximum: 100 }
+                      height: { type: number, minimum: 0.5, maximum: 100 }
+      responses:
+        "200":
+          description: Redacted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  storage_id: { type: string }
+                  regions_applied: { type: integer }
+                  ops_scrubbed: { type: integer }
+                  annots_scrubbed: { type: integer }
+                  fields_removed: { type: integer }
+                  scrubbed_text:
+                    type: string
+                    description: Strings removed from the bytes (receipt)
+                  warnings:
+                    type: array
+                    items: { type: string }
+
+  /documents/pdf/protect:
+    post:
+      tags: [Documents]
+      operationId: protectDocumentPdf
+      summary: Produce a password-protected copy of a draft PDF
+      description: >
+        Encrypts the PDF via convert-worker pdfengines (qpdf) and stores an
+        encrypted artifact; `download_url` fetches it. The working draft
+        stays unencrypted — Seal's own pipeline cannot read encrypted PDFs.
+        Honours the org `egress.allow_convert` gate.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string }
+                user_password:
+                  type: string
+                  maxLength: 128
+                  description: Password required to open the PDF
+                owner_password:
+                  type: string
+                  maxLength: 128
+                  description: Password granting full access (defaults to user)
+                allow_printing: { type: boolean }
+                allow_copying: { type: boolean }
+                allow_modifying: { type: boolean }
+                allow_annotating: { type: boolean }
+                allow_filling_forms: { type: boolean }
+                allow_assembling: { type: boolean }
+      responses:
+        "200":
+          description: Protected copy created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  storage_id: { type: string }
+                  size: { type: integer }
+                  download_url: { type: string, nullable: true }
+
+  /documents/pdf/unlock:
+    post:
+      tags: [Documents]
+      operationId: unlockDocumentPdf
+      summary: Unlock an encrypted draft PDF in place
+      description: >
+        Decrypts a password-protected PDF via LibreOffice re-export and
+        claims the usable bytes back onto the document (the draft was not
+        readable by pdf-lib anyway). Returns `libreoffice_roundtrip` in
+        `warnings` — layout may shift on complex documents.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, password]
+              properties:
+                id: { type: string }
+                password: { type: string, maxLength: 128 }
+      responses:
+        "200":
+          description: Unlocked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  storage_id: { type: string }
+                  page_count: { type: integer }
+                  warnings:
+                    type: array
+                    items: { type: string }
+        "400":
+          description: not_encrypted / invalid_pdf / wrong password
+
+  /documents/pdf/flatten:
+    post:
+      tags: [Documents]
+      operationId: flattenDocumentPdf
+      summary: Flatten annotations and form fields into page content
+      description: >
+        Runs pdfengines/flatten — annotation appearance streams and AcroForm
+        values are baked into the page bytes. Seal signature fields live in
+        the database and are unaffected. Honours the org
+        `egress.allow_convert` gate.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string }
+      responses:
+        "200":
+          description: Flattened
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  storage_id: { type: string }
+                  page_count: { type: integer }
+
+  /documents/pdf/export-images:
+    post:
+      tags: [Documents]
+      operationId: exportDocumentPdfImages
+      summary: Export every page of a draft PDF as images
+      description: >
+        Rasterises each page via poppler (pdftoppm) in the pdf-tools
+        container and returns a ZIP artifact (`page-N.png|jpg`) with a
+        `download_url`. Artifact model — the working draft is unchanged.
+        Honours the org `egress.allow_convert` gate.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string }
+                format:
+                  type: string
+                  enum: [png, jpeg]
+                  default: png
+                dpi:
+                  type: number
+                  minimum: 50
+                  maximum: 600
+                  default: 150
+      responses:
+        "200":
+          description: Images ZIP created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  storage_id: { type: string }
+                  size: { type: integer }
+                  format: { type: string }
+                  dpi: { type: number }
+                  download_url: { type: string, nullable: true }
+
+  /documents/pdf/to-office:
+    post:
+      tags: [Documents]
+      operationId: convertDocumentPdfToOffice
+      summary: Convert a draft PDF to an Office format
+      description: >
+        Runs headless LibreOffice in the pdf-tools container and returns a
+        docx/xlsx/pptx artifact with a `download_url`. Artifact model — the
+        working draft is unchanged. Fidelity is layout-locked (PDF imports
+        into Draw: text boxes, not flowing prose). Honours the org
+        `egress.allow_convert` gate.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string }
+                format:
+                  type: string
+                  enum: [docx, xlsx, pptx]
+                  default: docx
+      responses:
+        "200":
+          description: Office file created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  storage_id: { type: string }
+                  format: { type: string }
+                  size: { type: integer }
+                  download_url: { type: string, nullable: true }
+
+  /documents/pdf/ocr:
+    post:
+      tags: [Documents]
+      operationId: ocrDocumentPdf
+      summary: OCR a draft PDF (add a searchable text layer)
+      description: >
+        Runs ocrmypdf --skip-text in the pdf-tools container — pages that
+        lack a text layer are OCR'd and existing text is preserved. The
+        searchable PDF claims the document's storageKey. Honours the org
+        `egress.allow_convert` gate.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string }
+                lang:
+                  type: string
+                  pattern: "^[a-z]{3}(\\+[a-z]{3})*$"
+                  default: eng
+                  description: Tesseract language code(s), e.g. eng or eng+fra
+      responses:
+        "200":
+          description: OCR complete
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  storage_id: { type: string }
+                  page_count: { type: integer }
+                  lang: { type: string }
+
+  /documents/pdf/compare:
+    post:
+      tags: [Documents]
+      operationId: compareDocumentPdfs
+      summary: Text-level compare of two draft PDFs
+      description: >
+        Extracts text from both documents (pdftotext -layout in the
+        pdf-tools container) and returns a per-page line diff
+        (added/removed). Read-only — no storage mutation. Honours the org
+        `egress.allow_convert` gate.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, other_id]
+              properties:
+                id: { type: string }
+                other_id: { type: string }
+      responses:
+        "200":
+          description: Diff result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  document_a:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      public_id: { type: string }
+                      name: { type: string }
+                  document_b:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      public_id: { type: string }
+                      name: { type: string }
+                  pages_different: { type: integer }
+                  lines_added: { type: integer }
+                  lines_removed: { type: integer }
+                  pages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        page: { type: integer }
+                        added:
+                          type: array
+                          items: { type: string }
+                        removed:
+                          type: array
+                          items: { type: string }
+
+  /documents/pdf/to-pdfa:
+    post:
+      tags: [Documents]
+      operationId: convertDocumentPdfToPdfA
+      summary: Convert a draft PDF to archival PDF/A
+      description: >
+        Converts to a PDF/A flavour (1b/2b/3b) via Gotenberg
+        pdfengines/convert. The archival PDF claims the document's
+        storageKey. Honours the org `egress.allow_convert` gate.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string }
+                format:
+                  type: string
+                  enum: [PDF/A-1b, PDF/A-2b, PDF/A-3b]
+                  default: PDF/A-2b
+      responses:
+        "200":
+          description: Converted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  storage_id: { type: string }
+                  page_count: { type: integer }
+                  format: { type: string }
+
+  /documents/pdf/merge:
+    post:
+      tags: [Documents]
+      operationId: mergeDocumentPdfs
+      summary: Merge multiple draft PDFs into a new document
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ids]
+              properties:
+                ids:
+                  type: array
+                  minItems: 2
+                  maxItems: 20
+                  items: { type: string }
+                  description: Document public IDs, merged in order
+                title: { type: string, maxLength: 200 }
+      responses:
+        "201":
+          description: Merged document created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  id: { type: string }
+                  public_id: { type: string }
+                  storage_id: { type: string }
+                  page_count: { type: integer }
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /documents/pdf/rotate:
+    post:
+      tags: [Documents]
+      operationId: rotateDocumentPdf
+      summary: Rotate pages of a draft PDF
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, degrees]
+              properties:
+                id: { type: string }
+                degrees: { type: integer, enum: [90, 180, 270] }
+                pages:
+                  type: array
+                  items: { type: integer, minimum: 1 }
+                  description: 1-based page list; omit for all pages
+      responses:
+        "200": { description: Rotated — new storage_id }
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /documents/pdf/replace:
+    post:
+      tags: [Documents]
+      operationId: replaceDocumentPdf
+      summary: Replace the working PDF of a draft (fields remapped)
+      description: >
+        Atomic swap of the document's PDF bytes — existing fields are
+        remapped onto the new file where pages/geometry still line up.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, content_base64]
+              properties:
+                id: { type: string }
+                content_base64:
+                  type: string
+                  description: Base64-encoded PDF
+      responses:
+        "200": { description: Replaced }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /documents/original/replace:
+    post:
+      tags: [Documents]
+      operationId: replaceDocumentOriginal
+      summary: Replace a draft's original file (office/CSV → re-converted PDF)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, content_base64, content_type]
+              properties:
+                id: { type: string }
+                content_base64: { type: string }
+                content_type:
+                  type: string
+                  description: Original MIME type (docx, xlsx, html, pdf, …)
+      responses:
+        "200": { description: Replaced — storage_id + content_type }
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /documents/layout-blocks:
+    get:
+      tags: [Documents]
+      operationId: getDocumentLayoutBlocks
+      summary: Layout blocks for field placement hints
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Layout blocks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  blocks: { type: array, items: { type: object } }
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /documents/extraction-schema:
+    get:
+      tags: [Documents]
+      operationId: getDocumentExtractionSchema
+      summary: Get the structured-extraction schema for a document
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Schema object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  schema: { type: object, additionalProperties: true }
+    post:
+      tags: [Documents]
+      operationId: putDocumentExtractionSchema
+      summary: Set the structured-extraction schema for a draft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, schema]
+              properties:
+                id: { type: string }
+                schema: { type: object, additionalProperties: true }
+      responses:
+        "200": { description: Schema set }
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /documents/parsed:
+    get:
+      tags: [Documents]
+      operationId: getDocumentParsed
+      summary: Parsed text + field candidates for a document
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Parsed content }
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /documents/download-file:
+    get:
+      tags: [Documents]
+      operationId: downloadDocumentFile
+      summary: Download file bytes via a download token
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: File bytes
+          content:
+            application/octet-stream: {}
 
   /documents/send:
     post:
@@ -1508,8 +2485,9 @@ paths:
       operationId: sendDocument
       summary: Send a document
       description: >
-        Sends the document to all recipients and transitions it from `draft` to
-        `sent`. The document must have at least one recipient.
+        Sends the document and transitions it from `draft` to `sent`.
+        The document must have at least one recipient. `signing_mode`
+        `sequential` invites only the current signer group.
       parameters:
         - name: id
           in: query
@@ -1525,6 +2503,26 @@ paths:
                 message:
                   type: string
                   description: Custom message included in the invitation email
+                notify:
+                  type: boolean
+                  description: Send invitation email. Defaults to true.
+                expires_in_days:
+                  type: integer
+                  minimum: 1
+                  maximum: 365
+                  description: How many days recipients have to sign.
+                signing_mode:
+                  type: string
+                  enum: [parallel, sequential]
+                  description: >
+                    parallel invites everyone still open. sequential invites
+                    only the earliest open signer group, then the next group
+                    after that group finishes.
+                allow_dictate_next_signer:
+                  type: boolean
+                  description: >
+                    When signing_mode is sequential, each signer may choose
+                    who signs next.
       responses:
         "200":
           description: Sent
@@ -1680,7 +2678,13 @@ paths:
       tags: [Recipients]
       operationId: addRecipient
       summary: Add a recipient
-      description: Adds a recipient to a draft document.
+      description: >
+        Adds a recipient to a draft, or to an envelope that is already sent
+        and not finished. On a draft they are invited when the document is
+        sent. On a sent envelope they get a signing link now if it is their
+        turn; a later sequential signer keeps a link and is emailed when
+        that group is reached. Completed, cancelled, and expired envelopes
+        are rejected.
       parameters:
         - name: document_id
           in: query
@@ -1708,6 +2712,18 @@ paths:
                 message:
                   type: string
                   description: Custom message for this recipient's invitation email
+                auth_method:
+                  type: string
+                  enum: [none, access_code, email_otp]
+                  description: >
+                    Signer authentication tier for this recipient. When omitted,
+                    the organization's defaultRecipientAuthMethod applies.
+                    `none` is rejected when the org requires recipient auth.
+                access_code:
+                  type: string
+                  minLength: 4
+                  maxLength: 64
+                  description: Required when auth_method is `access_code`; the signer must enter it before submitting.
             example:
               email: jane@acme.com
               name: Jane Smith
@@ -1759,11 +2775,23 @@ paths:
           $ref: "#/components/responses/NotFound"
 
   /recipients/update:
+    post:
+      tags: [Recipients]
+      deprecated: true
+      summary: Update a recipient (legacy alias — use PUT)
+      responses:
+        "200": { description: Updated }
     put:
       tags: [Recipients]
       operationId: updateRecipient
       summary: Update a recipient
-      description: Updates a recipient on a draft document.
+      description: >
+        On a draft, name, role, order, and email can change. On a sent
+        envelope, email and name can change for someone who has not signed
+        or approved. A new email rotates the signing link and sends it when
+        it is their turn. Role and order stay locked after send. A person
+        who already finished cannot be changed. Completed, cancelled, and
+        expired envelopes are rejected.
       parameters:
         - name: document_id
           in: query
@@ -1781,12 +2809,20 @@ paths:
             schema:
               type: object
               properties:
+                email:
+                  type: string
+                  format: email
+                  description: >
+                    New address. On a sent envelope this rotates the signing
+                    link and emails it when it is this person's turn.
                 name:
                   type: string
                 role:
                   $ref: "#/components/schemas/RecipientRole"
+                  description: Draft only. Rejected after the envelope is sent.
                 order:
                   type: integer
+                  description: Draft only. Rejected after the envelope is sent.
                 message:
                   type: string
       responses:
@@ -1805,6 +2841,12 @@ paths:
           $ref: "#/components/responses/NotFound"
 
   /recipients/delete:
+    post:
+      tags: [Recipients]
+      deprecated: true
+      summary: Delete a recipient (legacy alias — use DELETE)
+      responses:
+        "200": { description: Deleted }
     delete:
       tags: [Recipients]
       operationId: removeRecipient
@@ -2301,10 +3343,11 @@ paths:
       description: >
         Returns a short-lived upload URL. `POST` the file bytes to that URL with
         the matching `Content-Type`. Accepted types: `application/pdf`, DOCX,
-        XLSX, PPTX, and CSV. Non-PDF office/CSV uploads are converted to a
-        fixed-layout PDF via the convert worker before storage; the original is
-        retained under an `originals/` key. Pass the returned `storageId` to
-        `POST /documents`.
+        XLSX, PPTX, CSV, HTML, PNG, and JPEG. Office/CSV convert via
+        LibreOffice, HTML renders via Gotenberg's Chromium route, and PNG/JPEG
+        pack into a one-page PDF in-worker via pdf-lib (no egress). The
+        original is retained under an `originals/` key. Pass the returned
+        `storageId` to `POST /documents`.
       responses:
         "200":
           description: Upload URL generated
@@ -2321,7 +3364,6 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
-
   /uploads:
     post:
       tags: [Uploads]
@@ -2330,8 +3372,9 @@ paths:
       description: >
         Upload file bytes to the URL from `POST /uploads/generate-url` (pass the
         token as a query param). PDFs are stored as-is. DOCX/XLSX/PPTX/CSV are
-        converted to PDF via the convert worker; originals are kept. Requires a
-        valid upload token (not a normal API key on this path).
+        converted via LibreOffice, HTML renders via Chromium, PNG/JPEG pack
+        into a one-page PDF via pdf-lib in-worker; originals are kept. Requires
+        a valid upload token (not a normal API key on this path).
       parameters:
         - name: token
           in: query
@@ -2349,6 +3392,12 @@ paths:
           application/vnd.openxmlformats-officedocument.presentationml.presentation:
             schema: { type: string, format: binary }
           text/csv:
+            schema: { type: string, format: binary }
+          text/html:
+            schema: { type: string, format: binary }
+          image/png:
+            schema: { type: string, format: binary }
+          image/jpeg:
             schema: { type: string, format: binary }
       responses:
         "200":
@@ -2458,6 +3507,12 @@ paths:
           $ref: "#/components/responses/NotFound"
 
   /contacts/delete:
+    post:
+      tags: [Contacts]
+      deprecated: true
+      summary: Delete a contact (legacy alias — use DELETE)
+      responses:
+        "200": { description: Deleted }
     delete:
       tags: [Contacts]
       operationId: deleteContact
@@ -2632,13 +3687,39 @@ paths:
   # ──────────────────────────────────────────────────────────────────────────
 
   /reviews:
+    get:
+      tags: [Reviews]
+      operationId: listReviewMatrices
+      summary: List review matrices (summary rows, no cell fan-out)
+      responses:
+        "200":
+          description: Matrices
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  matrices:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        title: { type: string }
+                        status: { type: string }
+                        row_count: { type: integer }
+                        column_count: { type: integer }
+                        created_at: { type: string, format: date-time }
+                        updated_at: { type: string, format: date-time }
     post:
       tags: [Reviews]
       operationId: createReviewMatrix
       summary: Create a review matrix
       description: >
         Creates a matrix with one row per document and one pending cell per
-        column. Generation is a separate call (`POST /reviews/{id}/generate`).
+        column. Cells are filled by the calling agent via
+        `PATCH /reviews/{id}/cells` — Seal runs no inference; it grounds each
+        submitted quote against the row document's stored text.
         Every `done` cell must carry ≥1 citation or the literal `not_found`.
       requestBody:
         required: true
@@ -2646,13 +3727,15 @@ paths:
           application/json:
             schema:
               type: object
-              required: [title, model, columns, documentIds]
+              required: [title, documentIds]
               properties:
                 title: { type: string, maxLength: 200 }
-                model:
+                pack_id:
                   type: string
-                  description: Provider/model key (`echo/test` for local stub)
-                  maxLength: 120
+                  description: >
+                    Review pack to expand — `builtin/nda`, `builtin/msa`,
+                    `builtin/employment`, or an org-authored `pack_*` id.
+                    Explicit `columns` override pack defaults.
                 columns:
                   type: array
                   minItems: 1
@@ -2699,15 +3782,201 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
-  /reviews/{id}/generate:
+  /reviews/{id}/cells:
+    patch:
+      tags: [Reviews]
+      operationId: writeReviewCells
+      summary: Write agent-authored cell results
+      description: >
+        The caller's own model reasons over each row's parsed document text
+        and posts answers; Seal runs no inference for this route. Every
+        `quote` is grounded server-side against the row document's stored
+        text — a quote absent from the document collapses to `not_found`
+        rather than anchoring invented text. The matrix flips to `ready`
+        once all cells resolve. `model_used` records the caller's model
+        label (e.g. `agent/claude-opus-4-6`) for provenance — it is a label,
+        not a billed provider call.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cells]
+              properties:
+                model_used:
+                  type: string
+                  maxLength: 120
+                cells:
+                  type: array
+                  minItems: 1
+                  maxItems: 256
+                  items:
+                    type: object
+                    required: [summary, quote]
+                    properties:
+                      cell_id: { type: string }
+                      row_id: { type: string }
+                      column_index: { type: integer, minimum: 0 }
+                      summary: { type: string, maxLength: 500 }
+                      flag:
+                        type: string
+                        enum: [green, amber, red, grey]
+                      reasoning: { type: string, maxLength: 1000 }
+                      quote:
+                        type: string
+                        maxLength: 500
+                        description: Verbatim excerpt from the row document
+      responses:
+        "200":
+          description: Cells written
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [updated, matrixStatus]
+                properties:
+                  updated: { type: integer }
+                  matrixStatus:
+                    type: string
+                    enum: [draft, generating, ready]
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /jobs:
+    get:
+      tags: [Jobs]
+      operationId: listJobs
+      summary: List async jobs (newest first)
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [queued, running, done, error]
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        "200":
+          description: Job list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobs:
+                    type: array
+                    items: { $ref: "#/components/schemas/Job" }
+
+  /jobs/{id}:
+    get:
+      tags: [Jobs]
+      operationId: getJob
+      summary: Poll an async job
+      description: >
+        Returns the job's status (`queued|running|done|error`), error, and
+        result payload. Jobs are created by long-running ops; they run on the
+        org's JobRunner Durable Object, sequentially per org with retries
+        (max 3 attempts).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+          description: Job public ID (`job_…`)
+      responses:
+        "200":
+          description: Job state
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  [
+                    id,
+                    type,
+                    status,
+                    error,
+                    result,
+                    created_at,
+                    started_at,
+                    finished_at,
+                  ]
+                properties:
+                  id: { type: string }
+                  type: { type: string }
+                  status:
+                    type: string
+                    enum: [queued, running, done, error]
+                  error: { type: string, nullable: true }
+                  result: { nullable: true }
+                  created_at: { type: string, format: date-time }
+                  started_at:
+                    { type: string, format: date-time, nullable: true }
+                  finished_at:
+                    { type: string, format: date-time, nullable: true }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /review-packs:
+    get:
+      tags: [Reviews]
+      operationId: listReviewPacks
+      summary: List saved question sets (builtin + org-authored)
+      responses:
+        "200":
+          description: Packs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  packs:
+                    type: array
+                    items: { $ref: "#/components/schemas/ReviewPack" }
     post:
       tags: [Reviews]
-      operationId: generateReviewMatrix
-      summary: Generate pending review cells
-      description: >
-        Runs the matrix model against each pending/error cell. Echo/provider
-        stubs complete synchronously; production Anthropic/Workers AI runs will
-        move to a Durable Object / Workflow. Poll `GET /reviews/{id}` for status.
+      operationId: createReviewPack
+      summary: Save a reusable set of review questions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, columns]
+              properties:
+                title: { type: string, maxLength: 200 }
+                description: { type: string, maxLength: 2000 }
+                columns:
+                  type: array
+                  minItems: 1
+                  maxItems: 32
+                  items: { $ref: "#/components/schemas/ReviewColumn" }
+      responses:
+        "201":
+          description: Pack created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReviewPack" }
+
+  /review-packs/{id}:
+    get:
+      tags: [Reviews]
+      operationId: getReviewPack
+      summary: Get a saved question set
       parameters:
         - name: id
           in: path
@@ -2715,16 +3984,234 @@ paths:
           schema: { type: string }
       responses:
         "200":
-          description: Matrix after generation pass
+          description: Pack
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/ReviewMatrix" }
+              schema: { $ref: "#/components/schemas/ReviewPack" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Reviews]
+      operationId: deleteReviewPack
+      summary: Delete a saved question set
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /revisions:
+    post:
+      tags: [Revisions]
+      operationId: proposeRevision
+      summary: Propose a redline on a draft document
+      description: >
+        Anchors a verbatim quote from the document text and proposes an
+        insert/delete/replace. Auto-attaches `{page, bbox}` when the quote
+        resolves against per-word geometry. Status stays `pending` until a
+        human or agent accepts/rejects; the source document is never
+        mutated — accepting materializes a derived counter-proposal draft.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [document_id, kind, anchor_quote]
+              properties:
+                document_id: { type: string }
+                kind:
+                  type: string
+                  enum: [insert, delete, replace]
+                anchor_quote:
+                  type: string
+                  description: Verbatim excerpt the edit attaches to
+                proposed_text:
+                  type: string
+                  description: Replacement (replace) or inserted text (insert)
+                rationale: { type: string }
+                review_cell_id: { type: string }
+      responses:
+        "201":
+          description: Pending revision created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Revision" }
         "400":
           $ref: "#/components/responses/ValidationError"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+    get:
+      tags: [Revisions]
+      operationId: listRevisions
+      summary: List tracked-change suggestions
+      parameters:
+        - name: document_id
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, accepted, rejected]
+      responses:
+        "200":
+          description: Revisions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  revisions:
+                    type: array
+                    items: { $ref: "#/components/schemas/Revision" }
+
+  /revisions/accept-all:
+    post:
+      tags: [Revisions]
+      operationId: acceptAllRevisions
+      summary: Accept every pending revision on a document
+      description: >
+        One derived draft carries all pending edits — a single tracked-
+        changes .docx when `output=docx`. All accepted revisions point at
+        the same `derived_document_id`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [document_id]
+              properties:
+                document_id: { type: string }
+                output: { type: string, enum: [pdf, docx] }
+      responses:
+        "200":
+          description: Derived document + accept count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  derived_document_id: { type: string }
+                  accepted: { type: integer }
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Nothing pending
+
+  /revisions/{id}/accept:
+    post:
+      tags: [Revisions]
+      operationId: acceptRevision
+      summary: Accept a revision — materializes a derived counter-proposal draft
+      description: >
+        Applies the text edit to the document's parsed content, converts to
+        PDF via the convert worker, and creates a new draft linked by
+        `parent_document_id`. Re-parses fields/annotations on the derived
+        doc. Idempotent-ish: already-resolved revisions return 409.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: output
+          in: query
+          schema:
+            type: string
+            enum: [pdf, docx]
+            description: >
+              `docx` produces a Word tracked-changes file (`w:ins`/`w:del`
+              runs, `<w:trackChanges/>` settings) as the derived doc's
+              `original` — the counterproposal opens as real redlines in
+              Word. The working copy stays a converted PDF.
+      responses:
+        "200":
+          description: Accepted — derived_document_id points to the new draft
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Revision" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Already resolved
+
+  /revisions/{id}/reject:
+    post:
+      tags: [Revisions]
+      operationId: rejectRevision
+      summary: Reject a pending revision
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Rejected
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Revision" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Already resolved
+
+  /jobs/{id}/stream:
+    get:
+      tags: [Jobs]
+      operationId: streamJob
+      summary: SSE stream of job state
+      description: >
+        `state` events carry the full job payload on every status change;
+        `:hb` comments keep the socket warm; the stream closes on
+        `done`/`error` or after ~4.5 minutes (reconnect to resume). Because
+        `EventSource` can't set headers, `?access_token=` (MCP or api token)
+        is accepted on this path only.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: access_token
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: text/event-stream of job state
+          content:
+            text/event-stream: {}
+
+  /reviews/{id}/stream:
+    get:
+      tags: [Reviews]
+      operationId: streamReviewMatrix
+      summary: SSE stream of matrix + cell state
+      description: >
+        `state` events carry `{id, status, cells[]}` — per-cell
+        `{id, row_id, column_index, status, flag, summary}` — on every
+        change; closes when the matrix leaves `generating`/`draft`.
+        `?access_token=` supported like the jobs stream.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: access_token
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: text/event-stream of matrix state
+          content:
+            text/event-stream: {}
 
   # ──────────────────────────────────────────────────────────────────────────
   # Imports
@@ -2765,7 +4252,7 @@ paths:
               properties:
                 adapter:
                   type: string
-                  enum: [pdf, docusign, pandadoc]
+                  enum: [pdf]
                 payload:
                   type: object
                   additionalProperties: true
@@ -3123,7 +4610,8 @@ paths:
                     eventType: { type: string }
                     status: { type: string }
                     responseStatus: { type: integer, nullable: true }
-                    deliveredAt: { type: string, format: date-time, nullable: true }
+                    deliveredAt:
+                      { type: string, format: date-time, nullable: true }
                     createdAt: { type: string, format: date-time }
         "401":
           $ref: "#/components/responses/Unauthorized"
@@ -3309,6 +4797,43 @@ paths:
                   next_cursor: { type: string }
         "401":
           $ref: "#/components/responses/Unauthorized"
+
+  /organizations/{organizationSlug}/audit:
+    get:
+      tags: [Audit]
+      operationId: listOrgAuditLog
+      summary: List organization audit events (filtered, cursor-paginated)
+      parameters:
+        - name: organizationSlug
+          in: path
+          required: true
+          schema: { type: string }
+        - name: actor
+          in: query
+          schema: { type: string }
+        - name: action
+          in: query
+          schema: { type: string }
+        - name: resourceType
+          in: query
+          schema: { type: string }
+        - name: from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100 }
+        - name: cursor
+          in: query
+          schema: { type: integer, minimum: 0 }
+      responses:
+        "200": { description: Audit events }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403": { description: Requires admin }
 
   /organizations/{organizationSlug}/audit/verify:
     get:
@@ -3520,7 +5045,8 @@ paths:
               type: object
               required: [sharing_mode]
               properties:
-                sharing_mode: { $ref: "#/components/schemas/DocumentSharingMode" }
+                sharing_mode:
+                  { $ref: "#/components/schemas/DocumentSharingMode" }
       responses:
         "200":
           description: Updated
@@ -3541,17 +5067,25 @@ paths:
       tags: [Documents]
       operationId: bulkSendDocuments
       summary: Send multiple documents
+      description: |
+        Each draft is sent the same way as `POST /documents/send`, including invitation email.
+        Sequential documents invite only the current signer group.
+        Pass `ids` or `document_ids`.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [ids]
               properties:
                 ids:
                   type: array
                   items: { type: string }
+                  maxItems: 50
+                document_ids:
+                  type: array
+                  items: { type: string }
+                  maxItems: 50
                 message: { type: string }
       responses:
         "200":
@@ -3561,6 +5095,102 @@ paths:
               schema: { $ref: "#/components/schemas/BulkOperationSummary" }
         "401":
           $ref: "#/components/responses/Unauthorized"
+
+  /documents/copy:
+    post:
+      tags: [Documents]
+      operationId: copyDocument
+      summary: Copy a document into a new draft
+      description: |
+        Copies the file, recipients, and fields into a new draft.
+        Signatures and completion state are not copied.
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "201":
+          description: Draft created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, public_id]
+                properties:
+                  id: { type: string }
+                  public_id: { type: string }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /documents/forward:
+    post:
+      tags: [Documents]
+      operationId: forwardDocument
+      summary: Email a completed PDF to someone who is not a signer
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        "200":
+          description: Email sent
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sent]
+                properties:
+                  sent: { type: boolean }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Document is not completed
+
+  /documents/forward-envelope:
+    post:
+      tags: [Documents]
+      operationId: forwardEnvelope
+      summary: Start a new envelope from a completed PDF
+      description: |
+        Copies the executed PDF into a new draft. Signers and fields are not copied.
+        The source document stays completed.
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "201":
+          description: Draft envelope created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, public_id]
+                properties:
+                  id: { type: string }
+                  public_id: { type: string }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Document is not completed
 
   /documents/bulk-void:
     post:
@@ -3589,8 +5219,176 @@ paths:
           $ref: "#/components/responses/Unauthorized"
 
   # ──────────────────────────────────────────────────────────────────────────
+  # SCIM provisioning
+  # ──────────────────────────────────────────────────────────────────────────
+
+  /organizations/{organizationSlug}/scim/connections:
+    get:
+      tags: [SCIM]
+      operationId: listScimConnections
+      summary: List SCIM connections for an organization
+      parameters:
+        - name: organizationSlug
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: SCIM connections for the organization
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  connections:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        connectionId: { type: string }
+                        status: { type: string }
+                        createdAt: { type: string }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      tags: [SCIM]
+      operationId: createScimConnection
+      summary: Create a SCIM connection
+      description: >
+        Mints a managed SCIM connection for the organization and returns a
+        bearer token once. The IdP provisions users and groups at
+        `{baseUrl}` (`/api/auth/scim/v2`) with that token.
+      parameters:
+        - name: organizationSlug
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                scopes:
+                  type: array
+                  items: { type: string }
+                  minItems: 1
+                  description: SCIM read/write scopes; defaults to all supported scopes
+                expiresInDays:
+                  type: integer
+                  minimum: 1
+                  maximum: 365
+                  description: Token lifetime in days; defaults to 90
+      responses:
+        "201":
+          description: SCIM connection created; bearer token returned once
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  connectionId: { type: string }
+                  provisioningDomainId: { type: string }
+                  token: { type: string }
+                  baseUrl: { type: string }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ──────────────────────────────────────────────────────────────────────────
   # API tokens
   # ──────────────────────────────────────────────────────────────────────────
+
+  /organizations/{organizationSlug}/webhooks:
+    get:
+      tags: [Webhooks]
+      operationId: listOrgWebhooks
+      summary: List webhooks for an organization
+      parameters:
+        - name: organizationSlug
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Webhook list }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Webhooks]
+      operationId: createOrgWebhook
+      summary: Create an organization webhook
+      parameters:
+        - name: organizationSlug
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, url, events]
+              properties:
+                name: { type: string }
+                url: { type: string, format: uri }
+                description: { type: string }
+                events:
+                  type: array
+                  items: { type: string }
+                  description: Event types — see /webhooks/event-types
+      responses:
+        "201":
+          description: Created — includes the signing secret (shown once)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  secret: { type: string }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "403": { description: Requires admin }
+
+  /organizations/{organizationSlug}/webhooks/event-types:
+    get:
+      tags: [Webhooks]
+      operationId: listOrgWebhookEventTypes
+      summary: Supported webhook event types
+      parameters:
+        - name: organizationSlug
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Event type catalog }
+
+  /organizations/{organizationSlug}/webhooks/{webhookId}:
+    delete:
+      tags: [Webhooks]
+      operationId: deleteOrgWebhook
+      summary: Delete an organization webhook
+      parameters:
+        - name: organizationSlug
+          in: path
+          required: true
+          schema: { type: string }
+        - name: webhookId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Deleted }
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /organizations/{organizationSlug}/tokens:
     get:
@@ -3642,6 +5440,10 @@ paths:
                   type: array
                   items: { $ref: "#/components/schemas/ApiTokenScope" }
                   minItems: 1
+                allowedIpRanges:
+                  type: array
+                  items: { type: string }
+                  description: Optional. One CIDR or address per entry. Empty means any address.
       responses:
         "201":
           description: Created

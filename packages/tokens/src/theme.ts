@@ -141,141 +141,24 @@ export const ai = {
 
 /**
  * Canvas rendering colors — for Konva/SVG contexts where CSS variables aren't available.
- * Split into three groups:
- *   - fieldColors: vivid craft-paper palette per field type (intentionally more saturated than CSS tokens)
- *   - filled: colors used when a field has been signed/completed
+ * Split into two groups:
+ *   - filled: ink used when a field has been signed
  *   - chrome: neutral UI chrome (backgrounds, borders, text)
  */
 export const canvas = {
-  fieldColors: {
-    signature: {
-      ink: "#1e3a5f",
-      accent: "#3b82f6",
-      glow: "rgba(59, 130, 246, 0.25)",
-    },
-    free_signature: {
-      ink: "#1e3a5f",
-      accent: "#60a5fa",
-      glow: "rgba(96, 165, 250, 0.25)",
-    },
-    initials: {
-      ink: "#1e3a5f",
-      accent: "#93c5fd",
-      glow: "rgba(147, 197, 253, 0.25)",
-    },
-    name: {
-      ink: "#14532d",
-      accent: "#4ade80",
-      glow: "rgba(74, 222, 128, 0.25)",
-    },
-    email: {
-      ink: "#14532d",
-      accent: "#86efac",
-      glow: "rgba(134, 239, 172, 0.25)",
-    },
-    text: {
-      ink: "#14532d",
-      accent: "#22c55e",
-      glow: "rgba(34, 197, 94, 0.25)",
-    },
-    number: {
-      ink: "#78350f",
-      accent: "#f59e0b",
-      glow: "rgba(245, 158, 11, 0.25)",
-    },
-    date: {
-      ink: "#4c1d95",
-      accent: "#8b5cf6",
-      glow: "rgba(139, 92, 246, 0.25)",
-    },
-    date_signed: {
-      ink: "#4c1d95",
-      accent: "#a78bfa",
-      glow: "rgba(167, 139, 250, 0.25)",
-    },
-    checkbox: {
-      ink: "#7c2d12",
-      accent: "#f97316",
-      glow: "rgba(249, 115, 22, 0.25)",
-    },
-    dropdown: {
-      ink: "#164e63",
-      accent: "#06b6d4",
-      glow: "rgba(6, 182, 212, 0.25)",
-    },
-    radio: {
-      ink: "#831843",
-      accent: "#ec4899",
-      glow: "rgba(236, 72, 153, 0.25)",
-    },
-    multi_select: {
-      ink: "#831843",
-      accent: "#f472b6",
-      glow: "rgba(244, 114, 182, 0.25)",
-    },
-    attachment: {
-      ink: "#3f6212",
-      accent: "#84cc16",
-      glow: "rgba(132, 204, 22, 0.25)",
-    },
-    image: {
-      ink: "#3f6212",
-      accent: "#a3e635",
-      glow: "rgba(163, 230, 53, 0.25)",
-    },
-    payment: {
-      ink: "#065f46",
-      accent: "#10b981",
-      glow: "rgba(16, 185, 129, 0.25)",
-    },
-    phone: {
-      ink: "#164e63",
-      accent: "#22d3ee",
-      glow: "rgba(34, 211, 238, 0.25)",
-    },
-    cells: {
-      ink: "#78350f",
-      accent: "#fbbf24",
-      glow: "rgba(251, 191, 36, 0.25)",
-    },
-    stamp: {
-      ink: "#7c2d12",
-      accent: "#fb923c",
-      glow: "rgba(251, 146, 60, 0.25)",
-    },
-    heading: {
-      ink: "#1e293b",
-      accent: "#64748b",
-      glow: "rgba(100, 116, 139, 0.25)",
-    },
-    strikethrough: {
-      ink: "#7f1d1d",
-      accent: "#ef4444",
-      glow: "rgba(239, 68, 68, 0.25)",
-    },
-    verification: {
-      ink: "#1e3a5f",
-      accent: "#2563eb",
-      glow: "rgba(37, 99, 235, 0.25)",
-    },
-    kba: {
-      ink: "#312e81",
-      accent: "#6366f1",
-      glow: "rgba(99, 102, 241, 0.25)",
-    },
-  },
   /** Colors for fields that have been signed/completed */
   filled: {
-    stroke: "#22c55e",
-    shadowColor: "rgba(34, 197, 94, 0.1)",
-    accent: "#22c55e",
-    accentTint: "rgba(34, 197, 94, 0.08)",
-    accentOpacity: "rgba(34, 197, 94, 0.2)",
-    titleText: "#166534",
-    detailText: "#6b7280",
+    stroke: "#2c271f",
+    shadowColor: "rgba(44, 39, 31, 0.08)",
+    accent: "#2c271f",
+    accentTint: "rgba(44, 39, 31, 0.06)",
+    accentOpacity: "rgba(44, 39, 31, 0.12)",
+    titleText: "#2c271f",
+    detailText: "#867865",
   },
   /** Neutral field chrome — unselected borders, backgrounds, option text */
   chrome: {
+    ink: "#2c271f",
     background: "#ffffff",
     backgroundUnassigned: "#fafafa",
     borderUnselected: "#cbd5e1",

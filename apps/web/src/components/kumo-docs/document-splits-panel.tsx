@@ -1,7 +1,9 @@
-import type { JSX } from "react";
+import { Text } from "@cloudflare/kumo/components/text";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Input } from "@cloudflare/kumo/components/input";
+import { Select } from "@cloudflare/kumo/components/select";
 import { Plus, Trash } from "@phosphor-icons/react";
+import type { JSX } from "react";
 import { useMemo } from "react";
 
 import { cn } from "@/lib/utils";
@@ -27,11 +29,7 @@ export function createInitialSplits(pageCount: number): DocumentSplitGroup[] {
     return {
       id: createId(),
       title:
-        index === 0
-          ? "Part 1"
-          : index === 1
-            ? "Part 2"
-            : `Part ${index + 1}`,
+        index === 0 ? "Part 1" : index === 1 ? "Part 2" : `Part ${index + 1}`,
       pages: slice,
     };
   });
@@ -58,7 +56,10 @@ export function DocumentSplitsPanel({
   applying?: boolean;
   className?: string;
 }): JSX.Element {
-  const assigned = useMemo(() => new Set(splits.flatMap((s) => s.pages)), [splits]);
+  const assigned = useMemo(
+    () => new Set(splits.flatMap((s) => s.pages)),
+    [splits]
+  );
   const unassigned = useMemo(
     () =>
       Array.from({ length: pageCount }, (_, i) => i + 1).filter(
@@ -100,7 +101,7 @@ export function DocumentSplitsPanel({
       data-kumo-docs="document-splits"
       className={cn("flex h-full flex-col", className)}
     >
-      <div className="border-border flex flex-col gap-1 border-b px-3 py-2">
+      <div className="border-kumo-line flex flex-col gap-1 border-b px-3 py-2">
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm font-medium">Split into drafts</span>
           <div className="flex items-center gap-1">
@@ -120,18 +121,14 @@ export function DocumentSplitsPanel({
             ) : null}
           </div>
         </div>
-        <p className="text-muted-foreground text-[11px] leading-snug">
-          Assign pages to named groups — each group becomes its own draft
-          document.
-        </p>
+        <Text as="p" variant="secondary" size="xs">Assign pages to named groups — each group becomes its own draft
+          document.</Text>
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto p-3">
         {unassigned.length > 0 ? (
-          <div className="border-border rounded-lg border border-dashed p-2">
-            <p className="text-muted-foreground mb-2 text-[11px] uppercase tracking-wide">
-              Unassigned
-            </p>
+          <div className="border-kumo-line rounded-lg border border-dashed p-2">
+            <Text as="p" variant="secondary" size="xs" DANGEROUS_className="mb-2">Unassigned</Text>
             <div className="flex flex-wrap gap-1">
               {unassigned.map((page) => (
                 <PageChip
@@ -149,7 +146,7 @@ export function DocumentSplitsPanel({
         {splits.map((group) => (
           <div
             key={group.id}
-            className="border-border bg-background space-y-2 rounded-lg border p-2"
+            className="border-kumo-line bg-kumo-canvas space-y-2 rounded-lg border p-2"
           >
             <div className="flex items-center gap-2">
               <Input
@@ -168,21 +165,20 @@ export function DocumentSplitsPanel({
                 <Trash className="size-3.5" />
               </Button>
             </div>
-            <p className="text-muted-foreground text-[11px] tabular-nums">
-              {group.pages.length === 0
+            <Text as="p" variant="secondary" size="xs" DANGEROUS_className="tabular-nums">{group.pages.length === 0
                 ? "No pages"
-                : `Pages ${group.pages[0]}–${group.pages[group.pages.length - 1]} · ${group.pages.length}`}
-            </p>
+                : `Pages ${group.pages[0]}–${group.pages[group.pages.length - 1]} · ${group.pages.length}`}</Text>
             <div className="flex flex-wrap gap-1">
               {group.pages.map((page) => (
-                <button
+                <Button
                   key={page}
                   type="button"
+                  size="sm"
+                  variant="secondary"
                   onClick={() => onSelectPage?.(page)}
-                  className="border-border bg-muted hover:border-ring rounded-md border px-2 py-1 text-xs tabular-nums"
                 >
                   {page}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -204,32 +200,24 @@ function PageChip({
   onAssign: (groupId: string) => void;
 }): JSX.Element {
   return (
-    <div className="border-border bg-muted inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5">
-      <button
-        type="button"
-        onClick={onSelect}
-        className="text-xs tabular-nums"
-      >
+    <div className="border-kumo-line bg-kumo-elevated inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5">
+      <Button type="button" size="sm" variant="ghost" onClick={onSelect}>
         {page}
-      </button>
-      <select
-        className="bg-transparent text-[10px] outline-none"
-        defaultValue=""
-        aria-label={`Assign page ${page}`}
-        onChange={(e) => {
-          if (e.target.value) onAssign(e.target.value);
-          e.target.value = "";
+      </Button>
+      <Select
+        value=""
+        onValueChange={(value) => {
+          if (value) onAssign(value);
         }}
+        placeholder="Assign"
+        aria-label={`Assign page ${page}`}
       >
-        <option value="" disabled>
-          →
-        </option>
-        {groups.map((g) => (
-          <option key={g.id} value={g.id}>
-            {g.title}
-          </option>
+        {groups.map((group) => (
+          <Select.Option key={group.id} value={group.id}>
+            {group.title}
+          </Select.Option>
         ))}
-      </select>
+      </Select>
     </div>
   );
 }

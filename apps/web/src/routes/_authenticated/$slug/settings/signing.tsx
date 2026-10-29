@@ -5,20 +5,21 @@
  * Route: /{slug}/settings/signing
  */
 
+import { Text } from "@cloudflare/kumo/components/text";
 import { Textarea } from "@cloudflare/kumo";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Checkbox } from "@cloudflare/kumo/components/checkbox";
 import { Input } from "@cloudflare/kumo/components/input";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { PenTool, Save } from "lucide-react";
+import { FloppyDisk as Save, PenNib as PenTool } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
-import { SigningChromeSection } from "@/components/settings/signing-chrome-section";
 import { SettingsBody } from "@/components/settings-body";
 import { SettingsSection } from "@/components/settings-section";
-import { FormSkeleton } from "@/components/skeletons";
+import { SigningChromeSection } from "@/components/settings/signing-chrome-section";
+import { FormSkeleton, PageFormSkeleton } from "@/components/skeletons";
 import { getSigningSettings, updateSigningSettings } from "@/lib/api-client";
 import { toast } from "@/lib/toast";
 
@@ -32,7 +33,7 @@ const SIGNATURE_TYPE_OPTIONS = [
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/signing")({
   component: SigningSettings,
-  pendingComponent: FormSkeleton,
+  pendingComponent: () => <PageFormSkeleton title="Signing Settings" />,
 });
 
 function SigningSettings() {
@@ -136,132 +137,130 @@ function SigningSettings() {
 
   return (
     <PageWrapper title="Signing Settings">
-      <SettingsBody wide>
-      <form onSubmit={handleSubmit} className="grid gap-5 lg:grid-cols-2">
-        <SettingsSection
-          className="lg:col-span-2"
-          icon={<PenTool className="size-4" />}
-          title="Signature types"
-          description="Methods recipients can use when signing."
-        >
-          {SIGNATURE_TYPE_OPTIONS.map((type) => (
-            <Checkbox
-              key={type}
-              checked={formData.allowedSignatureTypes.includes(type)}
-              disabled={isSubmitting}
-              onCheckedChange={(checked) =>
-                handleSignatureTypeToggle(type, checked === true)
-              }
-              label={
-                type === "draw"
-                  ? "Draw signature"
-                  : type === "type"
-                    ? "Type signature"
-                    : "Upload signature image"
-              }
-            />
-          ))}
-        </SettingsSection>
-
-        <SettingsSection
-          className="lg:col-span-2"
-          title="Identity & audit"
-          description="Defaults for every envelope — inbox proof and optional Seal account."
-        >
-          <Checkbox
-            checked={formData.requireRecipientAuth}
-            disabled={isSubmitting}
-            onCheckedChange={(checked) =>
-              setFormData((prev) => ({
-                ...prev,
-                requireRecipientAuth: checked === true,
-              }))
-            }
-            label="Require email OTP or access code for signers"
-          />
-          <Checkbox
-            checked={formData.requireSignerAccount}
-            disabled={isSubmitting}
-            onCheckedChange={(checked) =>
-              setFormData((prev) => ({
-                ...prev,
-                requireSignerAccount: checked === true,
-              }))
-            }
-            label="Require Seal account before signing"
-          />
-        </SettingsSection>
-
-        <SettingsSection
-          title="Default deadline"
-          description="How long recipients have after you send."
-        >
-          <div className="flex max-w-sm items-end gap-2">
-            <div className="w-28 shrink-0">
-              <Input
-                id="default-deadline-days"
-                label="Days"
-                type="number"
-                min={1}
-                max={365}
-                value={formData.defaultDeadlineDays}
+      <SettingsBody>
+        <form onSubmit={handleSubmit} className="grid gap-5 lg:grid-cols-2">
+          <SettingsSection
+            className="lg:col-span-2"
+            icon={<PenTool className="size-4" />}
+            title="Signature types"
+            description="Methods recipients can use when signing."
+          >
+            {SIGNATURE_TYPE_OPTIONS.map((type) => (
+              <Checkbox
+                key={type}
+                checked={formData.allowedSignatureTypes.includes(type)}
                 disabled={isSubmitting}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    defaultDeadlineDays: Number(e.target.value),
-                  })
+                onCheckedChange={(checked) =>
+                  handleSignatureTypeToggle(type, checked === true)
+                }
+                label={
+                  type === "draw"
+                    ? "Draw signature"
+                    : type === "type"
+                      ? "Type signature"
+                      : "Upload signature image"
                 }
               />
+            ))}
+          </SettingsSection>
+
+          <SettingsSection
+            className="lg:col-span-2"
+            title="Identity & audit"
+            description="Defaults for every envelope — inbox proof and optional Seal account."
+          >
+            <Checkbox
+              checked={formData.requireRecipientAuth}
+              disabled={isSubmitting}
+              onCheckedChange={(checked) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  requireRecipientAuth: checked === true,
+                }))
+              }
+              label="Require email OTP or access code for signers"
+            />
+            <Checkbox
+              checked={formData.requireSignerAccount}
+              disabled={isSubmitting}
+              onCheckedChange={(checked) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  requireSignerAccount: checked === true,
+                }))
+              }
+              label="Require Seal account before signing"
+            />
+          </SettingsSection>
+
+          <SettingsSection
+            title="Default deadline"
+            description="How long recipients have after you send."
+          >
+            <div className="flex max-w-sm items-end gap-2">
+              <div className="w-28 shrink-0">
+                <Input
+                  id="default-deadline-days"
+                  label="Days"
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={formData.defaultDeadlineDays}
+                  disabled={isSubmitting}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      defaultDeadlineDays: Number(e.target.value),
+                    })
+                  }
+                />
+              </div>
+              <Text as="p" variant="secondary" size="sm" DANGEROUS_className="mb-2.5">after the document is sent</Text>
             </div>
-            <p className="text-muted-foreground mb-2.5 text-sm">
-              after the document is sent
-            </p>
+          </SettingsSection>
+
+          <SettingsSection
+            title="E-sign consent"
+            description="Leave blank for the Seal default."
+          >
+            <Textarea
+              id="esign-consent-text"
+              value={formData.esignConsentText}
+              disabled={isSubmitting}
+              onChange={(e) =>
+                setFormData({ ...formData, esignConsentText: e.target.value })
+              }
+              placeholder="By signing this document electronically..."
+              rows={4}
+            />
+          </SettingsSection>
+
+          <SettingsSection
+            className="lg:col-span-2"
+            title="Privacy / CCPA notice"
+            description="Leave blank for the Seal default."
+          >
+            <Textarea
+              id="privacy-notice-text"
+              value={formData.privacyNoticeText}
+              disabled={isSubmitting}
+              onChange={(e) =>
+                setFormData({ ...formData, privacyNoticeText: e.target.value })
+              }
+              placeholder="Privacy notice for electronic signing..."
+              rows={5}
+            />
+          </SettingsSection>
+
+          <div className="flex justify-end lg:col-span-2">
+            <Button type="submit" disabled={isSubmitting}>
+              <Save className="mr-2 size-4" />
+              {isSubmitting ? "Saving…" : "Save changes"}
+            </Button>
           </div>
-        </SettingsSection>
+        </form>
 
-        <SettingsSection
-          title="E-sign consent"
-          description="Leave blank for the Seal default."
-        >
-          <Textarea
-            id="esign-consent-text"
-            value={formData.esignConsentText}
-            disabled={isSubmitting}
-            onChange={(e) =>
-              setFormData({ ...formData, esignConsentText: e.target.value })
-            }
-            placeholder="By signing this document electronically..."
-            rows={4}
-          />
-        </SettingsSection>
-
-        <SettingsSection
-          className="lg:col-span-2"
-          title="Privacy / CCPA notice"
-          description="Leave blank for the Seal default."
-        >
-          <Textarea
-            id="privacy-notice-text"
-            value={formData.privacyNoticeText}
-            disabled={isSubmitting}
-            onChange={(e) =>
-              setFormData({ ...formData, privacyNoticeText: e.target.value })
-            }
-            placeholder="Privacy notice for electronic signing..."
-            rows={5}
-          />
-        </SettingsSection>
-
-        <div className="flex justify-end lg:col-span-2">
-          <Button type="submit" disabled={isSubmitting}>
-            <Save className="mr-2 size-4" />
-            {isSubmitting ? "Saving…" : "Save changes"}
-          </Button>
-        </div>
-      </form>
-
-      <SigningChromeSection slug={slug} />
+        <SigningChromeSection slug={slug} />
       </SettingsBody>
     </PageWrapper>
   );

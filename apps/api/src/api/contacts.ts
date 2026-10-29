@@ -4,6 +4,7 @@ import { and, desc, eq, inArray, like, or } from "drizzle-orm";
 import { createD1 } from "../global/db.js";
 import { contacts, documents, recipients } from "../global/schema.js";
 import { syncContactsFromOrganizationRecipients } from "../platform/ensure-contacts.js";
+import { presentedWorkflowStatus } from "../platform/workflow-status.js";
 import { organizationMiddleware } from "../platform/organization-middleware.js";
 import type { Variables } from "../platform/types.js";
 
@@ -328,7 +329,7 @@ app.openapi(relatedDocumentsRouteDef, async (c) => {
   const results = rows.map((row) => ({
     id: row.publicId,
     name: row.name,
-    workflowStatus: row.status,
+    workflowStatus: presentedWorkflowStatus(row.status),
     role: row.role,
   }));
 
