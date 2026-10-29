@@ -72,7 +72,7 @@ function toApiImportJob(row: {
 }
 
 const createBodySchema = z.object({
-  adapter: z.enum(["pdf", "docusign", "pandadoc"]),
+  adapter: z.enum(["pdf"]),
   payload: z.object({}).passthrough().default({}),
 });
 
