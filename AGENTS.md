@@ -29,6 +29,7 @@ seal/
 | Task                   | Location                                                       | Notes                                           |
 | ---------------------- | -------------------------------------------------------------- | ----------------------------------------------- |
 | Architecture overview  | `README.md`, `apps/api/src/`, `docs/decisions/`                | Live stack only; ADR-003 = agents + signing |
+| PDF prep toolkit plan  | `docs/decisions/ADR-009-pdf-toolkit-prep-tools.md`, `docs/pdf-toolkit-prep-spec.md` | pdf-lib + convert-worker; OCR = ocrmypdf — no Seal vision AI |
 | Agent / OpenAPI doctrine | `docs/decisions/ADR-003-agent-native-openapi-and-signing.md`, `apps/docs/docs/getting-started/agents.mdx` | Spec first; humans sign |
 | Cloudflare Worker API  | `apps/api/src/`                                                | Hono + Drizzle + wrangler backend               |
 | REST API routes        | `apps/api/src/api/`                                            | Public + internal API routes                      |

@@ -1,8 +1,4 @@
 /**
- * Document Workspace — one roof for human SPA + agent tools.
- *
- * Agent tools stay registered here. The document page does not switch tabs:
- * one toolbar row holds fields, markup, rotate, page actions, and layout.
  *
  * Agent MCP tool names are listed so the SPA and MCP stay the same surface.
  */
@@ -27,12 +23,6 @@ export const DOCUMENT_CAPABILITIES = [
       "seal_annotate_document_pdf",
       "seal_replace_document_pdf",
     ] as const,
-  },
-  {
-    id: "office",
-    label: "Office",
-    description: "Edit the Word / Excel / CSV original",
-    agentTools: ["seal_replace_document_original"] as const,
   },
   {
     id: "pages",

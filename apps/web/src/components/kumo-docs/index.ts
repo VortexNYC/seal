@@ -16,7 +16,6 @@ export {
   DocumentPdfOpsPanel,
   type DocumentPdfOpsPanelProps,
 } from "./document-pdf-ops-panel";
-export { DocxEditor, type DocxEditorProps } from "./docx-editor";
 export {
   ESignature,
   type ESignatureFont,
@@ -61,4 +60,3 @@ export {
   type SchemaBuilderSchema,
 } from "./schema-builder";
 export { ThumbnailSidebar, type ThumbnailPage } from "./thumbnail-sidebar";
-export { XlsxEditor, type XlsxEditorProps } from "./xlsx-editor";

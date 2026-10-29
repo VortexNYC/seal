@@ -5,11 +5,12 @@
 
 ## Context
 
-The draft editor grew peer “modes” (fields, PDF annotate, Office edit, structure)
-that swapped the whole main pane and felt like leaving the product. Cap dogfood
-could not tell what each mode was for. Agents already reach the same jobs via
-MCP (`seal_annotate_document_pdf`, `seal_rotate_document_pdf`, `seal_split_document`,
-field tools, etc.) while the SPA invented a parallel taxonomy.
+The draft editor grew peer “modes” (fields, PDF annotate, original-file edit,
+structure) that swapped the whole main pane and felt like leaving the product.
+Cap dogfood could not tell what each mode was for. Agents already reach the
+same jobs via MCP (`seal_annotate_document_pdf`, `seal_rotate_document_pdf`,
+`seal_split_document`, field tools, etc.) while the SPA invented a parallel
+taxonomy.
 
 Seal needs to absorb more document capabilities over time without inventing a
 new surface each time.
@@ -22,9 +23,9 @@ new surface each time.
 2. **Capability registry** (`DOCUMENT_CAPABILITIES`) is the product surface.
    Each capability has a stable `id`, human label/description, and the agent
    MCP tool names that implement the same job. New work extends the registry.
-3. **Engines may differ underneath** today (field canvas vs EmbedPDF vs Office
-   editors). Convergence onto a single canvas is allowed later; the roof and
-   IDs stay.
+3. **PDF toolkit only on the SPA rail.** Upload converts Word/Excel/CSV to PDF
+   at intake. There is no in-app original-file editor capability — that path
+   fought the Acrobat / Smallpdf product story.
 4. **Humans and agents share the same capability map.** SPA rail and MCP tools
    must not invent parallel names for the same job.
 
@@ -33,8 +34,9 @@ new surface each time.
 - SPA uses a persistent capability rail, not “Leave signature fields” menus.
 - Pages ops (rotate / merge / split) are a first-class capability, not only a
   buried sidebar accordion.
-- Adding OCR, compare, or redaction packs means a new registry entry + panel —
-  not a new top-level product mode.
+- Adding OCR, compress, organize, or other prep tools extends the registry
+  (prefer growing **Pages** first — ADR-009 / `docs/pdf-toolkit-prep-spec.md`)
+  — not a new top-level product mode and not Seal-hosted model inference.
 - Drift between MCP tool names and registry `agentTools` is a bug.
 
 ## Canvas convergence (2026-09-29)
@@ -44,5 +46,5 @@ EmbedPDF mount (`DocumentCanvas`). Switching the rail changes interaction chrome
 and overlays — it does not tear down the PDF. Pages docks rotate / merge / split
 under the live canvas; Layout maps blocks onto the same page box and docks
 schema chrome below. Zoom / page keyboard shortcuts live on that canvas
-(SEA-78 / SEA-79). Office remains the capability panel that still swaps the main
-pane (original Office binary editors).
+(SEA-78 / SEA-79). The former **Office** / edit-original SPA panel was removed
+(2026-09-30): convert at intake, work on the PDF.

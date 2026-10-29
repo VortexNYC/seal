@@ -3,6 +3,24 @@
 Gotenberg-backed document conversion on Cloudflare Containers (Durable Object
 `Converter`, image pinned to `gotenberg:8` by sha256 in `wrangler.jsonc`).
 
+## Scope (ADR-009)
+
+Today: `POST /convert` — office/CSV → PDF (LibreOffice via Gotenberg).
+
+Planned on this same Container (Seal Dockerfile `FROM` the pinned Gotenberg
+digest — see `docs/pdf-toolkit-prep-spec.md`):
+
+| Route | Tooling | Job |
+| --- | --- | --- |
+| `POST /pdf/compress` | `qpdf` / Ghostscript | Shrink draft PDFs |
+| `POST /pdf/unlock` | `qpdf --decrypt` | Remove password (never log it) |
+| `POST /pdf/ocr` | **`ocrmypdf` + Tesseract** | Searchable PDF — **not** Workers AI / SaaS OCR |
+
+Page surgery (organize, watermark, page numbers, crop box, encrypt) stays on
+`@seal/api` with `pdf-lib`. This worker is for binaries that do not belong in
+the API isolate. Seal exposes tools for agents; it does not run Seal-hosted
+model inference for PDF prep.
+
 ## Deploying
 
 **Worker code** deploys via Artifacts → cloudflare-ci (`wrangler deploy` with
