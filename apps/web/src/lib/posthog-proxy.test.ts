@@ -13,15 +13,11 @@ describe("rewritePosthogIngestPath", () => {
       targetHost: "https://us-assets.i.posthog.com",
       targetPath: "/static/posthog-recorder.js",
     });
-    expect(
-      rewritePosthogIngestPath("/ingest/static/surveys.js")
-    ).toEqual({
+    expect(rewritePosthogIngestPath("/ingest/static/surveys.js")).toEqual({
       targetHost: "https://us-assets.i.posthog.com",
       targetPath: "/static/surveys.js",
     });
-    expect(
-      rewritePosthogIngestPath("/ingest/static/array.js")
-    ).toEqual({
+    expect(rewritePosthogIngestPath("/ingest/static/array.js")).toEqual({
       targetHost: "https://us-assets.i.posthog.com",
       targetPath: "/static/array.js",
     });

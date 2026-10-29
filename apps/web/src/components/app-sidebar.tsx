@@ -6,6 +6,7 @@ import {
   Files,
   Gear,
   House,
+  Scales,
   SquaresFour,
   Users,
   type Icon,
@@ -20,12 +21,13 @@ import {
   type NavPrimaryItem,
 } from "@/components/nav-main";
 import { SealLogo } from "@/components/seal-logo";
-import { WorkspaceAccountMenu } from "@/components/workspace-account-menu";
+import { WorkspaceAccountMenu } from "@vortex-api/better-auth-ui";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import {
   getContacts,
+  getDocumentAttention,
   getDocuments,
   getFolders,
   getOrganizationTemplates,
@@ -107,11 +109,13 @@ function buildNav({
   currentPath,
   permissions,
   isPro,
+  needsYou,
 }: {
   slug: string;
   currentPath: string;
   permissions: PermissionSet | undefined;
   isPro: boolean;
+  needsYou: number;
 }): BuiltNav {
   const permissionFlags = permissions?.permissions;
 
@@ -135,6 +139,12 @@ function buildNav({
       visible: canView(permissionFlags?.canCreateTemplates),
     },
     {
+      title: "Reviews",
+      url: buildOrganizationPath(slug, "/reviews"),
+      icon: Scales,
+      visible: canView(permissionFlags?.canCreateDocuments),
+    },
+    {
       title: "Contacts",
       url: buildOrganizationPath(slug, "/contacts"),
       icon: Users,
@@ -147,6 +157,7 @@ function buildNav({
       url,
       icon,
       isActive: isPathActive(currentPath, url, title === "Dashboard"),
+      ...(title === "Documents" && needsYou > 0 ? { badge: needsYou } : {}),
     }));
 
   const settingsItems = [
@@ -172,6 +183,11 @@ function buildNav({
       visible: canView(permissionFlags?.canViewSettings),
     },
     {
+      title: "Payments",
+      url: buildOrganizationPath(slug, "/settings/payments"),
+      visible: canView(permissionFlags?.canViewSettings),
+    },
+    {
       title: "Notifications",
       url: buildOrganizationPath(slug, "/settings/notifications"),
       visible: true,
@@ -185,11 +201,14 @@ function buildNav({
 
   const developerItems = [
     {
-      title: "Developer",
-      url: buildOrganizationPath(slug, "/settings/developer"),
-      visible:
-        canView(permissionFlags?.canManageAPIKeys) ||
-        canView(permissionFlags?.canManageWebhooks),
+      title: "API keys",
+      url: buildOrganizationPath(slug, "/settings/developer/api-keys"),
+      visible: canView(permissionFlags?.canManageAPIKeys),
+    },
+    {
+      title: "Webhooks",
+      url: buildOrganizationPath(slug, "/settings/developer/webhooks"),
+      visible: canView(permissionFlags?.canManageWebhooks),
     },
     {
       title: "Documentation",
@@ -349,6 +368,10 @@ export function AppSidebar({
     },
   });
   const { isPro } = useSubscriptionLimits();
+  const { data: attention } = useQuery({
+    queryKey: ["api", "documents", "attention", slug],
+    queryFn: () => getDocumentAttention(slug),
+  });
 
   const handleSignOut = React.useCallback(async () => {
     resetAnalytics();
@@ -375,8 +398,9 @@ export function AppSidebar({
         currentPath: location.pathname,
         permissions,
         isPro,
+        needsYou: attention?.totalIssues ?? 0,
       }),
-    [slug, location.pathname, permissions, isPro]
+    [slug, location.pathname, permissions, isPro, attention?.totalIssues]
   );
 
   const activeTeamSlug = slug;
@@ -438,14 +462,17 @@ export function AppSidebar({
   }
 
   return (
-    <Sidebar {...props} className="border-sidebar-border bg-sidebar text-sidebar-foreground">
-      <Sidebar.Header className="border-sidebar-border gap-0 border-b px-2 py-2">
+    <Sidebar
+      {...props}
+      className="border-sidebar-border bg-sidebar text-sidebar-foreground"
+    >
+      <Sidebar.Header className="border-sidebar-border h-16 gap-0 border-b px-2 py-2">
         <div
           className="text-sidebar-foreground flex min-w-0 items-center gap-2 px-2 py-1"
           aria-label="Seal"
         >
           <SealLogo size={22} variant="color" />
-          <span className="seal-wordmark font-serif text-[1.05rem] leading-none tracking-tight">
+          <span className="seal-wordmark text-lead font-serif leading-none tracking-tight">
             Seal
           </span>
         </div>
@@ -453,9 +480,10 @@ export function AppSidebar({
       <Sidebar.Content className="px-1 pt-2">
         <NavMain primary={primary} groups={groups} />
       </Sidebar.Content>
-      <Sidebar.Footer className="border-sidebar-border relative z-20 isolate gap-1 border-t px-1 py-2">
+      <Sidebar.Footer>
         {currentUser ? (
           <WorkspaceAccountMenu
+            workspaceLabel="Seal"
             teams={teamOptions}
             activeSlug={activeTeamSlug}
             user={currentUser}

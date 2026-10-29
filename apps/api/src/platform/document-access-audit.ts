@@ -17,6 +17,7 @@ export type DocumentByteAccessVia =
   | "signing-pdf-preview"
   | "signing-signed-pdf"
   | "signing-certificate"
+  | "session-certificate"
   | "v1-certificate"
   | "download-file"
   | "break-glass"

@@ -10,9 +10,7 @@ interface StrikethroughFieldInputProps {
 }
 
 /** Strikeout / redaction mark text (DocuSeal strikethrough). */
-export function StrikethroughFieldInput(
-  props: StrikethroughFieldInputProps
-) {
+export function StrikethroughFieldInput(props: StrikethroughFieldInputProps) {
   return (
     <TextFieldInput
       {...props}

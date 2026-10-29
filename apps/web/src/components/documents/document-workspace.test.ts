@@ -25,4 +25,22 @@ describe("DOCUMENT_CAPABILITIES", () => {
   it("resolves known ids", () => {
     expect(getDocumentCapability("pages").label).toBe("Pages");
   });
+
+  it("lists organize on Pages for agents", () => {
+    expect(getDocumentCapability("pages").agentTools).toContain(
+      "seal_organize_document_pdf"
+    );
+  });
+
+  it("lists watermark and page numbers on Pages for agents", () => {
+    const tools = getDocumentCapability("pages").agentTools;
+    expect(tools).toContain("seal_watermark_document_pdf");
+    expect(tools).toContain("seal_number_document_pdf_pages");
+  });
+
+  it("lists crop on Pages for agents", () => {
+    expect(getDocumentCapability("pages").agentTools).toContain(
+      "seal_crop_document_pdf"
+    );
+  });
 });

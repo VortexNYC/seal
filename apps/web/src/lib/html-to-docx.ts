@@ -18,10 +18,7 @@ type RunStyle = {
   underline?: boolean;
 };
 
-function collectRuns(
-  node: Node,
-  style: RunStyle = {}
-): TextRun[] {
+function collectRuns(node: Node, style: RunStyle = {}): TextRun[] {
   if (node.nodeType === Node.TEXT_NODE) {
     const text = node.textContent ?? "";
     if (!text) return [];

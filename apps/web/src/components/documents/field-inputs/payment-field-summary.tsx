@@ -1,10 +1,10 @@
-import { CreditCardIcon } from "lucide-react";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Text } from "@cloudflare/kumo/components/text";
+import { CreditCard as CreditCardIcon } from "@phosphor-icons/react";
 
 interface PaymentFieldSummaryProps {
   fieldId: string;
-  /** Recipient signing token for payment authentication (signing page only) */
   token?: string;
-  /** Whether to show inline payment form instead of "Pay Now" link */
   showInlinePayment?: boolean;
 }
 
@@ -23,17 +23,15 @@ export function PaymentFieldSummary({
   void showInlinePayment;
 
   return (
-    <div className="border-field-payment-border bg-field-payment-surface/50 space-y-3 rounded-lg border p-4 text-center">
+    <LayerCard className="flex flex-col items-center gap-3 p-4 text-center">
       <div className="flex items-center justify-center gap-2">
-        <CreditCardIcon className="text-field-payment h-4 w-4" />
-        <span className="text-field-payment text-sm font-semibold">
-          Payment collection
-        </span>
+        <CreditCardIcon className="size-4" />
+        <Text size="sm">Payment collection</Text>
       </div>
-      <p className="text-muted-foreground text-sm">
+      <Text variant="secondary" size="sm">
         Payment fields are managed in Vortex Payments. The summary will be
         restored once payment data is available.
-      </p>
-    </div>
+      </Text>
+    </LayerCard>
   );
 }

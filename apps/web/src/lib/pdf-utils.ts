@@ -8,6 +8,8 @@ import {
 } from "@embedpdf/engines/pdfium";
 import pdfiumWasmUrl from "@embedpdf/pdfium/pdfium.wasm?url";
 
+import { thumbnailPageRender } from "@/components/documents/document-surface";
+
 let engineSingleton: Promise<PdfEngine<Blob>> | null = null;
 
 /** SEA-74: direct engine — EmbedPDF worker boots from blob: (opaque origin); wasm fetch needs CORS. */
@@ -16,6 +18,15 @@ function getEngine(): Promise<PdfEngine<Blob>> {
     engineSingleton = createPdfiumDirectEngine(pdfiumWasmUrl);
   }
   return engineSingleton;
+}
+
+/**
+ * Warm the pdfium wasm in the HTTP cache while the signer is still on the
+ * invite/consent gates — the engine downloads it at surface mount otherwise,
+ * and it is the heaviest byte payload on the signing path (~4.6MB).
+ */
+export function warmPdfiumWasm(): void {
+  void fetch(pdfiumWasmUrl, { credentials: "same-origin" }).catch(() => {});
 }
 
 async function blobToDataUrl(blob: Blob): Promise<string> {
@@ -112,10 +123,14 @@ export async function extractPdfMetadata(file: File): Promise<{
       if (!page) return { pageCount, thumbnail: null };
       const scale = Math.min(200 / page.size.width, 300 / page.size.height);
       const blob = await engine
-        .renderPage(doc, page, {
-          scaleFactor: scale,
-          dpr: typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1,
-        })
+        .renderPage(
+          doc,
+          page,
+          thumbnailPageRender(
+            scale,
+            typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1
+          )
+        )
         .toPromise();
       const thumbnail = await blobToDataUrl(blob);
       return { pageCount, thumbnail };
@@ -171,11 +186,14 @@ export async function generatePageThumbnailsFromUrl(
           maxHeight / page.size.height
         );
         const blob = await engine
-          .renderPage(doc, page, {
-            scaleFactor: scale,
-            dpr:
-              typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1,
-          })
+          .renderPage(
+            doc,
+            page,
+            thumbnailPageRender(
+              scale,
+              typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1
+            )
+          )
           .toPromise();
         results.push({
           page: page.index + 1,

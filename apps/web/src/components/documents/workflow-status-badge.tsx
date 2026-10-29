@@ -20,7 +20,7 @@ export function WorkflowStatusBadge({
     DocumentWorkflowStatus,
     {
       label: string;
-      variant: "secondary" | "info" | "warning" | "success" | "error";
+      variant: "secondary" | "error";
     }
   > = {
     draft: {
@@ -29,19 +29,19 @@ export function WorkflowStatusBadge({
     },
     sent: {
       label: "Sent",
-      variant: "info",
+      variant: "secondary",
     },
     in_progress: {
       label: "In Progress",
-      variant: "warning",
+      variant: "secondary",
     },
     waiting_for_payment: {
       label: "Awaiting Payment",
-      variant: "warning",
+      variant: "secondary",
     },
     completed: {
       label: "Completed",
-      variant: "success",
+      variant: "secondary",
     },
     cancelled: {
       label: "Cancelled",
@@ -60,7 +60,7 @@ export function WorkflowStatusBadge({
   const { label, variant } = config[workflowStatus];
 
   return (
-    <Badge variant={variant} className={className}>
+    <Badge variant={variant} className={`px-3.5 py-1.5 text-base ${className ?? ""}`}>
       {label}
     </Badge>
   );

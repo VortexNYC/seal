@@ -1,3 +1,4 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { createFileRoute } from "@tanstack/react-router";
 /**
  * Forgot password — request a reset email.
@@ -29,7 +30,7 @@ function ForgotPasswordRoute() {
   const resetPasswordUrl = `${resolveAppOrigin()}/reset-password`;
 
   if (client === null) {
-    return <p className="text-center text-sm">Auth client not configured.</p>;
+    return <Text as="p" size="sm">Auth client not configured.</Text>;
   }
 
   return (

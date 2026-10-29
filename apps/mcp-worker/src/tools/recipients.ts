@@ -222,7 +222,7 @@ function registerAddRecipientTool(
 ): void {
   server.tool(
     "seal_add_recipient",
-    "Add a recipient to a document. The document must be in draft status.",
+    "Add a recipient to a draft, or to a sent envelope that is not finished. On a sent envelope they are emailed now if it is their turn.",
     addRecipientSchema.shape,
     async (args, extra) => {
       const { document_id, email, name, role, order, message } =
@@ -246,15 +246,15 @@ function registerUpdateRecipientTool(
 ): void {
   server.tool(
     "seal_update_recipient",
-    "Update a recipient's details. The document must be in draft status.",
+    "Update a recipient. On a draft, name, role, order, and email can change. On a sent envelope, email and name can change until that person has signed, and a new email sends a fresh link.",
     updateRecipientSchema.shape,
     async (args, extra) => {
-      const { document_id, id, name, role, order, message } =
+      const { document_id, id, email, name, role, order, message } =
         args as UpdateRecipientInput;
       const authToken = getAuthToken(extra);
       const response = await client.put<{ success: boolean }>(
         "/recipients/update",
-        { name, role, order, message },
+        { email, name, role, order, message },
         { document_id, id },
         authToken
       );

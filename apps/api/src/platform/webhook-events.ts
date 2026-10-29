@@ -143,12 +143,16 @@ export async function emitWebhookEvent(
     }));
 
   if (values.length > 0) {
-    await db
-      .insert(webhookDeliveries)
-      .values(values)
-      .onConflictDoNothing({
-        target: [webhookDeliveries.webhookId, webhookDeliveries.eventId],
-      });
+    // D1 caps bound parameters at 100 per statement; each row binds 11.
+    const DELIVERY_INSERT_CHUNK = 8;
+    for (let i = 0; i < values.length; i += DELIVERY_INSERT_CHUNK) {
+      await db
+        .insert(webhookDeliveries)
+        .values(values.slice(i, i + DELIVERY_INSERT_CHUNK))
+        .onConflictDoNothing({
+          target: [webhookDeliveries.webhookId, webhookDeliveries.eventId],
+        });
+    }
 
     // SEA-64: first attempt immediately — do not wait for the daily cron.
     if (options.flushImmediately !== false) {

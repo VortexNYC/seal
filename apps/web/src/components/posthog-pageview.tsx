@@ -4,7 +4,7 @@
  */
 
 import { useLocation } from "@tanstack/react-router";
-import { usePostHog } from "posthog-js/react";
+import { usePostHog } from "@/lib/posthog-client";
 import { useEffect, useRef } from "react";
 
 import { isGuestAnalyticsSurface } from "@/lib/posthog-proxy";

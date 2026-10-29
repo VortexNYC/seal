@@ -451,37 +451,6 @@ export async function submitFeedback(
     }
   );
 }
-const aiSettingsSchema = z.object({
-  aiEnabled: z.boolean(),
-  aiAutoAnalyze: z.boolean(),
-  aiShowRedlinesToSigners: z.boolean(),
-});
-export type ApiAiSettings = z.infer<typeof aiSettingsSchema>;
-export async function getAiSettings(
-  organizationSlug: string
-): Promise<ApiAiSettings> {
-  return apiFetch(
-    `/api/organizations/${encodeURIComponent(organizationSlug)}/ai`,
-    aiSettingsSchema
-  );
-}
-export async function updateAiSettings(
-  organizationSlug: string,
-  input: {
-    aiEnabled?: boolean;
-    aiAutoAnalyze?: boolean;
-    aiShowRedlinesToSigners?: boolean;
-  }
-): Promise<ApiAiSettings> {
-  return apiFetch(
-    `/api/organizations/${encodeURIComponent(organizationSlug)}/ai`,
-    aiSettingsSchema,
-    {
-      method: "PATCH",
-      body: JSON.stringify(input),
-    }
-  );
-}
 const securitySettingsSchema = z.object({
   ipAllowlist: z.array(z.string()),
   allowApiAccess: z.boolean(),
@@ -560,6 +529,60 @@ const signingSettingsSchema = z.object({
   defaultRecipientAuthMethod: z.enum(["email_otp", "access_code"]),
 });
 export type ApiSigningSettings = z.infer<typeof signingSettingsSchema>;
+const paymentsConnectSchema = z.object({
+  connected: z.boolean(),
+  processor: z.literal("vortex"),
+  merchantAccountId: z.string().nullable(),
+  claimUrl: z.string().nullable(),
+  claimExpiresAt: z.string().nullable(),
+  status: z.string().nullable(),
+  onboardingSessionId: z.string().nullable(),
+  ratePlanId: z.string().nullable().optional(),
+  chargesApproved: z.boolean(),
+  summary: z.string(),
+  availableMerchants: z
+    .array(
+      z.object({
+        merchantAccountId: z.string(),
+        displayName: z.string(),
+        environment: z.string(),
+        status: z.string(),
+        chargesApproved: z.boolean(),
+      })
+    )
+    .optional(),
+});
+export type ApiPaymentsConnect = z.infer<typeof paymentsConnectSchema>;
+export async function getPaymentsConnect(
+  organizationSlug: string
+): Promise<ApiPaymentsConnect> {
+  return apiFetch(
+    `/api/organizations/${encodeURIComponent(organizationSlug)}/payments`,
+    paymentsConnectSchema
+  );
+}
+export async function connectPayments(
+  organizationSlug: string,
+  input:
+    | {
+        merchantAccountId: string;
+      }
+    | {
+        displayName: string;
+        legalEntityType: "INDIVIDUAL" | "CORPORATION" | "LLC" | "PARTNERSHIP";
+        country: string;
+        defaultCurrency: string;
+      }
+): Promise<ApiPaymentsConnect> {
+  return apiFetch(
+    `/api/organizations/${encodeURIComponent(organizationSlug)}/payments`,
+    paymentsConnectSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
 export async function getSigningSettings(
   organizationSlug: string
 ): Promise<ApiSigningSettings> {
@@ -1038,6 +1061,14 @@ const documentSchema = z.object({
   allowDictateNextSigner: z.boolean(),
   sentAt: z.number().nullable().optional(),
   deadline: z.number().nullable().optional(),
+  progress: z
+    .object({
+      signed: z.number().int(),
+      total: z.number().int(),
+      waitingOn: z.string().nullable(),
+    })
+    .nullable()
+    .optional(),
   createdAt: z.number(),
   updatedAt: z.number(),
 });
@@ -1191,6 +1222,16 @@ export async function uploadDocument(
     }
   );
 }
+export async function restoreDocument(
+  organizationSlug: string,
+  publicId: string
+): Promise<void> {
+  await apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/restore`,
+    z.object({ success: z.boolean() }),
+    { method: "POST" }
+  );
+}
 export async function deleteDocument(
   organizationSlug: string,
   publicId: string
@@ -1212,6 +1253,9 @@ export async function sendDocument(
       unit: "day" | "week" | "month";
     };
     recipientMessages?: Record<string, string>;
+    customMessage?: string;
+    signingMode?: "parallel" | "sequential";
+    allowDictateNextSigner?: boolean;
   }
 ): Promise<void> {
   await apiFetch(
@@ -1235,10 +1279,12 @@ export async function cancelDocument(
 }
 export async function downloadDocument(
   organizationSlug: string,
-  publicId: string
+  publicId: string,
+  options: { ink?: boolean } = {}
 ): Promise<Blob> {
+  const ink = options.ink ? "?ink=1" : "";
   const response = await fetch(
-    `${getBaseUrl()}/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/download`,
+    `${getBaseUrl()}/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/download${ink}`,
     { credentials: "include" }
   );
   if (!response.ok) {
@@ -1247,6 +1293,81 @@ export async function downloadDocument(
   }
   return response.blob();
 }
+
+export async function downloadCertificate(
+  organizationSlug: string,
+  publicId: string
+): Promise<Blob> {
+  const response = await fetch(
+    `${getBaseUrl()}/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/certificate`,
+    { credentials: "include" }
+  );
+  if (!response.ok) {
+    const text = await response.text().catch(() => "Unknown error");
+    throw new Error(`API error ${response.status}: ${text}`);
+  }
+  return response.blob();
+}
+
+export async function copyDocument(
+  organizationSlug: string,
+  publicId: string
+): Promise<{ publicId: string }> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/copy`,
+    z.object({ publicId: z.string() }),
+    { method: "POST" }
+  );
+}
+
+export async function forwardEnvelope(
+  organizationSlug: string,
+  publicId: string
+): Promise<{ publicId: string }> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/forward-envelope`,
+    z.object({ publicId: z.string() }),
+    { method: "POST" }
+  );
+}
+
+export async function forwardDocument(
+  organizationSlug: string,
+  publicId: string,
+  email: string
+): Promise<{ sent: boolean }> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/forward`,
+    z.object({ sent: z.boolean() }),
+    { method: "POST", body: JSON.stringify({ email }) }
+  );
+}
+
+export async function bulkSendDocuments(
+  organizationSlug: string,
+  documentIds: string[]
+): Promise<{
+  succeeded: number;
+  failed: number;
+  results: { id: string; success: boolean; error?: string }[];
+}> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/bulk-send`,
+    z.object({
+      succeeded: z.number().int(),
+      failed: z.number().int(),
+      results: z.array(
+        z.object({
+          id: z.string(),
+          success: z.boolean(),
+          error: z.string().optional(),
+        })
+      ),
+    }),
+    { method: "POST", body: JSON.stringify({ documentIds }) }
+  );
+}
+
 export async function moveDocumentsToFolder(
   organizationSlug: string,
   options: {
@@ -1589,6 +1710,24 @@ export async function addRecipients(
     {
       method: "POST",
       body: JSON.stringify({ recipients }),
+    }
+  );
+}
+export async function updateRecipient(
+  organizationSlug: string,
+  publicId: string,
+  recipientPublicId: string,
+  input: {
+    email?: string;
+    name?: string;
+  }
+): Promise<ApiRecipient> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/recipients/${encodeURIComponent(recipientPublicId)}`,
+    recipientSchema,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
     }
   );
 }
@@ -1956,7 +2095,8 @@ export type ApiReplaceDocumentPdfResult = z.infer<
 export async function replaceDocumentPdf(
   organizationSlug: string,
   publicId: string,
-  input: { contentBase64: string }
+  input: { contentBase64: string },
+  options?: { keepalive?: boolean }
 ): Promise<ApiReplaceDocumentPdfResult> {
   return apiFetch(
     `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/replace-pdf`,
@@ -1964,6 +2104,7 @@ export async function replaceDocumentPdf(
     {
       method: "POST",
       body: JSON.stringify(input),
+      keepalive: options?.keepalive,
     }
   );
 }
@@ -2016,6 +2157,362 @@ export async function mergeDocumentPdf(
   );
 }
 
+const organizeDocumentPdfResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  pageCount: z.number().int(),
+  fieldsRemoved: z.number().int(),
+  fieldsRemapped: z.number().int(),
+});
+export type ApiOrganizeDocumentPdfResult = z.infer<
+  typeof organizeDocumentPdfResultSchema
+>;
+export async function organizeDocumentPdf(
+  organizationSlug: string,
+  publicId: string,
+  input: { pages: number[] }
+): Promise<ApiOrganizeDocumentPdfResult> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/organize-pdf`,
+    organizeDocumentPdfResultSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+const watermarkDocumentPdfResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  pageCount: z.number().int(),
+});
+export type ApiWatermarkDocumentPdfResult = z.infer<
+  typeof watermarkDocumentPdfResultSchema
+>;
+export async function watermarkDocumentPdf(
+  organizationSlug: string,
+  publicId: string,
+  input: {
+    text: string;
+    opacity?: number;
+    position?: "diagonal" | "center" | "footer";
+    color?: string;
+    size?: number;
+    pages?: number[];
+  }
+): Promise<ApiWatermarkDocumentPdfResult> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/watermark-pdf`,
+    watermarkDocumentPdfResultSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+const numberDocumentPdfPagesResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  pageCount: z.number().int(),
+});
+export type ApiNumberDocumentPdfPagesResult = z.infer<
+  typeof numberDocumentPdfPagesResultSchema
+>;
+export async function numberDocumentPdfPages(
+  organizationSlug: string,
+  publicId: string,
+  input: {
+    format?: "n" | "n_of_m";
+    position?: "footer-center" | "footer-right" | "footer-left";
+    startAt?: number;
+    prefix?: string;
+    size?: number;
+    color?: string;
+    pages?: number[];
+  }
+): Promise<ApiNumberDocumentPdfPagesResult> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/number-pdf-pages`,
+    numberDocumentPdfPagesResultSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+const cropDocumentPdfResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  pageCount: z.number().int(),
+  fieldsRemoved: z.number().int(),
+  fieldsRemapped: z.number().int(),
+});
+export type ApiCropDocumentPdfResult = z.infer<
+  typeof cropDocumentPdfResultSchema
+>;
+export async function cropDocumentPdf(
+  organizationSlug: string,
+  publicId: string,
+  input: {
+    crops: Array<{
+      page: number;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    }>;
+  }
+): Promise<ApiCropDocumentPdfResult> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/crop-pdf`,
+    cropDocumentPdfResultSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+const compressDocumentPdfResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  pageCount: z.number().int(),
+  sizeBefore: z.number().int(),
+  sizeAfter: z.number().int(),
+});
+export type ApiCompressDocumentPdfResult = z.infer<
+  typeof compressDocumentPdfResultSchema
+>;
+export async function compressDocumentPdf(
+  organizationSlug: string,
+  publicId: string,
+  input: { imageQuality?: number }
+): Promise<ApiCompressDocumentPdfResult> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/compress-pdf`,
+    compressDocumentPdfResultSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+const redactDocumentPdfResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  regionsApplied: z.number().int(),
+  opsScrubbed: z.number().int(),
+  annotsScrubbed: z.number().int(),
+  fieldsRemoved: z.number().int(),
+  scrubbedText: z.string(),
+  warnings: z.array(z.string()),
+});
+export type ApiRedactDocumentPdfResult = z.infer<
+  typeof redactDocumentPdfResultSchema
+>;
+export async function redactDocumentPdf(
+  organizationSlug: string,
+  publicId: string,
+  input: {
+    regions: Array<{
+      page: number;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    }>;
+  }
+): Promise<ApiRedactDocumentPdfResult> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/redact-pdf`,
+    redactDocumentPdfResultSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+const protectDocumentPdfResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  size: z.number().int(),
+  downloadUrl: z.string().nullable(),
+});
+export type ApiProtectDocumentPdfResult = z.infer<
+  typeof protectDocumentPdfResultSchema
+>;
+export async function protectDocumentPdf(
+  organizationSlug: string,
+  publicId: string,
+  input: {
+    userPassword?: string;
+    ownerPassword?: string;
+    allowPrinting?: boolean;
+    allowCopying?: boolean;
+    allowModifying?: boolean;
+    allowAnnotating?: boolean;
+    allowFillingForms?: boolean;
+    allowAssembling?: boolean;
+  }
+): Promise<ApiProtectDocumentPdfResult> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/protect-pdf`,
+    protectDocumentPdfResultSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+const unlockDocumentPdfResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  pageCount: z.number().int(),
+  warnings: z.array(z.string()),
+});
+export type ApiUnlockDocumentPdfResult = z.infer<
+  typeof unlockDocumentPdfResultSchema
+>;
+export async function unlockDocumentPdf(
+  organizationSlug: string,
+  publicId: string,
+  input: { password: string }
+): Promise<ApiUnlockDocumentPdfResult> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/unlock-pdf`,
+    unlockDocumentPdfResultSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+const flattenDocumentPdfResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  pageCount: z.number().int(),
+});
+export async function flattenDocumentPdf(
+  organizationSlug: string,
+  publicId: string
+): Promise<z.infer<typeof flattenDocumentPdfResultSchema>> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/flatten-pdf`,
+    flattenDocumentPdfResultSchema,
+    { method: "POST", body: JSON.stringify({}) }
+  );
+}
+
+const exportPdfImagesResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  size: z.number().int(),
+  format: z.enum(["png", "jpeg"]),
+  dpi: z.number(),
+  downloadUrl: z.string().nullable(),
+});
+export async function exportDocumentPdfImages(
+  organizationSlug: string,
+  publicId: string,
+  input: { format?: "png" | "jpeg"; dpi?: number }
+): Promise<z.infer<typeof exportPdfImagesResultSchema>> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/export-pdf-images`,
+    exportPdfImagesResultSchema,
+    { method: "POST", body: JSON.stringify(input) }
+  );
+}
+
+const pdfToOfficeResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  format: z.string(),
+  size: z.number().int(),
+  downloadUrl: z.string().nullable(),
+});
+export async function convertDocumentPdfToOffice(
+  organizationSlug: string,
+  publicId: string,
+  input?: { format?: "docx" | "xlsx" | "pptx" }
+): Promise<z.infer<typeof pdfToOfficeResultSchema>> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/pdf-to-office`,
+    pdfToOfficeResultSchema,
+    { method: "POST", body: JSON.stringify(input ?? {}) }
+  );
+}
+
+const ocrDocumentPdfResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  pageCount: z.number().int(),
+  lang: z.string(),
+});
+export async function ocrDocumentPdf(
+  organizationSlug: string,
+  publicId: string,
+  input?: { lang?: string }
+): Promise<z.infer<typeof ocrDocumentPdfResultSchema>> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/ocr-pdf`,
+    ocrDocumentPdfResultSchema,
+    { method: "POST", body: JSON.stringify(input ?? {}) }
+  );
+}
+
+const comparePdfResultSchema = z.object({
+  success: z.boolean(),
+  documentA: z.object({ publicId: z.string(), name: z.string() }),
+  documentB: z.object({ publicId: z.string(), name: z.string() }),
+  pagesDifferent: z.number().int(),
+  linesAdded: z.number().int(),
+  linesRemoved: z.number().int(),
+  pages: z.array(
+    z.object({
+      page: z.number().int(),
+      added: z.array(z.string()),
+      removed: z.array(z.string()),
+    })
+  ),
+});
+export type ApiComparePdfResult = z.infer<typeof comparePdfResultSchema>;
+export async function compareDocumentPdf(
+  organizationSlug: string,
+  publicId: string,
+  input: { withPublicId: string }
+): Promise<ApiComparePdfResult> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/compare-pdf`,
+    comparePdfResultSchema,
+    { method: "POST", body: JSON.stringify(input) }
+  );
+}
+
+const toPdfaResultSchema = z.object({
+  success: z.boolean(),
+  storageId: z.string(),
+  pageCount: z.number().int(),
+  format: z.string(),
+});
+export async function convertDocumentPdfToPdfa(
+  organizationSlug: string,
+  publicId: string,
+  input?: { format?: "PDF/A-1b" | "PDF/A-2b" | "PDF/A-3b" }
+): Promise<z.infer<typeof toPdfaResultSchema>> {
+  return apiFetch(
+    `/api/documents/${encodeURIComponent(organizationSlug)}/${encodeURIComponent(publicId)}/power/to-pdfa`,
+    toPdfaResultSchema,
+    { method: "POST", body: JSON.stringify(input ?? {}) }
+  );
+}
+
 const documentLayoutBlocksSchema = z.object({
   blocks: z.array(
     z.object({
@@ -2032,7 +2529,9 @@ const documentLayoutBlocksSchema = z.object({
     })
   ),
 });
-export type ApiDocumentLayoutBlocks = z.infer<typeof documentLayoutBlocksSchema>;
+export type ApiDocumentLayoutBlocks = z.infer<
+  typeof documentLayoutBlocksSchema
+>;
 export async function getDocumentLayoutBlocks(
   organizationSlug: string,
   publicId: string
@@ -2091,108 +2590,6 @@ export async function replaceDocumentOriginal(
       method: "POST",
       body: JSON.stringify(input),
     }
-  );
-}
-// ---------------------------------------------------------------------------
-// AI
-// ---------------------------------------------------------------------------
-const annotationItemSchema = z.object({
-  page: z.number().int(),
-  x: z.number(),
-  y: z.number(),
-  width: z.number(),
-  height: z.number(),
-  category: z.enum(["obligation", "payment", "risk", "dates", "terms"]),
-  severity: z.enum(["informational", "important", "critical"]),
-  text: z.string(),
-  summary: z.string(),
-});
-const annotationSchema = z.object({
-  id: z.string(),
-  publicId: z.string(),
-  documentId: z.string(),
-  organizationId: z.string(),
-  annotations: z.array(annotationItemSchema),
-  modelUsed: z.string(),
-  tokensUsed: z.number().int(),
-  processingTimeMs: z.number().int(),
-  status: z.string(),
-  createdAt: z.number().int(),
-  updatedAt: z.number().int(),
-});
-export type ApiDocumentAnnotations = z.infer<typeof annotationSchema>;
-export async function getDocumentAnnotations(
-  publicId: string
-): Promise<ApiDocumentAnnotations | null> {
-  return apiFetch(
-    `/api/ai/${encodeURIComponent(publicId)}/annotations`,
-    annotationSchema.nullable()
-  );
-}
-export async function dismissDocumentAnnotations(
-  publicId: string
-): Promise<void> {
-  await apiFetch(
-    `/api/ai/${encodeURIComponent(publicId)}/annotations/dismiss`,
-    z.void(),
-    { method: "POST" }
-  );
-}
-const suggestionItemSchema = z.object({
-  fieldType: z.string(),
-  page: z.number().int(),
-  x: z.number(),
-  y: z.number(),
-  width: z.number(),
-  height: z.number(),
-  label: z.string(),
-  confidence: z.number(),
-  isRequired: z.boolean(),
-});
-const fieldSuggestionSchema = z.object({
-  id: z.string(),
-  publicId: z.string(),
-  documentId: z.string(),
-  organizationId: z.string(),
-  fields: z.array(suggestionItemSchema),
-  modelUsed: z.string(),
-  tokensUsed: z.number().int(),
-  processingTimeMs: z.number().int(),
-  status: z.string(),
-  createdAt: z.number().int(),
-  updatedAt: z.number().int(),
-});
-export type ApiFieldSuggestions = z.infer<typeof fieldSuggestionSchema>;
-export async function getFieldSuggestions(
-  publicId: string
-): Promise<ApiFieldSuggestions | null> {
-  return apiFetch(
-    `/api/ai/${encodeURIComponent(publicId)}/field-suggestions`,
-    fieldSuggestionSchema.nullable()
-  );
-}
-export async function applyFieldSuggestions(
-  publicId: string,
-  suggestionId: string,
-  selectedFieldIndices?: number[]
-): Promise<{
-  fieldIds: string[];
-  count: number;
-}> {
-  return apiFetch(
-    `/api/ai/${encodeURIComponent(publicId)}/field-suggestions/${encodeURIComponent(suggestionId)}/apply`,
-    z.object({ fieldIds: z.array(z.string()), count: z.number().int() }),
-    {
-      method: "POST",
-      body: JSON.stringify({ selectedFieldIndices }),
-    }
-  );
-}
-export async function dismissFieldSuggestions(publicId: string): Promise<void> {
-  await apiFetch(
-    `/api/ai/${encodeURIComponent(publicId)}/field-suggestions/dismiss`,
-    z.void(),
-    { method: "POST" }
   );
 }
 const publicSigningRecipientSchema = z.object({
@@ -2273,9 +2670,7 @@ export async function getSigningByToken(
   );
 }
 
-export async function challengePublicSigningAuth(
-  token: string
-): Promise<{
+export async function challengePublicSigningAuth(token: string): Promise<{
   method: "email_otp";
   maskedEmail: string;
   expiresInSeconds: number;
@@ -2400,6 +2795,7 @@ const publicPaymentConfigSummarySchema = z.object({
   totalAmountCents: z.number().int(),
   currency: z.string(),
   paymentStatus: z.string().nullable().optional(),
+  hostedInvoiceUrl: z.string().nullable().optional(),
 });
 export type PublicPaymentConfigSummary = z.infer<
   typeof publicPaymentConfigSummarySchema
@@ -2652,11 +3048,31 @@ export async function verifyDocumentByQrToken(
   );
 }
 
+const verifyUploadResultSchema = verifyDocumentResultSchema.extend({
+  hashMatch: z.boolean(),
+});
+export type VerifyUploadResult = z.infer<typeof verifyUploadResultSchema>;
+export async function verifyDocumentByUpload(
+  pdfBytes: ArrayBuffer
+): Promise<VerifyUploadResult> {
+  const response = await fetch("/api/public/verify-upload", {
+    method: "POST",
+    headers: { "content-type": "application/pdf" },
+    body: pdfBytes,
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || `Verification failed (${response.status})`);
+  }
+  return verifyUploadResultSchema.parse(await response.json());
+}
+
 export const apiTokenSchema = z.object({
   id: z.string(),
   publicId: z.string(),
   name: z.string(),
   scopes: z.array(z.string()),
+  allowedIpRanges: z.array(z.string()).default([]),
   lastUsedAt: z.string().nullish(),
   revokedAt: z.string().nullish(),
   createdAt: z.string(),
@@ -2679,7 +3095,7 @@ export async function getApiTokens(
 
 export async function createApiToken(
   organizationSlug: string,
-  input: { name: string; scopes: string[] }
+  input: { name: string; scopes: string[]; allowedIpRanges: string[] }
 ): Promise<CreatedApiToken> {
   return apiFetch(
     `/api/v1/organizations/${encodeURIComponent(organizationSlug)}/tokens`,
@@ -2833,4 +3249,278 @@ export async function getAuditLogs(
   if (params?.limit) url.searchParams.set("limit", String(params.limit));
   if (params?.cursor) url.searchParams.set("cursor", params.cursor);
   return apiFetch(`${url.pathname}${url.search}`, auditLogListSchema);
+}
+
+// ── Reviews (legal review matrix + packs + redlines) ──────────────────────
+
+const reviewColumnSchema = z.object({
+  index: z.number().int(),
+  name: z.string(),
+  prompt: z.string(),
+});
+
+const reviewCitationSchema = z.object({
+  documentId: z.string(),
+  page: z.number().int().optional(),
+  bbox: z
+    .object({
+      x: z.number(),
+      y: z.number(),
+      width: z.number(),
+      height: z.number(),
+    })
+    .optional(),
+  quote: z.string(),
+});
+export type ApiReviewCitation = z.infer<typeof reviewCitationSchema>;
+
+const reviewCellSchema = z.object({
+  id: z.string(),
+  row_id: z.string(),
+  column_index: z.number().int(),
+  status: z.enum(["pending", "generating", "done", "error"]),
+  summary: z.string().nullable(),
+  flag: z.enum(["green", "amber", "red", "grey"]).nullable(),
+  reasoning: z.string().nullable(),
+  citations: z.array(reviewCitationSchema),
+});
+export type ApiReviewCell = z.infer<typeof reviewCellSchema>;
+
+const reviewMatrixSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  status: z.string(),
+  columns: z.array(reviewColumnSchema),
+  rows: z.array(
+    z.object({
+      id: z.string(),
+      document_id: z.string(),
+      cells: z.array(reviewCellSchema),
+    })
+  ),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+export type ApiReviewMatrix = z.infer<typeof reviewMatrixSchema>;
+
+const reviewMatrixListItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  status: z.string(),
+  row_count: z.number(),
+  column_count: z.number(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+export type ApiReviewMatrixListItem = z.infer<
+  typeof reviewMatrixListItemSchema
+>;
+
+const reviewPackSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string().nullable(),
+  columns: z.array(reviewColumnSchema),
+  builtin: z.boolean(),
+  created_at: z.string(),
+});
+export type ApiReviewPack = z.infer<typeof reviewPackSchema>;
+
+const revisionSchema = z.object({
+  id: z.string(),
+  document_id: z.string(),
+  review_cell_id: z.string().nullable(),
+  kind: z.enum(["insert", "delete", "replace"]),
+  status: z.enum(["pending", "accepted", "rejected"]),
+  anchor_quote: z.string(),
+  anchor_page: z.number().nullable(),
+  anchor_bbox: z
+    .object({
+      x: z.number(),
+      y: z.number(),
+      width: z.number(),
+      height: z.number(),
+    })
+    .nullable(),
+  proposed_text: z.string().nullable(),
+  rationale: z.string().nullable(),
+  derived_document_id: z.string().nullable(),
+  created_by: z.string(),
+  created_at: z.string(),
+  resolved_at: z.string().nullable(),
+});
+export type ApiRevision = z.infer<typeof revisionSchema>;
+
+const reviewsBase = (slug: string) =>
+  `/api/reviews/${encodeURIComponent(slug)}`;
+
+export async function getReviewMatrices(
+  slug: string
+): Promise<ApiReviewMatrixListItem[]> {
+  const data = await apiFetch(
+    reviewsBase(slug),
+    z.object({ matrices: z.array(reviewMatrixListItemSchema) })
+  );
+  return data.matrices;
+}
+
+export async function getReviewMatrix(
+  slug: string,
+  id: string
+): Promise<ApiReviewMatrix> {
+  return apiFetch(
+    `${reviewsBase(slug)}/${encodeURIComponent(id)}`,
+    reviewMatrixSchema
+  );
+}
+
+export async function createReviewMatrix(
+  slug: string,
+  input: {
+    title: string;
+    documentIds: string[];
+    pack_id?: string;
+    columns?: { index: number; name: string; prompt: string }[];
+  }
+): Promise<ApiReviewMatrix> {
+  return apiFetch(reviewsBase(slug), reviewMatrixSchema, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+/**
+ * SSE stream of a generating matrix — same-origin session auth, so plain
+ * EventSource works (cookies travel automatically). Returns a close handle.
+ */
+export function openReviewStream(
+  slug: string,
+  id: string,
+  onState: (state: {
+    id: string;
+    status: string;
+    cells: {
+      id: string;
+      row_id: string;
+      column_index: number;
+      status: string;
+      flag: string | null;
+      summary: string | null;
+    }[];
+  }) => void
+): () => void {
+  const source = new EventSource(
+    `${getBaseUrl()}${reviewsBase(slug)}/${encodeURIComponent(id)}/stream`
+  );
+  source.addEventListener("state", (ev) => {
+    try {
+      onState(JSON.parse((ev as MessageEvent).data as string));
+    } catch {
+      // malformed frame — ignore
+    }
+  });
+  return () => source.close();
+}
+
+export async function getReviewPacks(slug: string): Promise<ApiReviewPack[]> {
+  const data = await apiFetch(
+    `${reviewsBase(slug)}/packs`,
+    z.object({ packs: z.array(reviewPackSchema) })
+  );
+  return data.packs;
+}
+
+export async function createReviewPack(
+  slug: string,
+  input: {
+    title: string;
+    description?: string;
+    columns: { index: number; name: string; prompt: string }[];
+  }
+): Promise<ApiReviewPack> {
+  return apiFetch(`${reviewsBase(slug)}/packs`, reviewPackSchema, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteReviewPack(
+  slug: string,
+  id: string
+): Promise<void> {
+  await apiFetch(
+    `${reviewsBase(slug)}/packs/${encodeURIComponent(id)}`,
+    z.object({ deleted: z.literal(true) }),
+    { method: "DELETE" }
+  );
+}
+
+export async function listRevisions(
+  slug: string,
+  options: { documentId?: string; status?: string } = {}
+): Promise<ApiRevision[]> {
+  const query = new URLSearchParams();
+  if (options.documentId) query.set("document_id", options.documentId);
+  if (options.status) query.set("status", options.status);
+  const qs = query.toString();
+  const data = await apiFetch(
+    `${reviewsBase(slug)}/revisions${qs ? `?${qs}` : ""}`,
+    z.object({ revisions: z.array(revisionSchema) })
+  );
+  return data.revisions;
+}
+
+export async function proposeRevision(
+  slug: string,
+  input: {
+    document_id: string;
+    kind: "insert" | "delete" | "replace";
+    anchor_quote: string;
+    proposed_text?: string;
+    rationale?: string;
+    review_cell_id?: string;
+  }
+): Promise<ApiRevision> {
+  return apiFetch(`${reviewsBase(slug)}/revisions`, revisionSchema, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function acceptRevision(
+  slug: string,
+  id: string,
+  output: "pdf" | "docx" = "pdf"
+): Promise<ApiRevision> {
+  return apiFetch(
+    `${reviewsBase(slug)}/revisions/${encodeURIComponent(id)}/accept${output === "docx" ? "?output=docx" : ""}`,
+    revisionSchema,
+    { method: "POST" }
+  );
+}
+
+export async function acceptAllRevisions(
+  slug: string,
+  documentId: string,
+  output: "pdf" | "docx" = "pdf"
+): Promise<{ derived_document_id: string; accepted: number }> {
+  return apiFetch(
+    `${reviewsBase(slug)}/revisions/accept-all`,
+    z.object({ derived_document_id: z.string(), accepted: z.number() }),
+    {
+      method: "POST",
+      body: JSON.stringify({ document_id: documentId, output }),
+    }
+  );
+}
+
+export async function rejectRevision(
+  slug: string,
+  id: string
+): Promise<ApiRevision> {
+  return apiFetch(
+    `${reviewsBase(slug)}/revisions/${encodeURIComponent(id)}/reject`,
+    revisionSchema,
+    { method: "POST" }
+  );
 }

@@ -16,11 +16,7 @@ import { FormSkeleton } from "@/components/skeletons";
 import { getBrandingSettings, updateBrandingSettings } from "@/lib/api-client";
 import { toast } from "@/lib/toast";
 
-export function SigningChromeSection({
-  slug,
-}: {
-  slug: string;
-}): ReactElement {
+export function SigningChromeSection({ slug }: { slug: string }): ReactElement {
   const { data: brandingSettings, isPending } = useQuery({
     queryKey: ["branding", slug],
     queryFn: () => getBrandingSettings(slug),
@@ -92,7 +88,7 @@ export function SigningChromeSection({
               Optional footer line on the signing page and in document emails.
               Workspace name, colors, and email-from live under{" "}
               <Link
-                className="text-primary underline-offset-4 hover:underline"
+                className="text-kumo-link underline-offset-4 hover:underline"
                 params={{ slug }}
                 to="/$slug/settings"
               >
@@ -158,8 +154,7 @@ export function SigningChromeSection({
         </LayerCard>
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting}>
-            <FloppyDisk className="mr-2 h-4 w-4" />
+          <Button type="submit" disabled={isSubmitting} icon={FloppyDisk}>
             {isSubmitting ? "Saving…" : "Save brand strip"}
           </Button>
         </div>

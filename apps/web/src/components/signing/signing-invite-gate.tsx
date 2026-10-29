@@ -1,7 +1,7 @@
-import type { JSX } from "react";
-
-import { Button } from "@cloudflare/kumo/components/button";
+import { Text } from "@cloudflare/kumo/components/text";
 import { Input } from "@cloudflare/kumo";
+import { Button } from "@cloudflare/kumo/components/button";
+import type { JSX } from "react";
 
 export interface SigningInviteGateProps {
   documentTitle: string;
@@ -31,27 +31,19 @@ export function SigningInviteGate({
   return (
     <main
       data-seal-enter
-      className="bg-background mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center gap-6 px-[max(1rem,env(safe-area-inset-left))] py-8 pr-[max(1rem,env(safe-area-inset-right))]"
+      className="bg-kumo-canvas px-safe mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center gap-6 py-8"
     >
       <div className="flex flex-col gap-2 text-center">
-        <p className="text-muted-foreground m-0 text-sm font-medium tracking-wide uppercase">
-          {brandName}
-        </p>
-        <h1 className="m-0 text-2xl font-semibold tracking-tight text-balance">
-          You&apos;re invited to sign
-        </h1>
-        <p className="text-muted-foreground m-0 text-sm text-pretty">
-          Review the document, fill any required fields, then sign. Takes a
-          minute.
-        </p>
+        <Text as="p" variant="secondary" size="sm" DANGEROUS_className="m-0">{brandName}</Text>
+        <Text as="h1" variant="heading" DANGEROUS_className="m-0">You&apos;re invited to sign</Text>
+        <Text as="p" variant="secondary" size="sm" DANGEROUS_className="m-0">Review the document, fill any required fields, then sign. Takes a
+          minute.</Text>
       </div>
 
-      <div className="border-border bg-card flex w-full flex-col gap-1 rounded-xl border p-[clamp(0.75rem,3vw,1.25rem)] shadow-sm">
-        <p className="m-0 text-lg font-semibold text-balance">{documentTitle}</p>
+      <div className="border-kumo-line bg-kumo-base p-fluid-sm flex w-full flex-col gap-1 rounded-xl border shadow-sm">
+        <Text as="p" bold DANGEROUS_className="m-0">{documentTitle}</Text>
         {invitedBy ? (
-          <p className="text-muted-foreground m-0 text-sm text-pretty">
-            From {invitedBy}
-          </p>
+          <Text as="p" variant="secondary" size="sm" DANGEROUS_className="m-0">From {invitedBy}</Text>
         ) : null}
       </div>
 
@@ -69,7 +61,8 @@ export function SigningInviteGate({
         <Button
           type="button"
           variant="primary"
-          className="min-h-12 w-full text-base font-semibold"
+          size="lg"
+          className="w-full"
           onClick={onStart}
           disabled={isStarting || !email.trim()}
         >

@@ -240,6 +240,36 @@ export async function sendDocumentCompletedEmail(
   });
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+/** A completed PDF sent to someone who is not a signer. */
+export async function sendForwardedDocumentEmail(
+  env: EmailEnv,
+  params: {
+    to: string;
+    senderName: string;
+    documentName: string;
+    pdf: EmailPdfAttachment;
+  }
+): Promise<EmailSendResult> {
+  const sender = escapeHtml(params.senderName);
+  const name = escapeHtml(params.documentName);
+  const html = `<p>${sender} sent you a completed copy of <strong>${name}</strong>. The PDF is attached.</p>`;
+  return sendEmail(env, {
+    to: params.to,
+    subject: `Completed copy of ${params.documentName}`,
+    html,
+    text: `${params.senderName} sent you a completed copy of ${params.documentName}. The PDF is attached.`,
+    attachments: [params.pdf],
+  });
+}
+
 export async function sendDocumentViewedEmail(
   env: EmailEnv,
   params: {

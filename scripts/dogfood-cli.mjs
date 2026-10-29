@@ -297,6 +297,9 @@ startxref
           email: SIGNER,
           name: "Dogfood Signer",
           role: "signer",
+          // SEA-48: hosted orgs default to email_otp signer auth; the dogfood
+          // org relaxes requireRecipientAuth, so "none" is accepted here.
+          auth_method: "none",
         }),
       ]);
       recipientId = recipient?.id ?? null;

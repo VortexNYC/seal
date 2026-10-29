@@ -51,8 +51,8 @@ export function DictateNextSignerDialog({
     >
       <Dialog size="sm" className="p-6">
         <div className="flex flex-col items-center">
-          <div className="bg-kumo-info-tint mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full">
-            <UserPlus className="text-kumo-info h-6 w-6" />
+          <div className="bg-kumo-elevated mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full">
+            <UserPlus className="text-kumo-default h-6 w-6" />
           </div>
           <Dialog.Title className="text-center">
             Who should sign next?

@@ -4,6 +4,8 @@ import {
   hashAccessCode,
   isSignerAuthVerified,
   markAccessCodeVerified,
+  markSessionVerified,
+  sessionMatchesRecipient,
   normalizeAuthMethod,
   parseSignerAuthState,
   serializeSignerAuthState,
@@ -13,6 +15,20 @@ import {
 } from "./signer-auth.js";
 
 describe("signer-auth", () => {
+  it("treats a matching signed-in email as the email OTP check", () => {
+    expect(sessionMatchesRecipient("Seal@seal.nyc", " seal@seal.nyc ")).toBe(
+      true
+    );
+    expect(sessionMatchesRecipient("a@seal.nyc", "b@seal.nyc")).toBe(false);
+    const state = markSessionVerified();
+    expect(
+      isSignerAuthVerified("email_otp", serializeSignerAuthState(state))
+    ).toBe(true);
+    expect(
+      isSignerAuthVerified("access_code", serializeSignerAuthState(state))
+    ).toBe(false);
+  });
+
   it("treats none as always verified", () => {
     expect(isSignerAuthVerified("none", null)).toBe(true);
     expect(normalizeAuthMethod("bogus")).toBe("none");

@@ -25,7 +25,6 @@ const HEDVIG_SERIF_URL =
 
 const sealEmailBrand = {
   name: "Seal",
-  supportEmail: "support@seal.nyc",
   accentColor: email.primary,
   backgroundColor: email.background,
   textColor: email.foreground,
@@ -123,9 +122,7 @@ export function EmailLayout({
           {footerText ? (
             <Text style={surfaces.footer}>{footerText}</Text>
           ) : null}
-          <Text style={surfaces.footer}>
-            {sealEmailBrand.name} · {sealEmailBrand.supportEmail}
-          </Text>
+          <Text style={surfaces.footer}>{sealEmailBrand.name}</Text>
         </Container>
       </Body>
     </Html>

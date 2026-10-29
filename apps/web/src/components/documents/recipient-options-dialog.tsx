@@ -1,11 +1,20 @@
 import { Button } from "@cloudflare/kumo/components/button";
 import { Dialog } from "@cloudflare/kumo/components/dialog";
+import { Input } from "@cloudflare/kumo/components/input";
 import { Text } from "@cloudflare/kumo/components/text";
 import { EnvelopeSimple, Link, Trash, X } from "@phosphor-icons/react";
+import { useState } from "react";
 
+import {
+  recipientFacingStatus,
+  recipientMarkClass,
+  toWorkflowStatus,
+} from "@/lib/document-status";
 import { type Id } from "@/lib/ids";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+
+import { RailBack } from "./rail-back";
 
 type RecipientStatus =
   | "pending"
@@ -32,8 +41,15 @@ interface RecipientOptionsDialogProps {
   recipient: Recipient | null;
   documentStatus?: string;
   canEdit: boolean;
+  /** Change the email on a sent envelope that this person has not finished. */
+  canChangeEmail?: boolean;
   onResendEmail?: (recipientId: Id<"document_recipients">) => void;
+  onChangeEmail?: (
+    recipientId: Id<"document_recipients">,
+    email: string
+  ) => Promise<void>;
   onRemove?: (recipient: Recipient) => void;
+  presentation?: "dialog" | "panel";
 }
 
 function getInitials(name?: string, email?: string): string {
@@ -48,6 +64,50 @@ function getInitials(name?: string, email?: string): string {
     return email.substring(0, 2).toUpperCase();
   }
   return "??";
+}
+
+function ChangeEmailForm({
+  recipientId,
+  currentEmail,
+  onChangeEmail,
+}: {
+  recipientId: Id<"document_recipients">;
+  currentEmail: string;
+  onChangeEmail: (
+    recipientId: Id<"document_recipients">,
+    email: string
+  ) => Promise<void>;
+}) {
+  const [email, setEmail] = useState(currentEmail);
+  const [saving, setSaving] = useState(false);
+  const unchanged = email.trim().toLowerCase() === currentEmail.toLowerCase();
+
+  return (
+    <form
+      className="flex flex-col gap-2 px-2 py-2"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (unchanged || saving) return;
+        setSaving(true);
+        void onChangeEmail(recipientId, email.trim())
+          .then(() => undefined)
+          .finally(() => setSaving(false));
+      }}
+    >
+      <Input
+        type="email"
+        value={email}
+        aria-label="Recipient email"
+        onChange={(event) => setEmail(event.target.value)}
+      />
+      <Button type="submit" size="sm" disabled={unchanged || saving}>
+        Update email
+      </Button>
+      <Text as="p" size="xs" variant="secondary">
+        A new link goes to this address when it is their turn.
+      </Text>
+    </form>
+  );
 }
 
 function getRoleLabel(role: RecipientRole): string {
@@ -69,8 +129,11 @@ export function RecipientOptionsDialog({
   recipient,
   documentStatus,
   canEdit,
+  canChangeEmail = false,
   onResendEmail,
+  onChangeEmail,
   onRemove,
+  presentation = "dialog",
 }: RecipientOptionsDialogProps) {
   if (!recipient) return null;
 
@@ -105,30 +168,29 @@ export function RecipientOptionsDialog({
 
   const canResend =
     documentStatus !== "draft" &&
+    documentStatus !== "cancelled" &&
+    documentStatus !== "completed" &&
+    documentStatus !== "voided" &&
     (recipient.status === "pending" ||
       recipient.status === "viewed" ||
-      recipient.status === "expired");
+      recipient.status === "expired" ||
+      recipient.status === "declined");
 
   const hasSigningLink = !!recipient.signingToken;
+  const shownStatus = recipientFacingStatus(
+    documentStatus ? toWorkflowStatus(documentStatus) : undefined,
+    recipient.status
+  );
 
-  const statusColorClasses = (status: RecipientStatus) =>
-    cn(
-      "font-medium",
-      status === "pending" || status === "expired"
-        ? "text-kumo-secondary"
-        : status === "viewed"
-          ? "text-kumo-info"
-          : status === "signed" || status === "approved"
-            ? "text-kumo-success"
-            : status === "declined"
-              ? "text-kumo-danger"
-              : "text-kumo-secondary"
-    );
+  const statusVariant = (
+    status: RecipientStatus
+  ): "secondary" | "error" => {
+    if (status === "declined") return "error";
+    return "secondary";
+  };
 
-  return (
-    <Dialog.Root open={open} onOpenChange={(next) => onOpenChange(next)}>
-      <Dialog size="sm" className="gap-0 overflow-hidden p-0">
-        <Dialog.Title className="sr-only">Recipient Options</Dialog.Title>
+  const optionsBody = (
+    <>
 
         {/* Header */}
         <div className="border-kumo-hairline flex items-center justify-between border-b p-4">
@@ -136,16 +198,7 @@ export function RecipientOptionsDialog({
             <div
               className={cn(
                 "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-sans text-sm font-semibold",
-                recipient.status === "pending" || recipient.status === "expired"
-                  ? "bg-kumo-elevated text-kumo-secondary"
-                  : recipient.status === "viewed"
-                    ? "bg-kumo-info-tint text-kumo-info"
-                    : recipient.status === "signed" ||
-                        recipient.status === "approved"
-                      ? "bg-kumo-success-tint text-kumo-success"
-                      : recipient.status === "declined"
-                        ? "bg-kumo-danger/10 text-kumo-danger"
-                        : "bg-kumo-elevated text-kumo-secondary"
+                recipientMarkClass(shownStatus)
               )}
             >
               {getInitials(recipient.name, recipient.email)}
@@ -183,11 +236,13 @@ export function RecipientOptionsDialog({
                 <Text
                   as="span"
                   size="xs"
-                  variant="secondary"
-                  DANGEROUS_className={statusColorClasses(recipient.status)}
+                  variant={
+                    shownStatus === "voided"
+                      ? "secondary"
+                      : statusVariant(recipient.status)
+                  }
                 >
-                  {recipient.status.charAt(0).toUpperCase() +
-                    recipient.status.slice(1)}
+                  {shownStatus.charAt(0).toUpperCase() + shownStatus.slice(1)}
                 </Text>
               </div>
             </div>
@@ -205,43 +260,53 @@ export function RecipientOptionsDialog({
         {/* Options */}
         <div className="p-2">
           {hasSigningLink && (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              className="h-auto w-full justify-start"
+              icon={Link}
               onClick={handleCopySigningLink}
-              className="hover:bg-kumo-elevated flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors"
             >
-              <div className="bg-kumo-info-tint text-kumo-info flex h-8 w-8 items-center justify-center rounded-md">
-                <Link className="size-4" />
-              </div>
-              <div>
-                <Text as="p" size="sm" variant="body">
+              <span className="flex flex-col items-start">
+                <Text as="span" size="sm">
                   Copy signing link
                 </Text>
-                <Text as="p" size="xs" variant="secondary">
+                <Text as="span" size="xs" variant="secondary">
                   Share this link with the recipient
                 </Text>
-              </div>
-            </button>
+              </span>
+            </Button>
           )}
 
+          {canChangeEmail &&
+            recipient.status !== "signed" &&
+            recipient.status !== "approved" &&
+            onChangeEmail && (
+              <ChangeEmailForm
+                key={`${recipient._id}:${recipient.email}`}
+                recipientId={recipient._id}
+                currentEmail={recipient.email}
+                onChangeEmail={onChangeEmail}
+              />
+            )}
+
           {canResend && onResendEmail && (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              className="h-auto w-full justify-start"
+              icon={EnvelopeSimple}
               onClick={handleResendEmail}
-              className="hover:bg-kumo-elevated flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors"
             >
-              <div className="bg-kumo-success-tint text-kumo-success flex h-8 w-8 items-center justify-center rounded-md">
-                <EnvelopeSimple className="size-4" />
-              </div>
-              <div>
-                <Text as="p" size="sm" variant="body">
+              <span className="flex flex-col items-start">
+                <Text as="span" size="sm">
                   Resend email
                 </Text>
-                <Text as="p" size="xs" variant="secondary">
+                <Text as="span" size="xs" variant="secondary">
                   Send another notification email
                 </Text>
-              </div>
-            </button>
+              </span>
+            </Button>
           )}
 
           {canEdit && onRemove && (
@@ -249,32 +314,26 @@ export function RecipientOptionsDialog({
               {(hasSigningLink || canResend) && (
                 <div className="border-kumo-hairline my-2 border-t" />
               )}
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                className="h-auto w-full justify-start"
+                icon={Trash}
                 onClick={handleRemove}
-                className="hover:bg-kumo-danger/10 flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors"
               >
-                <div className="bg-kumo-danger/10 text-kumo-danger flex h-8 w-8 items-center justify-center rounded-md">
-                  <Trash className="size-4" />
-                </div>
-                <div>
-                  <Text
-                    as="p"
-                    size="sm"
-                    variant="body"
-                    DANGEROUS_className="text-kumo-danger"
-                  >
+                <span className="flex flex-col items-start">
+                  <Text as="span" size="sm" variant="error">
                     Remove recipient
                   </Text>
-                  <Text as="p" size="xs" variant="secondary">
+                  <Text as="span" size="xs" variant="secondary">
                     Remove from this document
                   </Text>
-                </div>
-              </button>
+                </span>
+              </Button>
             </>
           )}
 
-          {!hasSigningLink && !canResend && !canEdit && (
+          {!hasSigningLink && !canResend && !canEdit && !canChangeEmail && (
             <div className="p-4 text-center">
               <Text as="p" size="sm" variant="secondary">
                 No actions available
@@ -282,6 +341,25 @@ export function RecipientOptionsDialog({
             </div>
           )}
         </div>
+    </>
+  );
+
+  if (!recipient || !open) return null;
+
+  if (presentation === "panel") {
+    return (
+      <div data-testid="recipient-options-panel" className="flex flex-col gap-2">
+        <RailBack onBack={() => onOpenChange(false)} tip="Back to recipients" />
+        {optionsBody}
+      </div>
+    );
+  }
+
+  return (
+    <Dialog.Root open={open} onOpenChange={(next) => onOpenChange(next)}>
+      <Dialog size="sm" className="gap-0 overflow-hidden p-0">
+        <Dialog.Title className="sr-only">Recipient Options</Dialog.Title>
+        {optionsBody}
       </Dialog>
     </Dialog.Root>
   );

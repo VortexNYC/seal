@@ -9,6 +9,7 @@ const ORGANIZATION_ROUTE_SEGMENTS = new Set([
   "documents",
   "templates",
   "contacts",
+  "reviews",
   "analytics",
   "accounts",
   "budgets",

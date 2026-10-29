@@ -1,5 +1,8 @@
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Loader } from "@cloudflare/kumo/components/loader";
+import { Text } from "@cloudflare/kumo/components/text";
+import { File as FileIcon } from "@phosphor-icons/react";
 import type { JSX, ReactNode } from "react";
-import { FileIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -22,15 +25,16 @@ export function FileThumbnailLoadingOverlay(): JSX.Element {
   return (
     <div
       aria-hidden
-      className="bg-muted absolute inset-0 z-10 overflow-hidden"
+      className="bg-kumo-elevated absolute inset-0 z-10 flex items-center justify-center"
     >
-      <div className="bg-background/55 absolute inset-0 animate-pulse" />
+      <Loader size="sm" />
     </div>
   );
 }
 
 /**
- * File preview tile — Extend file-thumbnail, Kumo-owned.
+ * File preview tile. Kumo has no thumbnail, so this is a LayerCard, the image,
+ * and Text for the name.
  */
 export function FileThumbnail({
   file,
@@ -45,14 +49,11 @@ export function FileThumbnail({
   const showFallback = hasError || (!previewImageUrl && !previewContent);
 
   return (
-    <div
+    <LayerCard
       data-kumo-docs="file-thumbnail"
-      className={cn(
-        "border-border bg-background relative h-full w-full overflow-hidden",
-        className
-      )}
+      className={cn("relative h-full w-full", className)}
     >
-      <div className="bg-muted relative h-full min-h-0 w-full">
+      <div className="bg-kumo-elevated relative h-full min-h-0 w-full">
         {isLoading ? <FileThumbnailLoadingOverlay /> : null}
         {previewImageUrl && !hasError ? (
           <img
@@ -65,15 +66,19 @@ export function FileThumbnail({
           <div className="absolute inset-0">{previewContent}</div>
         ) : null}
         {showFallback && !isLoading ? (
-          <div className="text-muted-foreground flex h-full flex-col items-center justify-center gap-2 p-3">
-            <FileIcon className="size-8 opacity-50" />
-            <span className="line-clamp-2 text-center text-[10px]">{name}</span>
+          <div className="flex h-full flex-col items-center justify-center gap-2 p-3">
+            <FileIcon className="text-kumo-secondary size-8" />
+            <Text size="xs" DANGEROUS_className="line-clamp-2 text-center">
+              {name}
+            </Text>
           </div>
         ) : null}
       </div>
       {showLabel ? (
-        <div className="truncate px-2 py-1.5 text-[11px]">{name}</div>
+        <Text size="xs" truncate DANGEROUS_className="px-2 py-1.5">
+          {name}
+        </Text>
       ) : null}
-    </div>
+    </LayerCard>
   );
 }

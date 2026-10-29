@@ -1,5 +1,7 @@
+import { Text } from "@cloudflare/kumo/components/text";
+import { Button } from "@cloudflare/kumo/components/button";
+import { File as FileIcon, Folder as FolderIcon } from "@phosphor-icons/react";
 import type { JSX } from "react";
-import { FileIcon, FolderIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -34,11 +36,8 @@ export type FileSystemProps = {
   onOpenFile?: (file: FileSystemFileItem) => void;
 };
 
-function itemButtonClass(selected: boolean): string {
-  return cn(
-    "hover:bg-accent flex w-full items-center gap-2 px-2 py-2 text-left text-sm transition-colors",
-    selected && "bg-accent"
-  );
+function itemButtonVariant(selected: boolean): "secondary" | "ghost" {
+  return selected ? "secondary" : "ghost";
 }
 
 /**
@@ -67,40 +66,41 @@ export function FileSystem({
       role="list"
     >
       {items.length === 0 ? (
-        <p className="text-muted-foreground text-sm">This folder is empty.</p>
+        <Text as="p" variant="secondary" size="sm">This folder is empty.</Text>
       ) : view === "list" || view === "columns" ? (
         <ul
           className={cn(
-            "divide-border divide-y",
+            "divide-kumo-line divide-y",
             view === "columns" && "columns-2 gap-4 sm:columns-3"
           )}
         >
           {items.map((item) => {
             const selected = item.id === selectedId;
             return (
-              <li key={item.id} className={view === "columns" ? "break-inside-avoid" : undefined}>
-                <button
+              <li
+                key={item.id}
+                className={
+                  view === "columns" ? "break-inside-avoid" : undefined
+                }
+              >
+                <Button
                   type="button"
-                  role="listitem"
-                  className={itemButtonClass(selected)}
+                  variant={itemButtonVariant(selected)}
+                  className="w-full justify-start"
+                  icon={item.kind === "folder" ? FolderIcon : FileIcon}
                   onClick={() => activate(item)}
                   onDoubleClick={() => {
                     if (item.kind === "folder") onOpenFolder?.(item);
                     else onOpenFile?.(item);
                   }}
                 >
-                  {item.kind === "folder" ? (
-                    <FolderIcon className="size-4 shrink-0" />
-                  ) : (
-                    <FileIcon className="size-4 shrink-0" />
-                  )}
                   <span className="truncate">{item.name}</span>
                   {item.kind === "file" && item.size != null ? (
-                    <span className="text-muted-foreground ml-auto text-[10px] tabular-nums">
+                    <span className="text-kumo-secondary text-xs ml-auto tabular-nums">
                       {(item.size / 1024).toFixed(0)} KB
                     </span>
                   ) : null}
-                </button>
+                </Button>
               </li>
             );
           })}
@@ -113,15 +113,16 @@ export function FileSystem({
               <button
                 key={item.id}
                 type="button"
-                role="listitem"
                 className={cn(
-                  "hover:bg-accent flex flex-col items-center gap-2 rounded-lg p-2 text-center transition-colors",
-                  selected && "bg-accent ring-ring ring-2"
+                  "flex w-full flex-col items-center justify-center gap-2 rounded-lg px-2 py-3 text-center",
+                  selected
+                    ? "bg-kumo-control text-kumo-default"
+                    : "hover:bg-kumo-control"
                 )}
                 onClick={() => activate(item)}
               >
                 {item.kind === "folder" ? (
-                  <FolderIcon className="text-muted-foreground size-10" />
+                  <FolderIcon className="text-kumo-secondary size-10" />
                 ) : (
                   <FileThumbnail
                     file={{
@@ -133,7 +134,7 @@ export function FileSystem({
                     className="w-full border-0 shadow-none"
                   />
                 )}
-                <span className="line-clamp-2 w-full text-[11px]">{item.name}</span>
+                <span className="line-clamp-2 w-full text-xs">{item.name}</span>
               </button>
             );
           })}

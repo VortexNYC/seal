@@ -63,7 +63,7 @@ function getNotificationIcon(type: ApiNotificationType) {
     case "access_updated":
       return <Key className="text-kumo-warning size-4" />;
     case "ownership_transferred":
-      return <User className="text-ai-accent size-4" />;
+      return <User className="text-kumo-brand size-4" />;
     case "document_signed":
     case "document_completed":
     case "signature_requested":
@@ -189,7 +189,7 @@ function EmailStatusIndicator({
     case "pending":
       return (
         <span
-          className="text-kumo-warning inline-flex items-center gap-1 text-[10px]"
+          className="text-kumo-warning text-xs inline-flex items-center gap-1"
           title="Email sending..."
         >
           <Clock className="size-3" />
@@ -198,7 +198,7 @@ function EmailStatusIndicator({
     case "sent":
       return (
         <span
-          className="text-kumo-success inline-flex items-center gap-1 text-[10px]"
+          className="text-kumo-success text-xs inline-flex items-center gap-1"
           title="Email sent"
         >
           <EnvelopeSimple className="size-3" />
@@ -208,7 +208,7 @@ function EmailStatusIndicator({
     case "failed":
       return (
         <span
-          className="text-kumo-danger inline-flex items-center gap-1 text-[10px]"
+          className="text-kumo-danger text-xs inline-flex items-center gap-1"
           title={lastError ?? "Email failed to send"}
         >
           <EnvelopeSimple className="size-3" />
@@ -259,13 +259,7 @@ function NotificationItem({
         <Text
           as="p"
           size="sm"
-          variant="body"
-          DANGEROUS_className={cn(
-            "leading-tight",
-            notification.read
-              ? "text-kumo-secondary"
-              : "text-kumo-primary font-medium"
-          )}
+          variant={notification.read ? "secondary" : "body"}
         >
           {getNotificationMessage(notification)}
         </Text>
@@ -367,14 +361,14 @@ export function NotificationsPopover({
             variant="ghost"
             size="sm"
             shape="square"
-            className="relative size-8"
+            className="relative"
             aria-label="Notifications"
             icon={Bell}
           >
             {hasUnread && (
               <Badge
                 variant="error"
-                className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center px-1 text-[10px]"
+                className="absolute -top-1 -right-1"
               >
                 {unreadCount && unreadCount > 99 ? "99+" : unreadCount}
               </Badge>
@@ -386,7 +380,7 @@ export function NotificationsPopover({
         side="bottom"
         align="end"
         sideOffset={8}
-        className="w-[380px] p-0"
+        className="w-95 p-0"
       >
         <div className="border-kumo-hairline flex items-center justify-between border-b px-4 py-3">
           <Text as="h3" size="lg" variant="heading">
@@ -396,7 +390,6 @@ export function NotificationsPopover({
             <Button
               variant="ghost"
               size="sm"
-              className="text-kumo-info hover:bg-kumo-info-tint hover:text-kumo-info h-7 text-xs"
               onClick={handleMarkAllAsRead}
               icon={Check}
             >
@@ -405,7 +398,7 @@ export function NotificationsPopover({
           )}
         </div>
 
-        <div className="max-h-[400px] overflow-y-auto">
+        <div className="max-h-100 overflow-y-auto">
           {isLoading ? (
             <NotificationsSkeleton />
           ) : !hasNotifications ? (

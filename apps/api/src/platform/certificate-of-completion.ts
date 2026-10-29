@@ -6,6 +6,8 @@
 
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
+import { parseDataUrl } from "./final-pdf.js";
+
 export type CertificateParty = {
   name: string;
   email: string;
@@ -13,6 +15,9 @@ export type CertificateParty = {
   status: string;
   /** ISO or locale string already formatted for display */
   completedAt: string | null;
+  viewedAt?: string | null;
+  signedAt?: string | null;
+  signatureImageUrl?: string | null;
   ipAddress: string | null;
   authMethod: string | null;
   consentAt: string | null;
@@ -29,6 +34,7 @@ export type CertificateOfCompletionInput = {
   documentId: string;
   organizationName: string;
   completedAt: string;
+  sentAt?: string | null;
   documentHash: string | null;
   verificationUrl: string;
   parties: CertificateParty[];
@@ -97,6 +103,12 @@ export async function buildCertificateOfCompletionPdf(
   y -= 12;
   draw(`Organization: ${input.organizationName}`, 9, { color: muted });
   y -= 12;
+  draw("Status: Completed", 11, { bold: true });
+  y -= 14;
+  if (input.sentAt) {
+    draw(`Sent: ${input.sentAt}`, 9, { color: muted });
+    y -= 12;
+  }
   draw(`Completed: ${input.completedAt}`, 9, { color: muted });
   y -= 12;
   if (input.documentHash) {
@@ -124,6 +136,28 @@ export async function buildCertificateOfCompletionPdf(
     }
     draw(`${party.name}  <${party.email}>`, 10, { bold: true });
     y -= 13;
+    if (party.signatureImageUrl) {
+      const parsed = parseDataUrl(party.signatureImageUrl);
+      if (parsed && y > 160) {
+        const image =
+          parsed.kind === "png"
+            ? await doc.embedPng(parsed.bytes)
+            : await doc.embedJpg(parsed.bytes);
+        const height = 36;
+        const width = Math.min(180, (image.width / image.height) * height);
+        y -= height;
+        page.drawImage(image, { x: left, y, width, height });
+        y -= 12;
+      }
+    }
+    if (party.viewedAt) {
+      draw(`Viewed: ${party.viewedAt}`, 8, { color: muted });
+      y -= 11;
+    }
+    if (party.signedAt) {
+      draw(`Signed: ${party.signedAt}`, 8, { color: muted });
+      y -= 11;
+    }
     draw(
       `${party.role} · ${party.status}` +
         (party.completedAt ? ` · ${party.completedAt}` : "") +

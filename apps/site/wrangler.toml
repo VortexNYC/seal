@@ -14,7 +14,7 @@ traces = { enabled = true, head_sampling_rate = 0.1 }
 [[d1_databases]]
 binding = "DB"
 database_name = "seal-site-dev"
-database_id = "c78f16c2-9965-483f-bbb1-5ee56881218d"
+database_id = "88b401b2-2c69-4480-9180-4ecf10c74df4"
 
 [[r2_buckets]]
 binding = "MEDIA"
@@ -22,7 +22,7 @@ bucket_name = "seal-site-media-dev"
 
 [[kv_namespaces]]
 binding = "CACHE"
-id = "c3e1eedd1533466b8f589aed4d2e010e"
+id = "6bc75c33ad8c4abcb60f1a0e8bd2564d"
 
 [[worker_loaders]]
 binding = "LOADER"
@@ -45,7 +45,7 @@ traces = { enabled = true, head_sampling_rate = 0.1 }
 [[env.production.d1_databases]]
 binding = "DB"
 database_name = "seal-site"
-database_id = "98724613-82fc-44c7-b40d-d07a99da68a0"
+database_id = "82584b38-1db3-43b7-b174-1419e1cc951c"
 
 [[env.production.r2_buckets]]
 binding = "MEDIA"
@@ -53,7 +53,7 @@ bucket_name = "seal-site-media"
 
 [[env.production.kv_namespaces]]
 binding = "CACHE"
-id = "9f7b0df19b0e409da75d20edf089836c"
+id = "f0b658f9f10446bb853034c6a8c3324f"
 
 [[env.production.worker_loaders]]
 binding = "LOADER"

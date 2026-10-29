@@ -5,17 +5,10 @@ import { createFileRoute } from "@tanstack/react-router";
  * User profile, email, and account management via @vortex-api/better-auth-ui.
  * Route: /{slug}/settings/profile/ (index)
  */
-import {
-  AuthProvider,
-  ChangeEmailForm,
-  ConnectedAccounts,
-  DeleteAccountForm,
-  SettingsStack,
-  UserProfileForm,
-} from "@vortex-api/better-auth-ui";
+import { AccountSettings, AuthProvider } from "@vortex-api/better-auth-ui";
 
-import { FormSkeleton } from "@/components/skeletons";
 import { SettingsBody } from "@/components/settings-body";
+import { FormSkeleton } from "@/components/skeletons";
 import { getBetterAuthUiClient } from "@/lib/better-auth-ui-adapter";
 import { toast } from "@/lib/toast";
 
@@ -48,38 +41,26 @@ function ProfileSettings() {
 
   return (
     <AuthProvider client={client}>
-      <SettingsBody narrow className="items-stretch">
-        <SettingsStack className="w-full">
-          <UserProfileForm
-            className="w-full"
-            title="Profile"
-            description="Name and photo for this Seal account."
-            onSuccess={() => {
-              toast.success("Profile updated");
-            }}
-          />
-          <ChangeEmailForm
-            className="w-full"
-            callbackURL={verifyCallbackUrl}
-            onSuccess={() => {
-              toast.success(
-                "Confirmation email sent. Click the link from the new address to finish the change."
-              );
-            }}
-          />
-          <ConnectedAccounts
-            className="w-full"
-            onUnlinked={() => {
-              toast.success("Account disconnected");
-            }}
-          />
-          <DeleteAccountForm
-            className="w-full"
-            onSuccess={() => {
-              window.location.assign("/");
-            }}
-          />
-        </SettingsStack>
+      <SettingsBody className="items-stretch">
+        <AccountSettings
+          className="w-full"
+          emailCallbackURL={verifyCallbackUrl}
+          issuer="Seal"
+          onProfileSaved={() => {
+            toast.success("Profile updated");
+          }}
+          onEmailChangeRequested={() => {
+            toast.success(
+              "Confirmation email sent. Click the link from the new address to finish the change."
+            );
+          }}
+          onAccountUnlinked={() => {
+            toast.success("Account disconnected");
+          }}
+          onAccountDeleted={() => {
+            window.location.assign("/");
+          }}
+        />
       </SettingsBody>
     </AuthProvider>
   );

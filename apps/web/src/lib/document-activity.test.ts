@@ -147,6 +147,16 @@ describe("buildActivityEvents", () => {
     }
   });
 
+  test("records when the envelope was sent", () => {
+    const events = buildActivityEvents(
+      { name: "GOF-TERM.pdf", createdAt: BASE_TIME, sentAt: BASE_TIME + 3000 },
+      []
+    );
+    const sent = events.find((event) => event.type === "sent");
+    expect(sent?.timestamp).toBe(BASE_TIME + 3000);
+    expect(sent?.description).toContain("was sent");
+  });
+
   test("full lifecycle produces correct event count and order", () => {
     const events = buildActivityEvents(
       { name: "Contract", createdAt: BASE_TIME },

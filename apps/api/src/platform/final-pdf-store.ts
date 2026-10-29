@@ -56,37 +56,10 @@ export async function generateAndStoreFinalPdf(params: {
   }
   const sourceBytes = new Uint8Array(await object.arrayBuffer());
 
-  const fieldRows = await db
-    .select()
-    .from(signatureFields)
-    .where(eq(signatureFields.documentId, documentId));
-
-  const signatureRows = await db
-    .select()
-    .from(signatures)
-    .where(eq(signatures.documentId, documentId));
-
-  const sigByField = new Map(
-    signatureRows
-      .filter((s) => s.fieldId)
-      .map((s) => [s.fieldId as string, s] as const)
-  );
-
-  const fields: FinalPdfField[] = fieldRows.map((field) => {
-    const sig = sigByField.get(field.id);
-    return {
-      fieldType: field.fieldType,
-      page: field.page,
-      x: field.x,
-      y: field.y,
-      width: field.width,
-      height: field.height,
-      value: sig?.value ?? null,
-      signatureImageUrl: sig?.signatureImageUrl ?? null,
-    };
+  const fields = await fieldsForFinalPdf(db, documentId);
+  const flattened = await flattenFieldsIntoPdf(sourceBytes, fields, {
+    documentRef: doc.publicId,
   });
-
-  const flattened = await flattenFieldsIntoPdf(sourceBytes, fields);
   let finalBytes = flattened.bytes;
   let sealed = false;
 
@@ -132,4 +105,58 @@ export async function generateAndStoreFinalPdf(params: {
     byteLength: finalBytes.byteLength,
     sealed,
   };
+}
+
+async function fieldsForFinalPdf(
+  db: D1Client,
+  documentId: string
+): Promise<FinalPdfField[]> {
+  const fieldRows = await db
+    .select()
+    .from(signatureFields)
+    .where(eq(signatureFields.documentId, documentId));
+
+  const signatureRows = await db
+    .select()
+    .from(signatures)
+    .where(eq(signatures.documentId, documentId));
+
+  const sigByField = new Map(
+    signatureRows
+      .filter((row) => row.fieldId)
+      .map((row) => [row.fieldId as string, row] as const)
+  );
+
+  return fieldRows.map((field) => {
+    const sig = sigByField.get(field.id);
+    return {
+      fieldType: field.fieldType,
+      page: field.page,
+      x: field.x,
+      y: field.y,
+      width: field.width,
+      height: field.height,
+      value: sig?.value ?? null,
+      signatureImageUrl: sig?.signatureImageUrl ?? null,
+    };
+  });
+}
+
+/** A copy of the stored PDF with the ink that is already on the fields. */
+export async function renderFilledPdfBytes(params: {
+  db: D1Client;
+  bucket: R2Bucket;
+  documentId: string;
+  sourceKey: string;
+  documentRef: string;
+}): Promise<Uint8Array | null> {
+  const object = await params.bucket.get(params.sourceKey);
+  if (!object) return null;
+  const sourceBytes = new Uint8Array(await object.arrayBuffer());
+  const fields = await fieldsForFinalPdf(params.db, params.documentId);
+  const flattened = await flattenFieldsIntoPdf(sourceBytes, fields, {
+    documentRef: params.documentRef,
+  });
+  if (flattened.burnedFields === 0) return null;
+  return flattened.bytes;
 }

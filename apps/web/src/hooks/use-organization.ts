@@ -30,6 +30,15 @@ function asRecord(value: unknown): Record<string, unknown> {
   return result.success ? result.data : {};
 }
 
+function organizationMetadata(value: unknown): Record<string, unknown> {
+  if (typeof value !== "string") return asRecord(value);
+  try {
+    return asRecord(JSON.parse(value));
+  } catch {
+    return {};
+  }
+}
+
 function toNumber(value: unknown): number {
   if (value instanceof Date) return value.getTime();
   if (typeof value === "string") return new Date(value).getTime();
@@ -68,7 +77,7 @@ async function fetchOrganization(
       ? undefined
       : members.find((member) => member.userId === userId);
 
-  const meta = data.metadata ?? {};
+  const meta = organizationMetadata(data.metadata);
   const status = typeof meta.status === "string" ? meta.status : "active";
   const plan = typeof meta.plan === "string" ? meta.plan : "free";
   const timezone = typeof meta.timezone === "string" ? meta.timezone : "UTC";

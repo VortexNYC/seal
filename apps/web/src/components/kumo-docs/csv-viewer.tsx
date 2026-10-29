@@ -1,3 +1,5 @@
+import { Table } from "@cloudflare/kumo/components/table";
+import { Text } from "@cloudflare/kumo/components/text";
 import type { JSX } from "react";
 import { useMemo } from "react";
 
@@ -11,10 +13,7 @@ export type CsvViewerProps = {
   maxRows?: number;
 };
 
-function parseDelimited(
-  content: string,
-  delimiter: string
-): string[][] {
+function parseDelimited(content: string, delimiter: string): string[][] {
   return content
     .split(/\r?\n/)
     .filter((line) => line.length > 0)
@@ -37,44 +36,34 @@ export function CsvViewer({
 
   if (rows.length === 0) {
     return (
-      <p className={cn("text-muted-foreground p-4 text-sm", className)}>
+      <Text variant="secondary" size="sm" DANGEROUS_className={className}>
         Empty file.
-      </p>
+      </Text>
     );
   }
 
   const [header, ...body] = rows;
 
   return (
-    <div
-      data-kumo-docs="csv-viewer"
-      className={cn("overflow-auto", className)}
-    >
-      <table className="w-full border-collapse text-left text-xs">
-        <thead className="bg-muted sticky top-0">
-          <tr className="border-border border-b">
+    <div data-kumo-docs="csv-viewer" className={cn("overflow-auto", className)}>
+      <Table>
+        <Table.Header>
+          <Table.Row>
             {header.map((cell, i) => (
-              <th
-                key={i}
-                className="text-muted-foreground px-2 py-1.5 font-medium whitespace-nowrap"
-              >
-                {cell}
-              </th>
+              <Table.Head key={i}>{cell}</Table.Head>
             ))}
-          </tr>
-        </thead>
-        <tbody>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
           {body.map((row, ri) => (
-            <tr key={ri} className="border-border/60 border-b">
+            <Table.Row key={ri}>
               {header.map((_, ci) => (
-                <td key={ci} className="px-2 py-1 whitespace-nowrap tabular-nums">
-                  {row[ci] ?? ""}
-                </td>
+                <Table.Cell key={ci}>{row[ci] ?? ""}</Table.Cell>
               ))}
-            </tr>
+            </Table.Row>
           ))}
-        </tbody>
-      </table>
+        </Table.Body>
+      </Table>
     </div>
   );
 }

@@ -31,7 +31,7 @@ function UserAvatar({
           }}
         />
       ) : (
-        <div className="text-muted-foreground flex h-full w-full items-center justify-center text-xs font-medium">
+        <div className="text-kumo-secondary flex h-full w-full items-center justify-center text-xs font-medium">
           {fallback}
         </div>
       )}
@@ -76,11 +76,11 @@ export function NavUser({
                 <span className="text-sidebar-foreground truncate font-medium">
                   {user.name}
                 </span>
-                <span className="text-muted-foreground truncate text-xs">
+                <span className="text-kumo-secondary truncate text-xs">
                   {user.email}
                 </span>
               </div>
-              <CaretUpDown className="text-muted-foreground ml-auto size-4 shrink-0" />
+              <CaretUpDown className="text-kumo-secondary ml-auto size-4 shrink-0" />
             </Sidebar.MenuButton>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content
@@ -90,7 +90,7 @@ export function NavUser({
             sideOffset={4}
           >
             <DropdownMenu.Group>
-              <DropdownMenu.Label className="p-0 font-normal">
+              <DropdownMenu.Label>
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                   <UserAvatar
                     avatar={user.avatar}

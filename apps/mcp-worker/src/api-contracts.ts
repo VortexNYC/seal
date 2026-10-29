@@ -145,6 +145,13 @@ export const updateDocumentSchema = z.object({
     .nullable()
     .optional()
     .describe("Move into this folder, or null to unfile"),
+  vortex_order_form_id: z
+    .string()
+    .nullable()
+    .optional()
+    .describe(
+      "Vortex order form id to execute when this draft is signed, or null to clear"
+    ),
 });
 export type UpdateDocumentInput = z.infer<typeof updateDocumentSchema>;
 
@@ -161,6 +168,18 @@ export const sendDocumentSchema = z.object({
     .string()
     .optional()
     .describe("Custom message to include in the signing email"),
+  signing_mode: z
+    .enum(["parallel", "sequential"])
+    .optional()
+    .describe(
+      "parallel invites everyone still open. sequential invites only the current signer group, then the next group after they finish."
+    ),
+  allow_dictate_next_signer: z
+    .boolean()
+    .optional()
+    .describe(
+      "When signing_mode is sequential, each signer may choose who signs next."
+    ),
 });
 export type SendDocumentInput = z.infer<typeof sendDocumentSchema>;
 
@@ -208,8 +227,15 @@ export type AddRecipientInput = z.infer<typeof addRecipientSchema>;
 export const updateRecipientSchema = z.object({
   document_id: z.string().describe("The document ID"),
   id: z.string().describe("The recipient ID"),
+  email: z
+    .string()
+    .email()
+    .optional()
+    .describe(
+      "New email. On a sent envelope this rotates the signing link and sends it when it is their turn."
+    ),
   name: z.string().optional().describe("New display name"),
-  role: recipientRoleSchema.optional().describe("New recipient role"),
+  role: recipientRoleSchema.optional().describe("New recipient role. Draft only."),
   order: z.number().optional().describe("New signing order"),
   message: z.string().optional().describe("New custom message"),
 });
@@ -970,11 +996,6 @@ export interface ApiFolder {
 
 export const createReviewMatrixSchema = z.object({
   title: z.string().min(1).max(200).describe("Matrix title"),
-  model: z
-    .string()
-    .min(1)
-    .max(120)
-    .describe("Provider/model key, e.g. echo/test"),
   columns: z
     .array(
       z.object({
@@ -985,7 +1006,14 @@ export const createReviewMatrixSchema = z.object({
     )
     .min(1)
     .max(32)
-    .describe("Extraction columns"),
+    .optional()
+    .describe("Extraction columns (optional when pack_id supplies them)"),
+  pack_id: z
+    .string()
+    .optional()
+    .describe(
+      "Review pack to expand into columns — builtin/nda, builtin/msa, builtin/employment, or pack_*"
+    ),
   documentIds: z
     .array(z.string().min(1))
     .min(1)
@@ -999,17 +1027,9 @@ export const getReviewMatrixSchema = z.object({
 });
 export type GetReviewMatrixInput = z.infer<typeof getReviewMatrixSchema>;
 
-export const generateReviewMatrixSchema = z.object({
-  id: z.string().describe("Review matrix public ID"),
-});
-export type GenerateReviewMatrixInput = z.infer<
-  typeof generateReviewMatrixSchema
->;
-
 export interface ApiReviewMatrix {
   id: string;
   title: string;
-  model: string;
   status: string;
   columns: { index: number; name: string; prompt: string }[];
   rows: {
@@ -1131,6 +1151,29 @@ export const bulkSendDocumentsSchema = z.object({
     .describe("Custom message to include in signing emails"),
 });
 export type BulkSendDocumentsInput = z.infer<typeof bulkSendDocumentsSchema>;
+
+export const copyDocumentSchema = z.object({
+  id: z.string().describe("Document id to copy into a new draft"),
+});
+export type CopyDocumentInput = z.infer<typeof copyDocumentSchema>;
+
+export const forwardEnvelopeSchema = z.object({
+  id: z
+    .string()
+    .describe(
+      "Completed document id. The executed PDF becomes a new draft with no signers."
+    ),
+});
+export type ForwardEnvelopeInput = z.infer<typeof forwardEnvelopeSchema>;
+
+export const forwardDocumentSchema = z.object({
+  id: z.string().describe("Completed document id"),
+  email: z
+    .string()
+    .email()
+    .describe("Recipient of the completed PDF. They are not added as a signer."),
+});
+export type ForwardDocumentInput = z.infer<typeof forwardDocumentSchema>;
 
 /** Result of a single operation in a bulk request */
 export interface BulkOperationResult {

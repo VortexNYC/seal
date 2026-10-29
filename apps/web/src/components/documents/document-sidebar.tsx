@@ -1,33 +1,18 @@
+import { Badge } from "@cloudflare/kumo/components/badge";
 import { Button } from "@cloudflare/kumo/components/button";
 import { Collapsible } from "@cloudflare/kumo/components/collapsible";
-import { Input } from "@cloudflare/kumo/components/input";
-import { Label } from "@cloudflare/kumo/components/label";
-import { useMutation } from "@tanstack/react-query";
-import {
-  ActivityIcon,
-  ChevronDownIcon,
-  FileSignatureIcon,
-  InfoIcon,
-  LinkIcon,
-  Loader2Icon,
-  PlusIcon,
-  SaveIcon,
-  ScanSearchIcon,
-  SendIcon,
-  SettingsIcon,
-  UserIcon,
-  UserPlusIcon,
-  UsersIcon,
-} from "lucide-react";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Select } from "@cloudflare/kumo/components/select";
+import { Text } from "@cloudflare/kumo/components/text";
+import { CaretDown as ChevronDownIcon, Check as CheckIcon, Eye as EyeIcon, Gear as SettingsIcon, PaperPlaneTilt as SendIcon, Plus as PlusIcon, Pulse as ActivityIcon, Signature as FileSignatureIcon, User as UserIcon, UserPlus as UserPlusIcon, Users as UsersIcon, X as XIcon } from "@phosphor-icons/react";
 import { useEffect, useState, type ReactNode } from "react";
 
-import {
-  BindingsPanel,
-  CitationReviewPanel,
-  type BindingRow,
-} from "@/components/kumo-docs";
-import { updateSignatureField } from "@/lib/api-client";
 import type { ActivityEvent, ActivityEventType } from "@/lib/document-activity";
+import { envelopeWaitingDetail } from "@/lib/envelope-waiting";
+import {
+  recipientFacingStatus,
+  recipientMarkClass,
+} from "@/lib/document-status";
 import {
   formatDate,
   formatFileSize,
@@ -35,11 +20,8 @@ import {
   getInitials,
 } from "@/lib/formatting";
 import { parseId } from "@/lib/ids";
-import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
-import { AIInsightsPanel } from "./ai-annotation-overlays";
-import type { useDocumentAnnotations } from "./ai-annotation-overlays";
 import {
   DocumentNextAction,
   type DocumentNextActionModel,
@@ -48,13 +30,12 @@ import { DocumentProgressRing } from "./document-progress-ring";
 import {
   DocumentSendSteps,
   resolveSendStep,
+  type SendStepId,
 } from "./document-send-steps";
+import { placementFieldChooser } from "./document-rail";
 import { FieldList } from "./field-list";
-import { FieldToolbar } from "./field-toolbar";
 import { InAppSigningSection } from "./in-app-signing-section";
 import type { DocumentWorkflowStatus } from "./workflow-status-badge";
-
-type AIAnnotationsState = ReturnType<typeof useDocumentAnnotations>;
 
 // Derive child-component prop types from their signatures to avoid duplication
 type InAppRecipient = Parameters<typeof InAppSigningSection>[0]["recipient"];
@@ -66,11 +47,11 @@ type FieldListRecipient = Parameters<typeof FieldList>[0]["recipients"][number];
 interface DocumentSidebarProps {
   documentId: string;
   documentPublicId: string;
-  slug: string;
 
   // Document metadata
   workflowStatus: DocumentWorkflowStatus | null | undefined;
   createdAt: number;
+  sentAt?: number | null;
   description?: string | null;
   fileSize: number;
   pageCount?: number | null;
@@ -88,43 +69,20 @@ interface DocumentSidebarProps {
 
   // Permissions
   canEdit: boolean;
+  /** Add a person on a draft, or on a sent envelope that is still open. */
+  canAddRecipient: boolean;
+  signingMode?: string | null;
   isUserAlreadyRecipient: boolean;
-  merchantPaymentsReady: boolean;
 
   // Collapsible section state
   openSections: Set<string>;
   toggleSection: (section: string) => void;
-
-  // AI state
-  aiEnabled: boolean;
-  documentAnnotations: AIAnnotationsState;
-  aiProcessingStatus?: string | null;
-
-  // Whether any recipient has the "signer" role (for FieldToolbar disabled state)
-  hasSigners: boolean;
-
-  // Field bindings (SEA-26)
-  bindingFields: Array<{
-    publicId: string;
-    label: string;
-    bindingKey: string;
-  }>;
-  onBindingsSaved?: () => void;
 
   // Field placement callbacks (from useFieldPlacement)
   selectedFieldId: string | null;
   onFieldSelect: (fieldId: string | null) => void;
   onFieldDelete: () => void;
   onFieldProperties: (fieldId: string) => void;
-  onFieldDragStart: (fieldType: string) => void;
-  onFieldDragEnd: () => void;
-
-  // Redirect URL state (document settings)
-  redirectUrlInput: string;
-  redirectUrlError: string | null;
-  isSavingRedirect: boolean;
-  onRedirectUrlChange: (url: string) => void;
-  onSaveRedirectUrl: () => void;
 
   // Recipient action callbacks
   onAddRecipient: () => void;
@@ -138,13 +96,22 @@ interface DocumentSidebarProps {
   canSend: boolean;
   sendBlockedReason?: string;
   onSendDocument: () => void;
+  onDownloadPdf: () => void;
+  onVoidDocument?: () => void;
+  onPlaceFields: () => void;
   onEnsureSection: (section: string) => void;
+  /** Replaces the rail body. People, Fields, and Send stay above it. */
+  railOpen: boolean;
+  railPanel: ReactNode;
+  /** Returns false when the open form must stay. */
+  onDismissRail: () => boolean;
+  /** Which step stays selected while the rail body is replaced. */
+  railStep?: SendStepId;
+  placementSignerId?: string | null;
+  onPlacementSignerChange?: (signerId: string) => void;
 
   // Activity
   activityEvents: ActivityEvent[];
-
-  // Page navigation from insights panel
-  onPageJump: (page: number) => void;
 
   /** Current PDF page (for rotate-current-page). */
   currentPage?: number;
@@ -161,49 +128,14 @@ function getActivityIcon(type: ActivityEventType) {
     case "sent":
       return <SendIcon className="h-3.5 w-3.5" />;
     case "viewed":
-      return (
-        <svg
-          className="h-3.5 w-3.5"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          aria-hidden="true"
-        >
-          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-          <circle cx="12" cy="12" r="3" />
-        </svg>
-      );
+      return <EyeIcon className="h-3.5 w-3.5" />;
     case "signed":
     case "approved":
     case "completed":
-      return (
-        <svg
-          className="h-3.5 w-3.5"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          aria-hidden="true"
-        >
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-      );
+      return <CheckIcon className="h-3.5 w-3.5" />;
     case "declined":
     case "cancelled":
-      return (
-        <svg
-          className="h-3.5 w-3.5"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          aria-hidden="true"
-        >
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
-      );
+      return <XIcon className="h-3.5 w-3.5" />;
     default:
       return <ActivityIcon className="h-3.5 w-3.5" />;
   }
@@ -211,16 +143,10 @@ function getActivityIcon(type: ActivityEventType) {
 
 function activityDotClass(type: ActivityEventType): string {
   switch (type) {
-    case "signed":
-    case "approved":
-    case "completed":
-      return "[&_.activity-dot]:border-status-completed-border [&_.activity-dot]:bg-status-completed-surface [&_.activity-dot]:text-status-completed-text";
-    case "viewed":
-      return "[&_.activity-dot]:border-info-surface [&_.activity-dot]:bg-info-surface [&_.activity-dot]:text-info";
     case "declined":
-      return "[&_.activity-dot]:border-destructive/30 [&_.activity-dot]:bg-destructive/10 [&_.activity-dot]:text-destructive";
+      return "[&_.activity-dot]:border-kumo-danger/30 [&_.activity-dot]:bg-kumo-danger/10 [&_.activity-dot]:text-kumo-danger";
     default:
-      return "[&_.activity-dot]:border-border [&_.activity-dot]:bg-card [&_.activity-dot]:text-muted-foreground";
+      return "[&_.activity-dot]:border-kumo-line [&_.activity-dot]:bg-kumo-base [&_.activity-dot]:text-kumo-secondary";
   }
 }
 
@@ -235,13 +161,13 @@ function EmptySection({
 }) {
   return (
     <div className="px-4 py-8 text-center sm:px-3 sm:py-6">
-      <div className="bg-muted text-muted-foreground mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl sm:h-10 sm:w-10 sm:rounded-[10px]">
+      <div className="bg-kumo-elevated text-kumo-secondary sm:rounded-card mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl sm:h-10 sm:w-10">
         {icon}
       </div>
-      <div className="text-foreground mb-1 font-sans text-sm font-semibold sm:text-[0.8125rem]">
+      <div className="text-kumo-default mb-1 font-sans text-sm font-semibold">
         {title}
       </div>
-      <div className="text-muted-foreground font-sans text-xs leading-relaxed sm:text-[0.6875rem]">
+      <div className="text-kumo-secondary font-sans text-xs leading-relaxed">
         {description}
       </div>
     </div>
@@ -251,62 +177,58 @@ function EmptySection({
 function RecipientRow({
   recipient,
   onRecipientOptions,
+  workflowStatus,
 }: {
   recipient: FieldListRecipient;
   onRecipientOptions: DocumentSidebarProps["onRecipientOptions"];
+  workflowStatus: DocumentWorkflowStatus | undefined;
 }) {
-  const status =
+  const storedStatus =
     "status" in recipient && typeof recipient.status === "string"
       ? recipient.status
       : "pending";
-  const statusColorClass =
-    status === "viewed"
-      ? "bg-info-surface text-info"
-      : status === "signed" || status === "approved"
-        ? "bg-status-completed-surface text-status-completed-text"
-        : status === "declined"
-          ? "bg-destructive/10 text-destructive"
-          : "bg-muted text-muted-foreground";
+  const status = recipientFacingStatus(workflowStatus, storedStatus);
+  const statusColorClass = recipientMarkClass(status);
 
   return (
-    <div className="bg-muted hover:border-border hover:bg-muted flex items-center gap-3.5 rounded-xl border border-transparent p-3.5 transition-colors sm:flex-wrap sm:gap-2.5 sm:p-3">
+    <div className="bg-kumo-elevated hover:border-kumo-line hover:bg-kumo-elevated flex items-center gap-3.5 rounded-xl border border-transparent p-3.5 transition-colors sm:flex-wrap sm:gap-2.5 sm:p-3">
       <div
         className={cn(
-          "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-sans text-sm font-semibold sm:h-9 sm:w-9 sm:text-[0.8125rem]",
+          "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-sans text-sm font-semibold sm:h-9 sm:w-9",
           statusColorClass
         )}
       >
         {getInitials(recipient.name ?? undefined, recipient.email)}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-foreground truncate font-sans text-sm font-semibold sm:text-[0.8125rem]">
+        <div className="text-kumo-default truncate font-sans text-sm font-semibold">
           {recipient.name || recipient.email}
         </div>
         {recipient.name && (
-          <div className="text-muted-foreground truncate font-sans text-xs sm:text-[0.6875rem]">
+          <div className="text-kumo-secondary truncate font-sans text-xs">
             {recipient.email}
           </div>
         )}
       </div>
       <span
         className={cn(
-          "rounded-full px-2.5 py-1 font-sans text-[0.6875rem] font-semibold whitespace-nowrap sm:px-2 sm:py-0.5 sm:text-[0.625rem]",
+          "text-xs rounded-full px-2.5 py-1 font-sans font-semibold whitespace-nowrap sm:px-2 sm:py-0.5",
           statusColorClass
         )}
       >
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
+      <span title="Options for this recipient" className="inline-flex">
       <Button
         variant="ghost"
         shape="square"
         size="sm"
-        className="h-8 w-8"
         aria-label="Recipient options"
-        title="Recipient options"
+        icon={SettingsIcon}
         onClick={() =>
           onRecipientOptions({
             ...recipient,
-            status,
+            status: storedStatus,
             signingToken:
               "signingToken" in recipient &&
               typeof recipient.signingToken === "string"
@@ -314,71 +236,53 @@ function RecipientRow({
                 : undefined,
           })
         }
-      >
-        <SettingsIcon className="text-muted-foreground h-4 w-4" />
-      </Button>
+      />
+      </span>
     </div>
   );
 }
 
 function RecipientsSection({
   recipients,
-  canEdit,
+  canAddRecipient,
   isUserAlreadyRecipient,
   open,
   onOpenChange,
   onAddMyself,
   onAddRecipient,
   onRecipientOptions,
+  workflowStatus,
 }: {
   recipients: FieldListRecipient[];
-  canEdit: boolean;
+  canAddRecipient: boolean;
   isUserAlreadyRecipient: boolean;
   open: boolean;
   onOpenChange: () => void;
   onAddMyself: () => void;
   onAddRecipient: () => void;
   onRecipientOptions: DocumentSidebarProps["onRecipientOptions"];
+  workflowStatus: DocumentWorkflowStatus | undefined;
 }) {
   return (
-    <Collapsible.Root
-      open={open}
-      onOpenChange={onOpenChange}
-      className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
-    >
-      <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
+    <LayerCard>
+      <Collapsible.Root open={open} onOpenChange={onOpenChange}>
+      <Collapsible.Trigger title="Show or hide recipients" className="flex w-full items-center justify-between gap-2 p-4 text-left">
         <div className="flex items-center gap-3">
-          <div className="bg-info-surface text-info flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
-            <UsersIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
-          </div>
-          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
+          <span className="font-medium">
             Recipients
           </span>
           {recipients.length > 0 && (
-            <span className="bg-muted text-muted-foreground ml-2 rounded-xl px-2 py-0.5 font-sans text-[0.6875rem] font-semibold">
-              {recipients.length}
-            </span>
+            <Badge variant="secondary">{recipients.length}</Badge>
           )}
         </div>
         <ChevronDownIcon
           className={cn(
-            "text-muted-foreground h-4 w-4 transition-transform",
+            "text-kumo-secondary h-4 w-4 transition-transform",
             open && "rotate-180"
           )}
         />
       </Collapsible.Trigger>
-      <Collapsible.Panel className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
-        {canEdit && !isUserAlreadyRecipient && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="mt-3 mb-3 w-full"
-            onClick={onAddMyself}
-          >
-            <UserIcon className="mr-2 h-4 w-4" />
-            Add myself as signer
-          </Button>
-        )}
+      <Collapsible.Panel className="px-4 pb-4">
         {recipients.length > 0 ? (
           <div className="mt-4 flex flex-col gap-2.5 sm:gap-2">
             {recipients.map((recipient) => (
@@ -386,285 +290,135 @@ function RecipientsSection({
                 key={recipient._id}
                 recipient={recipient}
                 onRecipientOptions={onRecipientOptions}
+                workflowStatus={workflowStatus}
               />
             ))}
           </div>
-        ) : (
+        ) : !canAddRecipient ? (
           <EmptySection
-            icon={<UsersIcon className="h-6 w-6" />}
+            icon={<UsersIcon className="size-6" />}
             title="No recipients"
-            description="Add recipients who need to sign or view this document."
+            description="Recipients who need to sign or view this document show up here."
           />
-        )}
-        {canEdit && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-border text-muted-foreground hover:border-primary hover:bg-primary/5 hover:text-primary mt-3 flex w-full items-center justify-center gap-2 rounded-[10px] border-2 border-dashed bg-transparent p-3 font-sans text-[0.8125rem] font-semibold transition-[color,border-color,background-color] sm:rounded-lg sm:p-2.5 sm:text-xs"
-            onClick={onAddRecipient}
-          >
-            <PlusIcon className="h-4 w-4" />
-            Add Recipient
-          </Button>
-        )}
-      </Collapsible.Panel>
-    </Collapsible.Root>
-  );
-}
-
-function DocumentSettingsSection({
-  open,
-  onOpenChange,
-  redirectUrlInput,
-  redirectUrlError,
-  isSavingRedirect,
-  onRedirectUrlChange,
-  onSaveRedirectUrl,
-}: {
-  open: boolean;
-  onOpenChange: () => void;
-  redirectUrlInput: string;
-  redirectUrlError: string | null;
-  isSavingRedirect: boolean;
-  onRedirectUrlChange: (url: string) => void;
-  onSaveRedirectUrl: () => void;
-}) {
-  return (
-    <Collapsible.Root
-      open={open}
-      onOpenChange={onOpenChange}
-      className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
-    >
-      <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
-        <div className="flex items-center gap-3">
-          <div className="bg-muted text-muted-foreground flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
-            <SettingsIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
-          </div>
-          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
-            Document Settings
-          </span>
-        </div>
-        <ChevronDownIcon
-          className={cn(
-            "text-muted-foreground h-4 w-4 transition-transform",
-            open && "rotate-180"
-          )}
-        />
-      </Collapsible.Trigger>
-      <Collapsible.Panel className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
-        <div className="mt-4 space-y-5">
-          <div className="space-y-2">
-            <Label className="text-foreground flex items-center gap-1.5 text-xs font-semibold tracking-wider uppercase">
-              <LinkIcon className="h-3.5 w-3.5" />
-              Redirect after signing
-            </Label>
-            <p className="text-muted-foreground text-xs">
-              Recipients are sent to this URL after signing. Leave empty for the
-              default thank-you page.
-            </p>
-            <div className="flex gap-2">
-              <Input
-                aria-label="Redirect after signing URL"
-                placeholder="https://example.com/thank-you"
-                value={redirectUrlInput}
-                onChange={(event) => onRedirectUrlChange(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") onSaveRedirectUrl();
-                }}
-                className="text-sm"
-              />
+        ) : null}
+        {canAddRecipient ? (
+          <div className="mt-3 flex flex-col gap-2">
+            {!isUserAlreadyRecipient ? (
+              <span title="Add your account as a signer" className="inline-flex w-full">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={onAddMyself}
+                  icon={UserIcon}
+                >
+                  Add myself as signer
+                </Button>
+              </span>
+            ) : null}
+            <span title="Add someone who needs to sign or view" className="inline-flex w-full">
               <Button
+                variant="secondary"
                 size="sm"
-                variant="outline"
-                onClick={onSaveRedirectUrl}
-                disabled={isSavingRedirect}
+                className="w-full"
+                icon={PlusIcon}
+                onClick={onAddRecipient}
               >
-                {isSavingRedirect ? (
-                  <Loader2Icon className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <SaveIcon className="h-3.5 w-3.5" />
-                )}
+                Add Recipient
               </Button>
-            </div>
-            {redirectUrlError && (
-              <p className="text-destructive text-xs">{redirectUrlError}</p>
-            )}
+            </span>
           </div>
-        </div>
+        ) : null}
       </Collapsible.Panel>
-    </Collapsible.Root>
+      </Collapsible.Root>
+    </LayerCard>
   );
 }
-
-function AIInsightsSection({
-  canEdit,
-  aiEnabled,
-  documentAnnotations,
-  aiProcessingStatus,
-  open,
-  onOpenChange,
-  onPageJump,
-}: {
-  canEdit: boolean;
-  aiEnabled: boolean;
-  documentAnnotations: AIAnnotationsState;
-  aiProcessingStatus?: string | null;
-  open: boolean;
-  onOpenChange: () => void;
-  onPageJump: (page: number) => void;
-}) {
-  if (!canEdit || !aiEnabled) return null;
-  if (!documentAnnotations.annotations && aiProcessingStatus === "processing") {
-    return (
-      <div className="border-border bg-muted/30 flex items-center gap-3 rounded-2xl border border-dashed px-5 py-4 sm:rounded-xl">
-        <Loader2Icon className="text-muted-foreground/60 h-4 w-4 animate-spin" />
-        <span className="text-muted-foreground font-sans text-xs">
-          Scanning for insights...
-        </span>
-      </div>
-    );
-  }
-  if (!documentAnnotations.annotations) return null;
-
-  return (
-    <Collapsible.Root
-      open={open}
-      onOpenChange={onOpenChange}
-      className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
-    >
-      <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
-        <div className="flex items-center gap-3">
-          <div className="bg-ai-accent-surface text-ai-accent flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
-            <ScanSearchIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
-          </div>
-          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
-            Insights
-          </span>
-          <span className="bg-muted text-muted-foreground ml-2 rounded-xl px-2 py-0.5 font-sans text-[0.6875rem] font-semibold">
-            {documentAnnotations.annotations.annotations.length}
-          </span>
-        </div>
-        <ChevronDownIcon
-          className={cn(
-            "text-muted-foreground h-4 w-4 transition-transform duration-200",
-            open && "rotate-180"
-          )}
-        />
-      </Collapsible.Trigger>
-      <Collapsible.Panel className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
-        <div className="mt-3 space-y-4">
-          <AIInsightsPanel
-            annotations={documentAnnotations.annotations}
-            enabledCategories={documentAnnotations.enabledCategories}
-            toggleCategory={documentAnnotations.toggleCategory}
-            onDismiss={documentAnnotations.handleDismiss}
-            onPageJump={onPageJump}
-          />
-          <CitationReviewPanel
-            className="border-border max-h-80 overflow-hidden rounded-lg border"
-            fields={documentAnnotations.annotations.annotations.map(
-              (annotation, index) => ({
-                id: `${annotation.page}-${index}`,
-                label: annotation.summary || annotation.category,
-                value: annotation.text,
-                category: annotation.category,
-                severity: annotation.severity,
-                bbox: {
-                  page: annotation.page,
-                  x: annotation.x,
-                  y: annotation.y,
-                  width: annotation.width,
-                  height: annotation.height,
-                },
-              })
-            )}
-            onJumpToCitation={(field) => {
-              if (field.bbox) onPageJump(field.bbox.page);
-            }}
-            onFocus={(field) => {
-              if (field.bbox) onPageJump(field.bbox.page);
-            }}
-            onDismiss={documentAnnotations.handleDismiss}
-          />
-        </div>
-      </Collapsible.Panel>
-    </Collapsible.Root>
-  );
-}
-
 
 function SignatureFieldsSection({
-  documentId,
   recipients,
   signatureFields,
   canEdit,
-  hasSigners,
-  merchantPaymentsReady,
   selectedFieldId,
   open,
   onOpenChange,
   onFieldSelect,
   onFieldDelete,
   onFieldProperties,
-  onFieldDragStart,
-  onFieldDragEnd,
+  placementSigners,
+  placementSignerId,
+  onPlacementSignerChange,
 }: {
-  documentId: string;
   recipients: FieldListRecipient[];
   signatureFields: FieldListField[];
   canEdit: boolean;
-  hasSigners: boolean;
-  merchantPaymentsReady: boolean;
   selectedFieldId: string | null;
   open: boolean;
   onOpenChange: () => void;
   onFieldSelect: (fieldId: string | null) => void;
   onFieldDelete: () => void;
   onFieldProperties: (fieldId: string) => void;
-  onFieldDragStart: (fieldType: string) => void;
-  onFieldDragEnd: () => void;
+  placementSigners: ReadonlyArray<{
+    _id: string;
+    name?: string;
+    email: string;
+  }>;
+  placementSignerId?: string | null;
+  onPlacementSignerChange?: (signerId: string) => void;
 }) {
   if (signatureFields.length === 0 && !canEdit) return null;
 
   return (
-    <Collapsible.Root
-      open={open}
-      onOpenChange={onOpenChange}
-      className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
-    >
-      <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
+    <LayerCard>
+      <Collapsible.Root open={open} onOpenChange={onOpenChange}>
+      <Collapsible.Trigger title="Show or hide placed fields" className="flex w-full items-center justify-between gap-2 p-4 text-left">
         <div className="flex items-center gap-3">
-          <div className="bg-ai-accent-surface text-ai-accent flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
-            <FileSignatureIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
-          </div>
-          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
+          <span className="font-medium">
             Fields
           </span>
           {signatureFields.length > 0 && (
-            <span className="bg-muted text-muted-foreground ml-2 rounded-xl px-2 py-0.5 font-sans text-[0.6875rem] font-semibold">
-              {signatureFields.length}
-            </span>
+            <Badge variant="secondary">{signatureFields.length}</Badge>
           )}
         </div>
         <ChevronDownIcon
           className={cn(
-            "text-muted-foreground h-4 w-4 transition-transform duration-200",
+            "text-kumo-secondary h-4 w-4 transition-transform duration-200",
             open && "rotate-180"
           )}
         />
       </Collapsible.Trigger>
-      <Collapsible.Panel className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
-        {canEdit && (
-          <div className="mt-4 mb-4">
-            <FieldToolbar
-              onFieldDragStart={onFieldDragStart}
-              onFieldDragEnd={onFieldDragEnd}
-              disabled={!hasSigners}
-              merchantPaymentsReady={merchantPaymentsReady}
-              documentId={parseId("documents", documentId)}
-            />
+      <Collapsible.Panel className="px-4 pb-4">
+        {canEdit && placementFieldChooser(placementSigners.length) === "named" ? (
+          <Text as="p" variant="secondary" size="xs" DANGEROUS_className="mt-3">
+            Placing fields for{" "}
+            {placementSigners[0]?.name || placementSigners[0]?.email}
+          </Text>
+        ) : null}
+        {canEdit &&
+        placementFieldChooser(placementSigners.length) === "select" &&
+        onPlacementSignerChange ? (
+          <div className="mt-3">
+            <Select
+              value={placementSignerId ?? placementSigners[0]?._id ?? ""}
+              onValueChange={(value) => {
+                if (value) onPlacementSignerChange(value);
+              }}
+              label="Placing fields for"
+              renderValue={(value) => {
+                const signer = placementSigners.find(
+                  (recipient) => recipient._id === value
+                );
+                return signer?.name || signer?.email || "Choose a signer";
+              }}
+            >
+              {placementSigners.map((signer) => (
+                <Select.Option key={signer._id} value={signer._id}>
+                  {signer.name || signer.email}
+                </Select.Option>
+              ))}
+            </Select>
           </div>
-        )}
+        ) : null}
         {signatureFields.length > 0 ? (
           <FieldList
             fields={signatureFields}
@@ -677,125 +431,25 @@ function SignatureFieldsSection({
           />
         ) : (
           <EmptySection
-            icon={<FileSignatureIcon className="h-6 w-6" />}
+            icon={<FileSignatureIcon className="size-6" />}
             title="No fields yet"
-            description="Drag fields from above onto the document to mark where recipients should sign or fill in information."
+            description="Choose a field on the toolbar, then click the page."
           />
         )}
       </Collapsible.Panel>
-    </Collapsible.Root>
+      </Collapsible.Root>
+    </LayerCard>
   );
 }
 
 function DetailMetric({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="bg-muted rounded-[10px] p-3.5 sm:rounded-lg sm:p-3">
-      <div className="text-muted-foreground mb-1 font-sans text-[0.625rem] font-semibold tracking-wide uppercase sm:text-[0.5625rem]">
+    <LayerCard className="p-3">
+      <Text variant="secondary" size="xs">
         {label}
-      </div>
-      <div className="text-foreground font-sans text-sm font-medium sm:text-[0.8125rem]">
-        {value}
-      </div>
-    </div>
-  );
-}
-
-
-
-function FieldBindingsSection({
-  slug,
-  documentPublicId,
-  fields,
-  canEdit,
-  open,
-  onOpenChange,
-  onSaved,
-}: {
-  slug: string;
-  documentPublicId: string;
-  fields: Array<{ publicId: string; label: string; bindingKey: string }>;
-  canEdit: boolean;
-  open: boolean;
-  onOpenChange: () => void;
-  onSaved?: () => void;
-}) {
-  const [rows, setRows] = useState<BindingRow[]>([]);
-
-  useEffect(() => {
-    setRows(
-      fields.map((f) => ({
-        fieldId: f.publicId,
-        fieldLabel: f.label,
-        bindingKey: f.bindingKey,
-      }))
-    );
-  }, [fields]);
-
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      const original = new Map(
-        fields.map((f) => [f.publicId, f.bindingKey] as const)
-      );
-      for (const row of rows) {
-        const prev = original.get(row.fieldId) ?? "";
-        if (prev === row.bindingKey) continue;
-        const key = row.bindingKey.trim();
-        await updateSignatureField(slug, documentPublicId, row.fieldId, {
-          properties: {
-            bindingKey: key || undefined,
-            binding_key: key || undefined,
-          },
-        });
-      }
-    },
-    onSuccess: () => {
-      toast.success("Bindings saved");
-      onSaved?.();
-    },
-    onError: (error) => {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to save bindings"
-      );
-    },
-  });
-
-  if (!canEdit || fields.length === 0) return null;
-
-  return (
-    <Collapsible.Root
-      open={open}
-      onOpenChange={onOpenChange}
-      className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
-    >
-      <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
-        <div className="flex items-center gap-3">
-          <div className="bg-muted text-foreground flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
-            <LinkIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
-          </div>
-          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
-            Bindings
-          </span>
-          <span className="bg-muted text-muted-foreground ml-2 rounded-xl px-2 py-0.5 font-sans text-[0.6875rem] font-semibold">
-            {fields.length}
-          </span>
-        </div>
-        <ChevronDownIcon
-          className={cn(
-            "text-muted-foreground h-4 w-4 transition-transform duration-200",
-            open && "rotate-180"
-          )}
-        />
-      </Collapsible.Trigger>
-      <Collapsible.Panel className="border-border/50 border-t">
-        <BindingsPanel
-          className="max-h-96"
-          rows={rows}
-          onChange={setRows}
-          onSave={() => saveMutation.mutate()}
-          saving={saveMutation.isPending}
-        />
-      </Collapsible.Panel>
-    </Collapsible.Root>
+      </Text>
+      <Text size="sm">{value}</Text>
+    </LayerCard>
   );
 }
 
@@ -806,6 +460,8 @@ function DocumentDetailsSection({
   pageCount,
   numPages,
   createdAt,
+  sentAt,
+  documentPublicId,
   signatureFields,
   description,
 }: {
@@ -815,50 +471,58 @@ function DocumentDetailsSection({
   pageCount?: number | null;
   numPages: number | null;
   createdAt: number;
+  sentAt?: number | null;
+  documentPublicId: string;
   signatureFields: FieldListField[];
   description?: string | null;
 }) {
   return (
-    <Collapsible.Root
-      open={open}
-      onOpenChange={onOpenChange}
-      className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
-    >
-      <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
+    <LayerCard>
+      <Collapsible.Root open={open} onOpenChange={onOpenChange}>
+      <Collapsible.Trigger title="Show or hide document details" className="flex w-full items-center justify-between gap-2 p-4 text-left">
         <div className="flex items-center gap-3">
-          <div className="bg-info-surface text-info flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
-            <InfoIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
-          </div>
-          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
+          <span className="font-medium">
             Details
           </span>
         </div>
         <ChevronDownIcon
           className={cn(
-            "text-muted-foreground h-4 w-4 transition-transform",
+            "text-kumo-secondary h-4 w-4 transition-transform",
             open && "rotate-180"
           )}
         />
       </Collapsible.Trigger>
-      <Collapsible.Panel className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
+      <Collapsible.Panel className="px-4 pb-4">
         <div className="mt-4 grid grid-cols-2 gap-4 sm:gap-2.5">
           <DetailMetric label="File Size" value={formatFileSize(fileSize)} />
           <DetailMetric label="Pages" value={pageCount || numPages || "—"} />
           <DetailMetric label="Uploaded" value={formatDate(createdAt)} />
           <DetailMetric label="Fields" value={signatureFields.length} />
+          <DetailMetric label="Document ID" value={documentPublicId} />
+          {sentAt ? (
+            <DetailMetric
+              label="Sent"
+              value={new Intl.DateTimeFormat("en-US", {
+                month: "2-digit",
+                day: "2-digit",
+                year: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+              }).format(sentAt)}
+            />
+          ) : null}
         </div>
         {description && (
-          <div className="bg-muted col-span-2 mt-4 rounded-[10px] p-3.5 sm:rounded-lg sm:p-3">
-            <div className="text-muted-foreground mb-1 font-sans text-[0.625rem] font-semibold tracking-wide uppercase sm:text-[0.5625rem]">
+          <LayerCard className="col-span-2 mt-4 p-3">
+            <Text variant="secondary" size="xs">
               Description
-            </div>
-            <div className="text-foreground font-sans text-sm font-medium sm:text-[0.8125rem]">
-              {description}
-            </div>
-          </div>
+            </Text>
+            <Text size="sm">{description}</Text>
+          </LayerCard>
         )}
       </Collapsible.Panel>
-    </Collapsible.Root>
+      </Collapsible.Root>
+    </LayerCard>
   );
 }
 
@@ -881,10 +545,10 @@ function ActivityEventRow({
         {getActivityIcon(event.type)}
       </div>
       <div className="min-w-0 flex-1 pt-1">
-        <div className="text-foreground font-sans text-[0.8125rem] leading-snug sm:text-xs">
+        <div className="text-kumo-default text-sm font-sans leading-snug sm:text-xs">
           {event.description}
         </div>
-        <div className="text-muted-foreground mt-1 font-sans text-[0.6875rem] sm:text-[0.625rem]">
+        <div className="text-kumo-secondary text-xs mt-1 font-sans">
           {formatRelativeTime(event.timestamp)}
         </div>
       </div>
@@ -902,35 +566,27 @@ function ActivitySection({
   activityEvents: ActivityEvent[];
 }) {
   return (
-    <Collapsible.Root
-      open={open}
-      onOpenChange={onOpenChange}
-      className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl"
-    >
-      <Collapsible.Trigger className="hover:bg-muted flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5">
+    <LayerCard>
+      <Collapsible.Root open={open} onOpenChange={onOpenChange}>
+      <Collapsible.Trigger title="Show or hide activity" className="flex w-full items-center justify-between gap-2 p-4 text-left">
         <div className="flex items-center gap-3">
-          <div className="bg-warning-surface text-warning flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg">
-            <ActivityIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
-          </div>
-          <span className="text-foreground font-sans text-[0.9375rem] font-semibold sm:text-sm">
+          <span className="font-medium">
             Activity
           </span>
           {activityEvents.length > 0 && (
-            <span className="bg-muted text-muted-foreground ml-2 rounded-xl px-2 py-0.5 font-sans text-[0.6875rem] font-semibold">
-              {activityEvents.length}
-            </span>
+            <Badge variant="secondary">{activityEvents.length}</Badge>
           )}
         </div>
         <ChevronDownIcon
           className={cn(
-            "text-muted-foreground h-4 w-4 transition-transform",
+            "text-kumo-secondary h-4 w-4 transition-transform",
             open && "rotate-180"
           )}
         />
       </Collapsible.Trigger>
-      <Collapsible.Panel className="border-border/50 border-t px-5 pb-5 sm:px-4 sm:pb-4">
+      <Collapsible.Panel className="px-4 pb-4">
         {activityEvents.length > 0 ? (
-          <div className="before:bg-border relative mt-4 before:absolute before:top-2 before:bottom-2 before:left-[15px] before:w-0.5 before:rounded-sm before:content-[''] sm:before:left-[13px]">
+          <div className="before:bg-border before:content-empty relative mt-4 before:absolute before:top-2 before:bottom-2 before:left-3.75 before:w-0.5 before:rounded-sm sm:before:left-3.25">
             {activityEvents.slice(0, 10).map((event, index) => (
               <ActivityEventRow
                 key={`${event.type}-${event.timestamp}`}
@@ -941,13 +597,14 @@ function ActivitySection({
           </div>
         ) : (
           <EmptySection
-            icon={<ActivityIcon className="h-6 w-6" />}
+            icon={<ActivityIcon className="size-6" />}
             title="No activity yet"
             description="Activity will appear here as recipients interact with this document."
           />
         )}
       </Collapsible.Panel>
-    </Collapsible.Root>
+      </Collapsible.Root>
+    </LayerCard>
   );
 }
 
@@ -955,23 +612,34 @@ function buildNextActionModel(input: {
   isDraftBuilder: boolean;
   isCompleted: boolean;
   signingRecipient: InAppRecipient | null;
+  signatureSaved: boolean;
   recipients: FieldListRecipient[];
   signatureFields: FieldListField[];
   canSend: boolean;
   sendBlockedReason?: string;
   sendLabel: string;
   onSendDocument: () => void;
+  onDownloadPdf: () => void;
   onAddRecipient: () => void;
   onEnsureSection: (section: string) => void;
   waitingDetail: string;
+  workflowStatus: DocumentWorkflowStatus | undefined;
 }): DocumentNextActionModel {
   if (input.isCompleted) {
-    return { kind: "done" };
+    return { kind: "done", onDownload: input.onDownloadPdf };
+  }
+
+  if (input.workflowStatus === "cancelled") {
+    return {
+      kind: "status",
+      detail: "This document was voided. Signers can no longer finish it.",
+    };
   }
 
   if (input.signingRecipient) {
     return {
       kind: "sign_yourself",
+      ready: input.signatureSaved,
       onAction: () => input.onEnsureSection("your-signature"),
     };
   }
@@ -1021,75 +689,119 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
     !normalizedWorkflowStatus || normalizedWorkflowStatus === "draft";
   const isDraftBuilder = props.canEdit && isDraft;
   const isOversight = !isDraft;
-  const visibleProgress = isOversight ? props.progress : null;
+  const visibleProgress =
+    isOversight && normalizedWorkflowStatus !== "cancelled"
+      ? props.progress
+      : null;
   const signingRecipient =
     props.currentUserRecipient !== null &&
     isOversight &&
     normalizedWorkflowStatus !== "completed" &&
+    normalizedWorkflowStatus !== "cancelled" &&
     (props.currentUserRecipient.role === "signer" ||
       props.currentUserRecipient.role === "approver")
       ? props.currentUserRecipient
       : null;
-  const advancedOpen =
-    props.openSections.has("doc-settings") ||
-    props.openSections.has("bindings");
-
-  const pendingRecipients =
-    (props.progress?.byStatus.pending ?? 0) +
-    (props.progress?.byStatus.viewed ?? 0);
+  const waitingParties = props.recipients.flatMap((recipient) => {
+    const status =
+      "status" in recipient && typeof recipient.status === "string"
+        ? recipient.status
+        : null;
+    const role =
+      "role" in recipient && typeof recipient.role === "string"
+        ? recipient.role
+        : null;
+    const order =
+      "order" in recipient && typeof recipient.order === "number"
+        ? recipient.order
+        : null;
+    if (!status || !role || order === null) return [];
+    return [
+      {
+        id: recipient._id,
+        name: recipient.name,
+        email: recipient.email,
+        role,
+        order,
+        status,
+      },
+    ];
+  });
   const waitingDetail =
-    pendingRecipients > 0
-      ? `${pendingRecipients} recipient${pendingRecipients === 1 ? "" : "s"} still need to act.`
+    waitingParties.length > 0
+      ? envelopeWaitingDetail(props.signingMode, waitingParties)
       : "Waiting on the next step in this envelope.";
+
+  const requiredMine = props.currentUserFields.filter((field) => field.isRequired);
+  const signatureSaved =
+    requiredMine.length > 0 && requiredMine.every((field) => field.isFilled);
 
   const nextAction = buildNextActionModel({
     isDraftBuilder,
     isCompleted: normalizedWorkflowStatus === "completed",
     signingRecipient,
+    signatureSaved,
     recipients: props.recipients,
     signatureFields: props.signatureFields,
     canSend: props.canSend,
     sendBlockedReason: props.sendBlockedReason,
     sendLabel: props.sendLabel,
     onSendDocument: props.onSendDocument,
+    onDownloadPdf: props.onDownloadPdf,
     onAddRecipient: props.onAddRecipient,
     onEnsureSection: props.onEnsureSection,
     waitingDetail,
+    workflowStatus: normalizedWorkflowStatus,
   });
 
-  const sendStep = resolveSendStep({
+  const derivedStep = resolveSendStep({
     recipientCount: props.recipients.length,
     fieldCount: props.signatureFields.length,
     canSend: props.canSend,
   });
+  const [chosenStep, setChosenStep] = useState<SendStepId | null>(null);
+  const sendStep = chosenStep ?? derivedStep;
+  const placementSigners = props.recipients.flatMap((recipient) => {
+    if (!("role" in recipient) || recipient.role !== "signer") return [];
+    return [
+      {
+        _id: recipient._id,
+        name: recipient.name,
+        email: recipient.email,
+      },
+    ];
+  });
+
+  useEffect(() => {
+    if (props.railStep) setChosenStep(props.railStep);
+  }, [props.railStep]);
+
+  const selectStep = (step: SendStepId): void => {
+    if (!props.onDismissRail()) return;
+    setChosenStep(step);
+    if (step === 1) {
+      props.onEnsureSection("recipients");
+      return;
+    }
+    if (step === 2) {
+      props.onPlaceFields();
+      return;
+    }
+    props.onSendDocument();
+  };
 
   return (
-    <div className="flex flex-col gap-5 sm:gap-4">
+    <div className="flex h-full min-h-0 flex-col gap-4">
       {isDraftBuilder ? (
-        <DocumentSendSteps
-          current={sendStep}
-          onSelect={(step) => {
-            if (step === 1) {
-              props.onEnsureSection("recipients");
-              if (props.recipients.length === 0) {
-                props.onAddRecipient();
-              }
-              return;
-            }
-            if (step === 2) {
-              props.onEnsureSection("fields");
-              return;
-            }
-            if (props.canSend) {
-              props.onSendDocument();
-            } else {
-              props.onEnsureSection(
-                props.recipients.length === 0 ? "recipients" : "fields"
-              );
-            }
-          }}
-        />
+        <div className="shrink-0">
+          <DocumentSendSteps current={sendStep} onSelect={selectStep} />
+        </div>
       ) : null}
+      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto [&>*]:shrink-0 sm:gap-4">
+      {props.railOpen ? (
+        props.railPanel
+      ) : (
+      <>
       {/* SendSteps already covers add_people / place_fields — keep NextAction for send/block/sign/wait. */}
       {nextAction.kind !== "add_people" &&
       nextAction.kind !== "place_fields" ? (
@@ -1097,6 +809,13 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
           workflowStatus={normalizedWorkflowStatus}
           createdAt={props.createdAt}
           model={nextAction}
+          onVoid={
+            props.onVoidDocument &&
+            (normalizedWorkflowStatus === "sent" ||
+              normalizedWorkflowStatus === "in_progress")
+              ? props.onVoidDocument
+              : undefined
+          }
         />
       ) : null}
       {visibleProgress && <DocumentProgressRing progress={visibleProgress} />}
@@ -1112,99 +831,29 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
       )}
       <RecipientsSection
         recipients={props.recipients}
-        canEdit={props.canEdit}
+        canAddRecipient={props.canAddRecipient}
         isUserAlreadyRecipient={props.isUserAlreadyRecipient}
         open={props.openSections.has("recipients")}
         onOpenChange={() => props.toggleSection("recipients")}
         onAddMyself={props.onAddMyself}
         onAddRecipient={props.onAddRecipient}
         onRecipientOptions={props.onRecipientOptions}
+        workflowStatus={normalizedWorkflowStatus}
       />
       <SignatureFieldsSection
-        documentId={props.documentId}
         recipients={props.recipients}
         signatureFields={props.signatureFields}
         canEdit={props.canEdit}
-        hasSigners={props.hasSigners}
-        merchantPaymentsReady={props.merchantPaymentsReady}
         selectedFieldId={props.selectedFieldId}
         open={props.openSections.has("fields")}
         onOpenChange={() => props.toggleSection("fields")}
         onFieldSelect={props.onFieldSelect}
         onFieldDelete={props.onFieldDelete}
         onFieldProperties={props.onFieldProperties}
-        onFieldDragStart={props.onFieldDragStart}
-        onFieldDragEnd={props.onFieldDragEnd}
+        placementSigners={placementSigners}
+        placementSignerId={props.placementSignerId}
+        onPlacementSignerChange={props.onPlacementSignerChange}
       />
-      <AIInsightsSection
-        canEdit={props.canEdit}
-        aiEnabled={props.aiEnabled}
-        documentAnnotations={props.documentAnnotations}
-        aiProcessingStatus={props.aiProcessingStatus}
-        open={props.openSections.has("insights")}
-        onOpenChange={() => props.toggleSection("insights")}
-        onPageJump={props.onPageJump}
-      />
-      {isDraftBuilder && (
-        <Collapsible.Root
-          open={advancedOpen}
-          onOpenChange={(next) => {
-            if (next) {
-              if (!props.openSections.has("doc-settings")) {
-                props.toggleSection("doc-settings");
-              }
-              return;
-            }
-            if (props.openSections.has("doc-settings")) {
-              props.toggleSection("doc-settings");
-            }
-            if (props.openSections.has("bindings")) {
-              props.toggleSection("bindings");
-            }
-          }}
-        >
-          <Collapsible.Trigger className="border-border bg-card hover:bg-muted/40 flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left shadow-sm">
-            <span className="flex min-w-0 items-start gap-2">
-              <SettingsIcon className="mt-0.5 h-4 w-4 shrink-0" />
-              <span className="min-w-0">
-                <span className="block text-sm font-medium">
-                  Signing extras
-                </span>
-                <span className="text-muted-foreground block text-[11px] font-normal">
-                  Redirect URL and field bindings — use Pages on the workspace
-                  rail for rotate / split
-                </span>
-              </span>
-            </span>
-            <ChevronDownIcon
-              className={cn(
-                "text-muted-foreground h-4 w-4 transition-transform",
-                advancedOpen && "rotate-180"
-              )}
-            />
-          </Collapsible.Trigger>
-          <Collapsible.Panel className="mt-2 flex flex-col gap-2">
-            <DocumentSettingsSection
-              open={props.openSections.has("doc-settings")}
-              onOpenChange={() => props.toggleSection("doc-settings")}
-              redirectUrlInput={props.redirectUrlInput}
-              redirectUrlError={props.redirectUrlError}
-              isSavingRedirect={props.isSavingRedirect}
-              onRedirectUrlChange={props.onRedirectUrlChange}
-              onSaveRedirectUrl={props.onSaveRedirectUrl}
-            />
-            <FieldBindingsSection
-              slug={props.slug}
-              documentPublicId={props.documentPublicId}
-              fields={props.bindingFields}
-              canEdit
-              open={props.openSections.has("bindings")}
-              onOpenChange={() => props.toggleSection("bindings")}
-              onSaved={props.onBindingsSaved}
-            />
-          </Collapsible.Panel>
-        </Collapsible.Root>
-      )}
       {isOversight && (
         <DocumentDetailsSection
           open={props.openSections.has("details")}
@@ -1213,6 +862,8 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
           pageCount={props.pageCount}
           numPages={props.numPages}
           createdAt={props.createdAt}
+          sentAt={props.sentAt}
+          documentPublicId={props.documentPublicId}
           signatureFields={props.signatureFields}
           description={props.description}
         />
@@ -1224,6 +875,9 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
           activityEvents={props.activityEvents}
         />
       )}
+      </>
+      )}
+      </div>
     </div>
   );
 }

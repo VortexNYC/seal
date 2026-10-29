@@ -6,6 +6,7 @@ import { apiTokens } from "../../global/schema.js";
 import {
   apiTokenAuth,
   hashToken,
+  parseApiTokenIpRanges,
   parseApiTokenScopes,
 } from "../../platform/api-token-auth.js";
 import { getAuditActor, writeAuditLog } from "../../platform/audit-log.js";
@@ -50,6 +51,20 @@ function canAdminister(c: {
   return true;
 }
 
+function parseAllowedIpRanges(input: unknown): string[] | null {
+  if (input === undefined) return [];
+  if (!Array.isArray(input)) return null;
+  const ranges: string[] = [];
+  for (const item of input) {
+    if (typeof item !== "string") return null;
+    const trimmed = item.trim();
+    if (trimmed.length === 0 || trimmed.length > 80) return null;
+    ranges.push(trimmed);
+  }
+  if (ranges.length > 50) return null;
+  return ranges;
+}
+
 function parseScopes(input: unknown): string[] {
   if (!Array.isArray(input)) return [];
   return input.filter(
@@ -67,7 +82,8 @@ app.post("/", async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const name = typeof body.name === "string" ? body.name.trim() : "";
   const scopes = parseScopes(body.scopes);
-  if (!name || scopes.length === 0) {
+  const allowedIpRanges = parseAllowedIpRanges(body.allowedIpRanges);
+  if (!name || scopes.length === 0 || allowedIpRanges === null) {
     return c.json({ error: "invalid_input" }, 400);
   }
 
@@ -94,6 +110,7 @@ app.post("/", async (c) => {
     name,
     tokenHash,
     scopes: JSON.stringify(scopes),
+    allowedIpRanges: JSON.stringify(allowedIpRanges),
   });
 
   const actor = getAuditActor({
@@ -108,7 +125,7 @@ app.post("/", async (c) => {
       action: "api_token.create",
       resourceType: "api_token",
       resourceId: id,
-      metadata: { publicId, scopes },
+      metadata: { publicId, scopes, allowedIpRanges },
       ipAddress:
         c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
       userAgent: c.req.header("user-agent"),
@@ -121,6 +138,7 @@ app.post("/", async (c) => {
       publicId,
       name,
       scopes,
+      allowedIpRanges,
       token,
       lastUsedAt: null,
       revokedAt: null,
@@ -143,6 +161,7 @@ app.get("/", async (c) => {
       publicId: apiTokens.publicId,
       name: apiTokens.name,
       scopes: apiTokens.scopes,
+      allowedIpRanges: apiTokens.allowedIpRanges,
       lastUsedAt: apiTokens.lastUsedAt,
       revokedAt: apiTokens.revokedAt,
       createdAt: apiTokens.createdAt,
@@ -157,6 +176,7 @@ app.get("/", async (c) => {
       publicId: row.publicId,
       name: row.name,
       scopes: parseApiTokenScopes(row.scopes),
+      allowedIpRanges: parseApiTokenIpRanges(row.allowedIpRanges),
       lastUsedAt: row.lastUsedAt?.toISOString() ?? null,
       revokedAt: row.revokedAt?.toISOString() ?? null,
       createdAt: row.createdAt.toISOString(),

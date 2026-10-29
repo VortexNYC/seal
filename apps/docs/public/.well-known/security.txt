@@ -1,4 +1,4 @@
-Contact: mailto:security@vortex.nyc
+Contact: https://github.com/VortexNYC/seal/security/advisories/new
 Expires: 2027-09-25T00:00:00.000Z
 Preferred-Languages: en
 Canonical: https://docs.seal.nyc/.well-known/security.txt

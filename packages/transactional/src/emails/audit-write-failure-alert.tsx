@@ -65,8 +65,8 @@ export function AuditWriteFailureAlert({
         ) : null}
 
         <Text style={emailStyles.bodyTextSpaced}>
-          Check workspace settings and contact support if failures continue.
-          Successful audit writes clear this alert automatically.
+          Check workspace settings. Successful audit writes clear this alert
+          automatically.
         </Text>
       </Section>
 

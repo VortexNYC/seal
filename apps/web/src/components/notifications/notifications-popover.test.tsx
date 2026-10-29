@@ -465,7 +465,7 @@ describe("NotificationsPopover", () => {
         unreadCount: 1,
       });
       await user.click(screen.getByRole("button", { name: "Notifications" }));
-      const dot = document.querySelector(".bg-info.rounded-full");
+      const dot = document.querySelector(".bg-kumo-info.rounded-full");
       expect(dot).toBeDefined();
     });
 
@@ -477,7 +477,7 @@ describe("NotificationsPopover", () => {
         unreadCount: 0,
       });
       await user.click(screen.getByRole("button", { name: "Notifications" }));
-      const dot = document.querySelector(".bg-info.rounded-full");
+      const dot = document.querySelector(".bg-kumo-info.rounded-full");
       expect(dot).toBeNull();
     });
 

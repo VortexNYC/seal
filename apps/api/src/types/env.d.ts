@@ -27,9 +27,25 @@ declare interface CloudflareBindings {
   SEAL_SEALING_P12?: string;
   /** Passphrase for SEAL_SEALING_P12. */
   SEAL_SEALING_P12_PASSPHRASE?: string;
+  /** Job runner DO — absent in self-hosts that skip background work. */
+  JOB_RUNNER?: DurableObjectNamespace;
   ALLOWED_ORIGINS: string;
   EMAIL_FROM: string;
   APP_URL: string;
+  /**
+   * Optional. Seal's Vortex merchant key. When a document stores
+   * `vortex_order_form_id`, send registers the signature request and
+   * completion signs and executes the order. Absent → signing is unchanged.
+   */
+  VORTEX_API_KEY?: string;
+  /** Defaults to https://api.vortex.nyc */
+  VORTEX_API_BASE_URL?: string;
+  /** Defaults to Seal's production platform merchant. */
+  VORTEX_PLATFORM_MERCHANT_ACCOUNT_ID?: string;
+  /** Defaults to seal_fleet_standard. */
+  VORTEX_CONNECT_RATE_PLAN_ID?: string;
+  /** Optional confidential client secret for Vortex OAuth grant (SEA-120 / SEA-121). */
+  VORTEX_OAUTH_CLIENT_SECRET?: string;
   INTERNAL_API_KEY: string;
   TEST_MIGRATIONS?: D1Migration[];
 }

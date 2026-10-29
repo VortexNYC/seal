@@ -260,6 +260,8 @@ Send a document to recipients for signing. The document must be in draft status 
 
 - `id` (string, required): Document ID
 - `message` (string, optional): Custom message to include in the signing email
+- `signing_mode` (string, optional): `parallel` invites everyone still open. `sequential` invites only the current signer group, then the next group after they finish.
+- `allow_dictate_next_signer` (boolean, optional): When `signing_mode` is `sequential`, each signer may choose who signs next.
 
 **Returns:** `{ success: boolean }`
 
@@ -307,7 +309,7 @@ Update the sharing/access mode for a document.
 
 ### seal_bulk_send_documents
 
-Send multiple draft documents for signing at once. Each must have recipients.
+Send multiple draft documents for signing at once. Each is invited the same way as a single send. Each must have recipients.
 
 **Parameters:**
 

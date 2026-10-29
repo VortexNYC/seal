@@ -5,7 +5,9 @@ import { createMiddleware } from "hono/factory";
 import { createD1 } from "../global/db.js";
 import { apiTokens, organization, user } from "../global/schema.js";
 import { writeAuditLog } from "./audit-log.js";
+import { ipMatchesAllowlist, requestClientIp } from "./ip-allowlist.js";
 import type { McpAccessToken } from "./mcp-auth.js";
+import { workspaceApiAccessAllows } from "./org-settings.js";
 import type { Variables } from "./types.js";
 
 const TOKEN_PREFIX = "seal_";
@@ -25,7 +27,7 @@ export async function hashToken(value: string): Promise<string> {
   return hex;
 }
 
-export function parseApiTokenScopes(raw: string | null): string[] {
+function parseJsonStringArray(raw: string | null): string[] {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw) as unknown;
@@ -36,6 +38,14 @@ export function parseApiTokenScopes(raw: string | null): string[] {
     // fall through
   }
   return [];
+}
+
+export function parseApiTokenScopes(raw: string | null): string[] {
+  return parseJsonStringArray(raw);
+}
+
+export function parseApiTokenIpRanges(raw: string | null): string[] {
+  return parseJsonStringArray(raw);
 }
 
 export function hasApiTokenScope(
@@ -68,18 +78,14 @@ export async function loadApiTokenContext<E extends CloudflareBindings>(
     return false;
   }
 
-  const now = new Date();
-  // lastUsedAt is informational; writing it on every request doubles D1
-  // write volume on the hottest auth path. Refresh at most hourly.
-  const STALE_AFTER_MS = 60 * 60 * 1000;
+  const clientIp = requestClientIp(c.req.raw.headers);
   if (
-    !token.lastUsedAt ||
-    now.getTime() - token.lastUsedAt.getTime() > STALE_AFTER_MS
+    !ipMatchesAllowlist(
+      clientIp,
+      parseApiTokenIpRanges(token.allowedIpRanges)
+    )
   ) {
-    await db
-      .update(apiTokens)
-      .set({ lastUsedAt: now })
-      .where(eq(apiTokens.id, token.id));
+    return false;
   }
 
   const [userRow, orgRow] = await Promise.all([
@@ -95,6 +101,24 @@ export async function loadApiTokenContext<E extends CloudflareBindings>(
   const orgRecord = orgRow[0];
   if (!userRecord || !orgRecord) {
     return false;
+  }
+
+  if (!workspaceApiAccessAllows(orgRecord.metadata, clientIp)) {
+    return false;
+  }
+
+  const now = new Date();
+  // lastUsedAt is informational; writing it on every request doubles D1
+  // write volume on the hottest auth path. Refresh at most hourly.
+  const STALE_AFTER_MS = 60 * 60 * 1000;
+  if (
+    !token.lastUsedAt ||
+    now.getTime() - token.lastUsedAt.getTime() > STALE_AFTER_MS
+  ) {
+    await db
+      .update(apiTokens)
+      .set({ lastUsedAt: now })
+      .where(eq(apiTokens.id, token.id));
   }
 
   c.set("user", {

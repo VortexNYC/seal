@@ -4,7 +4,9 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 import {
   convertBytesToPdf,
   ConversionError,
+  imageBytesToPdf,
   isConvertibleFileType,
+  isImageFileType,
 } from "../../platform/document-conversion.js";
 import {
   FeatureDisabledError,
@@ -77,6 +79,36 @@ app.post("/", async (c) => {
     organizationId: payload.organizationId,
     uploadedBy: payload.sub,
   };
+
+  if (isImageFileType(contentType)) {
+    // PNG/JPEG → one-page PDF via pdf-lib in-worker (no egress, no container).
+    const originalStorageId = `originals/${id}`;
+    let pdf: Uint8Array;
+    try {
+      pdf = await imageBytesToPdf({ contentType, bytes, name: "document" });
+    } catch (error) {
+      const status = (
+        error instanceof ConversionError ? error.statusCode : 502
+      ) as ContentfulStatusCode;
+      const detail =
+        error instanceof ConversionError ? error.detail : undefined;
+      return c.json({ error: "conversion_failed", detail }, status);
+    }
+
+    await c.env.DOCUMENTS_BUCKET.put(originalStorageId, bytes, {
+      httpMetadata: { contentType },
+      customMetadata: metadata,
+    });
+    await c.env.DOCUMENTS_BUCKET.put(storageId, pdf, {
+      httpMetadata: { contentType: "application/pdf" },
+      customMetadata: {
+        ...metadata,
+        originalContentType: contentType,
+        originalKey: originalStorageId,
+      },
+    });
+    return c.json({ storageId });
+  }
 
   if (isConvertibleFileType(contentType)) {
     const originalStorageId = `originals/${id}`;

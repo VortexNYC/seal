@@ -13,24 +13,13 @@ import {
   user as userTable,
 } from "../global/schema.js";
 import { writeAuditLog } from "../platform/audit-log.js";
+import { autoStampRecipientFields } from "../platform/auto-sign-fields.js";
+import { certificateStorageKey } from "../platform/certificate-of-completion.js";
+import { generateAndStoreCertificateOfCompletion } from "../platform/certificate-store.js";
 import {
-  ESIGN_CONSENT_VERSION,
-  hashEsignConsentText,
-  readOrgEsignConsentText,
-  resolveEsignConsentText,
-} from "../platform/esign-consent.js";
-import {
-  PRIVACY_NOTICE_VERSION,
-  hashPrivacyNoticeText,
-  readOrgPrivacyNoticeText,
-  resolvePrivacyNoticeText,
-} from "../platform/privacy-notice.js";
-import { readOrgSigningCompliance } from "../platform/signing-settings.js";
-import { getSessionUser } from "../platform/session.js";
-import {
-  describeEsignOptOutMethod,
-  resolveEsignOptOutMethod,
-} from "../platform/esign-opt-out.js";
+  auditMetaFromContext,
+  tryAuditDocumentByteAccess,
+} from "../platform/document-access-audit.js";
 import {
   buildDocumentUrl,
   buildSignedPdfDownloadUrl,
@@ -40,32 +29,56 @@ import {
   sendSigningCompleteEmail,
   sendSigningOtpEmail,
 } from "../platform/email.js";
-import { autoStampRecipientFields } from "../platform/auto-sign-fields.js";
-import { generateAndStoreCertificateOfCompletion } from "../platform/certificate-store.js";
-import { certificateStorageKey } from "../platform/certificate-of-completion.js";
+import {
+  ESIGN_CONSENT_VERSION,
+  hashEsignConsentText,
+  readOrgEsignConsentText,
+  resolveEsignConsentText,
+} from "../platform/esign-consent.js";
+import {
+  describeEsignOptOutMethod,
+  resolveEsignOptOutMethod,
+} from "../platform/esign-opt-out.js";
 import { generateAndStoreFinalPdf } from "../platform/final-pdf-store.js";
+import { sha256PdfBytes } from "../platform/final-pdf.js";
+import {
+  PRIVACY_NOTICE_VERSION,
+  hashPrivacyNoticeText,
+  readOrgPrivacyNoticeText,
+  resolvePrivacyNoticeText,
+} from "../platform/privacy-notice.js";
+import { getSessionUser } from "../platform/session.js";
 import {
   isSignerAuthVerified,
   markAccessCodeVerified,
+  markSessionVerified,
   maskEmail,
   normalizeAuthMethod,
   OTP_TTL_MS,
   parseSignerAuthState,
   serializeSignerAuthState,
+  sessionMatchesRecipient,
   startEmailOtpChallenge,
   verifyAccessCode,
   verifyEmailOtpChallenge,
 } from "../platform/signer-auth.js";
+import { readOrgSigningCompliance } from "../platform/signing-settings.js";
 import {
   commitSigningSubmit,
   RecipientAlreadyCompletedError,
 } from "../platform/signing-submit.js";
 import { recordUsageEvent } from "../platform/usage-events.js";
+import {
+  mintSignToPayCheckoutSession,
+  readVortexConnect,
+} from "../platform/vortex-connect.js";
+import { syncVortexOrderForm } from "../platform/vortex-order-form.js";
 import { emitWebhookEvent } from "../platform/webhook-events.js";
 import {
-  auditMetaFromContext,
-  tryAuditDocumentByteAccess,
-} from "../platform/document-access-audit.js";
+  presentedWorkflowStatus,
+  statusAfterLastRequiredSignature,
+} from "../platform/workflow-status.js";
+import { inviteNextSequentialGroup } from "./document-send.js";
 
 /**
  * SEA-64 reopen (Vortex live evidence 2026-09-25): public-submit path used
@@ -207,6 +220,23 @@ app.openapi(signingTokenRouteDef, async (c) => {
     return c.json({ error: "Signing token has expired" }, 400);
   }
 
+  if (
+    normalizeAuthMethod(recipient.authMethod) === "email_otp" &&
+    !isSignerAuthVerified(recipient.authMethod, recipient.authenticationData)
+  ) {
+    const session = await getSessionUser(c.env, c.req.raw);
+    if (sessionMatchesRecipient(session?.user.email, recipient.email)) {
+      const authenticationData = serializeSignerAuthState(
+        markSessionVerified()
+      );
+      await db
+        .update(recipients)
+        .set({ authenticationData, updatedAt: new Date() })
+        .where(eq(recipients.id, recipient.id));
+      recipient.authenticationData = authenticationData;
+    }
+  }
+
   const docRows = await db
     .select()
     .from(documents)
@@ -216,6 +246,9 @@ app.openapi(signingTokenRouteDef, async (c) => {
   const doc = docRows[0];
   if (!doc || doc.status === "deleted" || doc.documentStatus === "deleted") {
     return c.json({ error: "Document not found" }, 404);
+  }
+  if (doc.status === "voided" || doc.status === "cancelled") {
+    return c.json({ error: "This document was voided" }, 400);
   }
 
   const ownerRows = await db
@@ -303,7 +336,7 @@ app.openapi(signingTokenRouteDef, async (c) => {
         publicId: doc.publicId,
         name: doc.name,
         status: doc.status,
-        workflowStatus: doc.status,
+        workflowStatus: presentedWorkflowStatus(doc.status),
         description: doc.description,
         ownerName: owner?.name || owner?.email,
         ownerEmail: owner?.email ?? null,
@@ -695,15 +728,24 @@ app.openapi(authChallengeRouteDef, async (c) => {
 
   const method = normalizeAuthMethod(recipient.authMethod);
   if (method !== "email_otp") {
-    return c.json({ error: "Email OTP is not required for this recipient" }, 400);
+    return c.json(
+      { error: "Email OTP is not required for this recipient" },
+      400
+    );
   }
 
-  if (isSignerAuthVerified(recipient.authMethod, recipient.authenticationData)) {
+  if (
+    isSignerAuthVerified(recipient.authMethod, recipient.authenticationData)
+  ) {
     return c.json({ error: "Already verified" }, 400);
   }
 
   const docRows = await db
-    .select({ id: documents.id, name: documents.name, status: documents.status })
+    .select({
+      id: documents.id,
+      name: documents.name,
+      status: documents.status,
+    })
     .from(documents)
     .where(eq(documents.id, recipient.documentId))
     .limit(1);
@@ -795,7 +837,9 @@ app.openapi(authVerifyRouteDef, async (c) => {
     return c.json({ success: true, method: "none" });
   }
 
-  if (isSignerAuthVerified(recipient.authMethod, recipient.authenticationData)) {
+  if (
+    isSignerAuthVerified(recipient.authMethod, recipient.authenticationData)
+  ) {
     return c.json({ success: true, method });
   }
 
@@ -911,6 +955,9 @@ app.openapi(submitRouteDef, async (c) => {
   if (doc.status === "completed") {
     return c.json({ error: "Document is already completed" }, 400);
   }
+  if (doc.status === "voided" || doc.status === "cancelled") {
+    return c.json({ error: "This document was voided" }, 400);
+  }
 
   if (["signed", "approved", "declined"].includes(recipient.status)) {
     return c.json({ error: "Recipient has already completed" }, 403);
@@ -935,10 +982,7 @@ app.openapi(submitRouteDef, async (c) => {
     if (compliance.requireSignerAccount) {
       const session = await getSessionUser(c.env, c.req.raw);
       const sessionEmail = session?.user?.email?.toLowerCase() ?? null;
-      if (
-        !sessionEmail ||
-        sessionEmail !== recipient.email.toLowerCase()
-      ) {
+      if (!sessionEmail || sessionEmail !== recipient.email.toLowerCase()) {
         return c.json(
           {
             error:
@@ -1186,14 +1230,15 @@ app.openapi(submitRouteDef, async (c) => {
     }
 
     // "viewed" still owes a signature — counting only "pending" marks the
-    // document complete as soon as the first opener signs.
+    // document complete as soon as the first opener signs. Approvers hold
+    // the envelope open the same way signers do.
     const pendingSigners = await db
       .select({ value: count() })
       .from(recipients)
       .where(
         and(
           eq(recipients.documentId, doc.id),
-          eq(recipients.role, "signer"),
+          inArray(recipients.role, ["signer", "approver"]),
           inArray(recipients.status, ["pending", "viewed"])
         )
       );
@@ -1221,198 +1266,276 @@ app.openapi(submitRouteDef, async (c) => {
       }
     }
 
+    if (pendingCount > 0 && doc.signingMode === "sequential") {
+      try {
+        await inviteNextSequentialGroup(db, c.env, {
+          documentId: doc.id,
+          documentName: doc.name,
+          senderName: owner?.name ?? owner?.email ?? "Someone",
+          completedOrder: recipient.order,
+        });
+      } catch (err) {
+        console.error("[public/submit] next signer invitation failed:", err);
+      }
+    }
+
     if (pendingCount === 0) {
-      await db
-        .update(documents)
-        .set({
-          status: "completed",
-          completedAt: nowDate,
-          updatedAt: nowDate,
+      const paymentRows = await db
+        .select({
+          id: paymentFieldConfigs.id,
+          paymentType: paymentFieldConfigs.paymentType,
+          totalAmountCents: paymentFieldConfigs.totalAmountCents,
+          currency: paymentFieldConfigs.currency,
+          customDueDate: paymentFieldConfigs.customDueDate,
+          paymentStatus: paymentFieldConfigs.paymentStatus,
+          hostedInvoiceUrl: paymentFieldConfigs.hostedInvoiceUrl,
         })
-        .where(eq(documents.id, doc.id));
+        .from(paymentFieldConfigs)
+        .where(eq(paymentFieldConfigs.documentId, doc.id));
+      const nextStatus = statusAfterLastRequiredSignature(
+        paymentRows.map((row) => row.paymentStatus)
+      );
 
-      await db.insert(activity).values({
-        id: crypto.randomUUID(),
-        organizationId: doc.organizationId,
-        action: "document.completed",
-        actorName: recipient.name ?? recipient.email,
-        targetName: doc.name,
-        metadata: JSON.stringify({
-          documentId: doc.id,
-          publicId: doc.publicId,
-        }),
-        createdAt: nowDate,
-      });
-
-      await writeAuditLog(db, {
-        organizationId: doc.organizationId,
-        actor: auditActor,
-        action: "document.completed",
-        resourceType: "document",
-        resourceId: doc.id,
-        metadata: { publicId: doc.publicId },
-        ipAddress: input.ipAddress,
-        userAgent: input.userAgent,
-      });
-
-      await recordUsageEvent(db, {
-        organizationId: doc.organizationId,
-        eventType: "document.completed",
-        metadata: { documentId: doc.id, publicId: doc.publicId },
-      });
-
-      // Emit before PDF/certificate work so Agree.com / SIEM subscribers
-      // get document.completed even if flatten/seal is slow or fails.
-      await emitSigningWebhook(c.env, {
-        organizationId: doc.organizationId,
-        eventType: "document.completed",
-        payload: {
-          documentId: doc.id,
-          publicId: doc.publicId,
-          name: doc.name,
-          completedAt: nowDate.getTime(),
-        },
-      });
-
-      const bucket = c.env.DOCUMENTS_BUCKET;
-      const appUrl = c.env.APP_URL;
-      let sealedPdfAttachment:
-        | { filename: string; content: Uint8Array; type: string }
-        | undefined;
-
-      if (bucket) {
-        try {
-          const finalPdf = await generateAndStoreFinalPdf({
-            db,
-            bucket,
+      if (nextStatus === "waiting_for_payment") {
+        await db
+          .update(documents)
+          .set({
+            status: "waiting_for_payment",
+            workflowStatus: "waiting_for_payment",
+            updatedAt: nowDate,
+          })
+          .where(eq(documents.id, doc.id));
+        await db.insert(activity).values({
+          id: crypto.randomUUID(),
+          organizationId: doc.organizationId,
+          action: "document.waiting_for_payment",
+          actorName: recipient.name ?? recipient.email,
+          targetName: doc.name,
+          metadata: JSON.stringify({
             documentId: doc.id,
-            env: c.env,
-          });
-          if (finalPdf?.storageKey) {
-            const object = await bucket.get(finalPdf.storageKey);
-            if (object) {
-              const bytes = new Uint8Array(await object.arrayBuffer());
-              // Cap attachment size — large tax PDFs still get a download link.
-              const MAX_ATTACH_BYTES = 8 * 1024 * 1024;
-              if (bytes.byteLength > 0 && bytes.byteLength <= MAX_ATTACH_BYTES) {
-                const safeName = (doc.name || "document")
-                  .replace(/[^\w.\- ]+/g, "")
-                  .trim()
-                  .slice(0, 80);
-                sealedPdfAttachment = {
-                  filename: `${safeName || "document"}-signed.pdf`,
-                  content: bytes,
-                  type: "application/pdf",
-                };
-              }
-            }
-          }
-        } catch (err) {
-          console.error("[public/submit] final PDF flatten/seal failed:", err);
-        }
-        if (appUrl) {
+            publicId: doc.publicId,
+          }),
+          createdAt: nowDate,
+        });
+
+        // SEA-123 / SEA-124 — mint the one-time Vortex payable + hosted /pay
+        // URL on the workspace's connected merchant so the signer sees "Pay now"
+        // immediately in the ceremony completion state.
+        await ensureDocumentSignToPayLinks(db, c.env, {
+          documentId: doc.id,
+          organizationId: doc.organizationId,
+          documentName: doc.name,
+          payerEmail: recipient.email,
+        });
+      } else {
+        await db
+          .update(documents)
+          .set({
+            status: "completed",
+            workflowStatus: "completed",
+            completedAt: nowDate,
+            updatedAt: nowDate,
+          })
+          .where(eq(documents.id, doc.id));
+
+        await db.insert(activity).values({
+          id: crypto.randomUUID(),
+          organizationId: doc.organizationId,
+          action: "document.completed",
+          actorName: recipient.name ?? recipient.email,
+          targetName: doc.name,
+          metadata: JSON.stringify({
+            documentId: doc.id,
+            publicId: doc.publicId,
+          }),
+          createdAt: nowDate,
+        });
+
+        await writeAuditLog(db, {
+          organizationId: doc.organizationId,
+          actor: auditActor,
+          action: "document.completed",
+          resourceType: "document",
+          resourceId: doc.id,
+          metadata: { publicId: doc.publicId },
+          ipAddress: input.ipAddress,
+          userAgent: input.userAgent,
+        });
+
+        await recordUsageEvent(db, {
+          organizationId: doc.organizationId,
+          eventType: "document.completed",
+          metadata: { documentId: doc.id, publicId: doc.publicId },
+        });
+
+        // Sign and execute the linked Vortex order before document.completed.
+        // Vortex's Seal webhook signs an order form that has no execution mode,
+        // and that order cannot be executed. Once Seal has signed it, the
+        // webhook sees a finished form and stops.
+        await syncVortexOrderForm(db, c.env, {
+          documentId: doc.id,
+          phase: "completed",
+        });
+
+        // Emit before PDF/certificate work so subscribers get
+        // document.completed even if flatten/seal is slow or fails.
+        await emitSigningWebhook(c.env, {
+          organizationId: doc.organizationId,
+          eventType: "document.completed",
+          payload: {
+            documentId: doc.id,
+            publicId: doc.publicId,
+            name: doc.name,
+            completedAt: nowDate.getTime(),
+          },
+        });
+
+        const bucket = c.env.DOCUMENTS_BUCKET;
+        const appUrl = c.env.APP_URL;
+        let sealedPdfAttachment:
+          | { filename: string; content: Uint8Array; type: string }
+          | undefined;
+
+        if (bucket) {
           try {
-            await generateAndStoreCertificateOfCompletion({
+            const finalPdf = await generateAndStoreFinalPdf({
               db,
               bucket,
               documentId: doc.id,
-              appUrl,
+              env: c.env,
             });
+            if (finalPdf?.storageKey) {
+              const object = await bucket.get(finalPdf.storageKey);
+              if (object) {
+                const bytes = new Uint8Array(await object.arrayBuffer());
+                // Cap attachment size — large tax PDFs still get a download link.
+                const MAX_ATTACH_BYTES = 8 * 1024 * 1024;
+                if (
+                  bytes.byteLength > 0 &&
+                  bytes.byteLength <= MAX_ATTACH_BYTES
+                ) {
+                  const safeName = (doc.name || "document")
+                    .replace(/[^\w.\- ]+/g, "")
+                    .trim()
+                    .slice(0, 80);
+                  sealedPdfAttachment = {
+                    filename: `${safeName || "document"}-signed.pdf`,
+                    content: bytes,
+                    type: "application/pdf",
+                  };
+                }
+              }
+            }
           } catch (err) {
             console.error(
-              "[public/submit] certificate of completion failed:",
+              "[public/submit] final PDF flatten/seal failed:",
               err
             );
           }
+          if (appUrl) {
+            try {
+              await generateAndStoreCertificateOfCompletion({
+                db,
+                bucket,
+                documentId: doc.id,
+                appUrl,
+              });
+            } catch (err) {
+              console.error(
+                "[public/submit] certificate of completion failed:",
+                err
+              );
+            }
+          }
         }
-      }
 
-      const allRecipients = await db
-        .select({
-          id: recipients.id,
-          name: recipients.name,
-          email: recipients.email,
-          role: recipients.role,
-          status: recipients.status,
-          signedAt: recipients.signedAt,
-          approvedAt: recipients.approvedAt,
-          viewedAt: recipients.viewedAt,
-          signingToken: recipients.signingToken,
-        })
-        .from(recipients)
-        .where(eq(recipients.documentId, doc.id));
+        const allRecipients = await db
+          .select({
+            id: recipients.id,
+            name: recipients.name,
+            email: recipients.email,
+            role: recipients.role,
+            status: recipients.status,
+            signedAt: recipients.signedAt,
+            approvedAt: recipients.approvedAt,
+            viewedAt: recipients.viewedAt,
+            signingToken: recipients.signingToken,
+          })
+          .from(recipients)
+          .where(eq(recipients.documentId, doc.id));
 
-      const recipientsSummary = allRecipients
-        .filter((r) => r.status !== "pending")
-        .map((r) => ({
-          name: r.name ?? r.email ?? "Unknown",
-          email: r.email,
-          role:
+        const recipientsSummary = allRecipients
+          .filter((r) => r.status !== "pending")
+          .map((r) => ({
+            name: r.name ?? r.email ?? "Unknown",
+            email: r.email,
+            role:
+              r.role === "approver"
+                ? ("approver" as const)
+                : r.role === "viewer"
+                  ? ("viewer" as const)
+                  : ("signer" as const),
+            completedAt:
+              r.signedAt?.getTime() ??
+              r.approvedAt?.getTime() ??
+              r.viewedAt?.getTime() ??
+              nowDate.getTime(),
+          }));
+
+        // Documenso-class: every party gets download link (+ PDF when small enough).
+        for (const r of allRecipients) {
+          if (!r.email || !r.signingToken) continue;
+          if (r.status === "pending" || r.status === "declined") continue;
+          const role: "signer" | "approver" | "viewer" =
             r.role === "approver"
-              ? ("approver" as const)
+              ? "approver"
               : r.role === "viewer"
-                ? ("viewer" as const)
-                : ("signer" as const),
-          completedAt:
-            r.signedAt?.getTime() ??
-            r.approvedAt?.getTime() ??
-            r.viewedAt?.getTime() ??
-            nowDate.getTime(),
-        }));
-
-      // Documenso-class: every party gets download link (+ PDF when small enough).
-      for (const r of allRecipients) {
-        if (!r.email || !r.signingToken) continue;
-        if (r.status === "pending" || r.status === "declined") continue;
-        const role: "signer" | "approver" | "viewer" =
-          r.role === "approver"
-            ? "approver"
-            : r.role === "viewer"
-              ? "viewer"
-              : "signer";
-        const downloadUrl = buildSignedPdfDownloadUrl(c.env, r.signingToken);
-        const result = await sendSigningCompleteEmail(c.env, {
-          to: r.email,
-          recipientName: r.name ?? r.email,
-          documentName: doc.name,
-          signedAt: nowDate.getTime(),
-          role,
-          downloadUrl,
-          sealedPdf: sealedPdfAttachment,
-        });
-        if (!result.success) {
-          console.error(
-            "[public/submit] sealed copy email failed:",
-            r.email,
-            result
-          );
+                ? "viewer"
+                : "signer";
+          const downloadUrl = buildSignedPdfDownloadUrl(c.env, r.signingToken);
+          const result = await sendSigningCompleteEmail(c.env, {
+            to: r.email,
+            recipientName: r.name ?? r.email,
+            documentName: doc.name,
+            signedAt: nowDate.getTime(),
+            role,
+            downloadUrl,
+            sealedPdf: sealedPdfAttachment,
+          });
+          if (!result.success) {
+            console.error(
+              "[public/submit] sealed copy email failed:",
+              r.email,
+              result
+            );
+          }
         }
-      }
 
-      if (owner?.email) {
-        // Prefer a recipient token download when owner also signed; else dashboard.
-        const ownerAsRecipient = allRecipients.find(
-          (r) =>
-            r.email?.toLowerCase() === owner.email.toLowerCase() &&
-            r.signingToken
-        );
-        const ownerDownloadUrl = ownerAsRecipient?.signingToken
-          ? buildSignedPdfDownloadUrl(c.env, ownerAsRecipient.signingToken)
-          : buildDocumentUrl(c.env, orgSlug, doc.publicId);
+        if (owner?.email) {
+          // Prefer a recipient token download when owner also signed; else dashboard.
+          const ownerAsRecipient = allRecipients.find(
+            (r) =>
+              r.email?.toLowerCase() === owner.email.toLowerCase() &&
+              r.signingToken
+          );
+          const ownerDownloadUrl = ownerAsRecipient?.signingToken
+            ? buildSignedPdfDownloadUrl(c.env, ownerAsRecipient.signingToken)
+            : buildDocumentUrl(c.env, orgSlug, doc.publicId);
 
-        const result = await sendDocumentCompletedEmail(c.env, {
-          to: owner.email,
-          senderName: owner.name ?? owner.email,
-          documentName: doc.name,
-          documentSlug: orgSlug,
-          documentPublicId: doc.publicId,
-          completedAt: nowDate.getTime(),
-          recipientsSummary,
-          downloadUrl: ownerDownloadUrl,
-          sealedPdf: sealedPdfAttachment,
-        });
-        if (!result.success) {
-          console.error("[public/submit] completed email failed:", result);
+          const result = await sendDocumentCompletedEmail(c.env, {
+            to: owner.email,
+            senderName: owner.name ?? owner.email,
+            documentName: doc.name,
+            documentSlug: orgSlug,
+            documentPublicId: doc.publicId,
+            completedAt: nowDate.getTime(),
+            recipientsSummary,
+            downloadUrl: ownerDownloadUrl,
+            sealedPdf: sealedPdfAttachment,
+          });
+          if (!result.success) {
+            console.error("[public/submit] completed email failed:", result);
+          }
         }
       }
     }
@@ -1581,7 +1704,8 @@ app.openapi(signedPdfRouteDef, async (c) => {
         via: "signing-signed-pdf",
         recipientId: recipient.id,
       },
-      ipAddress: c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
+      ipAddress:
+        c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
       userAgent: c.req.header("user-agent"),
     });
   } catch (err) {
@@ -1678,7 +1802,8 @@ app.openapi(certificateRouteDef, async (c) => {
         recipientId: recipient.id,
         artifact: "certificate_of_completion",
       },
-      ipAddress: c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
+      ipAddress:
+        c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
       userAgent: c.req.header("user-agent"),
     });
   } catch (err) {
@@ -1705,6 +1830,7 @@ const paymentConfigSummarySchema = z
     totalAmountCents: z.number().int(),
     currency: z.string(),
     paymentStatus: z.string().nullable().optional(),
+    hostedInvoiceUrl: z.string().nullable().optional(),
   })
   .openapi("PublicPaymentConfigSummary");
 
@@ -1725,6 +1851,93 @@ const signingPaymentConfigsRouteDef = createRoute({
     404: { description: "Document not found" },
   },
 });
+
+async function ensureDocumentSignToPayLinks(
+  db: ReturnType<typeof createD1>,
+  env: {
+    VORTEX_API_KEY?: string;
+    VORTEX_API_BASE_URL?: string;
+    VORTEX_PLATFORM_MERCHANT_ACCOUNT_ID?: string;
+    VORTEX_CONNECT_RATE_PLAN_ID?: string;
+  },
+  input: {
+    documentId: string;
+    organizationId: string;
+    documentName: string;
+    payerEmail: string;
+  }
+): Promise<void> {
+  if (!env.VORTEX_API_KEY) {
+    return;
+  }
+  const [orgRow] = await db
+    .select({ metadata: organization.metadata })
+    .from(organization)
+    .where(eq(organization.id, input.organizationId))
+    .limit(1);
+  const connectedMerchantId = readVortexConnect(
+    orgRow?.metadata ?? null
+  ).merchantAccountId;
+  if (connectedMerchantId === null) {
+    return;
+  }
+  const paymentRows = await db
+    .select({
+      id: paymentFieldConfigs.id,
+      paymentType: paymentFieldConfigs.paymentType,
+      totalAmountCents: paymentFieldConfigs.totalAmountCents,
+      currency: paymentFieldConfigs.currency,
+      customDueDate: paymentFieldConfigs.customDueDate,
+      paymentStatus: paymentFieldConfigs.paymentStatus,
+      hostedInvoiceUrl: paymentFieldConfigs.hostedInvoiceUrl,
+    })
+    .from(paymentFieldConfigs)
+    .where(eq(paymentFieldConfigs.documentId, input.documentId));
+
+  const nowDate = new Date();
+  for (const cfg of paymentRows) {
+    if (
+      cfg.paymentStatus === "paid" ||
+      cfg.hostedInvoiceUrl !== null ||
+      cfg.paymentType !== "one_time" ||
+      cfg.totalAmountCents <= 0
+    ) {
+      continue;
+    }
+    try {
+      const minted = await mintSignToPayCheckoutSession(env, {
+        merchantAccountId: connectedMerchantId,
+        idempotencyKey: `seal-pay-${input.documentId}-${cfg.id}`,
+        amountCents: cfg.totalAmountCents,
+        currency: cfg.currency,
+        payerEmail: input.payerEmail,
+        dueDate: cfg.customDueDate,
+        description: input.documentName,
+      });
+      await db
+        .update(paymentFieldConfigs)
+        .set({
+          paymentStatus: "awaiting",
+          vortexPayableId: minted.paymentRequestId,
+          vortexPaymentRequestId: minted.paymentRequestId,
+          ...(minted.providerInvoiceId !== null
+            ? { providerInvoiceId: minted.providerInvoiceId }
+            : {}),
+          ...(minted.checkoutUrl !== null
+            ? { hostedInvoiceUrl: minted.checkoutUrl }
+            : {}),
+          updatedAt: nowDate,
+        })
+        .where(eq(paymentFieldConfigs.id, cfg.id));
+    } catch (err) {
+      console.error("[public] vortex sign-to-pay mint failed", {
+        documentId: input.documentId,
+        paymentFieldConfigId: cfg.id,
+        reason: err instanceof Error ? err.message : "unknown",
+      });
+    }
+  }
+}
 
 app.openapi(signingPaymentConfigsRouteDef, async (c) => {
   const { token } = c.req.valid("param");
@@ -1757,6 +1970,18 @@ app.openapi(signingPaymentConfigsRouteDef, async (c) => {
     return c.json({ error: "Document not found" }, 404);
   }
 
+  if (
+    doc.status === "waiting_for_payment" ||
+    doc.workflowStatus === "waiting_for_payment"
+  ) {
+    await ensureDocumentSignToPayLinks(db, c.env, {
+      documentId: doc.id,
+      organizationId: doc.organizationId,
+      documentName: doc.name,
+      payerEmail: recipient.email,
+    });
+  }
+
   const rows = await db
     .select({
       _id: paymentFieldConfigs.publicId,
@@ -1768,6 +1993,7 @@ app.openapi(signingPaymentConfigsRouteDef, async (c) => {
       totalAmountCents: paymentFieldConfigs.totalAmountCents,
       currency: paymentFieldConfigs.currency,
       paymentStatus: paymentFieldConfigs.paymentStatus,
+      hostedInvoiceUrl: paymentFieldConfigs.hostedInvoiceUrl,
     })
     .from(paymentFieldConfigs)
     .leftJoin(
@@ -2542,6 +2768,112 @@ app.openapi(verifyRouteDef, async (c) => {
     documentHash: doc.documentHash ?? null,
     createdAt: doc.createdAt.getTime(),
   });
+});
+
+/**
+ * Verify a sealed PDF by upload — SHA-256 the submitted bytes and match
+ * `documents.documentHash`. Public + unauthenticated: the hash itself is
+ * the capability (anyone holding the PDF may verify it). Returns the same
+ * payload as the qrToken route plus `hashMatch` — a miss returns
+ * `{verified:false, hashMatch:false}` (tampered bytes or never ours).
+ */
+const verifyUploadRouteDef = createRoute({
+  method: "post",
+  path: "/verify-upload",
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/pdf": {
+          schema: { type: "string", format: "binary" },
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": {
+          schema: verifyResultSchema.extend({ hashMatch: z.boolean() }),
+        },
+      },
+      description: "Uploaded-PDF verification result",
+    },
+    400: { description: "Expected an application/pdf body" },
+    413: { description: "PDF too large to verify" },
+  },
+});
+
+const VERIFY_MAX_BYTES = 50 * 1024 * 1024;
+
+app.openapi(verifyUploadRouteDef, async (c) => {
+  const contentType = c.req.header("content-type") ?? "";
+  if (!contentType.startsWith("application/pdf")) {
+    return c.json({ error: "Expected an application/pdf body" }, 400);
+  }
+  const bytes = await c.req.arrayBuffer();
+  if (bytes.byteLength === 0 || bytes.byteLength > VERIFY_MAX_BYTES) {
+    return c.json({ error: "PDF too large to verify" }, 413);
+  }
+
+  const hash = await sha256PdfBytes(new Uint8Array(bytes));
+  const db = createD1(c.env.D1);
+  const docRows = await db
+    .select()
+    .from(documents)
+    .where(eq(documents.documentHash, hash))
+    .limit(1);
+
+  const doc = docRows[0];
+  if (!doc || doc.status !== "completed" || doc.documentStatus === "deleted") {
+    return c.json(
+      {
+        verified: false,
+        hashMatch: false,
+        documentName: "",
+        completedAt: null,
+        signerCount: 0,
+        signers: [],
+        documentHash: hash,
+        createdAt: 0,
+      },
+      200
+    );
+  }
+
+  const signers: Array<{
+    name: string;
+    maskedEmail: string;
+    role: string;
+    signedAt: number | null;
+  }> = [];
+  const recipientRows = await db
+    .select()
+    .from(recipients)
+    .where(eq(recipients.documentId, doc.id));
+  for (const r of recipientRows) {
+    if (r.status !== "signed" && r.status !== "approved") continue;
+    signers.push({
+      name: r.name ?? r.email,
+      maskedEmail: maskEmail(r.email),
+      role: r.role,
+      signedAt: r.signedAt?.getTime() ?? r.approvedAt?.getTime() ?? null,
+    });
+  }
+
+  return c.json(
+    {
+      verified: true,
+      hashMatch: true,
+      documentName: doc.name,
+      completedAt: doc.completedAt ? doc.completedAt.getTime() : null,
+      signerCount: signers.length,
+      signers,
+      documentHash: doc.documentHash ?? hash,
+      createdAt: doc.createdAt.getTime(),
+    },
+    200
+  );
 });
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -6,7 +6,6 @@ export {
   type CitationBBox,
   type CitationField,
 } from "./citation-review-panel";
-export { CsvViewer, type CsvViewerProps } from "./csv-viewer";
 export { DocumentViewerShell } from "./document-viewer-shell";
 export {
   DocumentSplitsPanel,
@@ -18,7 +17,6 @@ export {
   type DocumentPdfOpsPanelProps,
 } from "./document-pdf-ops-panel";
 export { DocxEditor, type DocxEditorProps } from "./docx-editor";
-export { DocxViewer, type DocxViewerProps } from "./docx-viewer";
 export {
   ESignature,
   type ESignatureFont,
@@ -54,17 +52,6 @@ export {
   type LayoutBlocksPanelProps,
 } from "./layout-blocks";
 export {
-  PdfEditor,
-  type PdfAnnotateOp,
-  type PdfEditorProps,
-} from "./pdf-editor";
-export { PdfViewer, type PdfViewerProps } from "./pdf-viewer";
-export {
-  PreviewPane,
-  type PreviewFormat,
-} from "./preview-pane";
-export { PptxViewer, type PptxSlide, type PptxViewerProps } from "./pptx-viewer";
-export {
   SchemaBuilderPanel,
   serializeSchema,
   type SchemaBuilderFieldType,
@@ -73,16 +60,5 @@ export {
   type SchemaBuilderScalarType,
   type SchemaBuilderSchema,
 } from "./schema-builder";
-export {
-  ThumbnailSidebar,
-  type ThumbnailPage,
-} from "./thumbnail-sidebar";
-export {
-  XlsxEditor,
-  type XlsxEditorProps,
-} from "./xlsx-editor";
-export {
-  XlsxViewer,
-  type XlsxSheet,
-  type XlsxViewerProps,
-} from "./xlsx-viewer";
+export { ThumbnailSidebar, type ThumbnailPage } from "./thumbnail-sidebar";
+export { XlsxEditor, type XlsxEditorProps } from "./xlsx-editor";

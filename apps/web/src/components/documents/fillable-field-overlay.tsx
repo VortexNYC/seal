@@ -1,20 +1,16 @@
-import {
-  CalendarIcon,
-  CheckSquareIcon,
-  ChevronDownIcon,
-  CircleDotIcon,
-  CreditCardIcon,
-  FileIcon,
-  HashIcon,
-  PenToolIcon,
-  StarIcon,
-  TypeIcon,
-} from "lucide-react";
-import { forwardRef } from "react";
+import { canvas } from "@seal/tokens/theme";
+import { Button } from "@cloudflare/kumo/components/button";
+import { Calendar as CalendarIcon, CaretDown as ChevronDownIcon, CheckSquare as CheckSquareIcon, RadioButton as CircleDotIcon, CreditCard as CreditCardIcon, File as FileIcon, Hash as HashIcon, PenNib as PenToolIcon, Star as StarIcon, TextT as TypeIcon } from "@phosphor-icons/react";
+import { forwardRef, type ReactElement } from "react";
 
-import { formatMoney, money } from "@/lib/money";
+import {
+  filledFieldText,
+  signatureCaptionOffset,
+  signatureMarkFrame,
+  signatureStamp,
+} from "@/lib/field-appearance";
 import { FIELD_TYPE_LABELS, isFieldType } from "@/lib/field-types";
-import { cn } from "@/lib/utils";
+import { formatMoney, money } from "@/lib/money";
 
 interface SignatureDetails {
   signedAt: number;
@@ -44,6 +40,9 @@ interface FillableFieldOverlayProps {
   pdfPageWidth: number;
   pdfPageHeight: number;
   isFilled: boolean;
+  currentValue?: string | null;
+  currentSignatureImageUrl?: string | null;
+  documentRef?: string;
   isActive?: boolean;
   validationError?: string;
   signatureDetails?: SignatureDetails;
@@ -94,26 +93,6 @@ function getFieldTypeLabel(fieldType: string): string {
   return fieldType;
 }
 
-// Format date for signature stamp display
-function formatSignatureDate(timestamp: number): {
-  date: string;
-  time: string;
-} {
-  const date = new Date(timestamp);
-  return {
-    date: date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    }),
-    time: date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    }),
-  };
-}
-
 function formatCurrency(amountCents: number, currency: string): string {
   return formatMoney(money(amountCents, currency.toUpperCase()), {
     locale: "en-US",
@@ -136,7 +115,7 @@ function SealFieldIcon({
   const containerWidth = size + 6;
   return (
     <div
-      className="bg-card/95 flex items-center justify-center rounded-l-sm border-r shadow-sm"
+      className="bg-kumo-base/95 flex items-center justify-center rounded-l-sm border-r shadow-sm"
       style={{
         width: containerWidth,
         height: containerHeight,
@@ -152,6 +131,56 @@ function SealFieldIcon({
         }}
       />
     </div>
+  );
+}
+
+function SignatureOnRule({
+  frame,
+  imageUrl,
+  documentRef,
+}: {
+  frame: { x: number; y: number; width: number; height: number };
+  imageUrl: string;
+  documentRef?: string;
+}): ReactElement {
+  const stamp = documentRef ? signatureStamp(documentRef) : "";
+  const roomForStamp = stamp ? 52 : 0;
+  const captionOffset = signatureCaptionOffset(frame.height);
+  return (
+    <>
+      <span
+        className="absolute text-[8px] leading-none"
+        style={{ left: frame.x, top: frame.y + captionOffset, color: "#595961" }}
+      >
+        Signed by:
+      </span>
+      <img
+        src={imageUrl}
+        alt=""
+        className="absolute object-contain object-left-bottom"
+        style={{
+          left: frame.x,
+          top: frame.y,
+          width: Math.max(frame.width - roomForStamp, 8),
+          height: frame.height,
+        }}
+      />
+      {stamp ? (
+        <span
+          className="absolute text-[7px] leading-none"
+          style={{
+            left: frame.x + Math.max(frame.width - roomForStamp, 8) + 3,
+            top:
+              captionOffset === 0
+                ? frame.y + frame.height - 8
+                : frame.y + frame.height + 1,
+            color: "#595961",
+          }}
+        >
+          {stamp}
+        </span>
+      ) : null}
+    </>
   );
 }
 
@@ -174,6 +203,9 @@ export const FillableFieldOverlay = forwardRef<
     pdfPageWidth,
     pdfPageHeight,
     isFilled,
+    currentValue,
+    currentSignatureImageUrl,
+    documentRef,
     isActive = false,
     validationError,
     signatureDetails,
@@ -193,20 +225,22 @@ export const FillableFieldOverlay = forwardRef<
   const absoluteWidth = (width / 100) * pdfPageWidth;
   const absoluteHeight = (height / 100) * pdfPageHeight;
 
-  // Check if this is a filled field that should show the stamp
   const isFilledField = isFilled && signatureDetails;
-
-  // Format signature date if available
-  const formattedDate = signatureDetails
-    ? formatSignatureDate(signatureDetails.signedAt)
-    : null;
-
   const sealIconSize = getSealIconSize(absoluteHeight, absoluteWidth);
 
   if (isFilledField && signatureDetails) {
+    const appearance = filledFieldText(fieldType, currentValue);
+    const isSignature = fieldType === "signature" || fieldType === "free_signature";
+    const frame =
+      currentSignatureImageUrl && isSignature
+        ? signatureMarkFrame(
+            { width: absoluteWidth, height: absoluteHeight },
+            { width: pdfPageWidth, height: pdfPageHeight }
+          )
+        : null;
     return (
       <div
-        className="bg-muted/80 absolute overflow-hidden rounded-sm border"
+        className={frame ? "absolute overflow-visible" : "absolute overflow-hidden bg-white"}
         style={{
           left: `${absoluteX}px`,
           top: `${absoluteY}px`,
@@ -214,65 +248,24 @@ export const FillableFieldOverlay = forwardRef<
           height: `${absoluteHeight}px`,
         }}
       >
-        <div className="absolute top-0 left-0 z-20">
-          <SealFieldIcon size={sealIconSize} containerHeight={absoluteHeight} />
-        </div>
-        {absoluteHeight >= 50 && (
+        {frame && currentSignatureImageUrl ? (
+          <SignatureOnRule
+            frame={frame}
+            imageUrl={currentSignatureImageUrl}
+            documentRef={documentRef}
+          />
+        ) : currentSignatureImageUrl ? (
+          <img
+            src={currentSignatureImageUrl}
+            alt=""
+            className="h-full w-full object-contain object-bottom"
+          />
+        ) : (
           <div
-            // vortex-allow-color: field overlay sits on the rendered PDF page, which is white paper in both themes
-            className="flex h-full flex-col justify-center bg-white/90 py-2 pr-2"
-            style={{ paddingLeft: sealIconSize + 12 }}
+            className="flex h-full items-center px-1 font-sans text-[11px] leading-tight font-medium"
+            style={{ color: canvas.filled.titleText }}
           >
-            <div className="flex flex-col gap-0.5">
-              {/* Field type */}
-              <div className="flex items-baseline gap-1">
-                <span className="text-muted-foreground text-[9px]">
-                  {getFieldTypeLabel(fieldType)}
-                </span>
-              </div>
-              {/* Signer name */}
-              <div className="flex items-baseline gap-1">
-                <span className="text-muted-foreground text-[9px]">
-                  Signed by:
-                </span>
-                <span className="text-foreground truncate text-[10px] font-semibold">
-                  {signatureDetails.signerName || signatureDetails.signerEmail}
-                </span>
-              </div>
-              {/* Date and time */}
-              {formattedDate && (
-                <div className="flex items-baseline gap-1">
-                  <span className="text-muted-foreground text-[9px]">
-                    Date:
-                  </span>
-                  <span className="text-foreground/70 text-[9px]">
-                    {formattedDate.date} at {formattedDate.time}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {absoluteHeight < 50 && absoluteHeight >= 30 && (
-          <div
-            // vortex-allow-color: field overlay sits on the rendered PDF page, which is white paper in both themes
-            className="flex h-full flex-col justify-center bg-white/90 py-0.5 pr-1"
-            style={{ paddingLeft: sealIconSize + 10 }}
-          >
-            <div className="text-muted-foreground text-[8px]">
-              <div className="truncate font-medium">
-                {getFieldTypeLabel(fieldType)}
-              </div>
-              <div className="mt-0.5 truncate text-[7px]">
-                {signatureDetails.signerName || signatureDetails.signerEmail}
-              </div>
-              {formattedDate && (
-                <div className="mt-0.5 truncate text-[7px]">
-                  {formattedDate.date} at {formattedDate.time}
-                </div>
-              )}
-            </div>
+            {appearance}
           </div>
         )}
       </div>
@@ -280,26 +273,14 @@ export const FillableFieldOverlay = forwardRef<
   }
 
   return (
-    <button
+    <Button
       ref={ref}
       type="button"
+      variant={isFilled ? "secondary" : isRequired ? "destructive" : "outline"}
       onClick={() => onClick(fieldId)}
-      aria-label={`${label} ${isRequired ? "required " : ""}field, ${getFieldTypeLabel(fieldType)}${
-        isMainSignature ? ", main signature" : ""
-      }`}
+      aria-label={`${label} ${isRequired ? "required " : ""}field, ${getFieldTypeLabel(fieldType)}${isMainSignature ? ", main signature" : ""}`}
       data-seal-field-active={isActive ? "true" : undefined}
-      className={cn(
-        "group absolute cursor-pointer rounded-sm border-2 transition-colors",
-        "hover:border-primary hover:bg-primary/5",
-        "flex items-center justify-center text-xs",
-        isFilled
-          ? "border-success bg-success-surface/50"
-          : isRequired
-            ? "border-destructive bg-destructive/5"
-            : "border-info bg-info-surface/30",
-        isActive && "ring-primary border-primary ring-2 ring-offset-2",
-        isMainSignature && !isActive && "ring-warning ring-2"
-      )}
+      className="absolute p-0"
       style={{
         left: `${absoluteX}px`,
         top: `${absoluteY}px`,
@@ -316,47 +297,45 @@ export const FillableFieldOverlay = forwardRef<
         style={{ paddingLeft: sealIconSize + 10 }}
       >
         <div className="flex items-center gap-1">
-          {isMainSignature && <StarIcon className="text-warning h-3 w-3" />}
+          {isMainSignature && <StarIcon className="text-kumo-warning h-3 w-3" />}
           {getFieldIcon(fieldType)}
           {absoluteWidth > 80 && (
-            <span className="max-w-[60px] truncate text-[10px] font-medium">
+            <span className="text-xs max-w-15 truncate font-medium">
               {getFieldTypeLabel(fieldType)}
             </span>
           )}
         </div>
         {isFilled && absoluteHeight > 25 && (
-          <div className="text-success text-[9px] font-medium">
+          <div className="text-kumo-success text-xs font-medium">
             {fieldType === "payment" && paymentInfo
               ? `✓ ${paymentInfo.paymentStatus === "paid" ? "Paid" : "Pending"}`
               : "✓ Filled"}
           </div>
         )}
         {!isFilled && isRequired && absoluteHeight > 25 && (
-          <div className="text-destructive text-[9px] font-medium">
-            Required
-          </div>
+          <div className="text-kumo-danger text-xs font-medium">Required</div>
         )}
         {fieldType === "payment" && paymentInfo && absoluteHeight > 25 && (
-          <div className="text-field-payment text-[9px] font-semibold">
+          <div className="text-kumo-info text-xs font-semibold">
             {paymentInfo.paymentStatus === "paid" ? "✓ " : ""}
             {formatCurrency(paymentInfo.totalAmountCents, paymentInfo.currency)}
           </div>
         )}
         {isMainSignature && absoluteHeight > 30 && (
-          <div className="text-warning text-[8px] font-medium">
+          <div className="text-kumo-warning text-xs font-medium">
             Document Signature
           </div>
         )}
       </div>
 
       {/* Tooltip for smaller fields — visible on hover and focus */}
-      <div className="bg-popover text-popover-foreground absolute top-full left-0 z-10 mt-1 hidden rounded-md border p-2 text-xs whitespace-nowrap shadow-md group-hover:block group-focus:block">
+      <div className="bg-kumo-elevated text-kumo-default absolute top-full left-0 z-10 mt-1 hidden rounded-md border p-2 text-xs whitespace-nowrap shadow-md group-hover:block group-focus:block">
         <div className="font-medium">{label}</div>
-        <div className="text-muted-foreground text-[10px]">
+        <div className="text-kumo-secondary text-xs">
           {getFieldTypeLabel(fieldType)}
           {isRequired && " • Required"}
           {fieldType === "payment" && paymentInfo && (
-            <span className="text-field-payment ml-1 font-semibold">
+            <span className="text-kumo-info ml-1 font-semibold">
               • {paymentInfo.paymentStatus === "paid" ? "Paid " : ""}
               {formatCurrency(
                 paymentInfo.totalAmountCents,
@@ -367,11 +346,11 @@ export const FillableFieldOverlay = forwardRef<
         </div>
 
         {validationError && (
-          <div className="text-destructive mt-1 max-w-[200px] text-[10px]">
+          <div className="text-kumo-danger text-xs mt-1 max-w-50">
             ⚠ {validationError}
           </div>
         )}
       </div>
-    </button>
+    </Button>
   );
 });

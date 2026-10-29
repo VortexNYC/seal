@@ -25,7 +25,7 @@ echo "$who" | head -20
 
 # Selfhost uses seal-selfhost-* worker/D1/R2 names — safe beside hosted
 # seal-api / seal-web. Still prefer a non-Vortex account for customer-shaped proof.
-VORTEX_CF_ACCOUNT_ID="31bfc2c14a28e0a39e8b9e3c556a18be"
+VORTEX_CF_ACCOUNT_ID="953346ce1b4f27fa04a76d83aeccab28"
 if echo "$who" | grep -q "$VORTEX_CF_ACCOUNT_ID"; then
   echo "NOTE: logged into the Vortex Cloudflare account."
   echo "      Deploying seal-selfhost-* (not production seal-api / seal-web)."

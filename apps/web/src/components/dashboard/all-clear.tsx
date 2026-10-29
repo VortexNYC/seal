@@ -3,6 +3,8 @@
  */
 
 import { Button } from "@cloudflare/kumo/components/button";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Text } from "@cloudflare/kumo/components/text";
 import { CheckCircle, UploadSimple } from "@phosphor-icons/react";
 import { useRouter } from "@tanstack/react-router";
 import type { ReactElement } from "react";
@@ -15,28 +17,28 @@ export function AllClear({ slug }: AllClearProps): ReactElement {
   const router = useRouter();
 
   return (
-    <div
+    <LayerCard
       data-testid="dashboard-all-clear"
-      className="border-border bg-card flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between"
+      className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
     >
       <div className="flex items-start gap-3">
         <CheckCircle
-          className="text-success mt-0.5 size-5 shrink-0"
+          className="text-kumo-success mt-0.5 size-5 shrink-0"
           weight="fill"
         />
         <div className="flex flex-col gap-0.5">
-          <p className="text-sm font-semibold">Nothing blocked</p>
-          <p className="text-muted-foreground text-sm">
+          <Text size="sm">Nothing blocked</Text>
+          <Text variant="secondary" size="sm">
             No stale signers, deadlines, or bounced emails. Send the next
             document when you&apos;re ready.
-          </p>
+          </Text>
         </div>
       </div>
       <Button
         type="button"
         variant="primary"
-        className="bg-foreground text-background hover:bg-foreground/90 shrink-0"
-        icon={<UploadSimple className="size-4" />}
+        className="shrink-0"
+        icon={UploadSimple}
         onClick={() =>
           void router.navigate({
             to: "/$slug/documents",
@@ -47,6 +49,6 @@ export function AllClear({ slug }: AllClearProps): ReactElement {
       >
         Upload PDF
       </Button>
-    </div>
+    </LayerCard>
   );
 }

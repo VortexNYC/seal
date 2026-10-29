@@ -25,4 +25,4 @@ export const MOTION_SUCCESS =
 
 /** Interactive row / chip press feedback */
 export const MOTION_PRESS =
-  "transition-[transform,background-color,color,box-shadow] duration-150 ease-out active:scale-[0.985] motion-reduce:active:scale-100";
+  "transition-all duration-150 ease-out active:scale-98.5 motion-reduce:active:scale-100";

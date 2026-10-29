@@ -22,7 +22,7 @@ describe("cn", () => {
 
   test("resolves Tailwind conflicts with last-wins", () => {
     expect(cn("p-4", "p-2")).toBe("p-2");
-    expect(cn("text-red-500", "text-blue-500")).toBe("text-blue-500");
+    expect(cn("text-lg", "text-2xl")).toBe("text-2xl");
     expect(cn("bg-white", "bg-black")).toBe("bg-black");
   });
 

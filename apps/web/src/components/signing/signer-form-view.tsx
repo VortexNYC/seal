@@ -1,8 +1,9 @@
+import { Text } from "@cloudflare/kumo/components/text";
+import { Button } from "@cloudflare/kumo/components/button";
 import { CheckCircle, Circle } from "@phosphor-icons/react";
 import type { JSX } from "react";
 
 import { FIELD_TYPE_LABELS, type FieldType } from "@/lib/field-types";
-import { cn } from "@/lib/utils";
 
 export type SignerFormField = {
   id: string;
@@ -43,19 +44,15 @@ export function SignerFormView({
         className="border-kumo-hairline/50 bg-kumo-elevated rounded-xl border p-6 text-center"
         data-testid="signer-form-view-empty"
       >
-        <p className="text-kumo-secondary text-sm">
-          No fields to complete on this document.
-        </p>
+        <Text as="p" variant="secondary" size="sm">No fields to complete on this document.</Text>
       </div>
     );
   }
 
   return (
     <div className="space-y-3" data-testid="signer-form-view">
-      <p className="text-kumo-secondary text-sm">
-        Tap a field to fill it. You can switch to the document anytime.
-      </p>
-      <ul className="divide-border border-border bg-background divide-y overflow-hidden rounded-xl border">
+      <Text as="p" variant="secondary" size="sm">Tap a field to fill it. You can switch to the document anytime.</Text>
+      <ul className="divide-kumo-line border-kumo-line bg-kumo-canvas divide-y overflow-hidden rounded-xl border">
         {fields.map((field, index) => {
           const isActive = activeFieldId === field.id;
           const title =
@@ -64,27 +61,20 @@ export function SignerFormView({
               : typeLabel(field.fieldType);
           return (
             <li key={field.id}>
-              <button
+              <Button
                 type="button"
+                variant={isActive ? "secondary" : "ghost"}
                 data-testid={`signer-form-field-${field.id}`}
                 disabled={disabled}
                 aria-current={isActive ? "true" : undefined}
+                className="h-auto w-full justify-start"
                 onClick={() => {
                   onSelectField(field.id);
                 }}
-                className={cn(
-                  "flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors",
-                  "hover:bg-kumo-elevated focus-visible:bg-kumo-elevated focus-visible:outline-none",
-                  isActive && "bg-kumo-elevated",
-                  disabled && "opacity-60"
-                )}
               >
                 <span className="mt-0.5 shrink-0" aria-hidden>
                   {field.isFilled ? (
-                    <CheckCircle
-                      className="text-kumo-success h-5 w-5"
-                      weight="fill"
-                    />
+                    <CheckCircle className="text-kumo-default h-5 w-5" />
                   ) : (
                     <Circle className="text-kumo-secondary h-5 w-5" />
                   )}
@@ -106,7 +96,7 @@ export function SignerFormView({
                     {field.isFilled ? " · Done" : ""}
                   </span>
                 </span>
-              </button>
+              </Button>
             </li>
           );
         })}

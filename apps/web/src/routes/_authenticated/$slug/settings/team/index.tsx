@@ -1,6 +1,8 @@
+import { Text } from "@cloudflare/kumo/components/text";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   AuthProvider,
+  invitationAcceptHref,
   InviteMemberForm,
   isOrganizationAdminRole,
   OrganizationMembers,
@@ -38,34 +40,39 @@ function TeamSettings() {
   return (
     <AuthProvider client={client}>
       <PageWrapper title="Team">
-        <SettingsBody wide>
-        <div className="flex flex-col gap-5">
-          {!isPro && (
-            <p className="text-muted-foreground text-sm">
-              Inviting teammates requires Pro. You can still view members on
-              Free.
-            </p>
-          )}
+        <SettingsBody>
+          <div className="flex flex-col gap-5">
+            {!isPro && (
+              <Text as="p" variant="secondary" size="sm">Inviting teammates requires Pro. You can still view members on
+                Free.</Text>
+            )}
 
-          {isPro && canManage && (
-            <InviteMemberForm
+            {isPro && canManage && (
+              <InviteMemberForm
+                className="w-full max-w-none"
+                title="Invite member"
+                description="Add a teammate to this workspace."
+                buildInvitationHref={(invitation) =>
+                  invitationAcceptHref({
+                    origin: window.location.origin,
+                    path: "/accept-invite",
+                    invitationId: invitation.id,
+                  })
+                }
+              />
+            )}
+
+            <OrganizationMembers
               className="w-full max-w-none"
-              title="Invite member"
-              description="Add a teammate to this workspace."
+              canManageMembers={canManage}
+              onMemberRemoved={() => {
+                // better-auth-ui reloads internally; no external refetch needed
+              }}
+              onInvitationCancelled={() => {
+                // better-auth-ui reloads internally
+              }}
             />
-          )}
-
-          <OrganizationMembers
-            className="w-full max-w-none"
-            canManageMembers={canManage}
-            onMemberRemoved={() => {
-              // better-auth-ui reloads internally; no external refetch needed
-            }}
-            onInvitationCancelled={() => {
-              // better-auth-ui reloads internally
-            }}
-          />
-        </div>
+          </div>
         </SettingsBody>
       </PageWrapper>
     </AuthProvider>

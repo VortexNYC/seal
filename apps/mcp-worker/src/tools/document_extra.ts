@@ -9,6 +9,12 @@ import {
   type BulkOperationSummary,
   type BulkSendDocumentsInput,
   bulkSendDocumentsSchema,
+  type CopyDocumentInput,
+  copyDocumentSchema,
+  type ForwardDocumentInput,
+  forwardDocumentSchema,
+  type ForwardEnvelopeInput,
+  forwardEnvelopeSchema,
   type BulkVoidDocumentsInput,
   bulkVoidDocumentsSchema,
   type GetDocumentAccessInput,
@@ -106,7 +112,7 @@ export function registerDocumentExtraTools(
   // Bulk send
   server.tool(
     "seal_bulk_send_documents",
-    "Send multiple draft documents for signing at once. Maximum 50 documents per request. Each document must be in draft status and have at least one recipient — documents that don't meet these criteria will be reported as failures. An optional custom message can be included in all signing invitation emails. Returns per-document success/failure details.",
+    "Send multiple draft documents for signing at once. Maximum 50 documents per request. Each document is invited the same way as a single send, including sequential order. Each document must be in draft status and have at least one recipient — documents that don't meet these criteria will be reported as failures. An optional custom message can be included in the invitation emails. Returns per-document success/failure details.",
     bulkSendDocumentsSchema.shape,
     async (args, extra) => {
       const { document_ids, message } = args as BulkSendDocumentsInput;
@@ -118,6 +124,78 @@ export function registerDocumentExtraTools(
         authToken
       );
 
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(response, null, 2),
+          },
+        ],
+      };
+    }
+  );
+
+  server.tool(
+    "seal_copy_document",
+    "Copy a document into a new draft now. Copies the file, recipients, and fields. Does not copy signatures or completion. Save as template is the reusable path; this is the one-off second draft.",
+    copyDocumentSchema.shape,
+    async (args, extra) => {
+      const { id } = args as CopyDocumentInput;
+      const authToken = getAuthToken(extra);
+      const response = await client.post<{ id: string; public_id: string }>(
+        "/documents/copy",
+        {},
+        { id },
+        authToken
+      );
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(response, null, 2),
+          },
+        ],
+      };
+    }
+  );
+
+  server.tool(
+    "seal_forward_document",
+    "Email the executed PDF of a completed document to someone who is not a signer. Use this for counsel or the other side after completion. Fails if the document is not completed.",
+    forwardDocumentSchema.shape,
+    async (args, extra) => {
+      const { id, email } = args as ForwardDocumentInput;
+      const authToken = getAuthToken(extra);
+      const response = await client.post<{ sent: boolean }>(
+        "/documents/forward",
+        { email },
+        { id },
+        authToken
+      );
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(response, null, 2),
+          },
+        ],
+      };
+    }
+  );
+
+  server.tool(
+    "seal_forward_envelope",
+    "Start a new draft envelope from the executed PDF of a completed document. The new envelope has that signed file and no signers. Use this when someone else must sign the finished PDF. Fails if the document is not completed.",
+    forwardEnvelopeSchema.shape,
+    async (args, extra) => {
+      const { id } = args as ForwardEnvelopeInput;
+      const authToken = getAuthToken(extra);
+      const response = await client.post<{ id: string; public_id: string }>(
+        "/documents/forward-envelope",
+        {},
+        { id },
+        authToken
+      );
       return {
         content: [
           {
