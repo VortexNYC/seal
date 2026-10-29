@@ -30,7 +30,7 @@ interface FieldButtonProps {
 }
 
 /** Everyday send-path types — rest live under More. */
-const PRIMARY_FIELD_TYPES: readonly FieldType[] = [
+export const PRIMARY_FIELD_TYPES: readonly FieldType[] = [
   "signature",
   "initials",
   "name",
@@ -164,6 +164,7 @@ function FieldButton({
       type="button"
       variant="secondary"
       className="w-full cursor-grab justify-start active:cursor-grabbing"
+      data-testid={`field-toolbar-${type}`}
       draggable={!disabled}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
