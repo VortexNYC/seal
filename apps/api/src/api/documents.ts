@@ -4196,16 +4196,17 @@ app.openapi(signRouteDef, async (c) => {
     createdAt: now,
   });
 
-  if (recipient.role === "signer") {
+  if (recipient.role === "signer" || recipient.role === "approver") {
     // "viewed" still owes a signature — counting only "pending" completes
     // early when co-signers have opened but not signed.
+    // Approvers hold the envelope open the same way signers do.
     const pendingSigners = await db
       .select({ value: count() })
       .from(recipients)
       .where(
         and(
           eq(recipients.documentId, doc.id),
-          eq(recipients.role, "signer"),
+          inArray(recipients.role, ["signer", "approver"]),
           inArray(recipients.status, ["pending", "viewed"])
         )
       );
