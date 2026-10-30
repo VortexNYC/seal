@@ -1,5 +1,5 @@
 import { apiKey } from "@better-auth/api-key";
-import { renderPasswordReset } from "@seal/transactional";
+import { renderEmailVerification, renderPasswordReset } from "@seal/transactional";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { betterAuth } from "better-auth/minimal";
 import {
@@ -101,6 +101,10 @@ export async function createAuth(env: CloudflareBindings) {
     },
     emailAndPassword: {
       enabled: true,
+      // Verification emails go out on sign-up; sign-in itself is NOT gated
+      // on verification — legacy accounts predate the flag and would be
+      // locked out. Verified state still gates account linking via
+      // requireLocalEmailVerified.
       sendResetPassword: async ({ user, url }) => {
         const html = await renderPasswordReset({
           recipientName: user.name ?? "",
@@ -113,6 +117,23 @@ export async function createAuth(env: CloudflareBindings) {
         });
         if (!result.success) {
           console.error("[auth] reset password email failed:", result.error);
+        }
+      },
+    },
+    emailVerification: {
+      sendOnSignUp: true,
+      sendVerificationEmail: async ({ user, url }) => {
+        const html = await renderEmailVerification({
+          recipientName: user.name ?? "",
+          verificationUrl: url,
+        });
+        const result = await sendEmail(env, {
+          to: user.email,
+          subject: "Verify your Seal email",
+          html,
+        });
+        if (!result.success) {
+          console.error("[auth] verification email failed:", result.error);
         }
       },
     },

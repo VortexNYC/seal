@@ -57,6 +57,10 @@ async function adminCookie(): Promise<string> {
   await auth.api.signUpEmail({
     body: { email, password, name: "SAML Admin" },
   });
+  await createD1(env.D1)
+    .update(user)
+    .set({ emailVerified: true })
+    .where(eq(user.email, email));
   const res = await auth.api.signInEmail({
     body: { email, password },
     asResponse: true,

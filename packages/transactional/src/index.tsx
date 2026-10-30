@@ -37,6 +37,10 @@ import {
   type DocumentViewedProps,
 } from "./emails/document-viewed.js";
 import {
+  EmailVerification,
+  type EmailVerificationProps,
+} from "./emails/email-verification.js";
+import {
   OwnershipTransferred,
   type OwnershipTransferredProps,
 } from "./emails/ownership-transferred.js";
@@ -68,6 +72,7 @@ export {
   DocumentReminder,
   DocumentShared,
   DocumentViewed,
+  EmailVerification,
   PasswordReset,
   PaymentDunning,
   SigningComplete,
@@ -199,6 +204,12 @@ export async function renderPasswordReset(
   props: PasswordResetProps
 ): Promise<string> {
   return render(<PasswordReset {...props} />);
+}
+
+export async function renderEmailVerification(
+  props: EmailVerificationProps
+): Promise<string> {
+  return render(<EmailVerification {...props} />);
 }
 
 /**

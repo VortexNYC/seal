@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
 import { createD1 } from "../global/db.js";
-import { member } from "../global/schema.js";
+import { member, user } from "../global/schema.js";
 import app from "../index.js";
 import { createAuth } from "../platform/auth.js";
 
@@ -26,6 +26,12 @@ async function getSessionCookie(): Promise<string> {
   await auth.api.signUpEmail({
     body: { email, password, name: "SCIM Admin" },
   });
+  // requireEmailVerification blocks sign-in for unverified users — the test
+  // marks the row verified rather than going through the email flow.
+  await createD1(env.D1)
+    .update(user)
+    .set({ emailVerified: true })
+    .where(eq(user.email, email));
   const signInRes = await auth.api.signInEmail({
     body: { email, password },
     asResponse: true,
