@@ -2829,6 +2829,12 @@ export async function getPublicSigningPdf(token: string): Promise<Blob> {
   }
   return blob;
 }
+
+/** Unsigned document copy for signer header download (DocuSeal-class). */
+export function getPublicSigningPdfDownloadUrl(token: string): string {
+  return `${getBaseUrl()}/api/public/signing/${encodeURIComponent(token)}/pdf`;
+}
+
 export async function recordPublicSigningConsent(
   token: string,
   input: {

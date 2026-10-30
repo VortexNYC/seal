@@ -16,7 +16,6 @@ import { Dialog } from "@cloudflare/kumo/components/dialog";
 import { Label } from "@cloudflare/kumo/components/label";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { SkeletonLine } from "@cloudflare/kumo/components/loader";
-import { Meter } from "@cloudflare/kumo/components/meter";
 import {
   CheckCircle,
   Clock,
@@ -56,6 +55,7 @@ import {
   getClientIp,
   getPublicSigningPaymentConfigs,
   getPublicSigningPdf,
+  getPublicSigningPdfDownloadUrl,
   getPublicSigningSignedPdfUrl,
   getSigningByToken,
   getSigningFields,
@@ -757,11 +757,28 @@ function SigningPage() {
   };
 
   // Download signed PDF handler
-  const handleDownload = () => {
+  const handleDownloadSigned = () => {
     setIsDownloading(true);
     try {
       const link = document.createElement("a");
       link.href = getPublicSigningSignedPdfUrl(token);
+      link.download = `${doc.name || "document"}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("Download started");
+    } catch {
+      toast.error("Failed to download document");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleDownloadDocumentCopy = () => {
+    setIsDownloading(true);
+    try {
+      const link = document.createElement("a");
+      link.href = getPublicSigningPdfDownloadUrl(token);
       link.download = `${doc.name || "document"}.pdf`;
       document.body.appendChild(link);
       link.click();
@@ -853,36 +870,9 @@ function SigningPage() {
     recipient.status === "approved" ||
     recipient.status === "declined";
 
-  const isSigningActionDisabled =
-    isCompleted ||
-    submitSignatureMutation.isPending ||
-    !allRequiredFieldsFilled;
-  const signingButtonLabel = useMemo(() => {
-    if (!allRequiredFieldsFilled) {
-      return `Please complete ${unfilledRequiredCount} more required field${unfilledRequiredCount === 1 ? "" : "s"}`;
-    }
-    const hasFilledSignature =
-      isMainSignatureFilled ||
-      fields.some((f) => f.fieldType === "signature" && f.isFilled);
-    if (hasFilledSignature) {
-      return recipient.role === "signer"
-        ? "Submit Signature"
-        : recipient.role === "approver"
-          ? "Submit Approval"
-          : "Submit";
-    }
-    return recipient.role === "signer"
-      ? "Sign Document"
-      : recipient.role === "approver"
-        ? "Approve Document"
-        : "Mark as Viewed";
-  }, [
-    allRequiredFieldsFilled,
-    isMainSignatureFilled,
-    fields,
-    recipient.role,
-    unfilledRequiredCount,
-  ]);
+  const isPrimaryActionDisabled =
+    isCompleted || submitSignatureMutation.isPending;
+
   const activeField = useMemo(
     () => (activeFieldId ? fields.find((f) => f._id === activeFieldId) : null),
     [activeFieldId, fields]
@@ -971,6 +961,49 @@ function SigningPage() {
     }
     setShowFieldInput(true);
   }, [navigationQueue, scrollToField, viewMode]);
+
+  const primaryActionLabel = useMemo((): string => {
+    if (!allRequiredFieldsFilled) {
+      const next = navigationQueue[0];
+      const nextTitle =
+        next?.label?.trim() ||
+        (next?.fieldType === "signature" ? "Signature" : "Field");
+      if (unfilledRequiredCount === 1) {
+        return `Continue — ${nextTitle}`;
+      }
+      return `Continue (${unfilledRequiredCount} required)`;
+    }
+    const hasFilledSignature =
+      isMainSignatureFilled ||
+      fields.some((f) => f.fieldType === "signature" && f.isFilled);
+    if (hasFilledSignature) {
+      return recipient.role === "signer"
+        ? "Submit signature"
+        : recipient.role === "approver"
+          ? "Submit approval"
+          : "Submit";
+    }
+    return recipient.role === "signer"
+      ? "Sign document"
+      : recipient.role === "approver"
+        ? "Approve document"
+        : "Mark as viewed";
+  }, [
+    allRequiredFieldsFilled,
+    navigationQueue,
+    unfilledRequiredCount,
+    isMainSignatureFilled,
+    fields,
+    recipient.role,
+  ]);
+
+  const handlePrimarySigningAction = (): void => {
+    if (!allRequiredFieldsFilled) {
+      goToNextUnfilledField();
+      return;
+    }
+    handleSignButtonClick();
+  };
 
   // Auto-jump to first unfilled field once ready (PDF paint or Form View).
   useEffect(() => {
@@ -1130,7 +1163,7 @@ function SigningPage() {
         recipientEmail={recipient.email}
         onAccept={handleConsentAccept}
         onDecline={handleConsentDecline}
-        onDownloadPdf={handleDownload}
+        onDownloadPdf={handleDownloadDocumentCopy}
         onOptOut={handleOptOut}
         isSubmitting={isConsentSubmitting}
         customConsentText={signingSettings?.esignConsentText ?? undefined}
@@ -1143,15 +1176,57 @@ function SigningPage() {
     ? { "--brand-primary": branding.brandColor }
     : {};
 
-  const remainingCount = unfilledFields.length;
-  const progressLabel =
-    requiredFields.length === 0
-      ? "Ready to sign"
-      : remainingCount === 0
-        ? "You're ready — sign below"
-        : remainingCount === 1
-          ? "1 field left"
-          : `${remainingCount} fields left`;
+  const signingHeaderActions = (
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      {branding?.logoUrl ? (
+        <img
+          src={branding.logoUrl}
+          alt=""
+          className="mr-auto h-8 max-w-35 object-contain sm:mr-0"
+        />
+      ) : null}
+      {!isCompleted && pdfUrl ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          icon={Download}
+          loading={isDownloading}
+          onClick={handleDownloadDocumentCopy}
+          disabled={isDownloading}
+          data-testid="signer-header-download"
+        >
+          Download
+        </Button>
+      ) : null}
+      {isCompleted && recipient.status !== "declined" ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          icon={Download}
+          loading={isDownloading}
+          onClick={handleDownloadSigned}
+          disabled={isDownloading}
+          data-testid="signer-header-download"
+        >
+          Download
+        </Button>
+      ) : null}
+      {!isCompleted && !(isEmbedded && embedParams.hideDecline) ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={handleDeclineClick}
+          disabled={declineMutation.isPending}
+          data-testid="signer-header-decline"
+        >
+          Decline
+        </Button>
+      ) : null}
+    </div>
+  );
 
   const documentSurface = (
     <div ref={pdfContainerRef} className="w-full min-w-0">
@@ -1255,7 +1330,7 @@ function SigningPage() {
         <ButtonGroup
           aria-label="Signing view"
           data-testid="signer-view-toggle"
-          className="bg-kumo-elevated w-full rounded-lg p-1"
+          className="bg-kumo-elevated w-full rounded-lg p-1 md:hidden"
         >
           <Button
             type="button"
@@ -1327,32 +1402,38 @@ function SigningPage() {
       )}
 
       {!isCompleted && fields.length > 0 && (
+        <Text as="p" variant="secondary" size="xs" data-testid="signer-field-hint">
+          {allRequiredFieldsFilled
+            ? "All required fields complete"
+            : unfilledRequiredCount === 1
+              ? "1 required field left"
+              : `${unfilledRequiredCount} required fields left`}
+        </Text>
+      )}
+
+      {!isCompleted && !showSignatureCapture && (
         <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between gap-2">
-            <Text as="p" size="sm" bold>{progressLabel}</Text>
-            <span className="text-kumo-secondary text-xs tabular-nums">
-              {filledRequiredFields.length}/{requiredFields.length}
-            </span>
-          </div>
-          <Meter
-            label="Field completion"
-            value={fieldCompletionPercent}
-            showValue={false}
-          />
-          {remainingCount > 0 && (
-            <Button
-              type="button"
-              variant="secondary"
-              size="lg"
-              className="w-full"
-              data-testid="signer-next-field"
-              onClick={goToNextUnfilledField}
-            >
-              {remainingCount === 1
-                ? "Go to signature field"
-                : `Next field (${remainingCount} left)`}
-            </Button>
-          )}
+          <Button
+            size="lg"
+            className="w-full"
+            icon={submitSignatureMutation.isPending ? undefined : Pen}
+            style={
+              branding?.brandColor
+                ? {
+                    backgroundColor: branding.brandColor,
+                    borderColor: branding.brandColor,
+                  }
+                : undefined
+            }
+            onClick={handlePrimarySigningAction}
+            disabled={isPrimaryActionDisabled}
+            aria-label={primaryActionLabel}
+            data-testid="signer-primary-action"
+          >
+            {submitSignatureMutation.isPending
+              ? "Submitting..."
+              : primaryActionLabel}
+          </Button>
         </div>
       )}
 
@@ -1385,42 +1466,6 @@ function SigningPage() {
         </div>
       )}
 
-      {!isCompleted && !showSignatureCapture && (
-        <div className="flex flex-col gap-2">
-          <Button
-            size="lg"
-            className="w-full"
-            icon={submitSignatureMutation.isPending ? undefined : Pen}
-            style={
-              branding?.brandColor
-                ? {
-                    backgroundColor: branding.brandColor,
-                    borderColor: branding.brandColor,
-                  }
-                : undefined
-            }
-            onClick={handleSignButtonClick}
-            disabled={isSigningActionDisabled}
-            aria-label={signingButtonLabel}
-          >
-            {submitSignatureMutation.isPending
-              ? "Submitting..."
-              : signingButtonLabel}
-          </Button>
-          {!(isEmbedded && embedParams.hideDecline) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full"
-              onClick={handleDeclineClick}
-              disabled={declineMutation.isPending}
-            >
-              Decline to sign
-            </Button>
-          )}
-        </div>
-      )}
-
       {isCompleted && recipient.status !== "declined" && (
         <div className="flex flex-col gap-3" data-seal-success>
           <div className="text-kumo-default flex items-center gap-2">
@@ -1431,18 +1476,7 @@ function SigningPage() {
                 : "You're done"}
             </span>
           </div>
-          <Text as="p" variant="secondary" size="sm">You&apos;re done — you can close this tab.</Text>
-          <Button
-            variant="outline"
-            size="lg"
-            className="w-full"
-            icon={Download}
-            loading={isDownloading}
-            onClick={handleDownload}
-            disabled={isDownloading}
-          >
-            {isDownloading ? "Preparing..." : "Download document"}
-          </Button>
+          <Text as="p" variant="secondary" size="sm">You&apos;re done — use Download above or close this tab.</Text>
           {showRedirect && doc.redirectUrl && (
             <RedirectCountdown
               redirectUrl={doc.redirectUrl}
@@ -1505,15 +1539,7 @@ function SigningPage() {
         }
         document={signerDocumentPane}
         widget={actionWidget}
-        headerActions={
-          branding?.logoUrl ? (
-            <img
-              src={branding.logoUrl}
-              alt=""
-              className="h-8 max-w-35 object-contain"
-            />
-          ) : undefined
-        }
+        headerActions={signingHeaderActions}
       />
 
       {/* Signature Capture Modal */}

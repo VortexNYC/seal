@@ -133,7 +133,7 @@ Next embed work = **same SEA-78 widget diet** inside iframe, not new props.
 | Phase 1 components + shells | **Done** |
 | Phase 2 typed patterns + PAdES + webhooks SDK | **Done** on main (2026-10) |
 | Phase 3 guest layout (SigningShell, no guest Activity) | **Done** |
-| Phase 3 guest chrome budget (SEA-78 remainder) | **Open** — header Decline/Download, widget CTA diet |
+| Phase 3 guest chrome budget (SEA-78 remainder) | **Done** on main (2026-10-30) — header actions, single CTA, mobile-only Form View toggle |
 | SEA-74 PDF paint | **Done** |
 | SEA-79 sender builder density | **Open** |
 | SEA-72 hosted money path | **Done** — golden path + smoke-prod ceremony aligned |

@@ -61,11 +61,11 @@ recipientTest.describe("SEA-83 guided next-field", () => {
         await ceremony.goto(multiFieldDoc.signingToken);
         await ceremony.completePreflightGates();
 
-        const nextField = page.getByTestId("signer-next-field");
-        await expect(nextField).toBeVisible({ timeout: 20_000 });
-        await expect(nextField).toContainText(/next field|signature field/i);
+        const primary = page.getByTestId("signer-primary-action");
+        await expect(primary).toBeVisible({ timeout: 20_000 });
+        await expect(primary).toContainText(/continue/i);
 
-        await nextField.click();
+        await primary.click();
 
         const fieldDialog = page.getByRole("dialog");
         const overlay = page.getByRole("button", {

@@ -28,9 +28,9 @@ toggle (`SignerFormView`, SEA-86). **Sender** Activity / Recipient Details live 
 | Juice | Seal status (2026-10-30) |
 | --- | --- |
 | Invite: title + invited-by + email + **START** | **Done** — `SigningInviteGate` before privacy/consent |
-| Thin header: title · Decline · Download | **Partial** — title + “From …”; Decline in widget; Download after complete only |
+| Thin header: title · Decline · Download | **Done** — header Decline + Download (`signer-header-*`) |
 | PDF full-bleed under header | **Done** — `PdfSigningDocumentSurface` (SEA-74 PDFium path) |
-| One field CTA (`NEXT`) + micro step dots | **Gap** — widget has Meter + “Next field” + primary Sign |
+| One field CTA (`NEXT`) + micro step dots | **Done** — single `signer-primary-action` (Continue → Sign) |
 | Embeddable form mindset (`docuseal-form`) | **Partial** — `@vortex-api/seal/react` iframe + `?embed=true`; inner chrome same as guest |
 
 ### Documenso
@@ -38,7 +38,7 @@ toggle (`SignerFormView`, SEA-86). **Sender** Activity / Recipient Details live 
 | Juice | Seal status (2026-10-30) |
 | --- | --- |
 | PDF + **one** sticky signing widget (~350px) | **Done** — `SigningShell` (`max-w-88` widget, `md:sticky`) |
-| Fields + Complete inside that widget only | **Partial** — CTA + progress in widget; fields also on PDF overlay + optional Form View list |
+| Fields + Complete inside that widget only | **Done** — one primary CTA + short field hint; overlays on PDF |
 | Mobile = same widget as bottom sheet | **Done** — fixed bottom bar → sticky on `md+` |
 | PAdES / sealed PDF on complete | **Done** — Worker `final-pdf` + dogfood/openssl prove (not Documenso’s local `.p12` path) |
 
@@ -53,10 +53,10 @@ DocuSign feature parity theater · OpenSign-style PdfHeader kitchen-sink on sign
 | --- | --- | --- | --- | --- |
 | PDF as hero | Full page under thin header | Left column viewer | Yes, buried in tooling | **Yes** — main column; Form View hides PDF but keeps mount |
 | Pre-sign gates | START on invite | Token → sign page | Heavy guest login | **Auth** (OTP/access code) → optional account → **START** → privacy modal → ESIGN modal |
-| Persistent header | Title · Decline · Download | Title · invite · Reject | Dense PdfHeader | Title · instruction · logo; **no** header Decline/Download |
+| Persistent header | Title · Decline · Download | Title · invite · Reject | Dense PdfHeader | Title · instruction · **Decline · Download** in header |
 | Layout | No sidebar | PDF + ~350px widget | Sidebar + tools | **`SigningShell`** — PDF + one widget (no dossier sidebar) |
-| Progress | Dots in field flow | Field list in widget | Scattered | **Meter** + “N fields left” + **Next field** button in widget |
-| Primary CTA | NEXT → complete | One Complete in widget | Finish in header | **Sign / Approve** (+ next-field when unfilled) |
+| Progress | Dots in field flow | Field list in widget | Scattered | One-line hint + **single** primary CTA |
+| Primary CTA | NEXT → complete | One Complete in widget | Finish in header | **`signer-primary-action`** (Continue or Sign) |
 | Recipient Details | No | No | N/A | **No** on guest (sender doc sidebar only) |
 | Activity / timeline | No | No | Sender reports | **No** on guest (sender doc sidebar + analytics) |
 | Consent | Links on invite | Org branding elsewhere | Admin ToS | **Modals** once (privacy then ESIGN) — audit by design |
@@ -96,11 +96,11 @@ DocuSign feature parity theater · OpenSign-style PdfHeader kitchen-sink on sign
 
 > title · PDF + fields · **one** progress · **one** CTA · Decline · consent once
 
-1. **Header actions** — move Decline (+ in-progress Download if policy allows) to `SigningShell.headerActions` (DocuSeal)
-2. **Widget diet** — collapse Meter + “Next field” + Sign into one primary action path (Documenso field list + Complete discipline)
-3. **Form View** — keep for mobile/accessibility; default desktop to **Document** view so PDF stays hero
-4. **Gate stack** — keep audit requirements; avoid adding any new pre-PDF chrome
-5. **Embed** — `?embed=true` should inherit the same diet (no extra host chrome in iframe)
+1. ~~**Header actions** — Decline + Download in `SigningShell.headerActions`~~ **Done** (2026-10-30)
+2. ~~**Widget diet** — single `signer-primary-action` (Continue → Sign)~~ **Done** (2026-10-30)
+3. ~~**Form View** — desktop defaults to Document; toggle **`md:hidden`** (mobile only)~~ **Done** (2026-10-30)
+4. **Gate stack** — keep audit requirements; avoid new pre-PDF chrome
+5. **Embed** — inherits shell changes via `?embed=true`; verify in dogfood/e2e if regressions
 
 **Code anchors:**
 

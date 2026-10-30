@@ -61,7 +61,7 @@ test.describe("Signer ceremony gates", () => {
       await ceremony.completePreflightGates();
       await expect(
         page
-          .getByTestId("signer-next-field")
+          .getByTestId("signer-primary-action")
           .or(
             page.getByRole("button", { name: /signature required field/i })
           )

@@ -48,7 +48,7 @@ export class SignerCeremonyPage {
       await this.page.getByTestId("signer-esign-accept").click();
       await expect(
         this.page
-          .getByTestId("signer-next-field")
+          .getByTestId("signer-primary-action")
           .or(
             this.page.getByRole("button", {
               name: /signature required field/i,
