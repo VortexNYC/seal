@@ -5,8 +5,7 @@ import {
   HeadContent,
   Outlet,
 } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 
 import { ErrorBoundary } from "@/components/error-boundary";
 import { NotFoundPage } from "@/components/not-found-page";
@@ -29,6 +28,14 @@ export const Route = createRootRouteWithContext<{
   errorComponent: RouteErrorComponent,
 });
 
+const LazyRouterDevtools = import.meta.env.DEV
+  ? lazy(() =>
+      import("@/components/router-devtools").then((m) => ({
+        default: m.RouterDevtools,
+      }))
+    )
+  : null;
+
 function RootComponent() {
   useEffect(() => {
     if (import.meta.env.DEV) {
@@ -50,7 +57,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     <Toasty toastManager={toastManager}>
       <HeadContent />
       <div className="h-svh">{children}</div>
-      <TanStackRouterDevtools position="bottom-right" />
+      {LazyRouterDevtools ? (
+        <Suspense fallback={null}>
+          <LazyRouterDevtools />
+        </Suspense>
+      ) : null}
     </Toasty>
   );
 }
