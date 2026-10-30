@@ -31,12 +31,14 @@
     "prove:secret-scan": "node scripts/prove-secret-scan.mjs",
     "prove:pdf-seal": "pnpm --dir apps/api exec tsx ./scripts/prove-pdf-seal.ts",
     "fix": "vp lint --fix && vp fmt",
-    "verify": "pnpm run lint && pnpm run lint:design && pnpm run contract:check && pnpm run format:check && pnpm run typecheck && pnpm run knip",
+    "verify": "pnpm run lint && pnpm run lint:design && pnpm run contract:check && pnpm run generate:mcp-tool-catalog:check && pnpm run format:check && pnpm run typecheck && pnpm run knip",
     "verify:clean": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run knip",
     "clean": "(cd apps/web && pnpm run clean) && git clean -xdf .cache dist node_modules",
     "prove:signer-contact-sheet": "node scripts/prove-signer-contact-sheet.mjs",
     "lint:design": "oxlint -c oxlint.ds.json apps/web/src",
-    "contract:check": "node scripts/check-api-contract.mjs"
+    "contract:check": "node scripts/check-api-contract.mjs",
+    "generate:mcp-tool-catalog": "node scripts/generate-mcp-tool-catalog.mjs",
+    "generate:mcp-tool-catalog:check": "node scripts/generate-mcp-tool-catalog.mjs --check"
   },
   "devDependencies": {
     "@changesets/cli": "3.0.3",

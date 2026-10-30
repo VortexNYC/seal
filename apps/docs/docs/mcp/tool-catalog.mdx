@@ -1,0 +1,256 @@
+---
+title: MCP tool catalog
+description: Auto-generated list of every Seal MCP tool (OpenAPI-backed)
+---
+
+# MCP tool catalog
+
+The [MCP Tools Reference](/docs/mcp/tools) documents parameters and examples for
+the **core signing workflow** tools. This page lists **every** tool the MCP
+server registers — generated from `apps/mcp-worker/src/tools/` so agents never
+rely on a stale count.
+
+OpenAPI remains the contract: [`/reference`](/reference). Agent doctrine:
+[Agents & who signs](/docs/getting-started/agents).
+
+<!-- GENERATED:START — 119 tools; do not edit by hand -->
+
+**119 tools** registered in `apps/mcp-worker/src/tools/`.
+Regenerate: `pnpm run generate:mcp-tool-catalog`.
+
+### Account
+
+| Tool | Summary |
+| ---- | ------- |
+| `seal_get_account_info` | Get information about the current Seal workspace — organization name, member counts, document counts by status, signing settings, and whether AI features are enabled. Useful for understanding the current account context. |
+
+### Analytics
+
+| Tool | Summary |
+| ---- | ------- |
+| `seal_get_analytics` | Get document signing analytics and metrics for your workspace. Returns document counts (created, sent, completed, cancelled, declined), completion rate percentage, and median signing time in hours — all filtered to a date range (default: last 30 days). Also includes a current workspace snapshot with live document counts by status. Use from/to parameters with ISO 8601 timestamps to customize the period. |
+
+### Audit log
+
+| Tool | Summary |
+| ---- | ------- |
+| `seal_list_audit_log` | List organization-wide audit log entries. Returns a chronological history of all actions taken in the workspace — document sends, signings, settings changes, member additions, and more. Filter by document_id to see all events for a specific document, or filter by action type (e.g. 'document.completed', 'recipient.signed'). Supports date range filtering and pagination. |
+
+### Contacts
+
+| Tool | Summary |
+| ---- | ------- |
+| `seal_create_contact` | Add a new contact to your workspace directory. Contacts can be referenced when adding document recipients. Required: first_name, last_name, email. Optional: phone, company, title, status (active/inactive/lead), notes, tags. |
+| `seal_delete_contact` | Permanently delete a contact from your workspace directory. This cannot be undone. The contact's ID is required. |
+| `seal_get_contact` | Get full details for a specific contact by ID. Returns all stored information including name, email, company, title, tags, notes, and contact history timestamps. |
+| `seal_list_contacts` | List contacts in your workspace contact directory. Returns name, email, company, title, status, and tags. Filter by status (active, inactive, or lead) or search by name/email. Useful for looking up recipients before sending a document — use the email here when adding recipients. |
+| `seal_update_contact` | Update an existing contact. Pass the contact id and any fields to change. Null clears optional fields like phone, company, title, and notes. |
+
+### Document PDF & preview
+
+| Tool | Summary |
+| ---- | ------- |
+| `seal_annotate_document_pdf` | Bake agent PDF edits onto a draft document: highlight, text, rect, or redact ops using percent-of-page geometry (0–100). Rewrites the stored PDF. |
+| `seal_compare_document_pdfs` | Text-level compare between two draft PDFs — returns per-page added/removed lines (read-only; no storage changes). |
+| `seal_compress_document_pdf` | Compress a draft PDF in place (re-encodes images via convert-worker PDF engines — structure/text untouched, never enlarges). Returns size_before/size_after. |
+| `seal_convert_document_pdf_to_office` | Convert a draft PDF to an Office file — docx/xlsx/pptx artifact with download_url. Layout-locked fidelity (Draw import); working draft unchanged. |
+| `seal_convert_document_pdf_to_pdfa` | Convert a draft PDF to archival PDF/A (1b/2b/3b via Gotenberg pdfengines/convert). The archival PDF replaces the document's stored PDF. |
+| `seal_crop_document_pdf` | Crop draft PDF pages to a top-left percent rect (0–100, same space as fields). Bakes a smaller page. Fields outside the crop are removed; survivors remapped. |
+| `seal_dismiss_document_annotations` | Dismiss active document annotations. |
+| `seal_export_document_pdf_images` | Export every page of a draft PDF as images — returns a ZIP artifact (page-N.png\|jpg) and download_url. Working draft unchanged. |
+| `seal_flatten_document_pdf` | Flatten annotations and AcroForm fields into page content (pdfengines/flatten). Seal signature fields (stored in the database) are unaffected. |
+| `seal_generate_document_annotations` | Regenerate bbox citation annotations from the document's parsed text (heuristic contract review). |
+| `seal_get_document_annotations` | Get contract-review annotations (bbox citations) for a document — obligation/payment/risk/dates/terms with page highlights. Materializes from parsed text when needed. |
+| `seal_get_document_extraction_schema` | Get the extraction schema JSON for a document (agent + human Schema Builder). |
+| `seal_get_document_layout_blocks` | Get layout/OCR-style blocks (page, bbox 0–1, text, type) from anydoc field candidates plus annotation heuristics over parsed text. |
+| `seal_merge_documents_pdf` | Merge 2–20 draft document PDFs (by id, in order) into a new draft PDF document. Returns the new document id. |
+| `seal_number_document_pdf_pages` | Stamp footer page numbers onto a draft PDF (`n` or `n_of_m`). Deterministic pdf-lib — not Seal AI. |
+| `seal_ocr_document_pdf` | OCR a draft PDF — adds a searchable text layer to scanned/image pages (ocrmypdf --skip-text; existing text preserved). |
+| `seal_organize_document_pdf` | Reorder or delete pages of a draft PDF in place. Pass the new order as 1-based source page numbers (omit a page to delete it). Fields on deleted pages are removed; others are remapped. |
+| `seal_preview_document` | Preview a document for agents. format=markdown (parsed text + field_candidates), structured (markdown + csv_rows when original is CSV), chunks (per-line anchored text with page+bbox — citation/redline targeting), pdf or original (signed download URL for the PDF or pre-conversion office/CSV file). |
+| `seal_protect_document_pdf` | Create a password-protected copy of a draft PDF (qpdf encrypt via convert-worker). Draft stays unencrypted; returns download_url for the encrypted artifact. |
+| `seal_put_document_extraction_schema` | Save extraction schema JSON for a draft document. |
+| `seal_redact_document_pdf` | Permanently redact regions of a draft PDF — removes text/images/paths inside each percent rect from the bytes (not an overlay). Returns a receipt (scrubbed_text). Fields inside regions are removed. |
+| `seal_replace_document_original` | Replace the original office/CSV bytes for a draft document (base64 + content_type). Re-converts to PDF when convertible. |
+| `seal_replace_document_pdf` | Replace a draft document's stored PDF bytes (base64). Use after local/agent PDF edits so humans and agents share the same file. |
+| `seal_rotate_document_pdf` | Rotate pages of a draft PDF by 90/180/270 degrees clockwise. Omit pages to rotate all. |
+| `seal_split_document` | Split a draft PDF into child draft documents by page ranges. Each split gets title + pages (1-based). Returns created document IDs. |
+| `seal_unlock_document_pdf` | Unlock a password-protected draft PDF in place (LibreOffice re-export — may shift complex layouts). Claims the usable bytes onto the document. |
+| `seal_watermark_document_pdf` | Stamp a text watermark (e.g. DRAFT, CONFIDENTIAL) onto a draft PDF. Deterministic pdf-lib — not Seal AI. |
+
+### Document workflow
+
+| Tool | Summary |
+| ---- | ------- |
+| `seal_bulk_send_documents` | Send multiple draft documents for signing at once. Maximum 50 documents per request. Each document is invited the same way as a single send, including sequential order. Each document must be in draft status and have at least one recipient — documents that don't meet these criteria will be reported as failures. An optional custom message can be included in the invitation emails. Returns per-document success/failure details. |
+| `seal_bulk_void_documents` | Void (cancel) multiple documents at once. Maximum 50 documents per request. A reason is required and will be logged in the audit trail. Cannot void already-completed, already-cancelled, or already-declined documents — those will be reported as failures in the result. Returns per-document success/failure details. |
+| `seal_copy_document` | Copy a document into a new draft now. Copies the file, recipients, and fields. Does not copy signatures or completion. Save as template is the reusable path; this is the one-off second draft. |
+| `seal_forward_document` | Email the executed PDF of a completed document to someone who is not a signer. Use this for counsel or the other side after completion. Fails if the document is not completed. |
+| `seal_forward_envelope` | Start a new draft envelope from the executed PDF of a completed document. The new envelope has that signed file and no signers. Use this when someone else must sign the finished PDF. Fails if the document is not completed. |
+| `seal_get_document_access` | Get the sharing/access mode for a document. Returns whether the document is private (owner only), workspace (all org members can see it), or specific (only explicitly granted users). Useful for auditing document visibility before sharing. |
+| `seal_update_document_access` | Update the sharing/access mode for a document. Options: 'private' (owner only — the default), 'workspace' (all org members can view, requires Pro plan), 'specific' (only explicitly granted users, requires Pro plan). Does not change who can sign — only who can view the document in the workspace. |
+
+### Documents
+
+| Tool | Summary |
+| ---- | ------- |
+| `seal_create_document` | Create a new document in draft status. Requires a storage ID from a previously uploaded file. |
+| `seal_delete_document` | Delete a document. Only draft documents can be deleted. Use void_document for sent documents. |
+| `seal_download_certificate` | Download the Certificate of Completion PDF for a completed document (CompAI EVID-2). Returns size/content-type metadata; use GET /documents/certificate?id= for the raw PDF bytes. |
+| `seal_download_document` | Get the download URL for a document. Returns the signed PDF if available, otherwise the original. |
+| `seal_get_document` | Get detailed information about a specific document including recipients and download URL. |
+| `seal_list_documents` | List documents in your Seal workspace with pagination and optional filtering. Filter by status, search by title, or narrow by creation date range. |
+| `seal_send_document` | Send a document for signing. The document must be in draft status and have at least one recipient. |
+| `seal_update_document` | Update document metadata. Only works for documents in draft status. |
+| `seal_void_document` | Void/cancel a document. Cannot void completed documents. All recipients will be notified. |
+
+### Fields & bindings
+
+| Tool | Summary |
+| ---- | ------- |
+| `seal_apply_document_bindings` | Fill draft document fields by binding_key. Pass a map of binding_key → value; sets each field's default_value. Use after template/document fields have binding_key set (proposal/deal sync without OCR). |
+| `seal_apply_field_suggestions` | Apply pending field suggestions onto a draft document (creates real signature fields). Pass selected_indices to apply a subset. |
+| `seal_create_document_field` | Place a field on a draft document. Coordinates are percent-of-page (0–100), same as the Seal web editor. Optionally set binding_key for structured fill via seal_apply_document_bindings. |
+| `seal_delete_document_field` | Delete a field from a draft document. |
+| `seal_get_field_suggestions` | Get pending field suggestions with bounding boxes for a document (materialized from field_candidates when needed). Review then apply with seal_apply_field_suggestions. |
+| `seal_list_document_fields` | List all fields on a document including page, percent-of-page geometry (x/y/width/height), and binding_key. Use before apply-bindings or to verify agent field placement. |
+| `seal_place_field_candidates` | Place fields from the document's detected field_candidates (markdown heuristics with suggested bounding boxes). Optionally pass indices to place a subset, and recipient_id to assign all placed fields. |
+| `seal_update_document_field` | Update a document field (label, required, geometry, recipient, binding_key). Draft documents only. |
+| `seal_update_template_field` | Update a template field, including properties.binding_key for structured deal fill. |
+
+### Folders
+
+| Tool | Summary |
+| ---- | ------- |
+| `seal_create_folder` | Create a folder for documents or templates. Optionally nest under parent_id. |
+| `seal_folder_breadcrumbs` | Get the breadcrumb trail from root to a folder by public ID. |
+| `seal_list_folders` | List folders in your workspace. Filter by type (document/template), parent_id for children of a folder, or flat=true for the full tree of that type. |
+
+### Imports
+
+| Tool | Summary |
+| ---- | ------- |
+| `seal_approve_import` | Approve and run a pending import job. Returns processed counts and final status. |
+| `seal_create_import` | Create an import job in pending_approval status. Approve it to run the import. |
+| `seal_get_import` | Get a single import job by public ID. |
+| `seal_list_imports` | List import jobs in your workspace (PDF batch, DocuSign, PandaDoc). |
+| `seal_resume_import` | Resume an in-progress import job that has not completed or failed. |
+
+### Human handoff (InteractionSession)
+
+| Tool | Summary |
+| ---- | ------- |
+| `seal_get_interaction` | Get the InteractionSession for a document (Human handoff). Returns { id, kind, url, status, message, poll }. For signing: show or open `url` for the human, then call seal_wait_interaction (or poll seal_get_interaction) until status is not pending. Never forge the signature. Maps to MCP URL-mode elicitation. |
+| `seal_wait_interaction` | Poll InteractionSession until terminal (completed / cancelled / declined / expired). Prefer calling seal_get_interaction first and showing `url` + `message` to the human (or URL-mode elicitation). Returns the final session JSON. |
+
+### Members
+
+| Tool | Summary |
+| ---- | ------- |
+| `seal_get_member` | Get detailed information about a specific workspace member by their membership ID. Returns name, email, role, status, and when they joined. Use seal_list_members first to find the member ID. |
+| `seal_list_members` | List all members of your Seal workspace. Returns each member's name, email, role (owner/admin/member/viewer), membership status, and join date. Optionally filter by role. Use this to find team members, check who is an admin, or discover member IDs for other operations. |
+
+### Recipients
+
+| Tool | Summary |
+| ---- | ------- |
+| `seal_add_recipient` | Add a recipient to a draft, or to a sent envelope that is not finished. On a sent envelope they are emailed now if it is their turn. |
+| `seal_add_recipients_bulk` | Add multiple recipients to a document at once. Useful for setting up complex signing workflows with many participants. |
+| `seal_get_recipient` | Get detailed information about a specific recipient on a document. Returns name, email, role (signer/approver/viewer), signing status, signing order, completion timestamp, and any custom message. Use this when you need full details about one recipient rather than listing all of them. |
+| `seal_list_recipients` | List all recipients for a document. Returns each recipient's role (signer, approver, or viewer), signing status (pending, completed, declined), signing order for sequential workflows, and contact details. Use this to check who still needs to sign or to find recipient IDs for sending reminders. |
+| `seal_remove_recipient` | Remove a recipient from a document. The document must be in draft status. |
+| `seal_send_reminder` | Send a signing reminder to a recipient. Only works for recipients who haven't signed yet. |
+| `seal_update_recipient` | Update a recipient. On a draft, name, role, order, and email can change. On a sent envelope, email and name can change until that person has signed, and a new email sends a fresh link. |
+| `seal_update_recipients_bulk` | Update multiple recipients for a document at once. Useful for making batch changes to recipient details. |
+
+### Review matrices
+
+| Tool | Summary |
+| ---- | ------- |
+| `seal_create_review` | Create a legal review matrix over documents. Columns are extraction prompts; the calling agent fills cells via seal_write_review_cells — Seal runs no model. |
+| `seal_create_review_pack` | Create an org-authored review pack — a named bundle of extraction columns reusable across matrices. |
+| `seal_delete_review_pack` | Delete an org-authored review pack (builtin packs can't be deleted). |
+| `seal_get_job` | Poll an async job (e.g. review generation) — returns status, error, and result payload. |
+| `seal_get_review` | Get a review matrix by public ID, including rows and citation-grounded cells. |
+| `seal_list_jobs` | List async jobs for the org — newest first. Optional status filter. |
+| `seal_list_review_packs` | List review packs — builtin templates (NDA/MSA/employment) plus org-authored packs. Pass pack_id to seal_create_review to expand columns. |
+| `seal_list_reviews` | List review matrices for the org — summary rows (id, title, status, counts). |
+| `seal_write_review_cells` | Write agent-authored review cell results — you (the calling agent) reason over each row's parsed document text and post answers; Seal grounds each quote against the stored document text and flips the matrix to ready when all cells resolve. Ungrounded quotes collapse to not_found — never invent anchors. |
+
+### Revisions
+
+| Tool | Summary |
+| ---- | ------- |
+| `seal_accept_all_revisions` | Accept every pending revision on a document in one shot — one derived draft (or one tracked-changes .docx with output=docx). |
+| `seal_accept_revision` | Accept a pending revision — applies the text edit and creates a derived counter-proposal draft (new document, re-parsed). output=docx produces a Word tracked-changes file (w:ins/w:del) as the derived doc's original — the counterparty sees real redlines. |
+| `seal_list_revisions` | List revision suggestions — filter by document_id and status (pending/accepted/rejected). |
+| `seal_propose_revision` | Propose a redline on a draft document — anchors a quote and proposes insert/delete/replace. Stays pending until accepted; the source doc is never mutated. |
+| `seal_reject_revision` | Reject a pending revision — closes it without producing a document. |
+
+### Search
+
+| Tool | Summary |
+| ---- | ------- |
+| `seal_search` | Search across documents, contacts, and templates in the workspace. Respects document sharing rules for the caller. Prefer this over listing everything when looking for a specific item. |
+
+### Settings
+
+| Tool | Summary |
+| ---- | ------- |
+| `seal_get_settings` | Get the current organization settings for your Seal workspace. Returns all configuration categories: signing (allowed methods, deadline, ESIGN consent), notifications (reminder schedule, completion/viewed emails), AI features (enabled, auto-analyze), and security (IP allowlist, MFA, session timeout, API access). |
+| `seal_update_settings` | Update organization settings. All fields are optional — only provide the categories and fields you want to change. Supports partial updates within each category (e.g. only update default_deadline_days without touching other signing settings). Categories: signing, notifications, ai, security. |
+
+### Signatures & verification
+
+| Tool | Summary |
+| ---- | ------- |
+| `seal_get_audit_trail` | Get the complete audit trail for a document. Shows all events including views, signatures, and modifications with timestamps. |
+| `seal_get_signature` | Get detailed information about a specific signature on a document. Returns the signing method (draw, type, or upload), timestamp, signer identity, and cryptographic hash used for tamper detection. Use this when you need forensic-level detail about a single signature rather than the full list. |
+| `seal_list_signatures` | List all signatures for a document. Returns information about each signature including who signed and when. |
+| `seal_verify_document` | Verify the cryptographic integrity of all signatures on a document. Returns whether each signature is valid and the document hasn't been tampered with. |
+
+### Templates
+
+| Tool | Summary |
+| ---- | ------- |
+| `seal_create_template` | Create a new template from an existing document. The document's fields will be copied to the template. |
+| `seal_delete_template` | Delete a template. This is a soft delete - the template will be marked as deleted but not removed. |
+| `seal_get_template` | Get detailed information about a specific template. |
+| `seal_get_template_fields` | Get all field definitions for a template. Fields define where signatures and data entry points are located. |
+| `seal_list_templates` | List all document templates in your workspace. Templates are reusable document layouts with pre-placed signature fields. Filter by status (active or archived) to find templates ready for use. Use seal_use_template to create a new document from any template returned here. |
+| `seal_update_template` | Update template metadata. |
+| `seal_use_template` | Create a new document from a template. The new document will have the same fields and layout as the template. |
+
+### API tokens
+
+| Tool | Summary |
+| ---- | ------- |
+| `seal_create_api_token` | Create a workspace API token. Returns the full seal_… secret once — store it. Requires admin/owner. |
+| `seal_list_api_tokens` | List workspace API tokens (secrets are never returned). Requires admin/owner. |
+| `seal_revoke_api_token` | Revoke a workspace API token. Requires admin/owner. |
+
+### Uploads
+
+| Tool | Summary |
+| ---- | ------- |
+| `seal_upload_file_content` | Upload a PDF file using base64-encoded content. Returns a storage_id for use with create_document. |
+
+### Webhooks
+
+| Tool | Summary |
+| ---- | ------- |
+| `seal_create_webhook` | Create a new webhook endpoint. Returns the endpoint details including the signing secret — save it securely as it is only shown once. |
+| `seal_delete_webhook` | Permanently delete a webhook endpoint and all its delivery history. This action cannot be undone. |
+| `seal_get_webhook` | Get details for a specific webhook endpoint including its delivery statistics and subscription settings. |
+| `seal_list_webhook_event_types` | List all available webhook event types with descriptions. Use this to discover which events you can subscribe to when creating or updating a webhook. |
+| `seal_list_webhooks` | List all webhook endpoints configured for your organization. Returns endpoint details including delivery statistics. |
+| `seal_rotate_webhook_secret` | Rotate the signing secret for a webhook endpoint. Returns the new secret — save it securely and update your server immediately as the old secret stops working right away. |
+| `seal_update_webhook` | Update a webhook endpoint's configuration. You can change the URL, subscribed events, status, or description. Only provide fields you want to change. |
+
+<!-- GENERATED:END -->
+
+## Related
+
+- [MCP integration](/docs/mcp) — OAuth, prompts, resources
+- [MCP Tools Reference](/docs/mcp/tools) — detailed docs for common tools
+- [Agents & who signs](/docs/getting-started/agents) — golden path, handoff, proof commands

@@ -59,6 +59,7 @@ pnpm run typecheck
 pnpm run lint
 pnpm run build
 pnpm test
+pnpm run generate:mcp-tool-catalog:check   # after MCP tool changes
 ```
 
 Hosted API golden path (needs a real `seal_…` key — optional locally, required
@@ -95,8 +96,8 @@ Fastest path today (no local Workers required):
 2. Verify email → create a workspace (name only; slug auto-fills)
 3. Land on **Developer** settings → create an API key (`seal_…`)
 4. Either:
-   - **UI:** Documents → Upload → add recipients → Send → open the signing link
-   - **API/MCP:** follow [docs.seal.nyc quick start](https://docs.seal.nyc/getting-started/quick-start) or point an MCP client at `mcp.seal.nyc`
+   - **UI:** Documents → Upload → add recipients → place fields → Send → open the signing link
+   - **Agents:** [Agents & who signs](https://docs.seal.nyc/getting-started/agents) · [Quick start](https://docs.seal.nyc/getting-started/quick-start) (HTTP + fields) · MCP at `mcp.seal.nyc` · [tool catalog](https://docs.seal.nyc/mcp/tool-catalog)
 5. Optional proof: `SEAL_API_KEY=seal_… node scripts/smoke-prod.mjs`
 
 Do not invent a Docker compose story the repo does not ship yet.

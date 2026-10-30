@@ -5,28 +5,36 @@ description: Integrate Seal with AI assistants using the Model Context Protocol
 
 # MCP Integration
 
-The Seal MCP (Model Context Protocol) server lets agents like Claude, Devin, or Codex operate your Seal workspace directly — upload, send, track, review — while humans sign.
+The Seal MCP server lets agents (Claude, Devin, Codex, Cursor, etc.) operate your
+workspace over the **OpenAPI contract** — upload, place fields, send, webhooks,
+PDF ops — while **humans** apply signatures on the signing link.
 
-## What is MCP?
+<Callout type="info">
+  **Agents start here:** [Agents & who signs](/docs/getting-started/agents) ·
+  machine brief [`llms.txt`](https://docs.seal.nyc/llms.txt) ·
+  [Production checklist](/docs/getting-started/production)
+</Callout>
 
-The Model Context Protocol is an open standard that allows AI assistants to securely connect to external services. Seal's MCP server provides:
+## What you get
 
-- **27 Tools**: Complete API coverage for documents, recipients, templates, signatures, and uploads
-- **4 Resources**: Access to documents and templates with detail views
-- **OAuth 2.0**: Secure authentication with your Seal account
-- **Real-time Access**: Direct integration with your organization's data
+| Surface | Count | Notes |
+| ------- | ----- | ----- |
+| **Tools** | **119** | Full list: [MCP tool catalog](/docs/mcp/tool-catalog) (auto-generated from code) |
+| **Detailed tool docs** | Core signing + ops | [MCP Tools Reference](/docs/mcp/tools) — parameters and examples |
+| **Guided prompts** | **6** | `send-document`, `check-signing-status`, `use-template`, `verify-document`, `setup-webhooks`, `void-document` |
+| **Knowledge resources** | **10+** | `seal://docs/{topic}` — overview, agent roles, webhooks, limits, … |
+| **Data resources** | Documents & templates | `seal://documents`, `seal://templates` (+ `{id}` detail) |
+| **Auth** | OAuth 2.0 | Org-scoped; same API as REST |
 
-## MCP Server URL
+MCP must not invent endpoints missing from [OpenAPI `/reference`](/reference).
+
+## MCP server URL
 
 ```
 https://mcp.seal.nyc
 ```
 
-## Quick Start
-
-### Claude Desktop Configuration
-
-Add Seal to your Claude Desktop configuration:
+## Quick setup (Claude Desktop)
 
 ```json
 {
@@ -42,146 +50,48 @@ Add Seal to your Claude Desktop configuration:
 }
 ```
 
-### First Use
+1. Authorize when prompted and pick an organization.
+2. Prefer a guided prompt: *“Use the Seal send-document prompt”* — or call tools directly (`seal_upload_file_content`, `seal_create_document`, `seal_create_document_field`, `seal_add_recipient`, `seal_send_document`).
+3. When a human must sign, use **`seal_get_interaction`** / **`seal_wait_interaction`** (InteractionSession) — agents do not sign. See [Agents & who signs](/docs/getting-started/agents#human-handoff-interactionsession).
 
-1. **Authorize**: Claude will prompt you to authorize access to your Seal account
-2. **Select Organization**: Choose which organization to connect
-3. **Start Using**: Ask Claude to help with document workflows
+Automation without MCP OAuth: create an API key and use the **`seal` CLI** or `@vortex-api/seal` — same contract.
 
-Example prompts:
+## Typical agent workflow
 
-- "List my recent documents"
-- "Create a new document from the Employment Contract template"
-- "Show me all pending signatures"
-- "Send a reminder to john@example.com for document XYZ"
+1. Upload PDF (`seal_upload_file_content` or REST upload URL)
+2. Create document → add recipients
+3. Place fields (`seal_create_document_field` or template / field suggestions)
+4. Optional: `seal_apply_document_bindings` for deal data (`binding_key`)
+5. Send → human signs on `/sign/$token`
+6. Webhooks or poll → `document.completed` → download + audit
 
-## Available Tools
+Proof from the repo:
 
-The MCP server provides 27 tools organized by category:
-
-### Document Tools (8 tools)
-
-- `seal_list_documents` - List all documents
-- `seal_get_document` - Get document details
-- `seal_create_document` - Create new document
-- `seal_update_document` - Update document metadata
-- `seal_delete_document` - Delete document
-- `seal_send_document` - Send document for signing
-- `seal_void_document` - Cancel document
-- `seal_download_document` - Get download URL
-
-### Recipient Tools (8 tools)
-
-- `seal_list_recipients` - List document recipients
-- `seal_get_recipient` - Get recipient details
-- `seal_add_recipient` - Add recipient to document
-- `seal_update_recipient` - Update recipient info
-- `seal_remove_recipient` - Remove recipient
-- `seal_send_reminder` - Send signing reminder
-- `seal_add_recipients_bulk` - Add multiple recipients at once
-- `seal_update_recipients_bulk` - Update multiple recipients at once
-
-### Template Tools (7 tools)
-
-- `seal_list_templates` - List all templates
-- `seal_get_template` - Get template details
-- `seal_get_template_fields` - Get template field definitions
-- `seal_create_template` - Create template from document
-- `seal_update_template` - Update template metadata
-- `seal_delete_template` - Delete template
-- `seal_use_template` - Create document from template
-
-### Signature Tools (4 tools)
-
-- `seal_list_signatures` - List document signatures
-- `seal_get_signature` - Get signature details
-- `seal_verify_document` - Verify document signatures
-- `seal_get_audit_trail` - Get complete audit trail
-
-### Upload Tools (2 tools)
-
-- `seal_upload_file` - Upload a PDF file from local path (stdio mode only)
-- `seal_upload_file_content` - Upload a PDF using base64-encoded content (all modes)
-
-## Available Resources
-
-Resources provide read-only access to your Seal data:
-
-- `seal://documents` - Browse all documents
-- `seal://documents/{id}` - Get detailed document information
-- `seal://templates` - Browse all templates
-- `seal://templates/{id}` - Get detailed template with field definitions
-
-## Authentication
-
-The MCP server uses OAuth 2.0 via Seal's own authorization server (Better-Auth) for secure authentication:
-
-1. **OAuth Flow**: Standard OAuth 2.0 authorization code flow
-2. **Scopes**: Full API access (all seal:\* scopes)
-3. **Token Storage**: Tokens are stored securely by the MCP client
-4. **Refresh**: Tokens are automatically refreshed when expired
-
-### OAuth Endpoints
-
-- **Authorization Server**: `https://mcp.seal.nyc/.well-known/oauth-authorization-server`
-- **Protected Resource**: `https://mcp.seal.nyc/.well-known/oauth-protected-resource/mcp`
-
-## Use Cases
-
-### Automated Document Workflows
-
-```
-User: "Create a new employment contract for John Doe (john@example.com)
-       using the Employment Contract template, with a start date of Feb 1st
-       and salary of $75,000"
-
-Claude: I'll create that document for you using the template.
-        [Uses seal_use_template and seal_send_document tools]
-        ✓ Document created: "John Doe Employment Contract"
-        ✓ Sent to john@example.com for signing
+```bash
+SEAL_API_KEY=seal_… pnpm run prove:golden-path
+SEAL_API_KEY=seal_… node scripts/smoke-prod.mjs
 ```
 
-### Document Status Tracking
+## OAuth endpoints
 
-```
-User: "Show me all documents waiting for signatures"
+- **Authorization server:** `https://mcp.seal.nyc/.well-known/oauth-authorization-server`
+- **Protected resource:** `https://mcp.seal.nyc/.well-known/oauth-protected-resource/mcp`
 
-Claude: [Uses seal_list_documents with status filter]
-        You have 3 documents pending signatures:
-        1. Service Agreement - 1/2 signed
-        2. NDA - 0/1 signed
-        3. Contract Amendment - 2/3 signed
-```
+See [MCP Authentication](/docs/mcp/authentication) for scopes and token lifecycle.
 
-### Bulk Operations
+## Security
 
-```
-User: "Send reminders to all recipients who haven't signed in the last 3 days"
+- Organization-scoped access; revocable from Settings → Developer
+- MCP actions appear in document audit trails where applicable
+- Use webhooks + `verifySealWebhookSignature` from `@vortex-api/seal` for production ([verification guide](/docs/webhooks/verification))
 
-Claude: [Uses seal_list_documents and seal_send_reminder tools]
-        Sent reminders to 5 recipients across 3 documents.
-```
+## Limits
 
-## Security & Privacy
+Same as REST: **60 req/min**, **1000 req/hour**. Large PDFs: prefer upload URL + base64 MCP upload for smaller files.
 
-- **OAuth Authentication**: Industry-standard secure authentication
-- **Organization Scoped**: Access limited to your selected organization
-- **Audit Trail**: All MCP actions are logged in document audit trails
-- **Revocable**: Disconnect MCP access anytime from your Seal account (Settings → Developer) or your MCP client
+## Next steps
 
-<Callout type="info">
-  **Privacy**: The MCP server only accesses data you explicitly authorize. AI
-  assistants cannot access your Seal account without your permission.
-</Callout>
-
-## Limitations
-
-- **Rate Limits**: Same rate limits as REST API (60/min, 1000/hour)
-- **File Uploads**: Large file uploads may be slower through MCP
-- **Real-time Updates**: Use webhooks for real-time notifications
-
-## Next Steps
-
-- **[MCP Tools Reference](/docs/mcp/tools)** - Complete tool documentation
-- **[MCP Authentication](/docs/mcp/authentication)** - OAuth setup guide
-- **[API Reference](/docs/api-reference)** - Underlying REST API documentation
+- **[MCP tool catalog](/docs/mcp/tool-catalog)** — all 119 tools (generated)
+- **[MCP Tools Reference](/docs/mcp/tools)** — deep docs for common tools
+- **[Agents & who signs](/docs/getting-started/agents)** — doctrine, bindings, handoff
+- **[API Reference](/docs/api-reference)** — underlying HTTP contract

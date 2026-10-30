@@ -70,16 +70,15 @@ See \`seal://docs/agent-roles\` and docs \`/getting-started/agents\`.
 
 Agents prepare, send, remind, void, poll, and orchestrate email. Humans (recipients) apply the legal signature on \`/sign/$token\` or the embed SDK.
 
-**AI agents are not signatories.** Audit trails name the natural person (or a future org electronic seal), never the model. This matches agent-native e-sign competitors and eIDAS (signature = natural person; org automation = seal).
+**AI agents are not signatories.** Audit trails name the natural person (or a future org electronic seal), never the model.
 
-## Channels
+**Human handoff:** \`GET /api/v1/documents/interaction?id=\` → open \`url\` → poll until terminal. MCP: \`seal_get_interaction\`, \`seal_wait_interaction\`. CLI: \`seal wait --document <id> --open\`.
 
-- Email (Cloudflare): first-class — most deals flow here
-- Messaging: planned, same OpenAPI-first rule
-- Payments: wait for Vortex readiness
-- Web SPA: oversight, not the primary operator path
+**Proof:** \`pnpm run prove:golden-path\` and \`node scripts/smoke-prod.mjs\` from the repo (see docs production checklist).
 
 Full ADR: \`docs/decisions/ADR-003-agent-native-openapi-and-signing.md\`.
+Published: docs.seal.nyc/getting-started/agents and docs.seal.nyc/llms.txt.
+MCP tool inventory: docs.seal.nyc/mcp/tool-catalog (119 tools, generated from code).
 `,
   },
 

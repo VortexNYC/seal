@@ -12,35 +12,46 @@
 - SDK: `npm install @vortex-api/seal`
 - Repo: https://github.com/VortexNYC/seal
 
+## Read first (agents)
+
+1. https://docs.seal.nyc/getting-started/agents — OpenAPI contract, humans sign, bindings, handoff
+2. https://docs.seal.nyc/getting-started/production — keys, webhooks, proof gates
+3. https://docs.seal.nyc/mcp/tool-catalog — all 119 MCP tools (generated from code)
+
 ## Contract
 
 OpenAPI (`apps/docs/openapi.yaml` / `/reference`) is the source of truth.
-MCP, CLI (`seal`), and `@vortex-api/seal` wrap that contract — they must not invent paths.
+MCP (119 tools), CLI (`seal`), and `@vortex-api/seal` wrap that contract — they must not invent paths.
 
 ## Agent golden path
 
-1. Create API key in app → Developer (`seal_…`)
-2. Upload PDF → create document → place fields (optional `binding_key`) → `POST /documents/apply-bindings` → add recipient → send
-3. Human opens `signing_url` (InteractionSession / `seal wait`) and signs — agents do not sign
-4. Poll document status / webhooks → viewed → signed → `document.completed` → audit
+1. Create API key in app → Developer (`seal_…`) or MCP OAuth
+2. Upload PDF → create document → add recipients → **place fields** (or use template)
+3. Optional: `binding_key` + `POST /documents/apply-bindings` for deal data
+4. Send → human opens `signing_url` — agents do **not** sign
+5. Human handoff: `GET /documents/interaction?id=` → open `url` → poll until terminal
+   - MCP: `seal_get_interaction` / `seal_wait_interaction`
+   - CLI: `seal wait --document <id> --open`
+6. Poll status / webhooks → viewed → signed → `document.completed` → audit + download
 
 Subscribe webhooks to at least `document.sent`, `recipient.viewed`, `document.viewed`,
 `recipient.signed`, and `document.completed` for the full signing funnel.
-
-Prefer `binding_key` + apply-bindings over OCR reconstruction for deal data
-(GitHub #604 Seal-side; Payments sync = SEA-43).
+Verify with `verifySealWebhookSignature` from `@vortex-api/seal` (see /webhooks/verification).
 
 When the signing URL may sit in an agent context, use graded signer auth
 (`email_otp` or `access_code` on the recipient — SEA-48).
 
-Proof from the repo:
+## Proof from the repo
 
 ```bash
 SEAL_API_KEY=seal_… pnpm run prove:golden-path
+SEAL_API_KEY=seal_… node scripts/smoke-prod.mjs
 ```
 
-Checks: send (`email_sent`), public viewed/signed ceremony, webhook deliveries
-(viewed + signed events), completed PDF PAdES markers, audit + certificate of completion.
+Checks: send (`email_sent`), public viewed/signed ceremony (privacy/consent),
+webhook deliveries (viewed + signed events), completed PDF markers, audit + certificate.
+
+Self-host without mail: `prove:golden-path --skip-invite-email` (see production doc).
 
 ## Portfolio default (SEA-59)
 
@@ -59,12 +70,15 @@ Cold-account checklist: https://docs.seal.nyc/getting-started/self-host
 
 ## Docs map
 
-- [Quick start](https://docs.seal.nyc/getting-started/quick-start)
 - [Agents & who signs](https://docs.seal.nyc/getting-started/agents)
-- [Authentication](https://docs.seal.nyc/getting-started/authentication)
+- [Quick start (HTTP + fields)](https://docs.seal.nyc/getting-started/quick-start)
 - [Production checklist](https://docs.seal.nyc/getting-started/production)
-- [Self-host](https://docs.seal.nyc/getting-started/self-host)
-- [MCP tools](https://docs.seal.nyc/mcp/tools)
+- [Authentication](https://docs.seal.nyc/getting-started/authentication)
+- [MCP integration](https://docs.seal.nyc/mcp)
+- [MCP tool catalog](https://docs.seal.nyc/mcp/tool-catalog)
+- [MCP tools (detailed)](https://docs.seal.nyc/mcp/tools)
+- [Webhooks](https://docs.seal.nyc/webhooks/setup)
+- [Webhook verification](https://docs.seal.nyc/webhooks/verification)
 - [API reference](https://docs.seal.nyc/reference)
 
 ## SDK
@@ -78,4 +92,5 @@ Cold-account checklist: https://docs.seal.nyc/getting-started/self-host
 - Prefer API / MCP / CLI over the product UI for sender work
 - Never treat a model as the signatory
 - Do not invent endpoints missing from OpenAPI
+- Place fields (or use templates) before send
 - Vortex company signing = Seal only (no DocuSign/PandaDoc create/send)

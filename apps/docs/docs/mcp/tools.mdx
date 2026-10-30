@@ -1,6 +1,6 @@
 ---
 title: MCP Tools Reference
-description: Complete reference for all 59 Seal MCP tools, 6 guided prompts, and knowledge resources
+description: Detailed docs for core Seal MCP tools, 6 guided prompts, and knowledge resources (119 tools total — see tool catalog)
 ---
 
 # MCP Tools Reference
@@ -9,8 +9,12 @@ The Seal MCP server exposes tools and prompts over the **OpenAPI contract** —
 agents prepare, send, and track; **humans apply the legal signature**. See
 [Agents & who signs](/getting-started/agents).
 
-The server provides tools, 6 pre-built workflow prompts, and a knowledge base
-of product documentation.
+**Full inventory:** [MCP tool catalog](/docs/mcp/tool-catalog) lists all **119**
+tools (auto-generated from `apps/mcp-worker`). This page documents the most-used
+signing and workspace tools in depth.
+
+The server provides **119** tools, **6** pre-built workflow prompts, and a
+knowledge base of product documentation (`seal://docs/{topic}`).
 
 ## Guided Prompts
 
@@ -18,7 +22,7 @@ Prompts are pre-built workflow templates. Instead of knowing which tools to call
 
 | Prompt                 | What it does                                                       |
 | ---------------------- | ------------------------------------------------------------------ |
-| `send-document`        | Upload a PDF → create document → add recipients → send for signing |
+| `send-document`        | Upload → create → recipients → **fields** → send → human handoff |
 | `check-signing-status` | Find documents → check who signed → optionally send reminders      |
 | `use-template`         | Browse templates → create document → add recipients → send         |
 | `verify-document`      | Verify cryptographic integrity → audit trail → download URL        |
@@ -220,7 +224,7 @@ Create a new document in draft status.
 **Parameters:**
 
 - `title` (string, required): Document title
-- `storage_id` (string, required): Storage ID from a prior `seal_upload_file` or `seal_upload_file_content` call
+- `storage_id` (string, required): Storage ID from `seal_upload_file_content` (or REST upload flow)
 - `file_size` (number, required): File size in bytes
 - `file_type` (string, optional): MIME type (default `application/pdf`)
 - `description` (string, optional): Document description
@@ -606,19 +610,9 @@ Get the complete audit trail for a document. Shows all events including views, s
 
 ## Upload Tools
 
-### seal_upload_file
-
-Upload a PDF file from a local file path. **Only available in stdio mode** — not accessible when using the HTTP transport since it reads files from the server's filesystem.
-
-**Parameters:**
-
-- `file_path` (string, required): Absolute path to the PDF file
-
-**Returns:** `{ storage_id, file_name, file_size }` — use `storage_id` with `seal_create_document`
-
 ### seal_upload_file_content
 
-Upload a PDF using base64-encoded content. Works in both stdio and HTTP modes.
+Upload a PDF using base64-encoded content. Works over HTTP MCP and REST-backed clients.
 
 **Parameters:**
 
@@ -626,6 +620,12 @@ Upload a PDF using base64-encoded content. Works in both stdio and HTTP modes.
 - `content_base64` (string, required): Base64-encoded PDF content
 
 **Returns:** `{ storage_id, file_name, file_size }` — use `storage_id` with `seal_create_document`
+
+<Callout type="info">
+  Local filesystem upload (`seal_upload_file`) is not exposed on the hosted HTTP
+  MCP server. Use base64 here, the REST upload URL flow, or the `seal upload`
+  CLI.
+</Callout>
 
 ## Webhook Tools
 
@@ -731,32 +731,22 @@ List all available webhook event types with descriptions. Use this before creati
 | `template.updated`   | Templates  | A template was modified                |
 | `template.used`      | Templates  | A document was created from a template |
 
-## Tool Categories
+## Tool categories
 
-| Category   | Tool Count | Description                                                |
-| ---------- | ---------- | ---------------------------------------------------------- |
-| Account    | 1          | Workspace info, member counts, document stats              |
-| Analytics  | 1          | Document metrics, completion rates, signing trends         |
-| Audit Log  | 1          | Organization-wide event history with filters               |
-| Contacts   | 4          | Workspace contact directory (list, get, create, delete)    |
-| Documents  | 12         | Create, manage, send, search, access, and bulk operations  |
-| Members    | 2          | List and view workspace team members                       |
-| Recipients | 8          | Manage document recipients, reminders, and bulk operations |
-| Settings   | 2          | Read and update workspace configuration                    |
-| Templates  | 7          | Create and use document templates                          |
-| Signatures | 4          | Verify signatures and access audit trails                  |
-| Uploads    | 2          | Upload PDF files for document creation                     |
-| Webhooks   | 7          | Configure and manage webhook endpoints                     |
+See the **[MCP tool catalog](/docs/mcp/tool-catalog)** for all **119** tools grouped by
+category (auto-generated from `apps/mcp-worker`).
 
 ## Common Workflows
 
 ### Create and Send Document
 
 ```
-1. seal_upload_file / seal_upload_file_content — upload PDF
+1. seal_upload_file_content — upload PDF (or REST generate-url upload)
 2. seal_create_document — create document with the storage_id
 3. seal_add_recipient / seal_add_recipients_bulk — add recipients
-4. seal_send_document — send for signing
+4. seal_create_document_field — place signature/data fields (or seal_use_template)
+5. seal_send_document — send for signing
+6. seal_get_interaction / seal_wait_interaction — human signs (agents do not)
 ```
 
 ### Use a Template
@@ -826,6 +816,8 @@ MCP tools share the same rate limits as the REST API:
 
 ## Next Steps
 
+- **[MCP tool catalog](/docs/mcp/tool-catalog)** — all 119 tools (generated)
 - **[MCP Authentication](/docs/mcp/authentication)** — OAuth setup guide
+- **[Agents & who signs](/docs/getting-started/agents)** — golden path and proof commands
 - **[API Reference](/docs/api-reference)** — Detailed REST API documentation
-- **[Quick Start](/docs/getting-started/quick-start)** — Integration tutorial
+- **[Quick Start](/docs/getting-started/quick-start)** — HTTP tutorial (includes field placement)

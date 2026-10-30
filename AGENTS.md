@@ -29,7 +29,7 @@ seal/
 | Task                   | Location                                                       | Notes                                           |
 | ---------------------- | -------------------------------------------------------------- | ----------------------------------------------- |
 | Architecture overview  | `README.md`, `apps/api/src/`, `docs/decisions/`                | Live stack only; ADR-003 = agents + signing |
-| Agent / OpenAPI doctrine | `docs/decisions/ADR-003-agent-native-openapi-and-signing.md`, `apps/docs/docs/getting-started/agents.mdx` | Spec first; humans sign |
+| Agent / OpenAPI doctrine | `docs/decisions/ADR-003-agent-native-openapi-and-signing.md`, `apps/docs/docs/getting-started/agents.mdx` | Spec first; humans sign; regen MCP catalog via `pnpm run generate:mcp-tool-catalog` |
 | Cloudflare Worker API  | `apps/api/src/`                                                | Hono + Drizzle + wrangler backend               |
 | REST API routes        | `apps/api/src/api/`                                            | Public + internal API routes                      |
 | Product web routing    | `apps/web/src/routes/`                                         | TanStack file-based routes                      |

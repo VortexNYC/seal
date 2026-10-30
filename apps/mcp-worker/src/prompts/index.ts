@@ -48,10 +48,12 @@ function registerSendDocumentPrompt(server: McpServer): void {
       return createPromptMessages(`I want to send a document${docDesc} for signing.${recipientHint}
 
 Please guide me through the full workflow:
-1. Upload the PDF file (use seal_upload_file for local files or seal_upload_file_content for base64)
+1. Upload the PDF (seal_upload_file_content for base64, or REST upload URL / seal upload CLI)
 2. Create the document with seal_create_document using the returned storage_id
 3. Add recipients with seal_add_recipient or seal_add_recipients_bulk
-4. Send it with seal_send_document
+4. Place fields with seal_create_document_field (or seal_use_template / field suggestions)
+5. Send with seal_send_document
+6. Human handoff: seal_get_interaction then seal_wait_interaction — agents do not sign
 
 Ask me for the file path or content, then for recipient details (name, email, and role: signer/approver/viewer). Walk me through each step.`);
     }

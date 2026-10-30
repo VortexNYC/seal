@@ -1,11 +1,19 @@
 ---
 title: Quick Start
-description: Send your first document for signing in 4 simple steps
+description: Send your first document for signing — upload, recipients, fields, send
 ---
 
 # Quick Start
 
-This guide will walk you through sending your first document for signing using the Seal API. You'll learn the complete workflow from uploading a PDF to sending it to recipients.
+This guide walks through the **HTTP API** sender path: upload a PDF, add
+recipients, **place a signature field**, and send. For MCP, CLI, bindings, and
+who signs what, read **[Agents & who signs](/docs/getting-started/agents)** first
+(or the machine brief at [`llms.txt`](https://docs.seal.nyc/llms.txt)).
+
+<Callout type="info">
+  **Agents:** Prefer API / MCP / CLI over the web UI. You must place at least one
+  signature field (or use a template) before send — this tutorial includes that step.
+</Callout>
 
 ## Prerequisites
 
@@ -155,7 +163,7 @@ const recipients = [
 ];
 
 for (const recipient of recipients) {
-  await fetch(
+  const res = await fetch(
     `https://api.seal.nyc/api/v1/recipients?document_id=${document.id}`,
     {
       method: "POST",
@@ -166,6 +174,8 @@ for (const recipient of recipients) {
       body: JSON.stringify(recipient),
     }
   );
+  const created = await res.json();
+  console.log("Recipient added:", created.id);
 }
 ```
 
@@ -193,7 +203,66 @@ curl -X POST "https://api.seal.nyc/api/v1/recipients?document_id=jd7k8l9m0n1p2q3
   }'
 ```
 
-## Step 4: Send for Signing
+## Step 4: Place signature fields
+
+Recipients need **fields** on the PDF before they can sign. Coordinates are
+**percent of page** (0–100), same as the web editor. Assign each field to a
+`recipient_id` from Step 3.
+
+MCP equivalent: `seal_create_document_field`. Templates skip this step when fields
+are already on the layout.
+
+### TypeScript
+
+```typescript
+const signerId = "recipient_id_from_step_3";
+
+await fetch("https://api.seal.nyc/api/v1/documents/fields", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer seal_your_api_key_here",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    id: document.id,
+    field_type: "signature",
+    label: "Signature",
+    is_required: true,
+    page: 1,
+    x: 10,
+    y: 80,
+    width: 25,
+    height: 8,
+    recipient_id: signerId,
+  }),
+});
+```
+
+### cURL
+
+```bash
+curl -X POST "https://api.seal.nyc/api/v1/documents/fields" \
+  -H "Authorization: Bearer seal_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "jd7k8l9m0n1p2q3r4s5t6u7v",
+    "field_type": "signature",
+    "label": "Signature",
+    "is_required": true,
+    "page": 1,
+    "x": 10,
+    "y": 80,
+    "width": 25,
+    "height": 8,
+    "recipient_id": "recipient_id_from_step_3"
+  }'
+```
+
+Optional: set `binding_key` on text fields and call
+`POST /api/v1/documents/apply-bindings` — see
+[Agents & who signs](/docs/getting-started/agents#deal-writes-the-document-field-bindings).
+
+## Step 5: Send for Signing
 
 Send the document to all recipients via email:
 
@@ -273,8 +342,9 @@ console.log(
 
 ## Next Steps
 
+- **[Agents & who signs](/docs/getting-started/agents)** — MCP/CLI, InteractionSession, proof commands
 - **[Webhooks](/docs/webhooks/setup)** - Subscribe to send, viewed, signed, and completed events
-- **[Production checklist](/docs/getting-started/production)** - Keys, audit, email, smoke before real volume
+- **[Production checklist](/docs/getting-started/production)** - Keys, audit, email, `prove:golden-path` / `smoke-prod.mjs`
 - **[Self-host](/docs/getting-started/self-host)** - Run Seal on your Cloudflare account
 - **[Error Handling](/docs/getting-started/error-handling)** - Learn how to handle API errors gracefully
 - **[API Reference](/docs/api-reference/documents)** - Explore all document endpoints and options
