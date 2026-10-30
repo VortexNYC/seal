@@ -15,4 +15,13 @@ export {
   isInteractionTerminal,
   mapDocumentStatusToInteraction,
 } from "./interaction.js";
+export type {
+  SealWebhookEnvelope,
+  SealWebhookRequestHeaders,
+} from "./webhooks.js";
+export {
+  parseSealWebhookEnvelope,
+  readSealWebhookHeaders,
+  verifySealWebhookSignature,
+} from "./webhooks.js";
 export type { paths, components } from "./openapi.js";

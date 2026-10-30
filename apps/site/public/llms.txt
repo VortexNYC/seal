@@ -70,6 +70,7 @@ Cold-account checklist: https://docs.seal.nyc/getting-started/self-host
 ## SDK
 
 - Node send example: `packages/sdk/examples/node-send.mjs`
+- Webhook receiver sketch: `packages/sdk/examples/webhook-handler.mjs` (`verifySealWebhookSignature`)
 - React embed: `packages/sdk/examples/react-embed.tsx` (`@vortex-api/seal/react`)
 
 ## Rules for agents

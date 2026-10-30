@@ -83,7 +83,7 @@ const response = await fetch(
   "https://api.seal.nyc/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v",
   {
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
     },
   }
 );
@@ -95,7 +95,7 @@ const { data: recipients } = await response.json();
 
 ```bash
 curl -X GET "https://api.seal.nyc/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v" \
-  -H "Authorization: Bearer ak_your_api_key_here"
+  -H "Authorization: Bearer seal_your_api_key_here"
 ```
 
 ### Response
@@ -146,7 +146,7 @@ const response = await fetch(
   "https://api.seal.nyc/api/v1/recipients/get?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123",
   {
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
     },
   }
 );
@@ -158,7 +158,7 @@ const recipient = await response.json();
 
 ```bash
 curl -X GET "https://api.seal.nyc/api/v1/recipients/get?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123" \
-  -H "Authorization: Bearer ak_your_api_key_here"
+  -H "Authorization: Bearer seal_your_api_key_here"
 ```
 
 ### Response
@@ -213,7 +213,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -233,7 +233,7 @@ const recipient = await response.json();
 
 ```bash
 curl -X POST "https://api.seal.nyc/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v" \
-  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Authorization: Bearer seal_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
     "email": "john@example.com",
@@ -286,7 +286,7 @@ const response = await fetch(
   {
     method: "PUT",
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -303,7 +303,7 @@ const recipient = await response.json();
 
 ```bash
 curl -X PUT "https://api.seal.nyc/api/v1/recipients/update?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123" \
-  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Authorization: Bearer seal_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "John Smith",
@@ -338,7 +338,7 @@ const response = await fetch(
   {
     method: "DELETE",
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
     },
   }
 );
@@ -351,7 +351,7 @@ const result = await response.json();
 
 ```bash
 curl -X DELETE "https://api.seal.nyc/api/v1/recipients/delete?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123" \
-  -H "Authorization: Bearer ak_your_api_key_here"
+  -H "Authorization: Bearer seal_your_api_key_here"
 ```
 
 <Callout type="warn">
@@ -387,7 +387,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -403,7 +403,7 @@ const result = await response.json();
 
 ```bash
 curl -X POST "https://api.seal.nyc/api/v1/recipients/remind?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123" \
-  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Authorization: Bearer seal_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
     "message": "Gentle reminder to review and sign."

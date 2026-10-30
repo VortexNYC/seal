@@ -68,7 +68,7 @@ const response = await fetch(
   "https://api.seal.nyc/api/v1/documents?limit=20&status=sent",
   {
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
     },
   }
 );
@@ -80,7 +80,7 @@ const { data, has_more, next_cursor } = await response.json();
 
 ```bash
 curl -X GET "https://api.seal.nyc/api/v1/documents?limit=20&status=sent" \
-  -H "Authorization: Bearer ak_your_api_key_here"
+  -H "Authorization: Bearer seal_your_api_key_here"
 ```
 
 ### Response
@@ -131,7 +131,7 @@ const response = await fetch(
   "https://api.seal.nyc/api/v1/documents/get?id=jd7k8l9m0n1p2q3r4s5t6u7v&include_recipients=true",
   {
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
     },
   }
 );
@@ -143,7 +143,7 @@ const document = await response.json();
 
 ```bash
 curl -X GET "https://api.seal.nyc/api/v1/documents/get?id=jd7k8l9m0n1p2q3r4s5t6u7v&include_recipients=true" \
-  -H "Authorization: Bearer ak_your_api_key_here"
+  -H "Authorization: Bearer seal_your_api_key_here"
 ```
 
 ### Response
@@ -211,7 +211,7 @@ POST /api/v1/documents
 const response = await fetch("https://api.seal.nyc/api/v1/documents", {
   method: "POST",
   headers: {
-    Authorization: "Bearer ak_your_api_key_here",
+    Authorization: "Bearer seal_your_api_key_here",
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
@@ -232,7 +232,7 @@ const document = await response.json();
 
 ```bash
 curl -X POST https://api.seal.nyc/api/v1/documents \
-  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Authorization: Bearer seal_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Service Agreement",
@@ -297,7 +297,7 @@ const response = await fetch(
   {
     method: "PUT",
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -314,7 +314,7 @@ const document = await response.json();
 
 ```bash
 curl -X PUT "https://api.seal.nyc/api/v1/documents/update?id=jd7k8l9m0n1p2q3r4s5t6u7v" \
-  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Authorization: Bearer seal_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Updated Service Agreement",
@@ -350,7 +350,7 @@ const response = await fetch(
   {
     method: "DELETE",
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
     },
   }
 );
@@ -363,7 +363,7 @@ const result = await response.json();
 
 ```bash
 curl -X DELETE "https://api.seal.nyc/api/v1/documents/delete?id=jd7k8l9m0n1p2q3r4s5t6u7v" \
-  -H "Authorization: Bearer ak_your_api_key_here"
+  -H "Authorization: Bearer seal_your_api_key_here"
 ```
 
 ### Response
@@ -417,7 +417,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -434,7 +434,7 @@ const result = await response.json();
 
 ```bash
 curl -X POST "https://api.seal.nyc/api/v1/documents/send?id=jd7k8l9m0n1p2q3r4s5t6u7v" \
-  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Authorization: Bearer seal_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
     "message": "Please review and sign this agreement."
@@ -492,7 +492,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -508,7 +508,7 @@ const result = await response.json();
 
 ```bash
 curl -X POST "https://api.seal.nyc/api/v1/documents/void?id=jd7k8l9m0n1p2q3r4s5t6u7v" \
-  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Authorization: Bearer seal_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
     "reason": "Contract terms changed"
@@ -558,7 +558,7 @@ const response = await fetch(
   "https://api.seal.nyc/api/v1/documents/download?id=jd7k8l9m0n1p2q3r4s5t6u7v",
   {
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
     },
   }
 );
@@ -574,7 +574,7 @@ const blob = await fileResponse.blob();
 
 ```bash
 curl -X GET "https://api.seal.nyc/api/v1/documents/download?id=jd7k8l9m0n1p2q3r4s5t6u7v" \
-  -H "Authorization: Bearer ak_your_api_key_here"
+  -H "Authorization: Bearer seal_your_api_key_here"
 ```
 
 ### Response
@@ -618,7 +618,7 @@ const response = await fetch(
   "https://api.seal.nyc/api/v1/documents/access?id=jd7k8l9m0n1p2q3r4s5t6u7v",
   {
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
     },
   }
 );
@@ -631,7 +631,7 @@ console.log(access.sharing_mode); // "private" | "workspace" | "specific"
 
 ```bash
 curl -X GET "https://api.seal.nyc/api/v1/documents/access?id=jd7k8l9m0n1p2q3r4s5t6u7v" \
-  -H "Authorization: Bearer ak_your_api_key_here"
+  -H "Authorization: Bearer seal_your_api_key_here"
 ```
 
 ### Response
@@ -683,7 +683,7 @@ const response = await fetch(
   {
     method: "PATCH",
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ sharing_mode: "workspace" }),
@@ -698,7 +698,7 @@ const result = await response.json();
 
 ```bash
 curl -X PATCH "https://api.seal.nyc/api/v1/documents/access?id=jd7k8l9m0n1p2q3r4s5t6u7v" \
-  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Authorization: Bearer seal_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{"sharing_mode": "workspace"}'
 ```
@@ -740,7 +740,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -758,7 +758,7 @@ console.log(`Voided: ${result.succeeded} / ${result.total_requested}`);
 
 ```bash
 curl -X POST "https://api.seal.nyc/api/v1/documents/bulk-void" \
-  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Authorization: Bearer seal_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
     "document_ids": ["jd7k8l9m0n1p2q3r4s5t6u7v", "ab1cd2ef3gh4ij5kl6mn7op8"],
@@ -820,7 +820,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -841,7 +841,7 @@ console.log(`Sent: ${result.succeeded} / ${result.total_requested}`);
 
 ```bash
 curl -X POST "https://api.seal.nyc/api/v1/documents/bulk-send" \
-  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Authorization: Bearer seal_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
     "document_ids": [

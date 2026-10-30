@@ -34,6 +34,7 @@
     "format": "vp fmt",
     "format:check": "vp fmt --check",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
     "knip": "pnpm -w exec knip -W @vortex-api/seal",
     "knip:fix": "pnpm -w exec knip -W @vortex-api/seal --fix --allow-remove-files"
   },
@@ -43,7 +44,8 @@
     "@types/react": "catalog:",
     "openapi-typescript": "7.13.0",
     "react": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "peerDependencies": {
     "react": ">=18.0.0"

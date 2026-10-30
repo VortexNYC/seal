@@ -115,44 +115,8 @@ const { secret } = await response.json();
 
 ### 2. Handle Webhook Requests
 
-```typescript
-import { createHmac } from "crypto";
-
-app.post("/webhooks/seal", async (req, res) => {
-  // Verify signature
-  const signature = req.headers["x-seal-signature"];
-  const eventId = req.headers["x-seal-event-id"];
-  const timestamp = req.headers["x-seal-timestamp"];
-  const payload = JSON.stringify(req.body);
-
-  const signedContent = `${eventId}.${timestamp}.${payload}`;
-  const expectedSignature = `v1=${createHmac(
-    "sha256",
-    process.env.WEBHOOK_SECRET
-  )
-    .update(signedContent)
-    .digest("hex")}`;
-
-  if (signature !== expectedSignature) {
-    return res.status(401).send("Invalid signature");
-  }
-
-  // Process event
-  const event = req.body;
-
-  switch (event.type) {
-    case "document.completed":
-      await handleDocumentCompleted(event.data);
-      break;
-    case "recipient.signed":
-      await handleRecipientSigned(event.data);
-      break;
-  }
-
-  // Respond quickly
-  res.status(200).send("OK");
-});
-```
+See [Signature Verification](/docs/webhooks/verification) — use `verifySealWebhookSignature`
+from `@vortex-api/seal` on the **raw** POST body (`X-Seal-Signature: sha256=…`).
 
 ## Best Practices
 

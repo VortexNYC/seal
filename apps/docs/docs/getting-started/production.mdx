@@ -70,8 +70,11 @@ SEAL_API_KEY=seal_… node scripts/smoke-prod.mjs --api https://seal-selfhost-ap
 ## Email
 
 - Hosted Seal sends from Vortex-managed senders
+- **`email_sent: true`** on `POST /documents/send` means Cloudflare Email Sending **accepted** the message — not that the recipient’s inbox received it (spam, suppression, or routing can still block delivery)
+- On failure, read **`email_send_error`** per recipient on the send response
 - Self-host: you must configure Email Routing / verified `EMAIL_FROM` or invites
   will not leave the box ([Self-host](/docs/getting-started/self-host#email-required-for-real-invites))
+- Automated proofs use a **unique plus address per run** (`SEAL_DOGFOOD_SIGNER`) so a suppressed test recipient does not flake CI; do not reuse one dogfood address for high-volume sends
 
 ## Auth & sessions
 

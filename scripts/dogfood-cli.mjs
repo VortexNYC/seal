@@ -18,7 +18,7 @@
  *   SEAL_DOGFOOD_SIGNER             override default invite recipient (avoid CF suppression on a fixed plus address)
  *   --require-invite-email          fail when Cloudflare EMAIL.send did not succeed (email_sent=false)
  *   --skip-invite-email             allow send without mail (selfhost without binding)
- *   --prove-signer-auth access_code exercise public auth/verify for access_code
+ *   --prove-signer-auth access_code|email_otp   exercise public auth paths (optional)
  *
  * The public signing half uses the same HTTP surface a recipient (or embed)
  * hits — agents prepare and track; humans (or this proof harness) apply intent.
@@ -285,6 +285,151 @@ startxref
   } catch (err) {
     fail(
       "signer auth access_code",
+      err instanceof Error ? err.message : String(err)
+    );
+  }
+}
+
+async function proveEmailOtpSignerAuth() {
+  const pdfPath = join(work, "auth-otp.pdf");
+  await writeFile(
+    pdfPath,
+    Buffer.from(`%PDF-1.4
+1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj
+2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj
+3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Contents 4 0 R>>endobj
+4 0 obj<</Length 44>>stream
+BT /F1 12 Tf 72 720 Td (OTP gate) Tj ET
+endstream
+endobj
+xref
+0 5
+trailer<</Size 5/Root 1 0 R>>
+startxref
+0
+%%EOF`)
+  );
+
+  try {
+    const uploaded = await sealJson(["upload", pdfPath]);
+    const storageId = uploaded?.storage_id;
+    if (!storageId) {
+      fail("signer auth email_otp", "upload missing storage_id");
+      return;
+    }
+    const doc = await sealJson([
+      "POST",
+      "/api/v1/documents",
+      await writeJson("otp-doc.json", {
+        title: `OTP gate ${stamp}`,
+        storage_id: storageId,
+        file_type: "application/pdf",
+        page_count: 1,
+      }),
+    ]);
+    const authDocId = doc?.id;
+    if (!authDocId) {
+      fail("signer auth email_otp", "document create failed");
+      return;
+    }
+    const otpEmail =
+      process.env.SEAL_DOGFOOD_SIGNER ??
+      `dogfood+otp-${Date.now()}@seal.nyc`;
+    const recipient = await sealJson([
+      "POST",
+      `/api/v1/recipients?document_id=${encodeURIComponent(authDocId)}`,
+      await writeJson("otp-recipient.json", {
+        email: otpEmail,
+        name: "OTP Signer",
+        role: "signer",
+        auth_method: "email_otp",
+      }),
+    ]);
+    const recipientId = recipient?.id;
+    await sealJson([
+      "POST",
+      "/api/v1/documents/fields",
+      await writeJson("otp-field.json", {
+        id: authDocId,
+        field_type: "signature",
+        label: "Signature",
+        page: 1,
+        x: 10,
+        y: 70,
+        width: 30,
+        height: 8,
+        is_required: true,
+        ...(recipientId ? { recipient_id: recipientId } : {}),
+      }),
+    ]);
+    const sent = await sealJson([
+      "POST",
+      `/api/v1/documents/send?id=${encodeURIComponent(authDocId)}`,
+      await writeJson("otp-send.json", { notify: true }),
+    ]);
+    const token = extractSigningToken(sent);
+    if (!token) {
+      fail("signer auth email_otp", "missing signing token");
+      return;
+    }
+
+    const challenge = await fetch(
+      `${API}/api/public/signing/${token}/auth/challenge`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "{}",
+      }
+    );
+    const challengeBody = await challenge.json().catch(() => ({}));
+    challenge.ok && challengeBody.method === "email_otp"
+      ? pass("signer auth email_otp challenge")
+      : fail(
+          "signer auth email_otp challenge",
+          `HTTP ${challenge.status} ${JSON.stringify(challengeBody)}`
+        );
+
+    const bad = await fetch(
+      `${API}/api/public/signing/${token}/auth/verify`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ code: "000000" }),
+      }
+    );
+    bad.status === 400
+      ? pass("signer auth email_otp rejects bad code")
+      : fail(
+          "signer auth email_otp rejects bad code",
+          `HTTP ${bad.status}`
+        );
+
+    const otp = process.env.SEAL_DOGFOOD_OTP?.trim();
+    if (otp) {
+      const good = await fetch(
+        `${API}/api/public/signing/${token}/auth/verify`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ code: otp }),
+        }
+      );
+      const goodBody = await good.json().catch(() => ({}));
+      good.ok && goodBody.success && goodBody.method === "email_otp"
+        ? pass("signer auth email_otp verify")
+        : fail(
+            "signer auth email_otp verify",
+            `HTTP ${good.status} ${JSON.stringify(goodBody)}`
+          );
+    } else {
+      pass(
+        "signer auth email_otp verify",
+        "skipped (set SEAL_DOGFOOD_OTP from inbox to assert full verify)"
+      );
+    }
+  } catch (err) {
+    fail(
+      "signer auth email_otp",
       err instanceof Error ? err.message : String(err)
     );
   }
@@ -981,6 +1126,8 @@ startxref
 
   if (PROVE_SIGNER_AUTH === "access_code") {
     await proveAccessCodeSignerAuth();
+  } else if (PROVE_SIGNER_AUTH === "email_otp") {
+    await proveEmailOtpSignerAuth();
   }
 
   {

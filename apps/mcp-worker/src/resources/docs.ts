@@ -373,7 +373,7 @@ Templates are stored indefinitely. There is no limit on the number of templates 
 
 Seal API keys use Bearer token authentication:
 \`\`\`
-Authorization: Bearer ak_your_api_key_here
+Authorization: Bearer seal_your_api_key_here
 \`\`\`
 
 Keys are prefixed with \`ak_\` and are scoped to specific permissions.

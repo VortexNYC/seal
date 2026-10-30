@@ -49,79 +49,45 @@ console.log("Secret:", webhook.secret); // Save this securely!
 
 ## Step 2: Implement Webhook Handler
 
-Create an HTTP endpoint that receives and processes webhook events:
+Use the SDK helpers (recommended) or see [Signature Verification](/docs/webhooks/verification).
 
 ```typescript
 import express from "express";
-import { createHmac, timingSafeEqual } from "crypto";
+import {
+  parseSealWebhookEnvelope,
+  readSealWebhookHeaders,
+  verifySealWebhookSignature,
+} from "@vortex-api/seal";
 
 const app = express();
-
-// Use raw body for signature verification
 app.use("/webhooks/seal", express.raw({ type: "application/json" }));
 
 app.post("/webhooks/seal", async (req, res) => {
-  try {
-    // Step 1: Verify signature
-    const signature = req.headers["x-seal-signature"] as string;
-    const eventId = req.headers["x-seal-event-id"] as string;
-    const timestamp = req.headers["x-seal-timestamp"] as string;
-    const payload = req.body.toString("utf8");
+  const raw = req.body.toString("utf8");
+  const headers = readSealWebhookHeaders(req.headers);
 
-    if (
-      !verifySignature(
-        payload,
-        signature,
-        eventId,
-        timestamp,
-        process.env.WEBHOOK_SECRET!
-      )
-    ) {
-      console.error("Invalid webhook signature");
-      return res.status(401).send("Unauthorized");
-    }
-
-    // Step 2: Parse event
-    const event = JSON.parse(payload);
-    console.log("Received event:", event.type, event.id);
-
-    // Step 3: Process event asynchronously
-    processEventAsync(event).catch((err) => {
-      console.error("Event processing failed:", err);
-    });
-
-    // Step 4: Respond immediately
-    res.status(200).send("OK");
-  } catch (error) {
-    console.error("Webhook handler error:", error);
-    res.status(500).send("Internal Server Error");
+  const ok = await verifySealWebhookSignature(
+    raw,
+    headers.signature,
+    process.env.WEBHOOK_SECRET!
+  );
+  if (!ok) {
+    return res.status(401).send("Unauthorized");
   }
+
+  const event = parseSealWebhookEnvelope(raw);
+  void processEventAsync(event).catch((err) => {
+    console.error("Event processing failed:", err);
+  });
+
+  res.status(200).send("OK");
 });
 
-function verifySignature(
-  payload: string,
-  signature: string,
-  eventId: string,
-  timestamp: string,
-  secret: string
-): boolean {
-  const signedContent = `${eventId}.${timestamp}.${payload}`;
-  const expectedSignature = `v1=${createHmac("sha256", secret)
-    .update(signedContent)
-    .digest("hex")}`;
-
-  if (signature.length !== expectedSignature.length) {
-    return false;
-  }
-
-  return timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expectedSignature)
-  );
-}
-
-async function processEventAsync(event: any) {
-  switch (event.type) {
+async function processEventAsync(event: {
+  eventType: string;
+  data: Record<string, unknown>;
+}) {
+  switch (event.eventType) {
     case "document.viewed":
     case "recipient.viewed":
       await handleDocumentViewed(event.data);
@@ -133,7 +99,7 @@ async function processEventAsync(event: any) {
       await handleRecipientSigned(event.data);
       break;
     default:
-      console.log("Unhandled event type:", event.type);
+      console.log("Unhandled event type:", event.eventType);
   }
 }
 

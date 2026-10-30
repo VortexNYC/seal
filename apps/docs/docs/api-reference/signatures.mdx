@@ -60,7 +60,7 @@ const response = await fetch(
   "https://api.seal.nyc/api/v1/signatures?document_id=doc_xyz789",
   {
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
     },
   }
 );
@@ -72,7 +72,7 @@ const signatures = await response.json();
 
 ```bash
 curl -X GET https://api.seal.nyc/api/v1/signatures?document_id=doc_xyz789 \
-  -H "Authorization: Bearer ak_your_api_key_here"
+  -H "Authorization: Bearer seal_your_api_key_here"
 ```
 
 ### Response
@@ -113,7 +113,7 @@ const response = await fetch(
   "https://api.seal.nyc/api/v1/signatures/get?document_id=doc_xyz789&id=sig_abc123",
   {
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
     },
   }
 );
@@ -125,7 +125,7 @@ const signature = await response.json();
 
 ```bash
 curl -X GET "https://api.seal.nyc/api/v1/signatures/get?document_id=doc_xyz789&id=sig_abc123" \
-  -H "Authorization: Bearer ak_your_api_key_here"
+  -H "Authorization: Bearer seal_your_api_key_here"
 ```
 
 ## Verify Document
@@ -149,7 +149,7 @@ const response = await fetch(
   "https://api.seal.nyc/api/v1/signatures/verify?document_id=doc_xyz789",
   {
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
     },
   }
 );
@@ -161,7 +161,7 @@ const verification = await response.json();
 
 ```bash
 curl -X GET "https://api.seal.nyc/api/v1/signatures/verify?document_id=doc_xyz789" \
-  -H "Authorization: Bearer ak_your_api_key_here"
+  -H "Authorization: Bearer seal_your_api_key_here"
 ```
 
 ### Response
@@ -212,7 +212,7 @@ const response = await fetch(
   "https://api.seal.nyc/api/v1/signatures/audit?document_id=doc_xyz789",
   {
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
     },
   }
 );
@@ -224,7 +224,7 @@ const auditTrail = await response.json();
 
 ```bash
 curl -X GET "https://api.seal.nyc/api/v1/signatures/audit?document_id=doc_xyz789" \
-  -H "Authorization: Bearer ak_your_api_key_here"
+  -H "Authorization: Bearer seal_your_api_key_here"
 ```
 
 ### Response

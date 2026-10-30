@@ -19,7 +19,7 @@ truth for every operational “do or fetch.”
 | OpenAPI / HTTP           | Contract                                                                              |
 | [MCP](/mcp)              | Tools and prompts over that API                                                       |
 | CLI (`seal`)             | Thin HTTP client: `seal <METHOD> /api/v1/... [body.json]` or `seal upload ./file.pdf` |
-| SDK (`@vortex-api/seal`) | Typed `paths` / `components` from OpenAPI + signing embed                             |
+| SDK (`@vortex-api/seal`) | Typed `paths` / `components` from OpenAPI, signing embed, **webhook verify helpers**  |
 
 MCP, CLI, and SDK **must not** invent capabilities that are missing from
 OpenAPI. Spec first, then wrap. After changing `openapi.yaml`, regenerate SDK
@@ -83,6 +83,9 @@ Hosted runs assert Cloudflare Email Sending accepted the signing invite
 Golden path also polls webhook deliveries for **`recipient.viewed`**, **`document.viewed`**,
 **`recipient.signed`**, and **`document.completed`** after the public signing half
 (same events your endpoint should subscribe to for a full funnel).
+
+Optional: `--prove-signer-auth email_otp` (challenge + bad code; set `SEAL_DOGFOOD_OTP`
+from the inbox email to assert full verify) or `--prove-signer-auth access_code`.
 
 ### Human handoff (InteractionSession)
 

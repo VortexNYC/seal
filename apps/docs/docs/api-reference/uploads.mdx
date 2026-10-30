@@ -39,7 +39,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
     },
   }
 );
@@ -51,7 +51,7 @@ const { upload_url } = await response.json();
 
 ```bash
 curl -X POST https://api.seal.nyc/api/v1/uploads/generate-url \
-  -H "Authorization: Bearer ak_your_api_key_here"
+  -H "Authorization: Bearer seal_your_api_key_here"
 ```
 
 ### Response
@@ -92,7 +92,7 @@ const urlResponse = await fetch(
   {
     method: "POST",
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
     },
   }
 );
@@ -120,7 +120,7 @@ const { storageId } = await uploadResponse.json();
 const docResponse = await fetch("https://api.seal.nyc/api/v1/documents", {
   method: "POST",
   headers: {
-    Authorization: "Bearer ak_your_api_key_here",
+    Authorization: "Bearer seal_your_api_key_here",
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
@@ -139,7 +139,7 @@ const document = await docResponse.json();
 ```bash
 # Step 1: Generate upload URL
 RESPONSE=$(curl -X POST https://api.seal.nyc/api/v1/uploads/generate-url \
-  -H "Authorization: Bearer ak_your_api_key_here")
+  -H "Authorization: Bearer seal_your_api_key_here")
 
 UPLOAD_URL=$(echo $RESPONSE | jq -r '.upload_url')
 
@@ -152,7 +152,7 @@ STORAGE_ID=$(echo $UPLOAD_RESPONSE | jq -r '.storageId')
 
 # Step 3: Create document
 curl -X POST https://api.seal.nyc/api/v1/documents \
-  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Authorization: Bearer seal_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d "{
     \"title\": \"Service Agreement\",

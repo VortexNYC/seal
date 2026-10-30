@@ -12,7 +12,7 @@
     "build": "pnpm --filter @seal/web run build",
     "build:all": "vp run -r build",
     "deploy": "vp run -F @seal/anydoc-worker deploy && vp run -F @seal/convert-worker deploy && vp run -F @seal/api deploy && vp run -F @seal/mcp-worker deploy && vp run -F @seal/web deploy && vp run -F @seal/site deploy",
-    "test": "vp run -F @seal/api -F @seal/web test",
+    "test": "vp run -F @seal/api -F @seal/web -F @vortex-api/seal test",
     "typecheck": "vp run -F @seal/api -F @seal/web -F @vortex-api/seal -F @seal/transactional -F @seal/convert-worker -F @seal/anydoc-worker -F @seal/mcp-worker -F @seal/internal-auth -F @seal/site typecheck",
     "lint": "vp lint",
     "lint:fix": "vp lint --fix && vp fmt",

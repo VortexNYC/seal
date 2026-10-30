@@ -89,7 +89,7 @@ GET /api/v1/settings
 ```typescript
 const response = await fetch("https://api.seal.nyc/api/v1/settings", {
   headers: {
-    Authorization: "Bearer ak_your_api_key_here",
+    Authorization: "Bearer seal_your_api_key_here",
   },
 });
 
@@ -101,7 +101,7 @@ console.log(settings.signing.default_deadline_days); // 30
 
 ```bash
 curl -X GET "https://api.seal.nyc/api/v1/settings" \
-  -H "Authorization: Bearer ak_your_api_key_here"
+  -H "Authorization: Bearer seal_your_api_key_here"
 ```
 
 ### Response
@@ -183,7 +183,7 @@ All fields are optional. Include only the categories and fields you want to chan
 const response = await fetch("https://api.seal.nyc/api/v1/settings", {
   method: "PATCH",
   headers: {
-    Authorization: "Bearer ak_your_api_key_here",
+    Authorization: "Bearer seal_your_api_key_here",
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
@@ -202,7 +202,7 @@ const result = await response.json();
 
 ```bash
 curl -X PATCH "https://api.seal.nyc/api/v1/settings" \
-  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Authorization: Bearer seal_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
     "notifications": {

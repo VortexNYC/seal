@@ -72,7 +72,7 @@ GET /api/v1/webhooks
 ```typescript
 const response = await fetch("https://api.seal.nyc/api/v1/webhooks", {
   headers: {
-    Authorization: "Bearer ak_your_api_key_here",
+    Authorization: "Bearer seal_your_api_key_here",
   },
 });
 
@@ -83,7 +83,7 @@ const webhooks = await response.json();
 
 ```bash
 curl -X GET https://api.seal.nyc/api/v1/webhooks \
-  -H "Authorization: Bearer ak_your_api_key_here"
+  -H "Authorization: Bearer seal_your_api_key_here"
 ```
 
 ## Get Webhook
@@ -107,7 +107,7 @@ const response = await fetch(
   "https://api.seal.nyc/api/v1/webhooks/get?id=wh_abc123",
   {
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
     },
   }
 );
@@ -144,7 +144,7 @@ POST /api/v1/webhooks
 const response = await fetch("https://api.seal.nyc/api/v1/webhooks", {
   method: "POST",
   headers: {
-    Authorization: "Bearer ak_your_api_key_here",
+    Authorization: "Bearer seal_your_api_key_here",
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
@@ -161,7 +161,7 @@ const webhook = await response.json();
 
 ```bash
 curl -X POST https://api.seal.nyc/api/v1/webhooks \
-  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Authorization: Bearer seal_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://api.example.com/webhooks/seal",
@@ -217,7 +217,7 @@ const response = await fetch(
   {
     method: "PUT",
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -250,7 +250,7 @@ const response = await fetch(
   {
     method: "DELETE",
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
     },
   }
 );
@@ -281,7 +281,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
     },
   }
 );
