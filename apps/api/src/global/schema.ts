@@ -1,6 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import {
   index,
+  uniqueIndex,
   integer,
   real,
   sqliteTable,
@@ -363,7 +364,7 @@ export const member = sqliteTable(
   (table) => [
     index("member_organizationId_idx").on(table.organizationId),
     index("member_userId_idx").on(table.userId),
-    index("member_org_user_idx").on(table.organizationId, table.userId),
+    uniqueIndex("member_organizationId_userId_unique").on(table.organizationId, table.userId),
   ]
 );
 
