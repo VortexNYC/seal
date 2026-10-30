@@ -106,7 +106,7 @@ Next embed work = **same SEA-78 widget diet** inside iframe, not new props.
 | Sender document builder | **adapt** | Placement canvas stays; SEA-79 trim dossier chrome |
 | Templates | **keep** | Agent-primary; UI = oversight (`/{slug}/templates`) |
 | Remind / void / resend | **keep** | API/MCP first; thin UI actions |
-| Embed host (`SealSigningEmbed`) | **keep** | Prove parity with guest chrome under `?embed=true` |
+| Embed host (`SealSigningEmbed`) | **keep** | SEA-78 chrome parity under `?embed=true` (header actions + single CTA) |
 | Settings (signing / branding / SSO) | **keep** | Enterprise; don’t export settings density to signer |
 | Activity / audit on **guest** signer | **skip** | ✓ enforced — Activity on sender `$documentId` only |
 | Agree.com-style marketing signer | **skip** | ADR-007 |

@@ -67,10 +67,14 @@ function collectTools() {
   return byCategory;
 }
 
+function mdxSafeCell(text) {
+  return text.replace(/\|/g, "\\|").replace(/\{/g, "&#123;").replace(/\}/g, "&#125;");
+}
+
 function renderCatalog(byCategory) {
   const total = [...byCategory.values()].reduce((n, list) => n + list.length, 0);
   const lines = [
-    `<!-- GENERATED:START — ${total} tools; do not edit by hand -->`,
+    `{/* GENERATED:START — ${total} tools; do not edit by hand */}`,
     "",
     `**${total} tools** registered in \`apps/mcp-worker/src/tools/\`.`,
     "Regenerate: \`pnpm run generate:mcp-tool-catalog\`.",
@@ -85,13 +89,13 @@ function renderCatalog(byCategory) {
     lines.push("| Tool | Summary |");
     lines.push("| ---- | ------- |");
     for (const tool of tools) {
-      const desc = tool.desc.replace(/\|/g, "\\|");
+      const desc = mdxSafeCell(tool.desc);
       lines.push(`| \`${tool.name}\` | ${desc} |`);
     }
     lines.push("");
   }
 
-  lines.push("<!-- GENERATED:END -->", "");
+  lines.push("{/* GENERATED:END */}", "");
   return lines.join("\n");
 }
 
@@ -100,8 +104,8 @@ function readTemplate() {
 }
 
 function replaceGeneratedBlock(template, generated) {
-  const start = "<!-- GENERATED:START";
-  const end = "<!-- GENERATED:END -->";
+  const start = "{/* GENERATED:START";
+  const end = "{/* GENERATED:END */}";
   const i = template.indexOf(start);
   const j = template.indexOf(end);
   if (i === -1 || j === -1) {

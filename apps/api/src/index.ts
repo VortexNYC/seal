@@ -758,6 +758,7 @@ app.route("/api/folders", folders);
 app.route("/oauth/seal-mcp", mcpOauth);
 app.route("/api/notifications", notifications);
 app.route("/api/organizations", organizations);
+app.route("/api/v1/organizations", scim);
 app.route("/api/organizations", scim);
 app.route("/api/public", publicApi);
 app.route("/api/reviews", orgReviews);

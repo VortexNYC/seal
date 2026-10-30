@@ -94,8 +94,23 @@ SEAL_API_KEY=seal_… node scripts/smoke-prod.mjs --api https://seal-selfhost-ap
 | ----- | ----- |
 | Status | [seal.nyc/status](https://seal.nyc/status) |
 | API health | `GET https://api.seal.nyc/health` |
-| Docs | [docs.seal.nyc](https://docs.seal.nyc) |
+| Docs | [docs.seal.nyc](https://docs.seal.nyc) — static site; updates when `apps/docs` deploys via cloudflare-ci after `main` |
 | MCP | `mcp.seal.nyc` |
+
+## Proof limits (not blockers)
+
+Automated gates (`prove:golden-path`, `smoke-prod.mjs`) cover API send acceptance,
+public signing ceremony (privacy/consent + viewed/signed), webhook deliveries,
+completed PDF markers, and audit export — not every operational dimension:
+
+| Area | What proof asserts | What it does **not** assert |
+| ---- | ------------------ | --------------------------- |
+| Email | Cloudflare Email Sending accepted invite (`email_sent` on send) | Recipient **inbox** delivery (spam, suppression, routing) |
+| Analytics | PostHog on authenticated product surfaces (deferred boot) | Full product funnel dashboards or guest-signer telemetry |
+| Embed | Same `/sign/$token` route with `?embed=true` (SDK iframe) | Host-app integration tests in your app — exercise `SealSigningEmbed` in staging |
+
+Track inbox-level and analytics gaps as product tickets when they block a customer;
+they are outside the agent OpenAPI golden path.
 
 ## Self-host extras
 

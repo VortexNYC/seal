@@ -88,7 +88,10 @@ describe("SEA-71 SCIM provisioning", () => {
 
     const createConn = await app.fetch(
       new Request(
-        new URL(`/api/organizations/${org.slug}/scim/connections`, origin),
+        new URL(
+          `/api/v1/organizations/${org.slug}/scim/connections`,
+          origin
+        ),
         {
           method: "POST",
           headers: {
@@ -113,7 +116,10 @@ describe("SEA-71 SCIM provisioning", () => {
 
     const list = await app.fetch(
       new Request(
-        new URL(`/api/organizations/${org.slug}/scim/connections`, origin),
+        new URL(
+          `/api/v1/organizations/${org.slug}/scim/connections`,
+          origin
+        ),
         { headers: { Cookie: cookie, Origin: origin } }
       ),
       env

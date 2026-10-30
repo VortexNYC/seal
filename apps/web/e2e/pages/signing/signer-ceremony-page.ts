@@ -11,6 +11,10 @@ export class SignerCeremonyPage {
     await this.page.goto(`/sign/${signingToken}`);
   }
 
+  async gotoEmbed(signingToken: string): Promise<void> {
+    await this.page.goto(`/sign/${signingToken}?embed=true`);
+  }
+
   async expectPreflightSurfaceVisible(timeout = 10_000): Promise<void> {
     await expect(
       this.page

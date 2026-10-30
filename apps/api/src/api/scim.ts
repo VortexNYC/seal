@@ -58,9 +58,9 @@ async function loadOrgAdmin(
 
 const createConnectionRoute = createRoute({
   method: "post",
-  path: "/{slug}/scim/connections",
+  path: "/{organizationSlug}/scim/connections",
   request: {
-    params: z.object({ slug: z.string() }),
+    params: z.object({ organizationSlug: z.string() }),
     body: {
       content: {
         "application/json": {
@@ -93,13 +93,13 @@ const createConnectionRoute = createRoute({
 });
 
 app.openapi(createConnectionRoute, async (c) => {
-  const { slug } = c.req.valid("param");
+  const { organizationSlug } = c.req.valid("param");
   const input = c.req.valid("json");
   const sessionUser = c.get("user");
   if (!sessionUser) {
     return c.json({ error: "Unauthorized" }, 401);
   }
-  const access = await loadOrgAdmin(c.env, slug, sessionUser.user.id);
+  const access = await loadOrgAdmin(c.env, organizationSlug, sessionUser.user.id);
   if (!access.ok) {
     return c.json({ error: access.error }, access.status);
   }
@@ -131,9 +131,9 @@ app.openapi(createConnectionRoute, async (c) => {
 
 const listConnectionsRoute = createRoute({
   method: "get",
-  path: "/{slug}/scim/connections",
+  path: "/{organizationSlug}/scim/connections",
   request: {
-    params: z.object({ slug: z.string() }),
+    params: z.object({ organizationSlug: z.string() }),
   },
   responses: {
     200: {
@@ -159,12 +159,12 @@ const listConnectionsRoute = createRoute({
 });
 
 app.openapi(listConnectionsRoute, async (c) => {
-  const { slug } = c.req.valid("param");
+  const { organizationSlug } = c.req.valid("param");
   const sessionUser = c.get("user");
   if (!sessionUser) {
     return c.json({ error: "Unauthorized" }, 401);
   }
-  const access = await loadOrgAdmin(c.env, slug, sessionUser.user.id);
+  const access = await loadOrgAdmin(c.env, organizationSlug, sessionUser.user.id);
   if (!access.ok) {
     return c.json({ error: access.error }, access.status);
   }

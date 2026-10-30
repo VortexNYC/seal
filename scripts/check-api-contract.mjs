@@ -72,6 +72,7 @@ const PREFIX = {
   "org-webhooks": "/organizations/{organizationSlug}/webhooks",
   imports: "/imports",
   members: "/members",
+  scim: "/organizations",
 };
 // helper modules, not routers
 const NON_ROUTES = new Set(["download-token", "upload-token"]);
@@ -106,6 +107,34 @@ for (const file of readdirSync(v1Dir)) {
     } else if (!specNorm.get(norm(p)).has(method)) {
       problems.push(
         `${method.toUpperCase()} ${p} (${name}.ts) — path specced, method missing`
+      );
+    }
+  }
+}
+
+// OpenAPIHono createRoute routers (path + method on createRoute, not app.get)
+const OPENAPI_ROUTE_FILES = {
+  scim: { file: "scim.ts", dir: resolve(root, "apps/api/src/api") },
+};
+
+for (const [name, { file, dir }] of Object.entries(OPENAPI_ROUTE_FILES)) {
+  const prefix = PREFIX[name];
+  if (!prefix) {
+    problems.push(`openapi route ${name}: unmapped — add PREFIX`);
+    continue;
+  }
+  const src = readFileSync(resolve(dir, file), "utf8");
+  for (const m of src.matchAll(
+    /createRoute\(\{\s*method:\s*"(get|post|put|delete|patch)",\s*path:\s*"([^"]+)"/gs
+  )) {
+    const [, method, sub] = m;
+    const p = prefix + sub;
+    codeRoutes.set(norm(p), (codeRoutes.get(norm(p)) ?? new Set()).add(method));
+    if (!specNorm.has(norm(p))) {
+      problems.push(`${method.toUpperCase()} ${p} (${file}) — not in spec`);
+    } else if (!specNorm.get(norm(p)).has(method)) {
+      problems.push(
+        `${method.toUpperCase()} ${p} (${file}) — path specced, method missing`
       );
     }
   }

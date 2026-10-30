@@ -13,7 +13,7 @@ rely on a stale count.
 OpenAPI remains the contract: [`/reference`](/reference). Agent doctrine:
 [Agents & who signs](/docs/getting-started/agents).
 
-<!-- GENERATED:START — 119 tools; do not edit by hand -->
+{/* GENERATED:START — 119 tools; do not edit by hand */}
 
 **119 tools** registered in `apps/mcp-worker/src/tools/`.
 Regenerate: `pnpm run generate:mcp-tool-catalog`.
@@ -140,7 +140,7 @@ Regenerate: `pnpm run generate:mcp-tool-catalog`.
 
 | Tool | Summary |
 | ---- | ------- |
-| `seal_get_interaction` | Get the InteractionSession for a document (Human handoff). Returns { id, kind, url, status, message, poll }. For signing: show or open `url` for the human, then call seal_wait_interaction (or poll seal_get_interaction) until status is not pending. Never forge the signature. Maps to MCP URL-mode elicitation. |
+| `seal_get_interaction` | Get the InteractionSession for a document (Human handoff). Returns &#123; id, kind, url, status, message, poll &#125;. For signing: show or open `url` for the human, then call seal_wait_interaction (or poll seal_get_interaction) until status is not pending. Never forge the signature. Maps to MCP URL-mode elicitation. |
 | `seal_wait_interaction` | Poll InteractionSession until terminal (completed / cancelled / declined / expired). Prefer calling seal_get_interaction first and showing `url` + `message` to the human (or URL-mode elicitation). Returns the final session JSON. |
 
 ### Members
@@ -247,7 +247,7 @@ Regenerate: `pnpm run generate:mcp-tool-catalog`.
 | `seal_rotate_webhook_secret` | Rotate the signing secret for a webhook endpoint. Returns the new secret — save it securely and update your server immediately as the old secret stops working right away. |
 | `seal_update_webhook` | Update a webhook endpoint's configuration. You can change the URL, subscribed events, status, or description. Only provide fields you want to change. |
 
-<!-- GENERATED:END -->
+{/* GENERATED:END */}
 
 ## Related
 

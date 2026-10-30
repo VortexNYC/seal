@@ -71,4 +71,28 @@ test.describe("Signer ceremony gates", () => {
       await context.close();
     }
   });
+
+  test("embed mode shows header actions and primary CTA after preflight", async ({
+    browser,
+    signableDoc,
+  }) => {
+    test.setTimeout(90_000);
+    const context = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
+    try {
+      const page = await context.newPage();
+      const ceremony = new SignerCeremonyPage(page);
+      await ceremony.gotoEmbed(signableDoc.signingToken);
+      await ceremony.completePreflightGates();
+      await expect(page.getByTestId("signer-header-decline")).toBeVisible({
+        timeout: 20_000,
+      });
+      await expect(page.getByTestId("signer-primary-action")).toBeVisible({
+        timeout: 20_000,
+      });
+    } finally {
+      await context.close();
+    }
+  });
 });

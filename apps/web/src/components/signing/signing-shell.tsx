@@ -39,18 +39,23 @@ export function SigningShell({
       )}
     >
       {embedded ? (
-        <div className="mt-2 flex min-w-0 items-baseline gap-x-2 px-3 sm:px-0">
-          <Text as="h1" size="sm" title={title} DANGEROUS_className="truncate">
-            {title}
-          </Text>
-          {instruction ? (
-            <Text
-              variant="secondary"
-              size="xs"
-              DANGEROUS_className="truncate"
-            >
-              {instruction}
+        <div className="mt-2 flex min-w-0 flex-wrap items-center justify-between gap-2 px-3 sm:px-0">
+          <div className="flex min-w-0 flex-1 items-baseline gap-x-2">
+            <Text as="h1" size="sm" title={title} DANGEROUS_className="truncate">
+              {title}
             </Text>
+            {instruction ? (
+              <Text
+                variant="secondary"
+                size="xs"
+                DANGEROUS_className="truncate"
+              >
+                {instruction}
+              </Text>
+            ) : null}
+          </div>
+          {headerActions ? (
+            <div className="flex shrink-0 items-center gap-1">{headerActions}</div>
           ) : null}
         </div>
       ) : (
