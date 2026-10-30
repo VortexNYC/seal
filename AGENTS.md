@@ -107,12 +107,14 @@ deploy pipeline. Pipeline: `deps → build → preview (branches) / migrate+depl
 
 GitHub Actions kept here (narrow roles only):
 
-- `artifacts-sync.yml` — mirrors every push into the Artifacts git remote that
-  triggers cloudflare-ci. This is the sync bridge, not a deploy.
 - `secrets.yml` — manual-dispatch upload/verify of Worker secrets
   (`wrangler secret put`). cloudflare-ci has no secrets path yet; when it does,
   delete this workflow.
 - `golden-path.yml` — hosted dogfood prove (skips without `SEAL_API_KEY`).
+
+Artifacts mirroring runs in **cloudflare-ci** (`MirrorWorkflow` on push webhooks).
+It posts the branch-protection check **Push to Cloudflare Artifacts** — do not
+re-add `artifacts-sync.yml` (double mirror + duplicate failure mail).
 
 The SEA-53 secretlint gate runs in cloudflare-ci checks (posts the
 `secretlint` check run — same context branch protection requires).
