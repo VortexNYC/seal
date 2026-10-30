@@ -73,12 +73,17 @@ Do these in order; stop when one fails.
    ```
 2. **Open the printed web URL** → sign up → verify email → create a workspace
 3. **Developer → API Keys** → create `seal_…`
-4. **Golden path** (CLI + public signing half → completed → audit):
+4. **Golden path** (CLI + public signing half → completed → audit). Hosted runs
+   also assert **Cloudflare Email Sending** accepted the invite (`email_sent` on
+   send). Before you enable mail on self-host, pass `--skip-invite-email`:
    ```bash
    SEAL_API_KEY=seal_… pnpm run prove:golden-path \
      --api https://seal-selfhost-api.<account>.workers.dev \
-     --app https://seal-selfhost-web.<account>.workers.dev
+     --app https://seal-selfhost-web.<account>.workers.dev \
+     --skip-invite-email
    ```
+   After [Email](#email-required-for-real-invites) is configured, rerun **without**
+   `--skip-invite-email` (same as hosted `api.seal.nyc`).
    Alternate raw HTTP smoke (no CLI):
    ```bash
    SEAL_API_KEY=seal_… node scripts/smoke-prod.mjs \
@@ -95,13 +100,16 @@ before claiming self-host works.
 
 `selfhost` ships with a Cloudflare Email Sending binding (`EMAIL`). Signing
 links still work from the UI/API without mail; invites need a verified sender
-domain on **your** Cloudflare account.
+domain on **your** Cloudflare account. Seal sends **HTML + plain text** on every
+transactional message (Cloudflare Email Service guidance).
 
 1. Enable sending for your domain:
    `pnpm exec wrangler email sending enable your-domain.com`
 2. Set `allowed_sender_addresses` / `EMAIL_FROM` under `[env.selfhost]` in
    `apps/api/wrangler.toml` to an address on that domain
 3. Redeploy: `pnpm --filter @seal/api exec wrangler deploy --env selfhost`
+4. Rerun golden path **without** `--skip-invite-email` — a passing run proves
+   `EMAIL.send` succeeded (`email_sent: true`), not that Gmail put it in the inbox.
 
 Vortex dogfood uses `noreply@seal.nyc` (domain already enabled on the account).
 

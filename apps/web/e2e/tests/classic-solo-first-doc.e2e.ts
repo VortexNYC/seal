@@ -10,6 +10,7 @@ import { expect as authExpect, test as authTest } from "../fixtures/auth";
 import { sampleDocumentPath } from "../fixtures/paths";
 import { DocumentPage } from "../pages/documents/document-page";
 import { DocumentsListPage } from "../pages/documents/documents-list-page";
+import { SignerCeremonyPage } from "../pages/signing/signer-ceremony-page";
 import { testData } from "../utils/test-data";
 
 /**
@@ -56,31 +57,9 @@ recipientTest.describe("SEA-83 guided next-field", () => {
       });
       try {
         const page = await context.newPage();
-        await page.goto(`/sign/${multiFieldDoc.signingToken}`);
-
-        const start = page.getByRole("button", { name: /^start$/i });
-        if (await start.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await start.click();
-        }
-        const privacyAccept = page.getByRole("button", {
-          name: /accept|continue|acknowledge/i,
-        });
-        if (
-          await privacyAccept.isVisible({ timeout: 2000 }).catch(() => false)
-        ) {
-          await privacyAccept.click();
-        }
-
-        await page
-          .getByRole("checkbox", {
-            name: /consent to use electronic signatures/i,
-          })
-          .check();
-        await page
-          .getByRole("button", {
-            name: /accept electronic signature consent/i,
-          })
-          .click();
+        const ceremony = new SignerCeremonyPage(page);
+        await ceremony.goto(multiFieldDoc.signingToken);
+        await ceremony.completePreflightGates();
 
         const nextField = page.getByTestId("signer-next-field");
         await expect(nextField).toBeVisible({ timeout: 20_000 });
@@ -111,31 +90,9 @@ recipientTest.describe("SEA-83 guided next-field", () => {
       });
       try {
         const page = await context.newPage();
-        await page.goto(`/sign/${multiFieldDoc.signingToken}`);
-
-        const start = page.getByRole("button", { name: /^start$/i });
-        if (await start.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await start.click();
-        }
-        const privacyAccept = page.getByRole("button", {
-          name: /accept|continue|acknowledge/i,
-        });
-        if (
-          await privacyAccept.isVisible({ timeout: 2000 }).catch(() => false)
-        ) {
-          await privacyAccept.click();
-        }
-
-        await page
-          .getByRole("checkbox", {
-            name: /consent to use electronic signatures/i,
-          })
-          .check();
-        await page
-          .getByRole("button", {
-            name: /accept electronic signature consent/i,
-          })
-          .click();
+        const ceremony = new SignerCeremonyPage(page);
+        await ceremony.goto(multiFieldDoc.signingToken);
+        await ceremony.completePreflightGates();
 
         await expect(page.getByTestId("signer-view-toggle")).toBeVisible({
           timeout: 20_000,

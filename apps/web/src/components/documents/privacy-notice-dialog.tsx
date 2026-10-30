@@ -37,6 +37,7 @@ export function PrivacyNoticeDialog({
     return (
       <div
         data-seal-enter
+        data-testid="signer-privacy-notice-accepted"
         className="bg-kumo-canvas flex min-h-dvh flex-col items-center justify-center px-4 py-8"
       >
         <div className="flex w-full max-w-lg flex-col gap-6">
@@ -63,6 +64,7 @@ export function PrivacyNoticeDialog({
   return (
     <div
       data-seal-enter
+      data-testid="signer-privacy-notice"
       className="bg-kumo-canvas flex min-h-dvh flex-col items-center justify-center px-4 py-8"
     >
       <div className="flex w-full max-w-lg flex-col gap-6">
@@ -94,12 +96,14 @@ export function PrivacyNoticeDialog({
         </LayerCard>
 
         <Checkbox
+          data-testid="signer-privacy-ack"
           label="I have read and acknowledge this privacy notice."
           checked={isChecked}
           onCheckedChange={(value) => setIsChecked(value === true)}
         />
 
         <Button
+          data-testid="signer-privacy-continue"
           className="w-full"
           disabled={!isChecked || isSubmitting}
           onClick={handleAccept}

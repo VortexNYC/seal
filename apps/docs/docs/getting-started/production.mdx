@@ -18,14 +18,17 @@ recipients (humans) sign. See [Agents & who signs](/getting-started/agents).
 5. Webhook (or poll) sees `document.completed`
 6. Audit log shows the trail
 
-Hosted golden path (from the repo — CLI + public signing half → completed → audit):
+Hosted golden path (from the repo — CLI + public signing half → completed → audit).
+By default it requires **`email_sent: true`** on send (Cloudflare `EMAIL` binding
+accepted the invite). Self-host without mail: add `--skip-invite-email`.
 
 ```bash
 SEAL_API_KEY=seal_… pnpm run prove:golden-path
-# self-host:
+# self-host (no email yet):
 SEAL_API_KEY=seal_… pnpm run prove:golden-path \
   --api https://seal-selfhost-api.<account>.workers.dev \
-  --app https://seal-selfhost-web.<account>.workers.dev
+  --app https://seal-selfhost-web.<account>.workers.dev \
+  --skip-invite-email
 ```
 
 Alternate raw HTTP smoke (no CLI):

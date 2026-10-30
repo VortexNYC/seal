@@ -13,7 +13,9 @@ on:
     paths:
       - "packages/sdk/**"
       - "scripts/dogfood-cli.mjs"
+      - "scripts/lib/**"
       - "scripts/prove-golden-path.mjs"
+      - "scripts/prove-sealed-pdf.mjs"
       - "scripts/smoke-prod.mjs"
       - ".github/workflows/golden-path.yml"
 
@@ -59,3 +61,4 @@ jobs:
             exit 0
           fi
           pnpm run prove:golden-path
+          # prove:golden-path forwards --require-invite-email (Cloudflare EMAIL.send / email_sent)
