@@ -5,7 +5,7 @@ import { useCallback, useState } from "react";
  */
 export function useSectionState() {
   const [openSections, setOpenSections] = useState<Set<string>>(
-    new Set(["recipients", "fields", "your-signature"])
+    () => new Set(["recipients", "fields"])
   );
 
   const toggleSection = useCallback((section: string) => {

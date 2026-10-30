@@ -115,8 +115,10 @@ DocuSign feature parity theater · OpenSign-style PdfHeader kitchen-sink on sign
 ## Sender surface (separate from guest)
 
 Documenso-style **dashboard/builder** density is intentionally on authenticated
-routes (`$documentId`, templates, analytics). ADR-007 + **SEA-79**: trim sender
-chrome that doesn’t answer “can I send?” — Activity stays **sender-only** (correct).
+routes (`$documentId`, templates, analytics). **SEA-79 (done):** draft sidebar
+defaults to Recipients + Fields only; no signing-progress meter; Activity shows
+five events + “Full history”; draft next-action card drops status/created meta.
+Activity stays **sender-only** (correct).
 
 ## Docs / contract (integrator story)
 

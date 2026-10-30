@@ -181,7 +181,6 @@ function DocumentDetailPage() {
   const {
     documentData,
     recipients,
-    progress,
     signatureFields,
     documentSignatures,
     paymentConfigs,
@@ -1154,7 +1153,6 @@ function DocumentDetailPage() {
               pageCount={documentData.pageCount}
               numPages={pdfViewer.numPages}
               recipients={sidebarRecipients}
-              progress={progress}
               signatureFields={sidebarFields}
               currentUserRecipient={currentUserRecipient}
               currentUserFields={currentUserFields}
@@ -1201,6 +1199,7 @@ function DocumentDetailPage() {
                 docState.setRecipientOptionsOpen(true);
               }}
               activityEvents={activityEvents}
+              onOpenFullHistory={() => setHistoryOpen(true)}
               currentPage={pdfViewer.currentPage}
               onPdfChanged={() => {
                 setPdfReloadKey((key) => key + 1);

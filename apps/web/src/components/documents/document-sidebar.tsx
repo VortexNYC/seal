@@ -26,7 +26,6 @@ import {
   DocumentNextAction,
   type DocumentNextActionModel,
 } from "./document-next-action";
-import { DocumentProgressRing } from "./document-progress-ring";
 import {
   DocumentSendSteps,
   resolveSendStep,
@@ -40,7 +39,6 @@ import type { DocumentWorkflowStatus } from "./workflow-status-badge";
 // Derive child-component prop types from their signatures to avoid duplication
 type InAppRecipient = Parameters<typeof InAppSigningSection>[0]["recipient"];
 type InAppFields = Parameters<typeof InAppSigningSection>[0]["fields"];
-type ProgressData = Parameters<typeof DocumentProgressRing>[0]["progress"];
 type FieldListField = Parameters<typeof FieldList>[0]["fields"][number];
 type FieldListRecipient = Parameters<typeof FieldList>[0]["recipients"][number];
 
@@ -57,9 +55,8 @@ interface DocumentSidebarProps {
   pageCount?: number | null;
   numPages: number | null;
 
-  // Recipients & progress
+  // Recipients
   recipients: FieldListRecipient[];
-  progress: ProgressData | null | undefined;
   signatureFields: FieldListField[];
 
   // Current user's signing state
@@ -112,6 +109,8 @@ interface DocumentSidebarProps {
 
   // Activity
   activityEvents: ActivityEvent[];
+  /** Opens envelope history dialog (full audit timeline). */
+  onOpenFullHistory?: () => void;
 
   /** Current PDF page (for rotate-current-page). */
   currentPage?: number;
@@ -560,11 +559,16 @@ function ActivitySection({
   open,
   onOpenChange,
   activityEvents,
+  onOpenFullHistory,
 }: {
   open: boolean;
   onOpenChange: () => void;
   activityEvents: ActivityEvent[];
+  onOpenFullHistory?: () => void;
 }) {
+  const preview = activityEvents.slice(0, 5);
+  const hasMore = activityEvents.length > preview.length;
+
   return (
     <LayerCard>
       <Collapsible.Root open={open} onOpenChange={onOpenChange}>
@@ -586,14 +590,28 @@ function ActivitySection({
       </Collapsible.Trigger>
       <Collapsible.Panel className="px-4 pb-4">
         {activityEvents.length > 0 ? (
-          <div className="before:bg-border before:content-empty relative mt-4 before:absolute before:top-2 before:bottom-2 before:left-3.75 before:w-0.5 before:rounded-sm sm:before:left-3.25">
-            {activityEvents.slice(0, 10).map((event, index) => (
-              <ActivityEventRow
-                key={`${event.type}-${event.timestamp}`}
-                event={event}
-                index={index}
-              />
-            ))}
+          <div className="mt-4 flex flex-col gap-3">
+            <div className="before:bg-border before:content-empty relative before:absolute before:top-2 before:bottom-2 before:left-3.75 before:w-0.5 before:rounded-sm sm:before:left-3.25">
+              {preview.map((event, index) => (
+                <ActivityEventRow
+                  key={`${event.type}-${event.timestamp}-${index}`}
+                  event={event}
+                  index={index}
+                />
+              ))}
+            </div>
+            {hasMore && onOpenFullHistory ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="w-full"
+                data-testid="document-activity-full-history"
+                onClick={onOpenFullHistory}
+              >
+                Full history ({activityEvents.length})
+              </Button>
+            ) : null}
           </div>
         ) : (
           <EmptySection
@@ -689,10 +707,6 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
     !normalizedWorkflowStatus || normalizedWorkflowStatus === "draft";
   const isDraftBuilder = props.canEdit && isDraft;
   const isOversight = !isDraft;
-  const visibleProgress =
-    isOversight && normalizedWorkflowStatus !== "cancelled"
-      ? props.progress
-      : null;
   const signingRecipient =
     props.currentUserRecipient !== null &&
     isOversight &&
@@ -818,7 +832,7 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
           }
         />
       ) : null}
-      {visibleProgress && <DocumentProgressRing progress={visibleProgress} />}
+      {/* SEA-79: progress meter removed — recipient rows + next-action card carry status. */}
       {signingRecipient && (
         <InAppSigningSection
           documentId={parseId("documents", props.documentId)}
@@ -873,6 +887,7 @@ export function DocumentSidebar(props: DocumentSidebarProps) {
           open={props.openSections.has("activity")}
           onOpenChange={() => props.toggleSection("activity")}
           activityEvents={props.activityEvents}
+          onOpenFullHistory={props.onOpenFullHistory}
         />
       )}
       </>

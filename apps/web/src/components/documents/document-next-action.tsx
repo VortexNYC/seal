@@ -118,6 +118,13 @@ function copyFor(
   }
 }
 
+const DRAFT_NEXT_ACTION_KINDS = new Set<DocumentNextActionModel["kind"]>([
+  "add_people",
+  "place_fields",
+  "fix_fields",
+  "send",
+]);
+
 export function DocumentNextAction({
   workflowStatus,
   createdAt,
@@ -128,6 +135,7 @@ export function DocumentNextAction({
   const [confirmVoid, setConfirmVoid] = useState(false);
   const statusLabel = getStatusLabel(workflowStatus);
   const { title, body } = copyFor(model, statusLabel);
+  const showStatusMeta = !DRAFT_NEXT_ACTION_KINDS.has(model.kind);
 
   return (
     <LayerCard
@@ -137,10 +145,12 @@ export function DocumentNextAction({
       aria-live="polite"
     >
       <div className="flex flex-col gap-1">
-        <Text variant="secondary" size="sm">
-          {statusLabel}
-          {" · "}Created {formatDate(createdAt)}
-        </Text>
+        {showStatusMeta ? (
+          <Text variant="secondary" size="sm">
+            {statusLabel}
+            {" · "}Created {formatDate(createdAt)}
+          </Text>
+        ) : null}
         <Text as="h2" variant="heading">
           {title}
         </Text>
