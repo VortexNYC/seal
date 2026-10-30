@@ -110,6 +110,13 @@ function AuthenticatedRedirect() {
     return <Navigate to="/onboarding/choose-organization" replace />;
   }
 
+  // Multi-org users pick a workspace each sign-in instead of being dropped
+  // into the first org silently (SEA-126) — same chooser the zero-org path
+  // already routes through.
+  if (organizations && organizations.length > 1) {
+    return <Navigate to="/onboarding/choose-organization" replace />;
+  }
+
   return (
     <Navigate
       to={buildOrganizationPath(activeOrganizationSlug, "/home")}
