@@ -270,6 +270,7 @@ async function runLogin(argv: string[]): Promise<void> {
       body: JSON.stringify({
         grant_type: "urn:ietf:params:oauth:grant-type:device_code",
         device_code: grant.device_code,
+        client_id: "seal-cli",
       }),
     });
     if (tokenRes.ok) {
