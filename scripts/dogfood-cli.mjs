@@ -11,8 +11,12 @@
  * Covers: health → folders → contact create/update → upload → document+folder_id
  * → recipients → agent fields/bindings/preview/annotations/pdf-annotate →
  * webhook create → send (signing_url) → public viewed/signed → completed →
- * certificate of completion (v1 + public) → org audit → signatures audit →
- * webhook deliveries → imports → breadcrumbs.
+ * signed-pdf PAdES verify (openssl) → certificate of completion (v1 + public) →
+ * org audit → signatures audit → webhook deliveries (viewed + signed) → imports →
+ * breadcrumbs.
+ *
+ *   --require-invite-email          fail when send returns email_sent=false
+ *   --prove-signer-auth access_code exercise public auth/verify for access_code
  *
  * The public signing half uses the same HTTP surface a recipient (or embed)
  * hits — agents prepare and track; humans (or this proof harness) apply intent.
@@ -25,6 +29,8 @@ import { mkdtemp, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { verifySealedPdfBytes } from "./lib/pades-verify.mjs";
 
 const args = process.argv.slice(2);
 function flag(name, fallback) {
@@ -41,6 +47,8 @@ const APP = flag(
   process.env.SEAL_APP_URL ?? "https://app.seal.nyc"
 ).replace(/\/$/, "");
 const SIGNER = flag("signer", "dogfood+signer@seal.nyc");
+const REQUIRE_INVITE_EMAIL = args.includes("--require-invite-email");
+const PROVE_SIGNER_AUTH = flag("prove-signer-auth", "");
 const KEY = process.env.SEAL_API_KEY;
 
 if (!KEY) {
@@ -116,6 +124,164 @@ function extractSigningToken(sent) {
     return m?.[1] ?? null;
   }
   return null;
+}
+
+async function pollWebhookDeliveries(webhookId, expectedEventTypes, stepLabel) {
+  let lastDetail = "";
+  for (let attempt = 0; attempt < 8; attempt++) {
+    await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+    try {
+      const deliveries = await sealJson([
+        "GET",
+        `/api/v1/webhooks/deliveries?webhook_id=${encodeURIComponent(webhookId)}&limit=30`,
+      ]);
+      const rows = Array.isArray(deliveries) ? deliveries : [];
+      const hit = rows.filter(
+        (d) =>
+          d?.webhookId === webhookId &&
+          expectedEventTypes.includes(d?.eventType)
+      );
+      const typesSeen = new Set(hit.map((d) => d?.eventType));
+      const allTypes = expectedEventTypes.every((t) => typesSeen.has(t));
+      lastDetail = `n=${rows.length} hit=${hit.length} types=${[...typesSeen].join(",")}`;
+      const deliveredOk = hit.some(
+        (d) =>
+          d?.status === "delivered" ||
+          d?.status === "success" ||
+          (typeof d?.responseStatus === "number" &&
+            d.responseStatus >= 200 &&
+            d.responseStatus < 300)
+      );
+      if (allTypes && (deliveredOk || hit.length >= expectedEventTypes.length)) {
+        pass(stepLabel, lastDetail);
+        return true;
+      }
+    } catch (err) {
+      lastDetail = err instanceof Error ? err.message : String(err);
+    }
+  }
+  fail(stepLabel, lastDetail || "no deliveries");
+  return false;
+}
+
+async function proveAccessCodeSignerAuth() {
+  const accessCode = "DogfoodGate9";
+  const pdfPath = join(work, "auth-gate.pdf");
+  await writeFile(
+    pdfPath,
+    Buffer.from(`%PDF-1.4
+1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj
+2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj
+3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Contents 4 0 R>>endobj
+4 0 obj<</Length 44>>stream
+BT /F1 12 Tf 72 720 Td (Auth gate) Tj ET
+endstream
+endobj
+xref
+0 5
+trailer<</Size 5/Root 1 0 R>>
+startxref
+0
+%%EOF`)
+  );
+
+  try {
+    const uploaded = await sealJson(["upload", pdfPath]);
+    const storageId = uploaded?.storage_id;
+    if (!storageId) {
+      fail("signer auth access_code", "upload missing storage_id");
+      return;
+    }
+    const doc = await sealJson([
+      "POST",
+      "/api/v1/documents",
+      await writeJson("auth-doc.json", {
+        title: `Auth gate ${stamp}`,
+        storage_id: storageId,
+        file_type: "application/pdf",
+        page_count: 1,
+      }),
+    ]);
+    const authDocId = doc?.id;
+    if (!authDocId) {
+      fail("signer auth access_code", "document create failed");
+      return;
+    }
+    const recipient = await sealJson([
+      "POST",
+      `/api/v1/recipients?document_id=${encodeURIComponent(authDocId)}`,
+      await writeJson("auth-recipient.json", {
+        email: `dogfood+auth-${Date.now()}@seal.nyc`,
+        name: "Gated Signer",
+        role: "signer",
+        auth_method: "access_code",
+        access_code: accessCode,
+      }),
+    ]);
+    const recipientId = recipient?.id;
+    await sealJson([
+      "POST",
+      "/api/v1/documents/fields",
+      await writeJson("auth-field.json", {
+        id: authDocId,
+        field_type: "signature",
+        label: "Signature",
+        page: 1,
+        x: 10,
+        y: 70,
+        width: 30,
+        height: 8,
+        is_required: true,
+        ...(recipientId ? { recipient_id: recipientId } : {}),
+      }),
+    ]);
+    const sent = await sealJson([
+      "POST",
+      `/api/v1/documents/send?id=${encodeURIComponent(authDocId)}`,
+      await writeJson("auth-send.json", { id: authDocId }),
+    ]);
+    const token = extractSigningToken(sent);
+    if (!token) {
+      fail("signer auth access_code", "missing signing token");
+      return;
+    }
+
+    const bad = await fetch(
+      `${API}/api/public/signing/${token}/auth/verify`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ code: "wrong-code" }),
+      }
+    );
+    bad.status === 400
+      ? pass("signer auth access_code rejects bad code")
+      : fail(
+          "signer auth access_code rejects bad code",
+          `HTTP ${bad.status}`
+        );
+
+    const good = await fetch(
+      `${API}/api/public/signing/${token}/auth/verify`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ code: accessCode }),
+      }
+    );
+    const goodBody = await good.json().catch(() => ({}));
+    good.ok && goodBody.success && goodBody.method === "access_code"
+      ? pass("signer auth access_code verify")
+      : fail(
+          "signer auth access_code verify",
+          `HTTP ${good.status} ${JSON.stringify(goodBody)}`
+        );
+  } catch (err) {
+    fail(
+      "signer auth access_code",
+      err instanceof Error ? err.message : String(err)
+    );
+  }
 }
 
 async function main() {
@@ -507,7 +673,12 @@ startxref
         await writeJson("webhook.json", {
           name: `Dogfood ${stamp}`,
           url: "https://httpbin.org/post",
-          events: ["recipient.signed", "document.completed"],
+          events: [
+            "recipient.viewed",
+            "document.viewed",
+            "recipient.signed",
+            "document.completed",
+          ],
           description: "golden-path delivery proof",
         }),
       ]);
@@ -534,6 +705,10 @@ startxref
         : fail("documents send", JSON.stringify(sent));
       if (sent?.recipients?.[0]?.email_sent === true) {
         pass("documents send email_sent");
+      } else if (REQUIRE_INVITE_EMAIL) {
+        fail("documents send email_sent", "email_sent=false");
+      } else {
+        pass("documents send email_sent", "skipped (use --require-invite-email to fail)");
       }
     } catch (err) {
       fail("documents send", err instanceof Error ? err.message : String(err));
@@ -628,6 +803,13 @@ startxref
             `public submit ${submit.status}`,
             `HTTP ${res.status} ${JSON.stringify(data)}`
           );
+      if (submit.status === "viewed" && webhookId) {
+        await pollWebhookDeliveries(
+          webhookId,
+          ["recipient.viewed", "document.viewed"],
+          "webhook viewed deliveries"
+        );
+      }
     }
     {
       try {
@@ -645,6 +827,33 @@ startxref
       } catch (err) {
         fail(
           "document completed",
+          err instanceof Error ? err.message : String(err)
+        );
+      }
+    }
+    {
+      try {
+        const pdfRes = await fetch(
+          `${API}/api/public/signing/${signingToken}/signed-pdf`
+        );
+        const bytes = pdfRes.ok
+          ? new Uint8Array(await pdfRes.arrayBuffer())
+          : null;
+        if (!pdfRes.ok || !bytes) {
+          fail("signed-pdf download", `HTTP ${pdfRes.status}`);
+        } else {
+          const verify = verifySealedPdfBytes(bytes);
+          if (verify.ok) {
+            pass("signed-pdf PAdES verify", verify.detail);
+          } else if (verify.partial) {
+            fail("signed-pdf PAdES verify", verify.detail);
+          } else {
+            fail("signed-pdf PAdES verify", verify.detail);
+          }
+        }
+      } catch (err) {
+        fail(
+          "signed-pdf PAdES verify",
           err instanceof Error ? err.message : String(err)
         );
       }
@@ -747,52 +956,16 @@ startxref
       }
     }
     if (webhookId) {
-      let delivered = false;
-      let lastDetail = "";
-      for (let attempt = 0; attempt < 8; attempt++) {
-        await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
-        try {
-          const deliveries = await sealJson([
-            "GET",
-            `/api/v1/webhooks/deliveries?webhook_id=${encodeURIComponent(webhookId)}&limit=20`,
-          ]);
-          const rows = Array.isArray(deliveries) ? deliveries : [];
-          const hit = rows.filter(
-            (d) =>
-              d?.webhookId === webhookId &&
-              (d?.eventType === "recipient.signed" ||
-                d?.eventType === "document.completed")
-          );
-          lastDetail = `n=${rows.length} hit=${hit.length} statuses=${hit
-            .map((d) => d?.status)
-            .join(",")}`;
-          if (
-            hit.some(
-              (d) =>
-                d?.status === "delivered" ||
-                d?.status === "success" ||
-                (typeof d?.responseStatus === "number" &&
-                  d.responseStatus >= 200 &&
-                  d.responseStatus < 300)
-            )
-          ) {
-            delivered = true;
-            break;
-          }
-          // Accept recorded attempts even if httpbin flaked — proves emit path
-          if (hit.length >= 1) {
-            delivered = true;
-            lastDetail = `${lastDetail} (attempt recorded)`;
-            break;
-          }
-        } catch (err) {
-          lastDetail = err instanceof Error ? err.message : String(err);
-        }
-      }
-      delivered
-        ? pass("webhook deliveries", lastDetail)
-        : fail("webhook deliveries", lastDetail || "no deliveries");
+      await pollWebhookDeliveries(
+        webhookId,
+        ["recipient.signed", "document.completed"],
+        "webhook signed deliveries"
+      );
     }
+  }
+
+  if (PROVE_SIGNER_AUTH === "access_code") {
+    await proveAccessCodeSignerAuth();
   }
 
   {

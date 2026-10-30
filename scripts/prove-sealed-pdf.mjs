@@ -17,6 +17,8 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { verifySealedPdfBytes } from "./lib/pades-verify.mjs";
+
 const args = process.argv.slice(2);
 function flag(name, fallback) {
   const i = args.indexOf(`--${name}`);
@@ -87,16 +89,6 @@ async function sealJson(argv) {
     }
     throw new Error(`seal JSON parse failed: ${text.slice(0, 200)}`);
   }
-}
-
-function pdfHasEtsiCadesDetached(bytes) {
-  return Buffer.from(bytes)
-    .toString("latin1")
-    .includes("/SubFilter /ETSI.CAdES.detached");
-}
-
-function pdfHasByteRange(bytes) {
-  return /\/ByteRange\s*\[/.test(Buffer.from(bytes).toString("latin1"));
 }
 
 function minimalPdfBytes() {
@@ -261,26 +253,25 @@ if (
   throw new Error("signed-pdf is not a PDF");
 }
 
-const etsi = pdfHasEtsiCadesDetached(bytes);
-const byteRange = pdfHasByteRange(bytes);
+const verify = verifySealedPdfBytes(bytes);
 await writeFile(
   join(OUT, "result.json"),
-  `${JSON.stringify({ etsi, byteRange, bytes: bytes.byteLength, token }, null, 2)}\n`
+  `${JSON.stringify({ verify, bytes: bytes.byteLength, token }, null, 2)}\n`
 );
 
 console.log(`\n=== RESULT ===`);
-console.log(`etsi=${etsi} byteRange=${byteRange} out=${OUT}`);
-if (etsi && byteRange) {
-  console.log("PASS: PAdES-B markers present on completed download.");
+console.log(`${verify.detail} out=${OUT}`);
+if (verify.ok) {
+  console.log("PASS: PAdES-B markers + openssl cms verify on completed download.");
   process.exit(0);
 }
-if (etsi || byteRange) {
+if (verify.partial) {
   console.log(
-    "WARN: partial seal markers — check platform PKCS#12 secrets on api."
+    "WARN: partial seal — check platform PKCS#12 secrets on api."
   );
   process.exit(0);
 }
 console.log(
-  "FAIL: completed download has no ETSI.CAdES.detached / ByteRange — flatten may have run without platform seal secrets, or final PDF was not served."
+  "FAIL: completed download failed sealed-PDF verification."
 );
 process.exit(2);
