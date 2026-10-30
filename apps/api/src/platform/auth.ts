@@ -134,6 +134,7 @@ export async function createAuth(env: CloudflareBindings) {
                 return;
               }
               const now = new Date();
+              const committedOrgIds: string[] = [];
               for (const vortexOrg of vortexOrgs) {
                 // Each Vortex org maps 1:1 to a deterministic Seal org —
                 // org + member ids are stable so re-signing stays idempotent.
@@ -163,36 +164,59 @@ export async function createAuth(env: CloudflareBindings) {
                     // Leave unattached if live verification fails.
                   }
                 }
-                await db
-                  .insert(schema.organization)
-                  .values({
-                    id: orgId,
-                    name: vortexOrg.name,
-                    slug,
-                    metadata: orgMetadata,
-                    createdAt: now,
-                  })
-                  .onConflictDoNothing();
-                await db
-                  .insert(schema.member)
-                  .values({
-                    id: `mem_${orgId}_${session.userId}`,
-                    organizationId: orgId,
-                    userId: session.userId,
-                    role: vortexOrg.role,
-                    createdAt: now,
-                  })
-                  .onConflictDoUpdate({
-                    target: schema.member.id,
-                    set: { role: vortexOrg.role },
+                try {
+                  await db
+                    .insert(schema.organization)
+                    .values({
+                      id: orgId,
+                      name: vortexOrg.name,
+                      slug,
+                      metadata: orgMetadata,
+                      createdAt: now,
+                    })
+                    .onConflictDoNothing();
+                  await db
+                    .insert(schema.member)
+                    .values({
+                      id: `mem_${orgId}_${session.userId}`,
+                      organizationId: orgId,
+                      userId: session.userId,
+                      role: vortexOrg.role,
+                      createdAt: now,
+                    })
+                    .onConflictDoUpdate({
+                      target: schema.member.id,
+                      set: { role: vortexOrg.role },
+                    });
+                  committedOrgIds.push(orgId);
+                } catch (err) {
+                  // Constraint races (slug collision → member FK failure)
+                  // must not abort remaining orgs — but anything else is a
+                  // real outage: let the outer catch handle it.
+                  const message =
+                    err instanceof Error ? err.message : "unknown";
+                  if (!/constraint|unique|foreign key/i.test(message)) {
+                    throw err;
+                  }
+                  console.error("[auth] vortex org sync failed for org", {
+                    vortexOrganizationId: vortexOrg.organizationId,
+                    reason: message,
                   });
+                }
               }
-              await db
-                .update(schema.session)
-                .set({
-                  activeOrganizationId: `vortex_${activeOrg.organizationId}`,
-                })
-                .where(eq(schema.session.id, session.id));
+              // Only default the active org — preserve the user's last
+              // workspace choice when it is still a valid vortex_ org.
+              const currentActive = session.activeOrganizationId;
+              const activeValid =
+                typeof currentActive === "string" &&
+                committedOrgIds.includes(currentActive);
+              const fallbackOrg = committedOrgIds[0];
+              if (!activeValid && fallbackOrg) {
+                await db
+                  .update(schema.session)
+                  .set({ activeOrganizationId: fallbackOrg })
+                  .where(eq(schema.session.id, session.id));
+              }
             } catch (err) {
               console.error("[auth] vortex workspace bootstrap failed", {
                 reason: err instanceof Error ? err.message : "unknown",
