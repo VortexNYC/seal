@@ -1,106 +1,130 @@
 # OSS e-sign UI compare (local launch)
 
-**Date:** 2026-09-25  
-**Clones:** `~/Projects/oss-esign-compare/{docuseal,documenso,OpenSign}`  
-**Local ports:** DocuSeal `:3110` · OpenSign `:3120`/`:3180` · Documenso `:3130` (DB `:54320`)
+**Last refreshed:** 2026-10-30  
+**Seal reference:** `apps/web/src/routes/sign.$token.tsx`, `apps/web/src/components/signing/signing-shell.tsx`  
+**Doctrine:** ADR-007 · tickets SEA-74 (PDF paint), SEA-78 (signer chrome budget), SEA-86 (Form View)
+
+**Clones (optional local):** `~/Projects/oss-esign-compare/{docuseal,documenso,OpenSign}`  
+**Ports (historical):** DocuSeal `:3110` · OpenSign `:3120`/`:3180` · Documenso `:3130` (DB `:54320`)
 
 ## Verdict
 
 **We don’t need DocuSign.** Frontend appears when it’s meant to (ADR-007). Steal
 DocuSeal + Documenso juice only. Ignore OpenSign density.
 
-Seal’s signer (`sign.$token.tsx`) is the densest of the four. SEA-78 is the doctrine ticket; SEA-74 (blank PDF) is still the tip of the spear — chrome strip is worthless until the PDF paints.
+**Seal guest signer (Oct 2026):** Layout shape matches **Documenso** (`SigningShell`:
+PDF column + one sticky widget, mobile bottom dock). **Chrome budget** is still
+heavier than DocuSeal/Documenso: pre-PDF gate stack (auth → START → privacy →
+ESIGN), widget progress meter + “Next field” + sign CTA, and **Fields / Document**
+toggle (`SignerFormView`, SEA-86). **Sender** Activity / Recipient Details live on
+`$documentId` + `document-sidebar.tsx` only — not on the guest route.
+
+**Trust path:** Hosted golden path + PAdES verify green; not an OSS UI gap.
 
 ## Juice inventory (steal checklist)
 
 ### DocuSeal
 
-| Juice | Seal status |
+| Juice | Seal status (2026-10-30) |
 | --- | --- |
-| Invite: title + invited-by + email + **START** | Missing — consent then full chrome |
-| Thin header: title · Decline · Download | Partial — too much else |
-| PDF full-bleed under header | Broken (SEA-74) |
-| One field CTA (`NEXT`) + micro step dots | Missing — multi progress + sidebar |
-| Embeddable form mindset (`docuseal-form`) | Partial — SDK exists; signer not embed-thin |
+| Invite: title + invited-by + email + **START** | **Done** — `SigningInviteGate` before privacy/consent |
+| Thin header: title · Decline · Download | **Partial** — title + “From …”; Decline in widget; Download after complete only |
+| PDF full-bleed under header | **Done** — `PdfSigningDocumentSurface` (SEA-74 PDFium path) |
+| One field CTA (`NEXT`) + micro step dots | **Gap** — widget has Meter + “Next field” + primary Sign |
+| Embeddable form mindset (`docuseal-form`) | **Partial** — `@vortex-api/seal/react` iframe + `?embed=true`; inner chrome same as guest |
 
 ### Documenso
 
-| Juice | Seal status |
+| Juice | Seal status (2026-10-30) |
 | --- | --- |
-| PDF + **one** sticky signing widget (~350px) | Missing — 380–420px dossier sidebar |
-| Fields + Complete inside that widget only | Missing |
-| Mobile = same widget as bottom sheet | Missing |
-| Local PAdES seal on complete (`.p12` + `@libpdf/core`) | Gap (SEA-49 class) |
+| PDF + **one** sticky signing widget (~350px) | **Done** — `SigningShell` (`max-w-88` widget, `md:sticky`) |
+| Fields + Complete inside that widget only | **Partial** — CTA + progress in widget; fields also on PDF overlay + optional Form View list |
+| Mobile = same widget as bottom sheet | **Done** — fixed bottom bar → sticky on `md+` |
+| PAdES / sealed PDF on complete | **Done** — Worker `final-pdf` + dogfood/openssl prove (not Documenso’s local `.p12` path) |
 
-### Explicitly not juice
+### Explicitly not juice (still refuse)
 
-Recipient Details on signer · Activity timeline on signer · triple progress ·
-PdfHeader kitchen-sink · DocuSign feature parity theater.
-
-## Live status (this session)
-
-| App | Status | What we saw |
-| --- | --- | --- |
-| **DocuSeal** | Up `:3110` (admin already set up) | Public demo invite + live signing surface captured |
-| **OpenSign** | Up `:3120` client / `:3180` server | Admin setup form live; guest sign path is code-reviewed |
-| **Documenso** | Postgres migrated on `:54320`; remix printed `:3130` then dropped the bind (Vite flaky post-partial `npm ci`) | Signer layout proven from source (`document-signing-page-view-v1.tsx`) — enough for chrome doctrine |
+Recipient Details on **guest** signer · Activity timeline on **guest** signer ·
+DocuSign feature parity theater · OpenSign-style PdfHeader kitchen-sink on signer.
 
 ## Signer chrome matrix
 
-| Element | DocuSeal (live) | Documenso (code) | OpenSign (code) | Seal today |
+| Element | DocuSeal (reference) | Documenso (reference) | OpenSign (caution) | Seal today |
 | --- | --- | --- | --- | --- |
-| PDF as hero | Yes — full page under thin header | Yes — left column `PDFViewerLazy` | Yes — but surrounded by heavy header tooling | Broken (SEA-74) + squeezed by 380–420px sidebar |
-| Invite gate | Title + “Invited by X” + email + **START** | Token URL → sign page | GuestLogin: name/phone/email/job/company + OTP paths | Consent dialog then full chrome |
-| Persistent header | Title · Decline · Download | Title · invite line · Attachments · Reject | PdfHeader: back, print, download, reorder, merge, decline, finish… | Collapsible doc meta + recipient/role |
-| Progress | Tiny step dots inside field modal only | Field list inside one widget | Scattered (reports Activity, page UI) | Progress bar **+** field counts **+** other indicators |
-| Sidebar | **None** | One sticky ~350px widget: “Sign Document” + fields + Complete | Sidebar store + dense tools | **380–420px:** About / Progress / **Recipient Details** / **Activity** |
-| Primary CTA | **NEXT** (per field) → complete | One Complete in widget | Finish in header | Multiple competing actions |
-| Recipient Details panel | No | No | No (signer already is the recipient) | **Yes — delete** |
-| Activity / timeline | No | No (audit is post-hoc) | Activity in sender reports | **Yes on signer — delete** |
-| Consent | Privacy + eSign Disclosure links on invite | Branding/legal elsewhere | ToS on admin setup | Modal gate (keep once, not as chrome) |
+| PDF as hero | Full page under thin header | Left column viewer | Yes, buried in tooling | **Yes** — main column; Form View hides PDF but keeps mount |
+| Pre-sign gates | START on invite | Token → sign page | Heavy guest login | **Auth** (OTP/access code) → optional account → **START** → privacy modal → ESIGN modal |
+| Persistent header | Title · Decline · Download | Title · invite · Reject | Dense PdfHeader | Title · instruction · logo; **no** header Decline/Download |
+| Layout | No sidebar | PDF + ~350px widget | Sidebar + tools | **`SigningShell`** — PDF + one widget (no dossier sidebar) |
+| Progress | Dots in field flow | Field list in widget | Scattered | **Meter** + “N fields left” + **Next field** button in widget |
+| Primary CTA | NEXT → complete | One Complete in widget | Finish in header | **Sign / Approve** (+ next-field when unfilled) |
+| Recipient Details | No | No | N/A | **No** on guest (sender doc sidebar only) |
+| Activity / timeline | No | No | Sender reports | **No** on guest (sender doc sidebar + analytics) |
+| Consent | Links on invite | Org branding elsewhere | Admin ToS | **Modals** once (privacy then ESIGN) — audit by design |
+| Mobile | Same flow, thin | Widget as bottom sheet | Cramped | Widget fixed bottom; Form View for field list (SEA-86) |
+| Post-complete | Download | Download | Varies | Download + optional redirect + **Pay now** (Vortex payable) |
 
 ## What each product teaches
 
-### DocuSeal — north star for chrome budget
+### DocuSeal — north star for **chrome budget**
 
-Invite (`start_form/show.html.erb`): centered `max-w-md`, banner, one sentence, doc card, email, **START**.
+- Invite: centered card, email, **START**
+- Signing: thin header (Decline · Download), PDF canvas, **one** field CTA (`NEXT`)
+- No dossier, no activity on the guest path
 
-Signing (`submit_form/show.html.erb` + live demo):
-- Sticky thin header: title + Decline + Download
-- Document is the canvas
-- Guided field modal with **one** CTA (`NEXT`) and micro step dots
-- No recipient dossier, no activity feed, no second progress bar
+### Documenso — north star for **layout shape**
 
-### Documenso — north star for layout shape
-
-`document-signing-page-view-v1.tsx`:
-- Title + one invite sentence + Reject/Attachments
-- `flex`: PDF card (`flex-1`) + single sticky widget (`md:w-[350px]`)
-- Widget = role title + short instruction + `DocumentSigningForm` + Complete
-- Mobile: bottom sheet expand/collapse — still **one** widget
+- `flex`: PDF (`flex-1`) + single sticky widget (~350px)
+- Widget holds instructions, field list, **one** Complete
+- Mobile: same widget, bottom sheet — still **one** surface
 
 ### OpenSign — cautionary tale
 
-- Admin setup asks for six fields + newsletter before any product value
-- `PdfHeader.jsx` / `PdfRequestFiles.jsx` pack print/download/reorder/merge/decline/finish into signer space
-- Activity belongs in sender reports, not the guest signing path — Seal currently copies the wrong surface
+- Signer page packed with sender-grade tools
+- Activity belongs in oversight routes — Seal must not regress guest Activity
 
-## Seal delete list (SEA-78)
+## Seal guest signer — done vs next (SEA-78)
 
-From `apps/web/src/routes/sign.$token.tsx` (~1268–1400+):
+**Shipped (do not re-litigate as “missing layout”):**
 
-1. **Delete** sidebar “Recipient Details” block (signer already knows who they are)
-2. **Delete** sidebar “Activity” / timeline on the signer route
-3. **Collapse** progress to **one** indicator (prefer in-document / next to the single CTA — DocuSeal dots or Documenso field list, not a third bar)
-4. **Delete** mobile collapsible that re-states recipient + role once the PDF is the hero
-5. **Keep** consent once (gate), Decline, and a single Complete/Sign CTA
-6. **Keep** PDF surface — but it must paint first (**SEA-74**)
+1. `SigningShell` — Documenso-shaped layout (`sign.$token.tsx` return)
+2. `SigningInviteGate` — DocuSeal-style START before legal modals
+3. Removed guest **Recipient Details** and **Activity** (oversight on `$documentId`)
+4. SEA-74 — PDF paints via signing PDF surface (not blank SPA shell)
+5. PAdES markers on completed PDF (prove wall / golden path)
 
-Target end state:
+**Remaining polish (same ADR-007 end-state):**
 
-> title · PDF + fields · one progress · one CTA · Decline · consent once
+> title · PDF + fields · **one** progress · **one** CTA · Decline · consent once
 
-## Ports / how to relaunch
+1. **Header actions** — move Decline (+ in-progress Download if policy allows) to `SigningShell.headerActions` (DocuSeal)
+2. **Widget diet** — collapse Meter + “Next field” + Sign into one primary action path (Documenso field list + Complete discipline)
+3. **Form View** — keep for mobile/accessibility; default desktop to **Document** view so PDF stays hero
+4. **Gate stack** — keep audit requirements; avoid adding any new pre-PDF chrome
+5. **Embed** — `?embed=true` should inherit the same diet (no extra host chrome in iframe)
+
+**Code anchors:**
+
+| Concern | Location |
+| --- | --- |
+| Guest route | `apps/web/src/routes/sign.$token.tsx` |
+| Layout shell | `apps/web/src/components/signing/signing-shell.tsx` |
+| Form View list | `apps/web/src/components/signing/signer-form-view.tsx` |
+| Sender Activity | `apps/web/src/components/documents/document-sidebar.tsx` |
+| E2E ceremony | `apps/web/e2e/` signing POM + `data-testid` on view toggle / next-field |
+
+## Sender surface (separate from guest)
+
+Documenso-style **dashboard/builder** density is intentionally on authenticated
+routes (`$documentId`, templates, analytics). ADR-007 + **SEA-79**: trim sender
+chrome that doesn’t answer “can I send?” — Activity stays **sender-only** (correct).
+
+## Docs / contract (integrator story)
+
+Product UI compare stops at guest + sender SPA. **Integrators** use OpenAPI
+(`apps/docs/openapi.yaml` → `/reference`), MCP, `@vortex-api/seal` — not Documenso’s
+app-first docs shape. See `docs/oss-esign-component-lineup.md` Phase 3 + ADR-003.
+
+## Ports / how to relaunch (optional)
 
 ```bash
 # DocuSeal
@@ -110,10 +134,9 @@ docker start seal-docuseal-compare   # http://127.0.0.1:3110
 cd ~/Projects/oss-esign-compare/OpenSign
 docker compose -f docker-compose.compare.yml up -d   # :3120 UI, :3180 API
 
-# Documenso deps
+# Documenso
 cd ~/Projects/oss-esign-compare/documenso
-# postgres on :54320 (compose service `database`), redis :63790, mail :2500/:9010
-PORT=3130 npm run dev
+PORT=3130 npm run dev   # postgres :54320 per local compose
 ```
 
-Screenshots from this pass: `/tmp/oss-esign-compare/*.png`
+Historical screenshots: `/tmp/oss-esign-compare/*.png` (Sep 2025 pass).

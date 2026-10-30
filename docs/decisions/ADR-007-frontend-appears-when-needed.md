@@ -26,6 +26,12 @@ Local OSS compare (`docs/oss-esign-ui-compare.md`) showed:
 Seal’s signer today is denser than all three (Recipient Details, Activity,
 triple progress, blank PDF). That is the wrong vision.
 
+**Implementation note (2026-10-30):** Guest layout and several delete-list items
+shipped (`SigningShell`, invite START, no guest Activity/Recipient Details, SEA-74
+PDF paint). Remaining gap is **chrome budget inside the single widget** and header
+actions — see `docs/oss-esign-ui-compare.md` (refreshed); do not re-file “add
+sidebar” tickets.
+
 ## Decision
 
 1. **UI is an appearance, not a workplace.** Product UI shows up for consent,
