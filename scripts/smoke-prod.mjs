@@ -9,8 +9,8 @@
  *
  * Covers: health → upload → document → recipient → send → audit.
  * Signing URL comes from the send response (recipients[].signing_url).
- * When present, also covers: public signing fetch → PDF bytes → viewed →
- * signed → completed → audit.
+ * When present, also covers: public signing fetch → PDF bytes → access_code verify →
+ * viewed → signed → completed → audit.
  *
  * Exit 0 = pass, 1 = failure. SKIP lines are known gaps, not failures.
  */
@@ -23,7 +23,7 @@ function flag(name, fallback) {
 
 const API = flag("api", "https://api.seal.nyc").replace(/\/$/, "");
 const APP = flag("app", "https://app.seal.nyc").replace(/\/$/, "");
-const ORG = flag("org", process.env.SEAL_ORG ?? "");
+let ORG = flag("org", process.env.SEAL_ORG ?? "");
 const SIGNER = flag("signer", "smoke+signer@seal.nyc");
 const KEY = process.env.SEAL_API_KEY;
 
@@ -33,6 +33,7 @@ if (!KEY) {
 }
 
 const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+const ACCESS_CODE = flag("access-code", `smoke-${stamp}`);
 const DOC_TITLE = `Smoke Document ${stamp}`;
 const PDF_BYTES = Buffer.from(`%PDF-1.4
 1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj
@@ -159,7 +160,13 @@ async function main() {
       `/api/v1/recipients?document_id=${encodeURIComponent(docId)}`,
       {
         method: "POST",
-        body: { email: SIGNER, name: "Smoke Signer", role: "signer" },
+        body: {
+          email: SIGNER,
+          name: "Smoke Signer",
+          role: "signer",
+          auth_method: "access_code",
+          access_code: ACCESS_CODE,
+        },
       }
     );
     recipientId = data?.id;
@@ -248,6 +255,59 @@ async function main() {
         ? pass("app signing route serves SPA", ct)
         : fail("app signing route", `HTTP ${res.status} content-type=${ct}`);
     }
+    {
+      const res = await fetch(
+        `${API}/api/public/signing/${signingToken}/auth/verify`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ code: ACCESS_CODE }),
+        }
+      );
+      const data = await res.json().catch(() => ({}));
+      res.ok && data.success
+        ? pass("signer auth verify", data.method ?? "access_code")
+        : fail(
+            "signer auth verify",
+            `HTTP ${res.status} ${JSON.stringify(data)}`
+          );
+    }
+    {
+      const ceremonyMeta = {
+        ipAddress: "203.0.113.10",
+        userAgent: "seal-smoke/1.0",
+      };
+      const privacyRes = await fetch(
+        `${API}/api/public/signing/${signingToken}/privacy`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(ceremonyMeta),
+        }
+      );
+      const privacyData = await privacyRes.json().catch(() => ({}));
+      privacyRes.ok && privacyData.success
+        ? pass("public privacy notice")
+        : fail(
+            "public privacy notice",
+            `HTTP ${privacyRes.status} ${JSON.stringify(privacyData)}`
+          );
+      const consentRes = await fetch(
+        `${API}/api/public/signing/${signingToken}/consent`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(ceremonyMeta),
+        }
+      );
+      const consentData = await consentRes.json().catch(() => ({}));
+      consentRes.ok && consentData.success
+        ? pass("public esign consent")
+        : fail(
+            "public esign consent",
+            `HTTP ${consentRes.status} ${JSON.stringify(consentData)}`
+          );
+    }
     for (const submit of [
       { status: "viewed" },
       {
@@ -290,6 +350,10 @@ async function main() {
   }
 
   // 14. audit trail
+  if (!ORG) {
+    const { data } = await api("/api/v1/account");
+    ORG = data?.slug ?? "";
+  }
   if (ORG) {
     const { status, data } = await api(
       `/api/v1/organizations/${encodeURIComponent(ORG)}/audit?limit=100`
@@ -299,9 +363,16 @@ async function main() {
     const expected = ["document.create", "recipient.added"];
     if (signingToken) expected.push("recipient.signed", "document.completed");
     const missing = expected.filter((a) => !actions.has(a));
-    status === 200 && missing.length === 0
-      ? pass("audit trail", [...actions].filter(Boolean).join(","))
-      : fail("audit trail", `HTTP ${status} missing=${missing.join(",")}`);
+    if (status === 403) {
+      skip(
+        "audit trail",
+        "forbidden — use an owner/admin API key with admin scope"
+      );
+    } else if (status === 200 && missing.length === 0) {
+      pass("audit trail", [...actions].filter(Boolean).join(","));
+    } else {
+      fail("audit trail", `HTTP ${status} missing=${missing.join(",")}`);
+    }
   } else {
     skip("audit trail", "pass --org <slug> to verify the audit chain");
   }
