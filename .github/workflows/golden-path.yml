@@ -61,3 +61,4 @@ jobs:
             exit 0
           fi
           pnpm run prove:golden-path
+          # prove:golden-path forwards --require-invite-email (Cloudflare EMAIL.send / email_sent)

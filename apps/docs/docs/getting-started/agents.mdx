@@ -70,11 +70,15 @@ through `completed` and signatures audit:
 
 ```bash
 SEAL_API_KEY=seal_… pnpm run prove:golden-path
-# or selfhost:
+# self-host without Email Sending configured yet:
 SEAL_API_KEY=seal_… pnpm run prove:golden-path \
   --api https://seal-selfhost-api.<account>.workers.dev \
-  --app https://seal-selfhost-web.<account>.workers.dev
+  --app https://seal-selfhost-web.<account>.workers.dev \
+  --skip-invite-email
 ```
+
+Hosted runs assert Cloudflare Email Sending accepted the signing invite
+(`email_sent` on `documents/send`).
 
 ### Human handoff (InteractionSession)
 
