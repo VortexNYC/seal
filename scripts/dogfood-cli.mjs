@@ -15,7 +15,8 @@
  * org audit → signatures audit → webhook deliveries (viewed + signed) → imports →
  * breadcrumbs.
  *
- *   --require-invite-email          fail when send returns email_sent=false
+ *   --require-invite-email          fail when Cloudflare EMAIL.send did not succeed (email_sent=false)
+ *   --skip-invite-email             allow send without mail (selfhost without binding)
  *   --prove-signer-auth access_code exercise public auth/verify for access_code
  *
  * The public signing half uses the same HTTP surface a recipient (or embed)
@@ -47,7 +48,9 @@ const APP = flag(
   process.env.SEAL_APP_URL ?? "https://app.seal.nyc"
 ).replace(/\/$/, "");
 const SIGNER = flag("signer", "dogfood+signer@seal.nyc");
-const REQUIRE_INVITE_EMAIL = args.includes("--require-invite-email");
+const SKIP_INVITE_EMAIL = args.includes("--skip-invite-email");
+const REQUIRE_INVITE_EMAIL =
+  args.includes("--require-invite-email") && !SKIP_INVITE_EMAIL;
 const PROVE_SIGNER_AUTH = flag("prove-signer-auth", "");
 const KEY = process.env.SEAL_API_KEY;
 
@@ -706,9 +709,15 @@ startxref
       if (sent?.recipients?.[0]?.email_sent === true) {
         pass("documents send email_sent");
       } else if (REQUIRE_INVITE_EMAIL) {
-        fail("documents send email_sent", "email_sent=false");
+        fail(
+          "documents send email_sent",
+          "Cloudflare EMAIL.send did not succeed (email_sent=false)"
+        );
       } else {
-        pass("documents send email_sent", "skipped (use --require-invite-email to fail)");
+        pass(
+          "documents send email_sent",
+          "not required (golden path uses --require-invite-email)"
+        );
       }
     } catch (err) {
       fail("documents send", err instanceof Error ? err.message : String(err));

@@ -23,7 +23,7 @@ packages/transactional/
 | Template list | `packages/transactional/src/emails/`   | Kebab-case files                              |
 | Layout shell  | `emails/email-layout.tsx`              | Seal-owned Html/Head/Preview/Body             |
 | Exports       | `packages/transactional/src/index.tsx` | Components + `renderX()` via `@react-email/render` |
-| Transport     | `apps/api/src/platform/email.ts`       | Cloudflare `send_email` binding (`EMAIL`)     |
+| Transport     | `apps/api/src/platform/email.ts`       | Cloudflare `send_email` binding (`EMAIL`); always sends `html` + `text` |
 
 ## CONVENTIONS
 

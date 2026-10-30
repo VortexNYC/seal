@@ -17,6 +17,26 @@ export interface EmailSendResult {
   error?: string;
 }
 
+/** Plain-text part for Cloudflare Email Sending (transactional best practice). */
+export function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|h[1-6]|li|tr)>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&#(\d+);/g, (_, code: string) =>
+      String.fromCharCode(Number.parseInt(code, 10))
+    )
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export interface EmailEnv {
   EMAIL?: SendEmail;
   EMAIL_FROM: string;
@@ -88,13 +108,14 @@ export async function sendEmail(
   if (!env.EMAIL) {
     return { success: false, error: "email binding not configured" };
   }
+  const plainText = text ?? htmlToPlainText(html);
   try {
     await env.EMAIL.send({
       from: from ?? env.EMAIL_FROM,
       to,
       subject,
       html,
-      ...(text ? { text } : {}),
+      text: plainText,
       ...(attachments && attachments.length > 0
         ? {
             attachments: attachments.map((a) => ({

@@ -11,6 +11,9 @@
  *   SEAL_API_KEY=… node scripts/prove-golden-path.mjs \
  *     --api https://seal-selfhost-api.<account>.workers.dev
  *
+ * Hosted runs assert Cloudflare Email Sending accepted the invite
+ * (`email_sent` on send). Selfhost without mail: pass --skip-invite-email.
+ *
  * Exit 0 = pass, 1 = failure.
  */
 
@@ -22,6 +25,10 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DOGFOOD = join(ROOT, "scripts/dogfood-cli.mjs");
 
 const forwarded = process.argv.slice(2);
+const skipInviteEmail = forwarded.includes("--skip-invite-email");
+const dogfoodArgs = skipInviteEmail
+  ? forwarded
+  : ["--require-invite-email", ...forwarded];
 
 if (!process.env.SEAL_API_KEY) {
   console.error("SEAL_API_KEY is required (Bearer token, seal_…)");
@@ -30,7 +37,7 @@ if (!process.env.SEAL_API_KEY) {
 
 console.log("=== Seal golden path (CLI dogfood + human signing half) ===\n");
 
-const child = spawn(process.execPath, [DOGFOOD, ...forwarded], {
+const child = spawn(process.execPath, [DOGFOOD, ...dogfoodArgs], {
   env: process.env,
   stdio: "inherit",
 });
