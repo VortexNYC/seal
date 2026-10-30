@@ -3,6 +3,7 @@ import { renderPasswordReset } from "@seal/transactional";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { betterAuth } from "better-auth/minimal";
 import {
+  bearer,
   createAccessControl,
   deviceAuthorization,
   genericOAuth,
@@ -209,6 +210,7 @@ export async function createAuth(env: CloudflareBindings) {
         rateLimit: { enabled: false },
       }),
       deviceAuthorization(),
+      bearer(),
       twoFactor({
         issuer: "Seal",
       }),
