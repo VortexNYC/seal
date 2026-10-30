@@ -16,7 +16,7 @@ import {
   memberAc,
   ownerAc,
 } from "better-auth/plugins/organization/access";
-import { and, eq, like, notInArray } from "drizzle-orm";
+import { and, eq, notInArray, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { createD1 } from "../global/db.js";
@@ -113,6 +113,22 @@ export async function createAuth(env: CloudflareBindings) {
                 .where(eq(schema.user.id, session.userId))
                 .limit(1);
               const vortexOrgs = readUserVortexOrganizations(userRow?.metadata);
+              // Authoritative sync: memberships to vortex_* orgs absent from
+              // the current Vortex org set are revoked upstream — drop them
+              // here. Scoped to the vortex_ prefix, so manual orgs and
+              // non-Vortex users (no vortex_ memberships) are untouched.
+              const syncedOrgIds = vortexOrgs.map(
+                (o) => `vortex_${o.organizationId}`
+              );
+              await db
+                .delete(schema.member)
+                .where(
+                  and(
+                    eq(schema.member.userId, session.userId),
+                    sql`${schema.member.organizationId} LIKE 'vortex\_%' ESCAPE '\\'`,
+                    notInArray(schema.member.organizationId, syncedOrgIds)
+                  )
+                );
               const activeOrg = vortexOrgs[0];
               if (!activeOrg) {
                 return;
@@ -166,22 +182,11 @@ export async function createAuth(env: CloudflareBindings) {
                     role: vortexOrg.role,
                     createdAt: now,
                   })
-                  .onConflictDoNothing();
+                  .onConflictDoUpdate({
+                    target: schema.member.id,
+                    set: { role: vortexOrg.role },
+                  });
               }
-              // Authoritative sync: memberships to vortex_* orgs not in the
-              // current Vortex org set are revoked upstream — drop them here.
-              const syncedOrgIds = vortexOrgs.map(
-                (o) => `vortex_${o.organizationId}`
-              );
-              await db
-                .delete(schema.member)
-                .where(
-                  and(
-                    eq(schema.member.userId, session.userId),
-                    like(schema.member.organizationId, "vortex\\_%"),
-                    notInArray(schema.member.organizationId, syncedOrgIds)
-                  )
-                );
               await db
                 .update(schema.session)
                 .set({
@@ -243,6 +248,7 @@ export async function createAuth(env: CloudflareBindings) {
             tokenUrl: "https://auth.vortex.nyc/oauth/token",
             userInfoUrl: "https://auth.vortex.nyc/oauth/userinfo",
             pkce: true,
+            overrideUserInfo: true,
             scopes: ["openid", "profile", "email", "merchants:read"],
             mapProfileToUser: (profile) => {
               const parsedOrgs = z
