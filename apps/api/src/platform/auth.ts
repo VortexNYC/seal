@@ -69,6 +69,15 @@ export async function createAuth(env: CloudflareBindings) {
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
     trustedOrigins: allowedOrigins,
+    account: {
+      accountLinking: {
+        enabled: true,
+        // Vortex userinfo is authoritative (verified claims) — an OAuth
+        // sign-in whose verified email matches an existing Seal account
+        // links instead of creating a second identity.
+        trustedProviders: ["vortex"],
+      },
+    },
     emailAndPassword: {
       enabled: true,
       sendResetPassword: async ({ user, url }) => {
