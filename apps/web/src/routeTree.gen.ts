@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AppRouteImport } from './routes/app'
+import { Route as DeviceRouteImport } from './routes/device'
 import { Route as AuthAcceptInviteRouteImport } from './routes/_auth/accept-invite'
 import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-password'
 import { Route as AuthResetPasswordRouteImport } from './routes/_auth/reset-password'
@@ -75,6 +76,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const AppRoute = AppRouteImport.update({
   id: '/app',
   path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeviceRoute = DeviceRouteImport.update({
+  id: '/device',
+  path: '/device',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthAcceptInviteRoute = AuthAcceptInviteRouteImport.update({
@@ -337,6 +343,7 @@ const AuthenticatedSlugSettingsTeamIndexRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
+  '/device': typeof DeviceRoute
   '/accept-invite': typeof AuthAcceptInviteRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/reset-password': typeof AuthResetPasswordRoute
@@ -386,6 +393,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
+  '/device': typeof DeviceRoute
   '/accept-invite': typeof AuthAcceptInviteRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/reset-password': typeof AuthResetPasswordRoute
@@ -433,6 +441,7 @@ export interface FileRoutesById {
   '/_auth': typeof AuthRouteWithChildren
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/app': typeof AppRoute
+  '/device': typeof DeviceRoute
   '/_auth/accept-invite': typeof AuthAcceptInviteRoute
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
   '/_auth/reset-password': typeof AuthResetPasswordRoute
@@ -484,6 +493,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/app'
+    | '/device'
     | '/accept-invite'
     | '/forgot-password'
     | '/reset-password'
@@ -533,6 +543,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/app'
+    | '/device'
     | '/accept-invite'
     | '/forgot-password'
     | '/reset-password'
@@ -579,6 +590,7 @@ export interface FileRouteTypes {
     | '/_auth'
     | '/_authenticated'
     | '/app'
+    | '/device'
     | '/_auth/accept-invite'
     | '/_auth/forgot-password'
     | '/_auth/reset-password'
@@ -631,6 +643,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AppRoute: typeof AppRoute
+  DeviceRoute: typeof DeviceRoute
   SignTokenRoute: typeof SignTokenRoute
   VerifyQrTokenRoute: typeof VerifyQrTokenRoute
   VerifyIndexRoute: typeof VerifyIndexRoute
@@ -664,6 +677,13 @@ declare module '@tanstack/react-router' {
       path: '/app'
       fullPath: '/app'
       preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/device': {
+      id: '/device'
+      path: '/device'
+      fullPath: '/device'
+      preLoaderRoute: typeof DeviceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth/accept-invite': {
@@ -1168,6 +1188,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AppRoute: AppRoute,
+  DeviceRoute: DeviceRoute,
   SignTokenRoute: SignTokenRoute,
   VerifyQrTokenRoute: VerifyQrTokenRoute,
   VerifyIndexRoute: VerifyIndexRoute,

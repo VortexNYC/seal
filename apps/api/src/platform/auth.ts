@@ -209,7 +209,9 @@ export async function createAuth(env: CloudflareBindings) {
         enableMetadata: true,
         rateLimit: { enabled: false },
       }),
-      deviceAuthorization(),
+      deviceAuthorization({
+        verificationUri: "https://app.seal.nyc/device",
+      }),
       bearer(),
       twoFactor({
         issuer: "Seal",
