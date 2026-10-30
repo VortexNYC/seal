@@ -113,8 +113,9 @@ GitHub Actions kept here (narrow roles only):
 - `golden-path.yml` — hosted dogfood prove (skips without `SEAL_API_KEY`).
 
 Artifacts mirroring runs in **cloudflare-ci** (`MirrorWorkflow` on push webhooks).
-It posts the branch-protection check **Push to Cloudflare Artifacts** — do not
-re-add `artifacts-sync.yml` (double mirror + duplicate failure mail).
+It posts the branch-protection check **Push to Cloudflare Artifacts** (GitHub App
+`vortex-agent-2-0`) — do not re-add `artifacts-sync.yml` (double mirror +
+duplicate failure mail).
 
 The SEA-53 secretlint gate runs in cloudflare-ci checks (posts the
 `secretlint` check run — same context branch protection requires).
