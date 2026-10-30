@@ -25,7 +25,7 @@ MCP (119 tools), CLI (`seal`), and `@vortex-api/seal` wrap that contract — the
 
 ## Agent golden path
 
-1. Create API key in app → Developer (`seal_…`) or MCP OAuth
+1. `seal login` (device flow → app.seal.nyc/device) or API key in app → Developer (`seal_…`) or MCP OAuth
 2. Upload PDF → create document → add recipients → **place fields** (or use template)
 3. Optional: `binding_key` + `POST /documents/apply-bindings` for deal data
 4. Send → human opens `signing_url` — agents do **not** sign

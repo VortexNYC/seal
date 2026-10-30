@@ -46,6 +46,10 @@ Use an API key (`Authorization: Bearer seal_…`) or MCP OAuth. See
 [Authentication](/getting-started/authentication) and
 [Quick Start](/getting-started/quick-start).
 
+Get a key with `seal login` — the CLI runs a device flow (approves at
+https://app.seal.nyc/device), mints a scoped key, and stores it at
+`~/.seal/config.json`. `SEAL_API_KEY` still overrides.
+
 ## Deal writes the document (field bindings)
 
 Do **not** OCR-reconstruct deals on every send. Tag fillable fields with a
