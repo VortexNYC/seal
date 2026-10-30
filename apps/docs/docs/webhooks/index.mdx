@@ -94,12 +94,18 @@ redaction.
 const response = await fetch("https://api.seal.nyc/api/v1/webhooks", {
   method: "POST",
   headers: {
-    Authorization: "Bearer ak_your_api_key_here",
+    Authorization: "Bearer seal_your_api_key_here",
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
     url: "https://api.example.com/webhooks/seal",
-    events: ["document.completed", "recipient.signed"],
+    events: [
+      "document.sent",
+      "document.viewed",
+      "recipient.viewed",
+      "recipient.signed",
+      "document.completed",
+    ],
   }),
 });
 
@@ -193,7 +199,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
     },
   }
 );

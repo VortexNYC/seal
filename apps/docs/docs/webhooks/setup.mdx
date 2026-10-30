@@ -21,12 +21,18 @@ Use the Webhooks API to create a new endpoint:
 const response = await fetch("https://api.seal.nyc/api/v1/webhooks", {
   method: "POST",
   headers: {
-    Authorization: "Bearer ak_your_api_key_here",
+    Authorization: "Bearer seal_your_api_key_here",
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
     url: "https://api.example.com/webhooks/seal",
-    events: ["document.sent", "document.completed", "recipient.signed"],
+    events: [
+      "document.sent",
+      "document.viewed",
+      "document.completed",
+      "recipient.viewed",
+      "recipient.signed",
+    ],
     description: "Production webhook endpoint",
   }),
 });
@@ -116,6 +122,10 @@ function verifySignature(
 
 async function processEventAsync(event: any) {
   switch (event.type) {
+    case "document.viewed":
+    case "recipient.viewed":
+      await handleDocumentViewed(event.data);
+      break;
     case "document.completed":
       await handleDocumentCompleted(event.data);
       break;
@@ -159,7 +169,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      Authorization: "Bearer ak_your_api_key_here",
+      Authorization: "Bearer seal_your_api_key_here",
     },
   }
 );
@@ -169,11 +179,23 @@ const response = await fetch(
 
 ### Subscribe to Specific Events
 
+For a typical signing integration, subscribe to send → open → sign → complete:
+
 ```json
 {
-  "events": ["document.completed", "recipient.signed"]
+  "events": [
+    "document.sent",
+    "document.viewed",
+    "recipient.viewed",
+    "recipient.signed",
+    "document.completed"
+  ]
 }
 ```
+
+`document.viewed` and `recipient.viewed` fire when a recipient completes the
+public signing **viewed** step (privacy / ESIGN gates), not merely when the link
+is fetched.
 
 ### Subscribe to All Events
 
@@ -192,7 +214,7 @@ Pass an empty array to receive every event type:
 ```typescript
 const response = await fetch("https://api.seal.nyc/api/v1/webhooks", {
   headers: {
-    Authorization: "Bearer ak_your_api_key_here",
+    Authorization: "Bearer seal_your_api_key_here",
   },
 });
 
@@ -205,11 +227,17 @@ const webhooks = await response.json();
 const response = await fetch("https://api.seal.nyc/api/v1/webhooks/wh_abc123", {
   method: "PATCH",
   headers: {
-    Authorization: "Bearer ak_your_api_key_here",
+    Authorization: "Bearer seal_your_api_key_here",
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
-    events: ["document.sent", "document.completed", "recipient.signed"],
+    events: [
+      "document.sent",
+      "document.viewed",
+      "recipient.viewed",
+      "recipient.signed",
+      "document.completed",
+    ],
     status: "active",
   }),
 });
@@ -223,7 +251,7 @@ Temporarily stop receiving events without deleting the endpoint:
 const response = await fetch("https://api.seal.nyc/api/v1/webhooks/wh_abc123", {
   method: "PATCH",
   headers: {
-    Authorization: "Bearer ak_your_api_key_here",
+    Authorization: "Bearer seal_your_api_key_here",
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
@@ -238,7 +266,7 @@ const response = await fetch("https://api.seal.nyc/api/v1/webhooks/wh_abc123", {
 const response = await fetch("https://api.seal.nyc/api/v1/webhooks/wh_abc123", {
   method: "DELETE",
   headers: {
-    Authorization: "Bearer ak_your_api_key_here",
+    Authorization: "Bearer seal_your_api_key_here",
   },
 });
 ```

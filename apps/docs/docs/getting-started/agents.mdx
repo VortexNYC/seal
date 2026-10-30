@@ -78,7 +78,11 @@ SEAL_API_KEY=seal_… pnpm run prove:golden-path \
 ```
 
 Hosted runs assert Cloudflare Email Sending accepted the signing invite
-(`email_sent` on `documents/send`).
+(`email_sent` on `documents/send`; see `email_send_error` when send fails).
+
+Golden path also polls webhook deliveries for **`recipient.viewed`**, **`document.viewed`**,
+**`recipient.signed`**, and **`document.completed`** after the public signing half
+(same events your endpoint should subscribe to for a full funnel).
 
 ### Human handoff (InteractionSession)
 

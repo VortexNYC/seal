@@ -22,7 +22,10 @@ MCP, CLI (`seal`), and `@vortex-api/seal` wrap that contract — they must not i
 1. Create API key in app → Developer (`seal_…`)
 2. Upload PDF → create document → place fields (optional `binding_key`) → `POST /documents/apply-bindings` → add recipient → send
 3. Human opens `signing_url` (InteractionSession / `seal wait`) and signs — agents do not sign
-4. Poll document status / webhooks → `document.completed` → audit
+4. Poll document status / webhooks → viewed → signed → `document.completed` → audit
+
+Subscribe webhooks to at least `document.sent`, `recipient.viewed`, `document.viewed`,
+`recipient.signed`, and `document.completed` for the full signing funnel.
 
 Prefer `binding_key` + apply-bindings over OCR reconstruction for deal data
 (GitHub #604 Seal-side; Payments sync = SEA-43).
@@ -35,6 +38,9 @@ Proof from the repo:
 ```bash
 SEAL_API_KEY=seal_… pnpm run prove:golden-path
 ```
+
+Checks: send (`email_sent`), public viewed/signed ceremony, webhook deliveries
+(viewed + signed events), completed PDF PAdES markers, audit + certificate of completion.
 
 ## Portfolio default (SEA-59)
 

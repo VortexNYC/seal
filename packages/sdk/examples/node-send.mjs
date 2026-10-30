@@ -59,12 +59,23 @@ await client.request(
   }
 );
 
-const sent = /** @type {{ recipients?: Array<{ signing_url?: string }> }} */ (
+const sent = /** @type {{
+  recipients?: Array<{
+    signing_url?: string;
+    email_sent?: boolean;
+    email_send_error?: string;
+  }>;
+}} */ (
   await client.request(
     "POST",
     `/api/v1/documents/send?id=${encodeURIComponent(doc.id)}`,
-    { id: doc.id }
+    { notify: true }
   )
 );
-const signingUrl = sent.recipients?.[0]?.signing_url;
+const recipient = sent.recipients?.[0];
+const signingUrl = recipient?.signing_url;
 console.log("signing_url", signingUrl ?? "(missing)");
+if (recipient?.email_sent === false) {
+  console.error("invite email failed:", recipient.email_send_error ?? "email_sent=false");
+  process.exit(1);
+}

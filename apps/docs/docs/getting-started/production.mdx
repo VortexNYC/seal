@@ -15,12 +15,15 @@ recipients (humans) sign. See [Agents & who signs](/getting-started/agents).
 2. Create API key (`seal_…`) with document + recipient write scopes
 3. Upload PDF → add recipient → send (agent / API / MCP)
 4. Recipient opens signing link → **human** signs
-5. Webhook (or poll) sees `document.completed`
+5. Webhook (or poll) sees lifecycle events — at minimum `document.completed`;
+   many integrations also use `recipient.viewed` / `document.viewed` for
+   funnel tracking and `recipient.signed` before completion
 6. Audit log shows the trail
 
 Hosted golden path (from the repo — CLI + public signing half → completed → audit).
 By default it requires **`email_sent: true`** on send (Cloudflare `EMAIL` binding
-accepted the invite). Self-host without mail: add `--skip-invite-email`.
+accepted the invite). On failure, check each recipient’s **`email_send_error`**
+on `POST /documents/send`. Self-host without mail: add `--skip-invite-email`.
 
 ```bash
 SEAL_API_KEY=seal_… pnpm run prove:golden-path
