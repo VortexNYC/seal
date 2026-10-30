@@ -72,11 +72,32 @@ export async function createAuth(env: CloudflareBindings) {
     account: {
       accountLinking: {
         enabled: true,
-        // Vortex userinfo is authoritative (verified claims) — an OAuth
-        // sign-in whose verified email matches an existing Seal account
-        // links instead of creating a second identity.
-        trustedProviders: ["vortex"],
+        // Vortex userinfo is authoritative; Google verifies emails
+        // upstream too. Microsoft's tenant emails vary, so it stays
+        // untrusted (links only after local verification exists).
+        trustedProviders: ["vortex", "google"],
       },
+    },
+    socialProviders: {
+      // Alternate doors into Seal-only accounts — Vortex stays canonical.
+      // Each provider activates only when its env pair is configured;
+      // linking follows account.accountLinking (verified-email match).
+      ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+        ? {
+            google: {
+              clientId: env.GOOGLE_CLIENT_ID,
+              clientSecret: env.GOOGLE_CLIENT_SECRET,
+            },
+          }
+        : {}),
+      ...(env.MICROSOFT_CLIENT_ID && env.MICROSOFT_CLIENT_SECRET
+        ? {
+            microsoft: {
+              clientId: env.MICROSOFT_CLIENT_ID,
+              clientSecret: env.MICROSOFT_CLIENT_SECRET,
+            },
+          }
+        : {}),
     },
     emailAndPassword: {
       enabled: true,

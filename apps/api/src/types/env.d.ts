@@ -46,6 +46,10 @@ declare interface CloudflareBindings {
   VORTEX_CONNECT_RATE_PLAN_ID?: string;
   /** Optional confidential client secret for Vortex OAuth grant (SEA-120 / SEA-121). */
   VORTEX_OAUTH_CLIENT_SECRET?: string;
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
+  MICROSOFT_CLIENT_ID?: string;
+  MICROSOFT_CLIENT_SECRET?: string;
   INTERNAL_API_KEY: string;
   TEST_MIGRATIONS?: D1Migration[];
 }
