@@ -1,5 +1,11 @@
 # @vortex-api/seal
 
+## 0.3.0
+
+### Minor Changes
+
+- Add webhook delivery helpers (`verifySealWebhookSignature`, `parseSealWebhookEnvelope`, `readSealWebhookHeaders`) and regenerate OpenAPI types from the current `/reference` contract (send `email_sent` / `email_send_error`, `WebhookDeliveryPayload`).
+
 ## 0.2.1
 
 ### Patch Changes
