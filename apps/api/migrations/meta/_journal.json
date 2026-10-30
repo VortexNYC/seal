@@ -1,377 +1,384 @@
 {
-  "version": "7",
-  "dialect": "sqlite",
-  "entries": [
-    {
-      "idx": 0,
-      "version": "6",
-      "when": 1788978780765,
-      "tag": "0000_charming_the_fallen",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1788979201362,
-      "tag": "0001_deep_karnak",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1788979302266,
-      "tag": "0002_loving_glorian",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1788980000000,
-      "tag": "0003_amber_viper",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1788980100000,
-      "tag": "0004_silent_storm",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1788980200000,
-      "tag": "0005_marvelous_lyja",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "6",
-      "when": 1788980300000,
-      "tag": "0006_weapons_grade_nostalgia",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "6",
-      "when": 1788980400000,
-      "tag": "0007_crimson_carnage",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "6",
-      "when": 1788980500000,
-      "tag": "0008_add_signature_and_payment_tables",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "6",
-      "when": 1788980600000,
-      "tag": "0009_expand_signing_schema",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "6",
-      "when": 1788980700000,
-      "tag": "0010_add_ai_tables",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "6",
-      "when": 1788999740000,
-      "tag": "0011_add_templates",
-      "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "6",
-      "when": 1789005381435,
-      "tag": "0012_black_misty_knight",
-      "breakpoints": true
-    },
-    {
-      "idx": 13,
-      "version": "6",
-      "when": 1789005719412,
-      "tag": "0014_melodic_lifeguard",
-      "breakpoints": true
-    },
-    {
-      "idx": 14,
-      "version": "6",
-      "when": 1789005719412,
-      "tag": "0015_add_connected_apps_and_logs",
-      "breakpoints": true
-    },
-    {
-      "idx": 15,
-      "version": "6",
-      "when": 1789005719412,
-      "tag": "0016_feedback",
-      "breakpoints": true
-    },
-    {
-      "idx": 16,
-      "version": "6",
-      "when": 1789018790189,
-      "tag": "0017_add_saved_signatures",
-      "breakpoints": true
-    },
-    {
-      "idx": 17,
-      "version": "6",
-      "when": 1789019308504,
-      "tag": "0018_add_ai_progress_and_messages",
-      "breakpoints": true
-    },
-    {
-      "idx": 18,
-      "version": "6",
-      "when": 1789056992339,
-      "tag": "0019_add_document_verification_fields",
-      "breakpoints": true
-    },
-    {
-      "idx": 19,
-      "version": "6",
-      "when": 1789056992340,
-      "tag": "0020_add_mcp_oauth_tables",
-      "breakpoints": true
-    },
-    {
-      "idx": 20,
-      "version": "6",
-      "when": 1789056992341,
-      "tag": "0021_add_webhooks_table",
-      "breakpoints": true
-    },
-    {
-      "idx": 21,
-      "version": "6",
-      "when": 1789077313137,
-      "tag": "0021_faulty_skreet",
-      "breakpoints": true
-    },
-    {
-      "idx": 22,
-      "version": "6",
-      "when": 1789084329840,
-      "tag": "0022_daily_zombie",
-      "breakpoints": true
-    },
-    {
-      "idx": 23,
-      "version": "6",
-      "when": 1789084997661,
-      "tag": "0023_sturdy_next_avengers",
-      "breakpoints": true
-    },
-    {
-      "idx": 24,
-      "version": "6",
-      "when": 1789085009461,
-      "tag": "0024_round_mister_fear",
-      "breakpoints": true
-    },
-    {
-      "idx": 25,
-      "version": "6",
-      "when": 1789423372039,
-      "tag": "0025_workable_junta",
-      "breakpoints": true
-    },
-    {
-      "idx": 26,
-      "version": "6",
-      "when": 1789424311243,
-      "tag": "0026_tired_shiver_man",
-      "breakpoints": true
-    },
-    {
-      "idx": 27,
-      "version": "6",
-      "when": 1789425700622,
-      "tag": "0027_bright_morg",
-      "breakpoints": true
-    },
-    {
-      "idx": 28,
-      "version": "6",
-      "when": 1789501181002,
-      "tag": "0028_import_jobs",
-      "breakpoints": true
-    },
-    {
-      "idx": 29,
-      "version": "6",
-      "when": 1789769393752,
-      "tag": "0029_first_meteorite",
-      "breakpoints": true
-    },
-    {
-      "idx": 30,
-      "version": "6",
-      "when": 1789770000000,
-      "tag": "0030_usage_events",
-      "breakpoints": true
-    },
-    {
-      "idx": 31,
-      "version": "6",
-      "when": 1740000000031,
-      "tag": "0031_document_agent_power",
-      "breakpoints": true
-    },
-    {
-      "idx": 32,
-      "version": "6",
-      "when": 1740000000032,
-      "tag": "0032_extraction_schema",
-      "breakpoints": true
-    },
-    {
-      "idx": 33,
-      "version": "6",
-      "when": 1740000000033,
-      "tag": "0033_better_auth_two_factor",
-      "breakpoints": true
-    },
-    {
-      "idx": 34,
-      "version": "6",
-      "when": 1740000000034,
-      "tag": "0034_signer_auth",
-      "breakpoints": true
-    },
-    {
-      "idx": 35,
-      "version": "6",
-      "when": 1740000000035,
-      "tag": "0035_esign_consent_evidence",
-      "breakpoints": true
-    },
-    {
-      "idx": 36,
-      "version": "6",
-      "when": 1740000000036,
-      "tag": "0036_audit_hash_chain",
-      "breakpoints": true
-    },
-    {
-      "idx": 37,
-      "version": "6",
-      "when": 1740000000037,
-      "tag": "0037_audit_health_alerts",
-      "breakpoints": true
-    },
-    {
-      "idx": 38,
-      "version": "6",
-      "when": 1740000000038,
-      "tag": "0038_signer_privacy_notice",
-      "breakpoints": true
-    },
-    {
-      "idx": 39,
-      "version": "6",
-      "when": 1740000000039,
-      "tag": "0039_esign_opt_out",
-      "breakpoints": true
-    },
-    {
-      "idx": 40,
-      "version": "6",
-      "when": 1740000000040,
-      "tag": "0040_audit_siem_cursors",
-      "breakpoints": true
-    },
-    {
-      "idx": 41,
-      "version": "6",
-      "when": 1740000000041,
-      "tag": "0041_sso_provider",
-      "breakpoints": true
-    },
-    {
-      "idx": 42,
-      "version": "6",
-      "when": 1740000000042,
-      "tag": "0042_scim_provisioning",
-      "breakpoints": true
-    },
-    {
-      "idx": 43,
-      "version": "6",
-      "when": 1740000000043,
-      "tag": "0043_user_ban_fields",
-      "breakpoints": true
-    },
-    {
-      "idx": 44,
-      "version": "6",
-      "when": 1740000000044,
-      "tag": "0044_review_matrices",
-      "breakpoints": true
-    },
-    {
-      "idx": 45,
-      "version": "6",
-      "when": 1740000000045,
-      "tag": "0045_review_cell_audit",
-      "breakpoints": true
-    },
-    {
-      "idx": 46,
-      "version": "6",
-      "when": 1740000000046,
-      "tag": "0046_jobs",
-      "breakpoints": true
-    },
-    {
-      "idx": 47,
-      "version": "6",
-      "when": 1740000000047,
-      "tag": "0047_revision_suggestions",
-      "breakpoints": true
-    },
-    {
-      "idx": 48,
-      "version": "6",
-      "when": 1740000000048,
-      "tag": "0048_review_packs",
-      "breakpoints": true
-    },
-    {
-      "idx": 49,
-      "version": "6",
-      "when": 1740000000049,
-      "tag": "0049_drop_matrix_pack_model",
-      "breakpoints": true
-    },
-    {
-      "idx": 50,
-      "version": "6",
-      "when": 1740000000050,
-      "tag": "0050_vortex_order_form",
-      "breakpoints": true
-    },
-    {
-      "idx": 51,
-      "version": "6",
-      "when": 1740000000051,
-      "tag": "0051_api_token_ip_ranges",
-      "breakpoints": true
-    },
-    {
-      "idx": 52,
-      "version": "6",
-      "when": 1740000000052,
-      "tag": "0052_better_auth_apikey",
-      "breakpoints": true
-    }
-  ]
+	"version": "7",
+	"dialect": "sqlite",
+	"entries": [
+		{
+			"idx": 0,
+			"version": "6",
+			"when": 1788978780765,
+			"tag": "0000_charming_the_fallen",
+			"breakpoints": true
+		},
+		{
+			"idx": 1,
+			"version": "6",
+			"when": 1788979201362,
+			"tag": "0001_deep_karnak",
+			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "6",
+			"when": 1788979302266,
+			"tag": "0002_loving_glorian",
+			"breakpoints": true
+		},
+		{
+			"idx": 3,
+			"version": "6",
+			"when": 1788980000000,
+			"tag": "0003_amber_viper",
+			"breakpoints": true
+		},
+		{
+			"idx": 4,
+			"version": "6",
+			"when": 1788980100000,
+			"tag": "0004_silent_storm",
+			"breakpoints": true
+		},
+		{
+			"idx": 5,
+			"version": "6",
+			"when": 1788980200000,
+			"tag": "0005_marvelous_lyja",
+			"breakpoints": true
+		},
+		{
+			"idx": 6,
+			"version": "6",
+			"when": 1788980300000,
+			"tag": "0006_weapons_grade_nostalgia",
+			"breakpoints": true
+		},
+		{
+			"idx": 7,
+			"version": "6",
+			"when": 1788980400000,
+			"tag": "0007_crimson_carnage",
+			"breakpoints": true
+		},
+		{
+			"idx": 8,
+			"version": "6",
+			"when": 1788980500000,
+			"tag": "0008_add_signature_and_payment_tables",
+			"breakpoints": true
+		},
+		{
+			"idx": 9,
+			"version": "6",
+			"when": 1788980600000,
+			"tag": "0009_expand_signing_schema",
+			"breakpoints": true
+		},
+		{
+			"idx": 10,
+			"version": "6",
+			"when": 1788980700000,
+			"tag": "0010_add_ai_tables",
+			"breakpoints": true
+		},
+		{
+			"idx": 11,
+			"version": "6",
+			"when": 1788999740000,
+			"tag": "0011_add_templates",
+			"breakpoints": true
+		},
+		{
+			"idx": 12,
+			"version": "6",
+			"when": 1789005381435,
+			"tag": "0012_black_misty_knight",
+			"breakpoints": true
+		},
+		{
+			"idx": 13,
+			"version": "6",
+			"when": 1789005719412,
+			"tag": "0014_melodic_lifeguard",
+			"breakpoints": true
+		},
+		{
+			"idx": 14,
+			"version": "6",
+			"when": 1789005719412,
+			"tag": "0015_add_connected_apps_and_logs",
+			"breakpoints": true
+		},
+		{
+			"idx": 15,
+			"version": "6",
+			"when": 1789005719412,
+			"tag": "0016_feedback",
+			"breakpoints": true
+		},
+		{
+			"idx": 16,
+			"version": "6",
+			"when": 1789018790189,
+			"tag": "0017_add_saved_signatures",
+			"breakpoints": true
+		},
+		{
+			"idx": 17,
+			"version": "6",
+			"when": 1789019308504,
+			"tag": "0018_add_ai_progress_and_messages",
+			"breakpoints": true
+		},
+		{
+			"idx": 18,
+			"version": "6",
+			"when": 1789056992339,
+			"tag": "0019_add_document_verification_fields",
+			"breakpoints": true
+		},
+		{
+			"idx": 19,
+			"version": "6",
+			"when": 1789056992340,
+			"tag": "0020_add_mcp_oauth_tables",
+			"breakpoints": true
+		},
+		{
+			"idx": 20,
+			"version": "6",
+			"when": 1789056992341,
+			"tag": "0021_add_webhooks_table",
+			"breakpoints": true
+		},
+		{
+			"idx": 21,
+			"version": "6",
+			"when": 1789077313137,
+			"tag": "0021_faulty_skreet",
+			"breakpoints": true
+		},
+		{
+			"idx": 22,
+			"version": "6",
+			"when": 1789084329840,
+			"tag": "0022_daily_zombie",
+			"breakpoints": true
+		},
+		{
+			"idx": 23,
+			"version": "6",
+			"when": 1789084997661,
+			"tag": "0023_sturdy_next_avengers",
+			"breakpoints": true
+		},
+		{
+			"idx": 24,
+			"version": "6",
+			"when": 1789085009461,
+			"tag": "0024_round_mister_fear",
+			"breakpoints": true
+		},
+		{
+			"idx": 25,
+			"version": "6",
+			"when": 1789423372039,
+			"tag": "0025_workable_junta",
+			"breakpoints": true
+		},
+		{
+			"idx": 26,
+			"version": "6",
+			"when": 1789424311243,
+			"tag": "0026_tired_shiver_man",
+			"breakpoints": true
+		},
+		{
+			"idx": 27,
+			"version": "6",
+			"when": 1789425700622,
+			"tag": "0027_bright_morg",
+			"breakpoints": true
+		},
+		{
+			"idx": 28,
+			"version": "6",
+			"when": 1789501181002,
+			"tag": "0028_import_jobs",
+			"breakpoints": true
+		},
+		{
+			"idx": 29,
+			"version": "6",
+			"when": 1789769393752,
+			"tag": "0029_first_meteorite",
+			"breakpoints": true
+		},
+		{
+			"idx": 30,
+			"version": "6",
+			"when": 1789770000000,
+			"tag": "0030_usage_events",
+			"breakpoints": true
+		},
+		{
+			"idx": 31,
+			"version": "6",
+			"when": 1740000000031,
+			"tag": "0031_document_agent_power",
+			"breakpoints": true
+		},
+		{
+			"idx": 32,
+			"version": "6",
+			"when": 1740000000032,
+			"tag": "0032_extraction_schema",
+			"breakpoints": true
+		},
+		{
+			"idx": 33,
+			"version": "6",
+			"when": 1740000000033,
+			"tag": "0033_better_auth_two_factor",
+			"breakpoints": true
+		},
+		{
+			"idx": 34,
+			"version": "6",
+			"when": 1740000000034,
+			"tag": "0034_signer_auth",
+			"breakpoints": true
+		},
+		{
+			"idx": 35,
+			"version": "6",
+			"when": 1740000000035,
+			"tag": "0035_esign_consent_evidence",
+			"breakpoints": true
+		},
+		{
+			"idx": 36,
+			"version": "6",
+			"when": 1740000000036,
+			"tag": "0036_audit_hash_chain",
+			"breakpoints": true
+		},
+		{
+			"idx": 37,
+			"version": "6",
+			"when": 1740000000037,
+			"tag": "0037_audit_health_alerts",
+			"breakpoints": true
+		},
+		{
+			"idx": 38,
+			"version": "6",
+			"when": 1740000000038,
+			"tag": "0038_signer_privacy_notice",
+			"breakpoints": true
+		},
+		{
+			"idx": 39,
+			"version": "6",
+			"when": 1740000000039,
+			"tag": "0039_esign_opt_out",
+			"breakpoints": true
+		},
+		{
+			"idx": 40,
+			"version": "6",
+			"when": 1740000000040,
+			"tag": "0040_audit_siem_cursors",
+			"breakpoints": true
+		},
+		{
+			"idx": 41,
+			"version": "6",
+			"when": 1740000000041,
+			"tag": "0041_sso_provider",
+			"breakpoints": true
+		},
+		{
+			"idx": 42,
+			"version": "6",
+			"when": 1740000000042,
+			"tag": "0042_scim_provisioning",
+			"breakpoints": true
+		},
+		{
+			"idx": 43,
+			"version": "6",
+			"when": 1740000000043,
+			"tag": "0043_user_ban_fields",
+			"breakpoints": true
+		},
+		{
+			"idx": 44,
+			"version": "6",
+			"when": 1740000000044,
+			"tag": "0044_review_matrices",
+			"breakpoints": true
+		},
+		{
+			"idx": 45,
+			"version": "6",
+			"when": 1740000000045,
+			"tag": "0045_review_cell_audit",
+			"breakpoints": true
+		},
+		{
+			"idx": 46,
+			"version": "6",
+			"when": 1740000000046,
+			"tag": "0046_jobs",
+			"breakpoints": true
+		},
+		{
+			"idx": 47,
+			"version": "6",
+			"when": 1740000000047,
+			"tag": "0047_revision_suggestions",
+			"breakpoints": true
+		},
+		{
+			"idx": 48,
+			"version": "6",
+			"when": 1740000000048,
+			"tag": "0048_review_packs",
+			"breakpoints": true
+		},
+		{
+			"idx": 49,
+			"version": "6",
+			"when": 1740000000049,
+			"tag": "0049_drop_matrix_pack_model",
+			"breakpoints": true
+		},
+		{
+			"idx": 50,
+			"version": "6",
+			"when": 1740000000050,
+			"tag": "0050_vortex_order_form",
+			"breakpoints": true
+		},
+		{
+			"idx": 51,
+			"version": "6",
+			"when": 1740000000051,
+			"tag": "0051_api_token_ip_ranges",
+			"breakpoints": true
+		},
+		{
+			"idx": 52,
+			"version": "6",
+			"when": 1740000000052,
+			"tag": "0052_better_auth_apikey",
+			"breakpoints": true
+		},
+		{
+			"idx": 53,
+			"version": "6",
+			"when": 1740000000053,
+			"tag": "0053_drop_api_tokens",
+			"breakpoints": true
+		}
+	]
 }

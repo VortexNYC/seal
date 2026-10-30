@@ -1527,37 +1527,6 @@ export const apikey = sqliteTable(
   ]
 );
 
-export const apiTokens = sqliteTable(
-  "api_tokens",
-  {
-    id: text("id").primaryKey(),
-    publicId: text("public_id").notNull().unique(),
-    organizationId: text("organization_id")
-      .notNull()
-      .references(() => organization.id, { onDelete: "cascade" }),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    name: text("name").notNull(),
-    tokenHash: text("token_hash").notNull().unique(),
-    scopes: text("scopes").notNull().default("[]"),
-    allowedIpRanges: text("allowed_ip_ranges").notNull().default("[]"),
-    lastUsedAt: integer("last_used_at", { mode: "timestamp_ms" }),
-    revokedAt: integer("revoked_at", { mode: "timestamp_ms" }),
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
-      .notNull()
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-      .notNull()
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-      .$onUpdate(() => new Date()),
-  },
-  (table) => [
-    index("apiTokens_organizationId_idx").on(table.organizationId),
-    index("apiTokens_userId_idx").on(table.userId),
-  ]
-);
-
 // -------------------------------------------------------------------------
 // Workspace audit log
 // -------------------------------------------------------------------------
