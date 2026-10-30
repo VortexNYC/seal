@@ -123,9 +123,27 @@ export async function createAuth(env: CloudflareBindings) {
     emailVerification: {
       sendOnSignUp: true,
       sendVerificationEmail: async ({ user, url }) => {
+        // Better Auth's verify-email GET consumes the token on the API host
+        // and redirects to callbackURL — which resolves relative on
+        // api.seal.nyc, not the app. Point the link at the app's
+        // /verify-email route instead; VerifyEmailForm calls the API with
+        // the token itself.
+        let verificationUrl = url;
+        try {
+          const parsed = new URL(url);
+          const token = parsed.searchParams.get("token");
+          if (token) {
+            const appBase = (env.APP_URL ?? "").replace(/\/$/, "");
+            if (appBase) {
+              verificationUrl = `${appBase}/verify-email?token=${encodeURIComponent(token)}`;
+            }
+          }
+        } catch {
+          // Fall back to the Better Auth-built URL.
+        }
         const html = await renderEmailVerification({
           recipientName: user.name ?? "",
-          verificationUrl: url,
+          verificationUrl,
         });
         const result = await sendEmail(env, {
           to: user.email,

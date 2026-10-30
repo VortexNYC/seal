@@ -26,8 +26,8 @@ async function getSessionCookie(): Promise<string> {
   await auth.api.signUpEmail({
     body: { email, password, name: "SCIM Admin" },
   });
-  // requireEmailVerification blocks sign-in for unverified users — the test
-  // marks the row verified rather than going through the email flow.
+  // Mark the row verified — mirrors the post-verification state for the
+  // account-linking path (requireLocalEmailVerified).
   await createD1(env.D1)
     .update(user)
     .set({ emailVerified: true })
