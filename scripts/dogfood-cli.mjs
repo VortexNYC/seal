@@ -709,9 +709,12 @@ startxref
       if (sent?.recipients?.[0]?.email_sent === true) {
         pass("documents send email_sent");
       } else if (REQUIRE_INVITE_EMAIL) {
+        const err = sent?.recipients?.[0]?.email_send_error;
         fail(
           "documents send email_sent",
-          "Cloudflare EMAIL.send did not succeed (email_sent=false)"
+          err
+            ? `Cloudflare EMAIL.send failed: ${err}`
+            : "Cloudflare EMAIL.send did not succeed (email_sent=false)"
         );
       } else {
         pass(

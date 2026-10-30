@@ -32,6 +32,7 @@ export interface SentRecipient {
   signingToken: string;
   signingUrl: string;
   emailSent: boolean;
+  emailSendError?: string;
 }
 
 export interface SendDocumentResult {
@@ -291,8 +292,12 @@ export async function sendDocumentForSigning(
   for (const [i, emailResult] of emailResults.entries()) {
     const result = results[i];
     if (!result) continue;
-    result.emailSent = due.has(result.id) && emailResult.success;
-    if (due.has(result.id) && !emailResult.success) failedEmails += 1;
+    const invited = due.has(result.id);
+    result.emailSent = invited ? emailResult.success : true;
+    if (invited && !emailResult.success) {
+      result.emailSendError = emailResult.error;
+      failedEmails += 1;
+    }
   }
   if (failedEmails > 0) {
     console.error(

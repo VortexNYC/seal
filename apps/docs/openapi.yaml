@@ -2533,6 +2533,21 @@ paths:
                 properties:
                   success:
                     type: boolean
+                  recipients:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        email_sent:
+                          type: boolean
+                          description: >
+                            True when Cloudflare Email Sending accepted the
+                            invitation for this recipient.
+                        email_send_error:
+                          type: string
+                          description: >
+                            Present when notify was true and EMAIL.send failed
+                            for this recipient after one retry.
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":

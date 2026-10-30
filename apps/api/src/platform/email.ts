@@ -109,30 +109,46 @@ export async function sendEmail(
     return { success: false, error: "email binding not configured" };
   }
   const plainText = text ?? htmlToPlainText(html);
-  try {
-    await env.EMAIL.send({
-      from: from ?? env.EMAIL_FROM,
-      to,
-      subject,
-      html,
-      text: plainText,
-      ...(attachments && attachments.length > 0
-        ? {
-            attachments: attachments.map((a) => ({
-              disposition: "attachment" as const,
-              filename: a.filename,
-              type: a.type ?? "application/pdf",
-              content: a.content,
-            })),
-          }
-        : {}),
-    });
-    return { success: true };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error("[email] failed to send:", { to, subject, error: message });
-    return { success: false, error: message };
+  const payload = {
+    from: from ?? env.EMAIL_FROM,
+    to,
+    subject,
+    html,
+    text: plainText,
+    ...(attachments && attachments.length > 0
+      ? {
+          attachments: attachments.map((a) => ({
+            disposition: "attachment" as const,
+            filename: a.filename,
+            type: a.type ?? "application/pdf",
+            content: a.content,
+          })),
+        }
+      : {}),
+  };
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (attempt > 0) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+    try {
+      await env.EMAIL.send(payload);
+      return { success: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (attempt === 0) {
+        console.warn("[email] send failed, retrying once:", {
+          to,
+          subject,
+          error: message,
+        });
+        continue;
+      }
+      console.error("[email] failed to send:", { to, subject, error: message });
+      return { success: false, error: message };
+    }
   }
+  return { success: false, error: "email send failed" };
 }
 
 export async function sendDocumentInvitationEmail(

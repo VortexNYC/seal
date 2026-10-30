@@ -1232,6 +1232,9 @@ async function handleSendDocument(
       signing_url: r.signingUrl,
       expires_at: deadline.getTime(),
       ...(notify ? { email_sent: r.emailSent } : {}),
+      ...(notify && r.emailSendError
+        ? { email_send_error: r.emailSendError }
+        : {}),
     })),
   });
 }
