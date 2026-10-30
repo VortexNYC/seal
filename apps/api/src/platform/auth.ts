@@ -16,7 +16,7 @@ import {
   memberAc,
   ownerAc,
 } from "better-auth/plugins/organization/access";
-import { eq } from "drizzle-orm";
+import { and, eq, like, notInArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { createD1 } from "../global/db.js";
@@ -168,6 +168,20 @@ export async function createAuth(env: CloudflareBindings) {
                   })
                   .onConflictDoNothing();
               }
+              // Authoritative sync: memberships to vortex_* orgs not in the
+              // current Vortex org set are revoked upstream — drop them here.
+              const syncedOrgIds = vortexOrgs.map(
+                (o) => `vortex_${o.organizationId}`
+              );
+              await db
+                .delete(schema.member)
+                .where(
+                  and(
+                    eq(schema.member.userId, session.userId),
+                    like(schema.member.organizationId, "vortex\\_%"),
+                    notInArray(schema.member.organizationId, syncedOrgIds)
+                  )
+                );
               await db
                 .update(schema.session)
                 .set({
