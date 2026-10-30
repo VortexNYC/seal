@@ -64,7 +64,9 @@ pnpm test
 Hosted API golden path (needs a real `seal_…` key — optional locally, required
 in `.github/workflows/golden-path.yml` via `SEAL_API_KEY`). Asserts Cloudflare
 Email Sending accepted the invite (`email_sent`) unless you pass
-`--skip-invite-email` (self-host before mail is configured):
+`--skip-invite-email` (self-host before mail is configured). Hosted CI sets
+`SEAL_DOGFOOD_SIGNER` to a unique plus address per run so Cloudflare Email
+Sending suppression on a fixed dogfood recipient does not flake the gate.
 
 ```bash
 SEAL_API_KEY=seal_… pnpm run prove:golden-path

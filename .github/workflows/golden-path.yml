@@ -54,6 +54,7 @@ jobs:
         env:
           SEAL_API_KEY: ${{ secrets.SEAL_API_KEY }}
           SEAL_BASE_URL: https://api.seal.nyc
+          SEAL_DOGFOOD_SIGNER: dogfood+gh-${{ github.run_id }}@seal.nyc
         run: |
           set -euo pipefail
           if [ -z "${SEAL_API_KEY:-}" ]; then

@@ -6,7 +6,7 @@
  *   SEAL_API_KEY=seal_… node scripts/dogfood-cli.mjs
  *   SEAL_API_KEY=… node scripts/dogfood-cli.mjs \
  *     --api https://seal-selfhost-api.<account>.workers.dev \
- *     --signer dogfood+signer@example.com
+ *     --signer dogfood+run-2026-01-01T12-00-00@seal.nyc
  *
  * Covers: health → folders → contact create/update → upload → document+folder_id
  * → recipients → agent fields/bindings/preview/annotations/pdf-annotate →
@@ -15,6 +15,7 @@
  * org audit → signatures audit → webhook deliveries (viewed + signed) → imports →
  * breadcrumbs.
  *
+ *   SEAL_DOGFOOD_SIGNER             override default invite recipient (avoid CF suppression on a fixed plus address)
  *   --require-invite-email          fail when Cloudflare EMAIL.send did not succeed (email_sent=false)
  *   --skip-invite-email             allow send without mail (selfhost without binding)
  *   --prove-signer-auth access_code exercise public auth/verify for access_code
@@ -47,7 +48,10 @@ const APP = flag(
   "app",
   process.env.SEAL_APP_URL ?? "https://app.seal.nyc"
 ).replace(/\/$/, "");
-const SIGNER = flag("signer", "dogfood+signer@seal.nyc");
+const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+const defaultSigner =
+  process.env.SEAL_DOGFOOD_SIGNER ?? `dogfood+run-${stamp}@seal.nyc`;
+const SIGNER = flag("signer", defaultSigner);
 const SKIP_INVITE_EMAIL = args.includes("--skip-invite-email");
 const REQUIRE_INVITE_EMAIL =
   args.includes("--require-invite-email") && !SKIP_INVITE_EMAIL;
@@ -62,7 +66,6 @@ if (!KEY) {
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SEAL_BIN = join(ROOT, "packages/sdk/bin/seal.js");
 
-const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
 let failures = 0;
 const work = await mkdtemp(join(tmpdir(), "seal-dogfood-"));
 
@@ -288,7 +291,7 @@ startxref
 }
 
 async function main() {
-  console.log(`Seal CLI dogfood — api=${API}`);
+  console.log(`Seal CLI dogfood — api=${API} signer=${SIGNER}`);
 
   // health (raw — not via seal CLI)
   {
