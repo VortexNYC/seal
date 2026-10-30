@@ -443,18 +443,24 @@ curl -X POST "https://api.seal.nyc/api/v1/documents/send?id=jd7k8l9m0n1p2q3r4s5t
 
 ### Response
 
-Returns the updated document object.
+When `notify` is true (default), each recipient includes `email_sent` and, on failure, `email_send_error`. **`email_sent: true` means Cloudflare Email Sending accepted the invite — not that the inbox received it.**
 
 ```json
 {
-  "id": "jd7k8l9m0n1p2q3r4s5t6u7v",
-  "title": "Service Agreement",
-  "status": "sent",
-  "created_at": "2024-01-27T10:30:00Z",
-  "updated_at": "2024-01-27T10:31:00Z",
-  "recipients_count": 2,
-  "signed_count": 0,
-  "download_url": "https://api.seal.nyc/api/v1/documents/download?id=..."
+  "success": true,
+  "sent_at": 1706358660000,
+  "deadline": 1708947060000,
+  "recipients": [
+    {
+      "id": "rec_abc",
+      "email": "signer@example.com",
+      "name": "Jane Doe",
+      "role": "signer",
+      "signing_url": "https://app.seal.nyc/sign/…",
+      "expires_at": 1708947060000,
+      "email_sent": true
+    }
+  ]
 }
 ```
 

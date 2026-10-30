@@ -81,7 +81,28 @@ export interface paths {
          * @description Updates document metadata. Only works for `draft` documents.
          */
         put: operations["updateDocument"];
-        post?: never;
+        /**
+         * Update a document (legacy alias — use PUT)
+         * @deprecated
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -97,7 +118,28 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post?: never;
+        /**
+         * Delete a document (legacy alias — use DELETE)
+         * @deprecated
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         /**
          * Delete a document
          * @description Permanently deletes a draft document. For sent documents, use `POST /documents/void` instead.
@@ -295,7 +337,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Agent preview (markdown, structured, pdf, or original office/CSV) */
+        /** Agent preview (markdown, structured, chunks, pdf, or original office/CSV) */
         get: operations["previewDocument"];
         put?: never;
         post?: never;
@@ -333,6 +375,426 @@ export interface paths {
         put?: never;
         /** Bake highlight/text/rect/redact ops onto a draft PDF */
         post: operations["annotateDocumentPdf"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/pdf/organize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reorder or delete pages of a draft PDF in place
+         * @description Rebuilds the draft PDF from an ordered list of 1-based source page numbers. Omit a page to delete it; permute to reorder. Signature fields on deleted pages are removed; survivors are remapped to the new page indices. Does not create child documents (use `/documents/split` for that).
+         */
+        post: operations["organizeDocumentPdf"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/pdf/watermark": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stamp a text watermark onto a draft PDF
+         * @description Draws a Helvetica-bold text stamp on selected pages (default: all). Positions: diagonal (default), center, or footer. Deterministic pdf-lib — no Seal-hosted model inference.
+         */
+        post: operations["watermarkDocumentPdf"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/pdf/number-pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stamp page numbers onto a draft PDF
+         * @description Footer page numbers via pdf-lib. Format `n` or `n_of_m` (default). Optional prefix (e.g. "Page ").
+         */
+        post: operations["numberDocumentPdfPages"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/pdf/crop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Crop pages of a draft PDF (baked into new page size)
+         * @description For each listed page, keep only the top-left percent-of-page rect (`x`,`y`,`width`,`height` in 0–100 — same space as fields). Content is baked into a smaller page via pdf-lib. Fields fully inside the crop are remapped; fields that intersect the cut edge are removed. Unlisted pages are copied unchanged.
+         */
+        post: operations["cropDocumentPdf"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/pdf/compress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compress a draft PDF in place
+         * @description Re-encodes embedded images to JPEG via the convert-worker PDF engines (qpdf/pdfcpu — not Seal AI). Text, vectors, fonts, and structure are untouched; the engine never enlarges the file. Fields are unaffected. Honours the org `egress.allow_convert` gate since bytes leave the API worker for the conversion container.
+         */
+        post: operations["compressDocumentPdf"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/pdf/redact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Permanently redact regions of a draft PDF
+         * @description Removes content-stream operators inside each region — text runs, images, fully-contained vector paths, and annotations are deleted from the emitted bytes (not just painted over). Signature fields intersecting a region are removed. Document metadata is purged. Response includes a redaction receipt (`scrubbed_text`) listing the literal strings that were removed. Percent rects share the same 0–100 space as signature fields. Deterministic in-worker engine — not Seal AI.
+         */
+        post: operations["redactDocumentPdf"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/pdf/protect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Produce a password-protected copy of a draft PDF
+         * @description Encrypts the PDF via convert-worker pdfengines (qpdf) and stores an encrypted artifact; `download_url` fetches it. The working draft stays unencrypted — Seal's own pipeline cannot read encrypted PDFs. Honours the org `egress.allow_convert` gate.
+         */
+        post: operations["protectDocumentPdf"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/pdf/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unlock an encrypted draft PDF in place
+         * @description Decrypts a password-protected PDF via LibreOffice re-export and claims the usable bytes back onto the document (the draft was not readable by pdf-lib anyway). Returns `libreoffice_roundtrip` in `warnings` — layout may shift on complex documents.
+         */
+        post: operations["unlockDocumentPdf"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/pdf/flatten": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Flatten annotations and form fields into page content
+         * @description Runs pdfengines/flatten — annotation appearance streams and AcroForm values are baked into the page bytes. Seal signature fields live in the database and are unaffected. Honours the org `egress.allow_convert` gate.
+         */
+        post: operations["flattenDocumentPdf"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/pdf/export-images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Export every page of a draft PDF as images
+         * @description Rasterises each page via poppler (pdftoppm) in the pdf-tools container and returns a ZIP artifact (`page-N.png|jpg`) with a `download_url`. Artifact model — the working draft is unchanged. Honours the org `egress.allow_convert` gate.
+         */
+        post: operations["exportDocumentPdfImages"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/pdf/to-office": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Convert a draft PDF to an Office format
+         * @description Runs headless LibreOffice in the pdf-tools container and returns a docx/xlsx/pptx artifact with a `download_url`. Artifact model — the working draft is unchanged. Fidelity is layout-locked (PDF imports into Draw: text boxes, not flowing prose). Honours the org `egress.allow_convert` gate.
+         */
+        post: operations["convertDocumentPdfToOffice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/pdf/ocr": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * OCR a draft PDF (add a searchable text layer)
+         * @description Runs ocrmypdf --skip-text in the pdf-tools container — pages that lack a text layer are OCR'd and existing text is preserved. The searchable PDF claims the document's storageKey. Honours the org `egress.allow_convert` gate.
+         */
+        post: operations["ocrDocumentPdf"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/pdf/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Text-level compare of two draft PDFs
+         * @description Extracts text from both documents (pdftotext -layout in the pdf-tools container) and returns a per-page line diff (added/removed). Read-only — no storage mutation. Honours the org `egress.allow_convert` gate.
+         */
+        post: operations["compareDocumentPdfs"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/pdf/to-pdfa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Convert a draft PDF to archival PDF/A
+         * @description Converts to a PDF/A flavour (1b/2b/3b) via Gotenberg pdfengines/convert. The archival PDF claims the document's storageKey. Honours the org `egress.allow_convert` gate.
+         */
+        post: operations["convertDocumentPdfToPdfA"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/pdf/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Merge multiple draft PDFs into a new document */
+        post: operations["mergeDocumentPdfs"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/pdf/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rotate pages of a draft PDF */
+        post: operations["rotateDocumentPdf"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/pdf/replace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replace the working PDF of a draft (fields remapped)
+         * @description Atomic swap of the document's PDF bytes — existing fields are remapped onto the new file where pages/geometry still line up.
+         */
+        post: operations["replaceDocumentPdf"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/original/replace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Replace a draft's original file (office/CSV → re-converted PDF) */
+        post: operations["replaceDocumentOriginal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/layout-blocks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Layout blocks for field placement hints */
+        get: operations["getDocumentLayoutBlocks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/extraction-schema": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the structured-extraction schema for a document */
+        get: operations["getDocumentExtractionSchema"];
+        put?: never;
+        /** Set the structured-extraction schema for a draft */
+        post: operations["putDocumentExtractionSchema"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/parsed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Parsed text + field candidates for a document */
+        get: operations["getDocumentParsed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/download-file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download file bytes via a download token */
+        get: operations["downloadDocumentFile"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -431,7 +893,7 @@ export interface paths {
         put?: never;
         /**
          * Add a recipient
-         * @description Adds a recipient to a draft document.
+         * @description Adds a recipient to a draft, or to an envelope that is already sent and not finished. On a draft they are invited when the document is sent. On a sent envelope they get a signing link now if it is their turn; a later sequential signer keeps a link and is emailed when that group is reached. Completed, cancelled, and expired envelopes are rejected.
          */
         post: operations["addRecipient"];
         delete?: never;
@@ -467,10 +929,31 @@ export interface paths {
         get?: never;
         /**
          * Update a recipient
-         * @description Updates a recipient on a draft document.
+         * @description On a draft, name, role, order, and email can change. On a sent envelope, email and name can change for someone who has not signed or approved. A new email rotates the signing link and sends it when it is their turn. Role and order stay locked after send. A person who already finished cannot be changed. Completed, cancelled, and expired envelopes are rejected.
          */
         put: operations["updateRecipient"];
-        post?: never;
+        /**
+         * Update a recipient (legacy alias — use PUT)
+         * @deprecated
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -486,7 +969,28 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post?: never;
+        /**
+         * Delete a recipient (legacy alias — use DELETE)
+         * @deprecated
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         /**
          * Remove a recipient
          * @description Removes a recipient from a draft document.
@@ -641,6 +1145,7 @@ export interface paths {
         /**
          * Create document from template
          * @description Creates a new draft document pre-populated with the template's field layout. Add recipients and send when ready.
+         *     `id` is required as a **query** parameter (OpenAPI contract). For backwards compatibility the handler also accepts `id` in the JSON body.
          */
         post: operations["useTemplate"];
         delete?: never;
@@ -737,7 +1242,7 @@ export interface paths {
         put?: never;
         /**
          * Generate upload URL
-         * @description Returns a short-lived upload URL. `POST` the file bytes to that URL with the matching `Content-Type`. Accepted types: `application/pdf`, DOCX, XLSX, PPTX, and CSV. Non-PDF office/CSV uploads are converted to a fixed-layout PDF via the convert worker before storage; the original is retained under an `originals/` key. Pass the returned `storageId` to `POST /documents`.
+         * @description Returns a short-lived upload URL. `POST` the file bytes to that URL with the matching `Content-Type`. Accepted types: `application/pdf`, DOCX, XLSX, PPTX, CSV, HTML, PNG, and JPEG. Office/CSV convert via LibreOffice, HTML renders via Gotenberg's Chromium route, and PNG/JPEG pack into a one-page PDF in-worker via pdf-lib (no egress). The original is retained under an `originals/` key. Pass the returned `storageId` to `POST /documents`.
          */
         post: operations["generateUploadUrl"];
         delete?: never;
@@ -757,7 +1262,7 @@ export interface paths {
         put?: never;
         /**
          * Upload a document file
-         * @description Upload file bytes to the URL from `POST /uploads/generate-url` (pass the token as a query param). PDFs are stored as-is. DOCX/XLSX/PPTX/CSV are converted to PDF via the convert worker; originals are kept. Requires a valid upload token (not a normal API key on this path).
+         * @description Upload file bytes to the URL from `POST /uploads/generate-url` (pass the token as a query param). PDFs are stored as-is. DOCX/XLSX/PPTX/CSV are converted via LibreOffice, HTML renders via Chromium, PNG/JPEG pack into a one-page PDF via pdf-lib in-worker; originals are kept. Requires a valid upload token (not a normal API key on this path).
          */
         post: operations["uploadFile"];
         delete?: never;
@@ -810,7 +1315,28 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post?: never;
+        /**
+         * Delete a contact (legacy alias — use DELETE)
+         * @deprecated
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         /** Delete a contact */
         delete: operations["deleteContact"];
         options?: never;
@@ -862,6 +1388,255 @@ export interface paths {
         };
         /** Folder breadcrumbs */
         get: operations["getFolderBreadcrumbs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List review matrices (summary rows, no cell fan-out) */
+        get: operations["listReviewMatrices"];
+        put?: never;
+        /**
+         * Create a review matrix
+         * @description Creates a matrix with one row per document and one pending cell per column. Cells are filled by the calling agent via `PATCH /reviews/{id}/cells` — Seal runs no inference; it grounds each submitted quote against the row document's stored text. Every `done` cell must carry ≥1 citation or the literal `not_found`.
+         */
+        post: operations["createReviewMatrix"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reviews/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a review matrix */
+        get: operations["getReviewMatrix"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reviews/{id}/cells": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Write agent-authored cell results
+         * @description The caller's own model reasons over each row's parsed document text and posts answers; Seal runs no inference for this route. Every `quote` is grounded server-side against the row document's stored text — a quote absent from the document collapses to `not_found` rather than anchoring invented text. The matrix flips to `ready` once all cells resolve. `model_used` records the caller's model label (e.g. `agent/claude-opus-4-6`) for provenance — it is a label, not a billed provider call.
+         */
+        patch: operations["writeReviewCells"];
+        trace?: never;
+    };
+    "/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List async jobs (newest first) */
+        get: operations["listJobs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jobs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Poll an async job
+         * @description Returns the job's status (`queued|running|done|error`), error, and result payload. Jobs are created by long-running ops; they run on the org's JobRunner Durable Object, sequentially per org with retries (max 3 attempts).
+         */
+        get: operations["getJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/review-packs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List saved question sets (builtin + org-authored) */
+        get: operations["listReviewPacks"];
+        put?: never;
+        /** Save a reusable set of review questions */
+        post: operations["createReviewPack"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/review-packs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a saved question set */
+        get: operations["getReviewPack"];
+        put?: never;
+        post?: never;
+        /** Delete a saved question set */
+        delete: operations["deleteReviewPack"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List tracked-change suggestions */
+        get: operations["listRevisions"];
+        put?: never;
+        /**
+         * Propose a redline on a draft document
+         * @description Anchors a verbatim quote from the document text and proposes an insert/delete/replace. Auto-attaches `{page, bbox}` when the quote resolves against per-word geometry. Status stays `pending` until a human or agent accepts/rejects; the source document is never mutated — accepting materializes a derived counter-proposal draft.
+         */
+        post: operations["proposeRevision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/revisions/accept-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept every pending revision on a document
+         * @description One derived draft carries all pending edits — a single tracked- changes .docx when `output=docx`. All accepted revisions point at the same `derived_document_id`.
+         */
+        post: operations["acceptAllRevisions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/revisions/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept a revision — materializes a derived counter-proposal draft
+         * @description Applies the text edit to the document's parsed content, converts to PDF via the convert worker, and creates a new draft linked by `parent_document_id`. Re-parses fields/annotations on the derived doc. Idempotent-ish: already-resolved revisions return 409.
+         */
+        post: operations["acceptRevision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/revisions/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject a pending revision */
+        post: operations["rejectRevision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jobs/{id}/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * SSE stream of job state
+         * @description `state` events carry the full job payload on every status change; `:hb` comments keep the socket warm; the stream closes on `done`/`error` or after ~4.5 minutes (reconnect to resume). Because `EventSource` can't set headers, `?access_token=` (MCP or api token) is accepted on this path only.
+         */
+        get: operations["streamJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reviews/{id}/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * SSE stream of matrix + cell state
+         * @description `state` events carry `{id, status, cells[]}` — per-cell `{id, row_id, column_index, status, flag, summary}` — on every change; closes when the matrix leaves `generating`/`draft`. `?access_token=` supported like the jobs stream.
+         */
+        get: operations["streamReviewMatrix"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1045,6 +1820,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/webhooks/flush": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Drain pending webhook deliveries for this organization (SEA-64)
+         * @description Processes due pending deliveries for the caller's organization (attemptCount budget, nextRetryAt due). Useful after outages or to force a catch-up without waiting for the *\/5 cron.
+         */
+        post: operations["flushWebhookDeliveries"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/webhooks/deliveries": {
         parameters: {
             query?: never;
@@ -1056,6 +1851,23 @@ export interface paths {
         get: operations["listWebhookDeliveries"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/webhooks/deliveries/{deliveryId}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Re-queue a failed or stuck-pending webhook delivery (SEA-64) */
+        post: operations["retryWebhookDelivery"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1165,6 +1977,93 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/organizations/{organizationSlug}/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List organization audit events (filtered, cursor-paginated) */
+        get: operations["listOrgAuditLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/organizations/{organizationSlug}/audit/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Verify the organization's tamper-evident audit hash chain (SEA-44) */
+        get: operations["verifyAuditHashChain"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/organizations/{organizationSlug}/audit/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export sealed audit entries as NDJSON for SIEM pull (SEA-67)
+         * @description Admin-only pull export for SIEM / log pipeline backfill.
+         *     Returns one JSON object per line (`application/x-ndjson`), ordered by
+         *     sealed `sequence`. Pass `after_sequence` from the prior response's
+         *     `x-seal-next-sequence` header to page.
+         *
+         *     **Retention:** workspace audit entries (including IP when present via
+         *     Cloudflare connecting IP) are retained for the life of the organization
+         *     unless the org is deleted. Export to your SIEM for customer-controlled
+         *     retention.
+         *
+         *     **Push alternative:** create a webhook subscribed to `audit.entry.created`,
+         *     `audit.*`, or `*`. Seal fans sealed rows out on the *\/5 cron (and via
+         *     `POST .../audit/siem/flush`).
+         */
+        get: operations["exportAuditLogNdjson"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/organizations/{organizationSlug}/audit/siem/flush": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Enqueue sealed audit rows to SIEM webhooks (SEA-67)
+         * @description Advances the org SIEM cursor and enqueues `audit.entry.created`
+         *     deliveries for subscribed webhooks, then attempts immediate delivery.
+         */
+        post: operations["flushAuditSiemStream"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/search": {
         parameters: {
             query?: never;
@@ -1209,8 +2108,72 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Send multiple documents */
+        /**
+         * Send multiple documents
+         * @description Each draft is sent the same way as `POST /documents/send`, including invitation email.
+         *     Sequential documents invite only the current signer group.
+         *     Pass `ids` or `document_ids`.
+         */
         post: operations["bulkSendDocuments"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Copy a document into a new draft
+         * @description Copies the file, recipients, and fields into a new draft.
+         *     Signatures and completion state are not copied.
+         */
+        post: operations["copyDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/forward": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Email a completed PDF to someone who is not a signer */
+        post: operations["forwardDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/forward-envelope": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a new envelope from a completed PDF
+         * @description Copies the executed PDF into a new draft. Signers and fields are not copied.
+         *     The source document stays completed.
+         */
+        post: operations["forwardEnvelope"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1229,6 +2192,79 @@ export interface paths {
         /** Void multiple documents */
         post: operations["bulkVoidDocuments"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/organizations/{organizationSlug}/scim/connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List SCIM connections for an organization */
+        get: operations["listScimConnections"];
+        put?: never;
+        /**
+         * Create a SCIM connection
+         * @description Mints a managed SCIM connection for the organization and returns a bearer token once. The IdP provisions users and groups at `{baseUrl}` (`/api/auth/scim/v2`) with that token.
+         */
+        post: operations["createScimConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/organizations/{organizationSlug}/webhooks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List webhooks for an organization */
+        get: operations["listOrgWebhooks"];
+        put?: never;
+        /** Create an organization webhook */
+        post: operations["createOrgWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/organizations/{organizationSlug}/webhooks/event-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Supported webhook event types */
+        get: operations["listOrgWebhookEventTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/organizations/{organizationSlug}/webhooks/{webhookId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete an organization webhook */
+        delete: operations["deleteOrgWebhook"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1295,10 +2331,12 @@ export interface components {
         /** @enum {string} */
         SignatureMethod: "draw" | "type" | "upload";
         /** @enum {string} */
-        FieldType: "signature" | "text" | "date" | "checkbox" | "dropdown" | "radio" | "attachment";
+        FieldType: "signature" | "free_signature" | "initials" | "name" | "email" | "text" | "number" | "date" | "date_signed" | "checkbox" | "radio" | "dropdown" | "multi_select" | "attachment" | "image" | "payment" | "phone" | "cells" | "stamp" | "heading" | "strikethrough" | "verification" | "kba";
         Document: {
             /** @description Unique document identifier */
             id: string;
+            /** @description Cross-surface document id — reviews, revisions, and the session API key on this value. Either `id` or `public_id` is accepted wherever a document identifier is required. */
+            public_id?: string;
             title: string;
             description?: string;
             status: components["schemas"]["DocumentStatus"];
@@ -1373,6 +2411,13 @@ export interface components {
             /** Format: date-time */
             declined_at?: string;
             decline_reason?: string;
+            /**
+             * @description Signer authentication tier required before this recipient can submit (SEA-48)
+             * @enum {string}
+             */
+            authMethod?: "none" | "access_code" | "email_otp";
+            /** @description Whether an access code is set for this recipient */
+            hasAccessCode?: boolean;
         };
         Template: {
             id: string;
@@ -1509,10 +2554,110 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
+        /** @enum {string} */
+        ReviewFlag: "green" | "amber" | "red" | "grey";
+        /** @enum {string} */
+        ReviewCellStatus: "pending" | "generating" | "done" | "error";
+        ReviewCitation: {
+            documentId: string;
+            /** @description Page the quote was located on (best-effort) */
+            page?: number;
+            /** @description Normalized 0–1 page geometry of the quoted span */
+            bbox?: {
+                x?: number;
+                y?: number;
+                width?: number;
+                height?: number;
+            };
+            /** @description Contiguous excerpt from the document, or the literal `not_found` */
+            quote: string;
+        };
+        ReviewPack: {
+            id: string;
+            title: string;
+            description?: string | null;
+            columns: components["schemas"]["ReviewColumn"][];
+            /** @description true for Vortex-authored packs shipped with the build */
+            builtin: boolean;
+            /** Format: date-time */
+            created_at: string;
+        };
+        Revision: {
+            id: string;
+            document_id: string;
+            review_cell_id?: string | null;
+            /** @enum {string} */
+            kind: "insert" | "delete" | "replace";
+            /** @enum {string} */
+            status: "pending" | "accepted" | "rejected";
+            anchor_quote: string;
+            anchor_page?: number | null;
+            anchor_bbox?: {
+                x?: number;
+                y?: number;
+                width?: number;
+                height?: number;
+            } | null;
+            proposed_text?: string | null;
+            rationale?: string | null;
+            derived_document_id?: string | null;
+            created_by: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            resolved_at?: string | null;
+        };
+        ReviewColumn: {
+            index: number;
+            name: string;
+            prompt: string;
+        };
+        ReviewCell: {
+            id: string;
+            row_id: string;
+            column_index: number;
+            status: components["schemas"]["ReviewCellStatus"];
+            summary: string | null;
+            flag: components["schemas"]["ReviewFlag"] | null;
+            reasoning: string | null;
+            citations: components["schemas"]["ReviewCitation"][];
+        };
+        ReviewRow: {
+            id: string;
+            /** @description Document public ID */
+            document_id: string;
+            cells: components["schemas"]["ReviewCell"][];
+        };
+        ReviewMatrix: {
+            id: string;
+            title: string;
+            status: string;
+            columns: components["schemas"]["ReviewColumn"][];
+            rows: components["schemas"]["ReviewRow"][];
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        Job: {
+            id: string;
+            /** @description Job type key */
+            type: string;
+            /** @enum {string} */
+            status: "queued" | "running" | "done" | "error";
+            error?: string | null;
+            result?: Record<string, never> | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            started_at?: string | null;
+            /** Format: date-time */
+            finished_at?: string | null;
+        };
         ImportJob: {
             id: string;
             /** @enum {string} */
-            adapter: "pdf" | "docusign" | "pandadoc";
+            adapter: "pdf";
             status: string;
             payload: unknown;
             processed_count: number;
@@ -1550,6 +2695,39 @@ export interface components {
                 success_rate: number;
             };
         };
+        /** @description JSON body POSTed to your webhook URL. Signatures cover the exact serialized bytes of this object (UTF-8 JSON). */
+        WebhookDeliveryPayload: {
+            /** @description Stable id for idempotent processing (also used in delivery dedupe) */
+            eventId: string;
+            /** @description Dot-separated event name (matches subscription filters) */
+            eventType: string;
+            /** Format: date-time */
+            timestamp: string;
+            /**
+             * @description Org egress setting — minimal redacts PII from `data`
+             * @enum {string}
+             */
+            payloadMode?: "full" | "minimal";
+            /** @description Event-specific payload */
+            data: {
+                [key: string]: unknown;
+            };
+        };
+        DocumentSendRecipient: {
+            id?: string;
+            /** Format: email */
+            email?: string;
+            name?: string;
+            role?: string;
+            /** Format: uri */
+            signing_url?: string;
+            /** @description Unix ms deadline */
+            expires_at?: number;
+            /** @description When notify was true, whether Cloudflare Email Sending accepted the invitation for this recipient (not inbox delivery). */
+            email_sent?: boolean;
+            /** @description Present when notify was true and invite email failed after retry */
+            email_send_error?: string;
+        };
         WebhookEventType: {
             type: string;
             category: string;
@@ -1583,11 +2761,24 @@ export interface components {
                 send_viewed_notification: boolean;
             };
             ai: {
+                /** @description Org kill switch for document-processing features (field suggestions, text extraction via anydoc). Deterministic enrichment only — Seal runs no hosted model. When false, those routes return 403 `ai_disabled` (SEA-70). */
                 enabled: boolean;
                 auto_analyze: boolean;
             };
+            /** @description Sensitive egress gates (SEA-70) */
+            egress: {
+                /**
+                 * @description `full` (default) includes emails/names/titles in webhook `data`. `minimal` keeps ids, status, timestamps, and counts only.
+                 * @enum {string}
+                 */
+                webhook_payload_mode: "full" | "minimal";
+                /** @description When false, Office→PDF convert worker calls return 403 `convert_disabled`. */
+                allow_convert: boolean;
+            };
             security: {
+                /** @description CIDR ranges or exact addresses. Empty allows every address. A non-empty list rejects API token and MCP calls from any other address, including a call with no client IP. Signing links and the signed-in app are not restricted. The settings screen stores the same rule; both lists have to allow the address. */
                 ip_allowlist: string[];
+                /** @description When false, API token and MCP calls are rejected. Signing links and the signed-in app stay available. */
                 allow_api_access: boolean;
                 require_mfa: boolean;
                 session_timeout_minutes: number | null;
@@ -1662,6 +2853,8 @@ export interface components {
             publicId: string;
             name: string;
             scopes: components["schemas"]["ApiTokenScope"][];
+            /** @description CIDRs or addresses. Empty means the key is not limited by IP. */
+            allowedIpRanges?: string[];
             /** Format: date-time */
             lastUsedAt?: string | null;
             /** Format: date-time */
@@ -1718,6 +2911,22 @@ export interface components {
                  *       "type": "NOT_FOUND",
                  *       "status": 404,
                  *       "title": "Document not found"
+                 *     }
+                 */
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Authenticated but not allowed for this resource or action */
+        Forbidden: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "FORBIDDEN",
+                 *       "status": 403,
+                 *       "title": "Forbidden"
                  *     }
                  */
                 "application/json": components["schemas"]["Error"];
@@ -2026,7 +3235,7 @@ export interface operations {
                 "application/json": {
                     id: string;
                     /** @enum {string} */
-                    field_type: "signature" | "text" | "number" | "date" | "checkbox" | "dropdown" | "radio" | "attachment" | "payment";
+                    field_type: "signature" | "free_signature" | "initials" | "name" | "email" | "text" | "number" | "date" | "date_signed" | "checkbox" | "dropdown" | "radio" | "multi_select" | "attachment" | "image" | "payment" | "phone" | "cells" | "stamp" | "heading" | "strikethrough" | "verification" | "kba";
                     label: string;
                     is_required?: boolean;
                     page: number;
@@ -2278,7 +3487,7 @@ export interface operations {
         parameters: {
             query: {
                 id: string;
-                format?: "markdown" | "structured" | "pdf" | "original";
+                format?: "markdown" | "structured" | "chunks" | "pdf" | "original";
             };
             header?: never;
             path?: never;
@@ -2359,6 +3568,802 @@ export interface operations {
             };
         };
     };
+    organizeDocumentPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    /** @description New page order using original 1-based page numbers */
+                    pages: number[];
+                };
+            };
+        };
+        responses: {
+            /** @description Organized */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success?: boolean;
+                        storage_id?: string;
+                        page_count?: number;
+                        fields_removed?: number;
+                        fields_remapped?: number;
+                    };
+                };
+            };
+            /** @description Invalid page order (empty, duplicate, or out of range) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    watermarkDocumentPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    text: string;
+                    opacity?: number;
+                    /** @enum {string} */
+                    position?: "diagonal" | "center" | "footer";
+                    /** @description Hex color, e.g. #888888 */
+                    color?: string;
+                    size?: number;
+                    pages?: number[];
+                };
+            };
+        };
+        responses: {
+            /** @description Watermarked */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success?: boolean;
+                        storage_id?: string;
+                        page_count?: number;
+                    };
+                };
+            };
+        };
+    };
+    numberDocumentPdfPages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    /** @enum {string} */
+                    format?: "n" | "n_of_m";
+                    /** @enum {string} */
+                    position?: "footer-center" | "footer-right" | "footer-left";
+                    start_at?: number;
+                    prefix?: string;
+                    size?: number;
+                    color?: string;
+                    pages?: number[];
+                };
+            };
+        };
+        responses: {
+            /** @description Numbered */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success?: boolean;
+                        storage_id?: string;
+                        page_count?: number;
+                    };
+                };
+            };
+        };
+    };
+    cropDocumentPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    crops: {
+                        page: number;
+                        x: number;
+                        y: number;
+                        width: number;
+                        height: number;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Cropped */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success?: boolean;
+                        storage_id?: string;
+                        page_count?: number;
+                        fields_removed?: number;
+                        fields_remapped?: number;
+                    };
+                };
+            };
+            /** @description Invalid crop rect or page */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    compressDocumentPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    /** @description JPEG quality for re-encoded images (default 80) */
+                    image_quality?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Compressed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success?: boolean;
+                        storage_id?: string;
+                        page_count?: number;
+                        size_before?: number;
+                        size_after?: number;
+                    };
+                };
+            };
+            /** @description Org egress disallows conversion */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    redactDocumentPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    regions: {
+                        page: number;
+                        x: number;
+                        y: number;
+                        width: number;
+                        height: number;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Redacted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success?: boolean;
+                        storage_id?: string;
+                        regions_applied?: number;
+                        ops_scrubbed?: number;
+                        annots_scrubbed?: number;
+                        fields_removed?: number;
+                        /** @description Strings removed from the bytes (receipt) */
+                        scrubbed_text?: string;
+                        warnings?: string[];
+                    };
+                };
+            };
+        };
+    };
+    protectDocumentPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    /** @description Password required to open the PDF */
+                    user_password?: string;
+                    /** @description Password granting full access (defaults to user) */
+                    owner_password?: string;
+                    allow_printing?: boolean;
+                    allow_copying?: boolean;
+                    allow_modifying?: boolean;
+                    allow_annotating?: boolean;
+                    allow_filling_forms?: boolean;
+                    allow_assembling?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Protected copy created */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success?: boolean;
+                        storage_id?: string;
+                        size?: number;
+                        download_url?: string | null;
+                    };
+                };
+            };
+        };
+    };
+    unlockDocumentPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    password: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Unlocked */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success?: boolean;
+                        storage_id?: string;
+                        page_count?: number;
+                        warnings?: string[];
+                    };
+                };
+            };
+            /** @description not_encrypted / invalid_pdf / wrong password */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    flattenDocumentPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Flattened */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success?: boolean;
+                        storage_id?: string;
+                        page_count?: number;
+                    };
+                };
+            };
+        };
+    };
+    exportDocumentPdfImages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    /**
+                     * @default png
+                     * @enum {string}
+                     */
+                    format?: "png" | "jpeg";
+                    /** @default 150 */
+                    dpi?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Images ZIP created */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success?: boolean;
+                        storage_id?: string;
+                        size?: number;
+                        format?: string;
+                        dpi?: number;
+                        download_url?: string | null;
+                    };
+                };
+            };
+        };
+    };
+    convertDocumentPdfToOffice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    /**
+                     * @default docx
+                     * @enum {string}
+                     */
+                    format?: "docx" | "xlsx" | "pptx";
+                };
+            };
+        };
+        responses: {
+            /** @description Office file created */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success?: boolean;
+                        storage_id?: string;
+                        format?: string;
+                        size?: number;
+                        download_url?: string | null;
+                    };
+                };
+            };
+        };
+    };
+    ocrDocumentPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    /**
+                     * @description Tesseract language code(s), e.g. eng or eng+fra
+                     * @default eng
+                     */
+                    lang?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OCR complete */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success?: boolean;
+                        storage_id?: string;
+                        page_count?: number;
+                        lang?: string;
+                    };
+                };
+            };
+        };
+    };
+    compareDocumentPdfs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    other_id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Diff result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success?: boolean;
+                        document_a?: {
+                            id?: string;
+                            public_id?: string;
+                            name?: string;
+                        };
+                        document_b?: {
+                            id?: string;
+                            public_id?: string;
+                            name?: string;
+                        };
+                        pages_different?: number;
+                        lines_added?: number;
+                        lines_removed?: number;
+                        pages?: {
+                            page?: number;
+                            added?: string[];
+                            removed?: string[];
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    convertDocumentPdfToPdfA: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    /**
+                     * @default PDF/A-2b
+                     * @enum {string}
+                     */
+                    format?: "PDF/A-1b" | "PDF/A-2b" | "PDF/A-3b";
+                };
+            };
+        };
+        responses: {
+            /** @description Converted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success?: boolean;
+                        storage_id?: string;
+                        page_count?: number;
+                        format?: string;
+                    };
+                };
+            };
+        };
+    };
+    mergeDocumentPdfs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Document public IDs, merged in order */
+                    ids: string[];
+                    title?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Merged document created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success?: boolean;
+                        id?: string;
+                        public_id?: string;
+                        storage_id?: string;
+                        page_count?: number;
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    rotateDocumentPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    /** @enum {integer} */
+                    degrees: 90 | 180 | 270;
+                    /** @description 1-based page list; omit for all pages */
+                    pages?: number[];
+                };
+            };
+        };
+        responses: {
+            /** @description Rotated — new storage_id */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    replaceDocumentPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    /** @description Base64-encoded PDF */
+                    content_base64: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Replaced */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["ValidationError"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    replaceDocumentOriginal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    content_base64: string;
+                    /** @description Original MIME type (docx, xlsx, html, pdf, …) */
+                    content_type: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Replaced — storage_id + content_type */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getDocumentLayoutBlocks: {
+        parameters: {
+            query: {
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Layout blocks */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        blocks?: Record<string, never>[];
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getDocumentExtractionSchema: {
+        parameters: {
+            query: {
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Schema object */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        schema?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    putDocumentExtractionSchema: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    schema: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Schema set */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getDocumentParsed: {
+        parameters: {
+            query: {
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Parsed content */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    downloadDocumentFile: {
+        parameters: {
+            query: {
+                token: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description File bytes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": unknown;
+                };
+            };
+        };
+    };
     sendDocument: {
         parameters: {
             query: {
@@ -2375,19 +4380,14 @@ export interface operations {
                     message?: string;
                     /** @description Send invitation email. Defaults to true. */
                     notify?: boolean;
-                    /**
-                     * @description How many days recipients have to sign.
-                     * @example 14
-                     */
+                    /** @description How many days recipients have to sign. */
                     expires_in_days?: number;
                     /**
                      * @description parallel invites everyone still open. sequential invites only the earliest open signer group, then the next group after that group finishes.
                      * @enum {string}
                      */
                     signing_mode?: "parallel" | "sequential";
-                    /**
-                     * @description When signing_mode is sequential, each signer may choose who signs next.
-                     */
+                    /** @description When signing_mode is sequential, each signer may choose who signs next. */
                     allow_dictate_next_signer?: boolean;
                 };
             };
@@ -2400,7 +4400,12 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        success?: boolean;
+                        success: boolean;
+                        /** @description Unix ms when the document was sent */
+                        sent_at: number;
+                        /** @description Unix ms signing deadline for recipients */
+                        deadline: number;
+                        recipients: components["schemas"]["DocumentSendRecipient"][];
                     };
                 };
             };
@@ -2554,6 +4559,13 @@ export interface operations {
                     order?: number;
                     /** @description Custom message for this recipient's invitation email */
                     message?: string;
+                    /**
+                     * @description Signer authentication tier for this recipient. When omitted, the organization's defaultRecipientAuthMethod applies. `none` is rejected when the org requires recipient auth.
+                     * @enum {string}
+                     */
+                    auth_method?: "none" | "access_code" | "email_otp";
+                    /** @description Required when auth_method is `access_code`; the signer must enter it before submitting. */
+                    access_code?: string;
                 };
             };
         };
@@ -2612,10 +4624,15 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": {
-                    /** Format: email */
+                    /**
+                     * Format: email
+                     * @description New address. On a sent envelope this rotates the signing link and emails it when it is this person's turn.
+                     */
                     email?: string;
                     name?: string;
+                    /** @description Draft only. Rejected after the envelope is sent. */
                     role?: components["schemas"]["RecipientRole"];
+                    /** @description Draft only. Rejected after the envelope is sent. */
                     order?: number;
                     message?: string;
                 };
@@ -2909,6 +4926,7 @@ export interface operations {
     useTemplate: {
         parameters: {
             query: {
+                /** @description Template id (preferred — matches this OpenAPI contract) */
                 id: string;
             };
             header?: never;
@@ -2918,6 +4936,8 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": {
+                    /** @description Deprecated alternate — prefer query `id` (SEA-65) */
+                    id?: string;
                     /** @description Title for the new document (defaults to template name) */
                     title?: string;
                     description?: string;
@@ -3085,6 +5105,9 @@ export interface operations {
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
                 "application/vnd.openxmlformats-officedocument.presentationml.presentation": string;
                 "text/csv": string;
+                "text/html": string;
+                "image/png": string;
+                "image/jpeg": string;
             };
         };
         responses: {
@@ -3366,6 +5389,511 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    listReviewMatrices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Matrices */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        matrices?: {
+                            id?: string;
+                            title?: string;
+                            status?: string;
+                            row_count?: number;
+                            column_count?: number;
+                            /** Format: date-time */
+                            created_at?: string;
+                            /** Format: date-time */
+                            updated_at?: string;
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    createReviewMatrix: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    title: string;
+                    /** @description Review pack to expand — `builtin/nda`, `builtin/msa`, `builtin/employment`, or an org-authored `pack_*` id. Explicit `columns` override pack defaults. */
+                    pack_id?: string;
+                    columns?: components["schemas"]["ReviewColumn"][];
+                    /** @description Document public IDs in this organization */
+                    documentIds: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Created matrix (cells pending) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewMatrix"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getReviewMatrix: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Review matrix public ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Matrix with rows and cells */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewMatrix"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    writeReviewCells: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    model_used?: string;
+                    cells: {
+                        cell_id?: string;
+                        row_id?: string;
+                        column_index?: number;
+                        summary: string;
+                        /** @enum {string} */
+                        flag?: "green" | "amber" | "red" | "grey";
+                        reasoning?: string;
+                        /** @description Verbatim excerpt from the row document */
+                        quote: string;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Cells written */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        updated: number;
+                        /** @enum {string} */
+                        matrixStatus: "draft" | "generating" | "ready";
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listJobs: {
+        parameters: {
+            query?: {
+                status?: "queued" | "running" | "done" | "error";
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Job list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        jobs?: components["schemas"]["Job"][];
+                    };
+                };
+            };
+        };
+    };
+    getJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Job public ID (`job_…`) */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Job state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        type: string;
+                        /** @enum {string} */
+                        status: "queued" | "running" | "done" | "error";
+                        error: string | null;
+                        result: unknown;
+                        /** Format: date-time */
+                        created_at: string;
+                        /** Format: date-time */
+                        started_at: string | null;
+                        /** Format: date-time */
+                        finished_at: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listReviewPacks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Packs */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        packs?: components["schemas"]["ReviewPack"][];
+                    };
+                };
+            };
+        };
+    };
+    createReviewPack: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    title: string;
+                    description?: string;
+                    columns: components["schemas"]["ReviewColumn"][];
+                };
+            };
+        };
+        responses: {
+            /** @description Pack created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewPack"];
+                };
+            };
+        };
+    };
+    getReviewPack: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pack */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewPack"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteReviewPack: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listRevisions: {
+        parameters: {
+            query?: {
+                document_id?: string;
+                status?: "pending" | "accepted" | "rejected";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Revisions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        revisions?: components["schemas"]["Revision"][];
+                    };
+                };
+            };
+        };
+    };
+    proposeRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    document_id: string;
+                    /** @enum {string} */
+                    kind: "insert" | "delete" | "replace";
+                    /** @description Verbatim excerpt the edit attaches to */
+                    anchor_quote: string;
+                    /** @description Replacement (replace) or inserted text (insert) */
+                    proposed_text?: string;
+                    rationale?: string;
+                    review_cell_id?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Pending revision created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Revision"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    acceptAllRevisions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    document_id: string;
+                    /** @enum {string} */
+                    output?: "pdf" | "docx";
+                };
+            };
+        };
+        responses: {
+            /** @description Derived document + accept count */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        derived_document_id?: string;
+                        accepted?: number;
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description Nothing pending */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    acceptRevision: {
+        parameters: {
+            query?: {
+                output?: "pdf" | "docx";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted — derived_document_id points to the new draft */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Revision"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description Already resolved */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    rejectRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rejected */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Revision"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description Already resolved */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    streamJob: {
+        parameters: {
+            query?: {
+                access_token?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description text/event-stream of job state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": unknown;
+                };
+            };
+        };
+    };
+    streamReviewMatrix: {
+        parameters: {
+            query?: {
+                access_token?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description text/event-stream of matrix state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": unknown;
+                };
+            };
+        };
+    };
     listImports: {
         parameters: {
             query?: never;
@@ -3400,7 +5928,7 @@ export interface operations {
             content: {
                 "application/json": {
                     /** @enum {string} */
-                    adapter: "pdf" | "docusign" | "pandadoc";
+                    adapter: "pdf";
                     payload?: {
                         [key: string]: unknown;
                     };
@@ -3722,6 +6250,41 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    flushWebhookDeliveries: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Drain result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        processed: number;
+                        succeeded: number;
+                        failed: number;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Missing webhooks:write scope or organization */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     listWebhookDeliveries: {
         parameters: {
             query?: {
@@ -3756,6 +6319,46 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    retryWebhookDelivery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                deliveryId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Delivery re-queued and flushed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        delivery_id: string;
+                    };
+                };
+            };
+            /** @description Delivery is not retryable, or webhook inactive */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Delivery not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     listMembers: {
@@ -3929,6 +6532,172 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    listOrgAuditLog: {
+        parameters: {
+            query?: {
+                actor?: string;
+                action?: string;
+                resourceType?: string;
+                from?: string;
+                to?: string;
+                limit?: number;
+                cursor?: number;
+            };
+            header?: never;
+            path: {
+                organizationSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Audit events */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Requires admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    verifyAuditHashChain: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organizationSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Chain intact */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ok: boolean;
+                        checked: number;
+                        unbrokenPrefix: number;
+                        tipHash?: string | null;
+                        tipSequence?: number | null;
+                        firstBreak?: {
+                            id?: string;
+                            sequence?: number | null;
+                            expected?: string;
+                            actual?: string | null;
+                        } | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Chain broken or tip mismatch */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ok: boolean;
+                        checked: number;
+                        unbrokenPrefix: number;
+                        tipHash?: string | null;
+                        tipSequence?: number | null;
+                        firstBreak?: Record<string, never> | null;
+                    };
+                };
+            };
+        };
+    };
+    exportAuditLogNdjson: {
+        parameters: {
+            query?: {
+                after_sequence?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                organizationSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description NDJSON audit entries */
+            200: {
+                headers: {
+                    /** @description Highest sequence in this page (pass as after_sequence) */
+                    "x-seal-next-sequence"?: string;
+                    "x-seal-has-more"?: "0" | "1";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/x-ndjson": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    flushAuditSiemStream: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                organizationSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Flush result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        success: boolean;
+                        organizations: number;
+                        entriesEnqueued: number;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     search: {
         parameters: {
             query: {
@@ -4043,6 +6812,107 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    copyDocument: {
+        parameters: {
+            query: {
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Draft created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        public_id: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    forwardDocument: {
+        parameters: {
+            query: {
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: email */
+                    email: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Email sent */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        sent: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Document is not completed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    forwardEnvelope: {
+        parameters: {
+            query: {
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Draft envelope created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        public_id: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Document is not completed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     bulkVoidDocuments: {
         parameters: {
             query?: never;
@@ -4069,6 +6939,183 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    listScimConnections: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organizationSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description SCIM connections for the organization */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        connections?: {
+                            connectionId?: string;
+                            status?: string;
+                            createdAt?: string;
+                        }[];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createScimConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organizationSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** @description SCIM read/write scopes; defaults to all supported scopes */
+                    scopes?: string[];
+                    /** @description Token lifetime in days; defaults to 90 */
+                    expiresInDays?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description SCIM connection created; bearer token returned once */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        connectionId?: string;
+                        provisioningDomainId?: string;
+                        token?: string;
+                        baseUrl?: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listOrgWebhooks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organizationSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Webhook list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createOrgWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organizationSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    /** Format: uri */
+                    url: string;
+                    description?: string;
+                    /** @description Event types — see /webhooks/event-types */
+                    events: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Created — includes the signing secret (shown once) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id?: string;
+                        secret?: string;
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            /** @description Requires admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listOrgWebhookEventTypes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organizationSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Event type catalog */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteOrgWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organizationSlug: string;
+                webhookId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
         };
     };
     listApiTokens: {
@@ -4117,6 +7164,8 @@ export interface operations {
                 "application/json": {
                     name: string;
                     scopes: components["schemas"]["ApiTokenScope"][];
+                    /** @description Optional. One CIDR or address per entry. Empty means any address. */
+                    allowedIpRanges?: string[];
                 };
             };
         };

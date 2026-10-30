@@ -716,6 +716,49 @@ components:
             failed: { type: integer }
             success_rate: { type: number }
 
+    WebhookDeliveryPayload:
+      type: object
+      required: [eventId, eventType, timestamp, data]
+      description: >
+        JSON body POSTed to your webhook URL. Signatures cover the exact serialized
+        bytes of this object (UTF-8 JSON).
+      properties:
+        eventId:
+          type: string
+          description: Stable id for idempotent processing (also used in delivery dedupe)
+        eventType:
+          type: string
+          description: Dot-separated event name (matches subscription filters)
+        timestamp:
+          type: string
+          format: date-time
+        payloadMode:
+          type: string
+          enum: [full, minimal]
+          description: Org egress setting — minimal redacts PII from `data`
+        data:
+          type: object
+          additionalProperties: true
+          description: Event-specific payload
+
+    DocumentSendRecipient:
+      type: object
+      properties:
+        id: { type: string }
+        email: { type: string, format: email }
+        name: { type: string }
+        role: { type: string }
+        signing_url: { type: string, format: uri }
+        expires_at: { type: integer, description: Unix ms deadline }
+        email_sent:
+          type: boolean
+          description: >
+            When notify was true, whether Cloudflare Email Sending accepted the
+            invitation for this recipient (not inbox delivery).
+        email_send_error:
+          type: string
+          description: Present when notify was true and invite email failed after retry
+
     WebhookEventType:
       type: object
       required: [type, category, description]
@@ -972,6 +1015,16 @@ components:
             type: NOT_FOUND
             status: 404
             title: Document not found
+    Forbidden:
+      description: Authenticated but not allowed for this resource or action
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            type: FORBIDDEN
+            status: 403
+            title: Forbidden
     ValidationError:
       description: Invalid request parameters
       content:
@@ -1024,7 +1077,13 @@ tags:
   - name: Imports
     description: Bring documents in from PDF batches or external e-sign providers
   - name: Webhooks
-    description: Get notified when documents are viewed, signed, completed, or voided
+    description: >
+      Subscribe HTTPS endpoints to document/recipient/template/audit events.
+      Deliveries are POST requests with JSON body `{ eventId, eventType, timestamp,
+      payloadMode, data }`, headers `X-Seal-Signature: sha256=<hmac-hex>` (HMAC-SHA256
+      of the raw body with your endpoint secret), `X-Seal-Event`, and
+      `X-Seal-Delivery-Id`. Verify with `@vortex-api/seal` (`verifySealWebhookSignature`)
+      or see `/docs/webhooks/verification`.
   - name: Members
     description: Who is in this organization
   - name: Settings
@@ -2530,24 +2589,20 @@ paths:
             application/json:
               schema:
                 type: object
+                required: [success, sent_at, deadline, recipients]
                 properties:
                   success:
                     type: boolean
+                  sent_at:
+                    type: integer
+                    description: Unix ms when the document was sent
+                  deadline:
+                    type: integer
+                    description: Unix ms signing deadline for recipients
                   recipients:
                     type: array
                     items:
-                      type: object
-                      properties:
-                        email_sent:
-                          type: boolean
-                          description: >
-                            True when Cloudflare Email Sending accepted the
-                            invitation for this recipient.
-                        email_send_error:
-                          type: string
-                          description: >
-                            Present when notify was true and EMAIL.send failed
-                            for this recipient after one retry.
+                      $ref: "#/components/schemas/DocumentSendRecipient"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":

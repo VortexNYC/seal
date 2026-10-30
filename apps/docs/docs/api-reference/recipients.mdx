@@ -436,7 +436,7 @@ Use the `order` field to enforce a signing sequence. Recipients with lower order
 await fetch("https://api.seal.nyc/api/v1/recipients?document_id=doc123", {
   method: "POST",
   headers: {
-    Authorization: "Bearer ak_xxx",
+    Authorization: "Bearer seal_xxx",
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
@@ -450,7 +450,7 @@ await fetch("https://api.seal.nyc/api/v1/recipients?document_id=doc123", {
 await fetch("https://api.seal.nyc/api/v1/recipients?document_id=doc123", {
   method: "POST",
   headers: {
-    Authorization: "Bearer ak_xxx",
+    Authorization: "Bearer seal_xxx",
     "Content-Type": "application/json",
   },
   body: JSON.stringify({

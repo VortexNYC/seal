@@ -281,11 +281,12 @@ Also: \`GET /organizations/{slug}/audit/export\` returns NDJSON for SIEM pull/ba
 
 \`\`\`json
 {
-  "id": "evt_...",
-  "type": "document.completed",
-  "created_at": "2025-01-27T10:30:00Z",
+  "eventId": "550e8400-e29b-41d4-a716-446655440000",
+  "eventType": "document.completed",
+  "timestamp": "2026-03-12T12:00:00.000Z",
+  "payloadMode": "full",
   "data": {
-    "document_id": "...",
+    "documentId": "...",
     "title": "Service Agreement",
     "status": "completed"
   }
@@ -294,28 +295,24 @@ Also: \`GET /organizations/{slug}/audit/export\` returns NDJSON for SIEM pull/ba
 
 ## Signature Verification
 
-Every webhook is signed with HMAC-SHA256. Verify using the \`X-Seal-Signature\` header:
+Deliveries include \`X-Seal-Signature: sha256=<hex>\` — HMAC-SHA256 of the **raw JSON body** using your endpoint secret (not your \`seal_…\` API key). Also: \`X-Seal-Event\`, \`X-Seal-Delivery-Id\`.
+
+Use \`verifySealWebhookSignature\` from \`@vortex-api/seal\` (see \`packages/sdk/examples/webhook-handler.mjs\` and docs.seal.nyc/webhooks/verification).
 
 \`\`\`typescript
-import crypto from "crypto";
+import {
+  verifySealWebhookSignature,
+  parseSealWebhookEnvelope,
+} from "@vortex-api/seal";
 
-function verifyWebhook(payload: string, signature: string, secret: string): boolean {
-  const expected = crypto
-    .createHmac("sha256", secret)
-    .update(payload)
-    .digest("hex");
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expected)
-  );
-}
+const ok = await verifySealWebhookSignature(rawBody, req.headers["x-seal-signature"], secret);
 \`\`\`
 
 ## Limits & Retry
 
 - Maximum 10 webhook endpoints per organization
-- Delivery timeout: 30 seconds
-- Retry policy: exponential backoff, up to 3 attempts
+- Delivery timeout: 30 seconds per attempt
+- Retry policy: exponential backoff, up to 10 attempts per delivery
 - Endpoint URL must use HTTPS`,
   },
 
@@ -376,7 +373,7 @@ Seal API keys use Bearer token authentication:
 Authorization: Bearer seal_your_api_key_here
 \`\`\`
 
-Keys are prefixed with \`ak_\` and are scoped to specific permissions.
+Keys are prefixed with \`seal_\` and are scoped to specific permissions.
 
 ## Scopes
 

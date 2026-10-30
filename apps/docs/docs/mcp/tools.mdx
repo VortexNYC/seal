@@ -790,9 +790,10 @@ List all available webhook event types with descriptions. Use this before creati
 
 ```
 1. seal_list_webhook_event_types — discover available events
-2. seal_create_webhook — create endpoint with chosen events
+2. seal_create_webhook — create endpoint with chosen events (save `whsec_…` once)
 3. seal_list_webhooks — verify configuration and check stats
-4. seal_rotate_webhook_secret — rotate secret if compromised
+4. On your server — verify POST bodies with verifySealWebhookSignature (@vortex-api/seal); see /docs/webhooks/verification
+5. seal_rotate_webhook_secret — rotate secret if compromised
 ```
 
 ## Error Handling

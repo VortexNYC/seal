@@ -357,6 +357,21 @@ Pass an empty array to receive every event type:
 }
 ```
 
+## HTTP delivery (your endpoint)
+
+Seal POSTs JSON to your URL with:
+
+| Header | Value |
+| ------ | ----- |
+| `Content-Type` | `application/json` |
+| `X-Seal-Signature` | `sha256=` + HMAC-SHA256 hex of the **raw body** |
+| `X-Seal-Event` | Event type (e.g. `document.completed`) |
+| `X-Seal-Delivery-Id` | Delivery attempt id |
+
+Body shape: `eventId`, `eventType`, `timestamp`, `payloadMode`, `data` (see OpenAPI `WebhookDeliveryPayload` at `/reference`).
+
+Verify deliveries with `verifySealWebhookSignature` and `parseSealWebhookEnvelope` from [`@vortex-api/seal`](https://www.npmjs.com/package/@vortex-api/seal). Full guide: [Signature Verification](/docs/webhooks/verification). Example handler: `packages/sdk/examples/webhook-handler.mjs` in the Seal repo.
+
 ## Next Steps
 
 - **[Webhooks Guide](/docs/webhooks)** - Complete webhook setup and verification guide

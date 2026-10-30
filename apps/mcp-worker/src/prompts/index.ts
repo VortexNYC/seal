@@ -167,7 +167,7 @@ Please:
 3. Create the webhook with seal_create_webhook — the signing secret will only be shown once, so I'll need to save it
 4. Confirm the setup with seal_get_webhook and show the delivery stats
 
-Important: After setup, tell me how to verify incoming webhooks — I'll need to check the X-Seal-Signature header using HMAC-SHA256 with my signing secret.`);
+Important: After setup, tell me how to verify incoming webhooks — use \`verifySealWebhookSignature\` from \`@vortex-api/seal\` on the raw POST body (\`X-Seal-Signature: sha256=…\`). See docs.seal.nyc/webhooks/verification.`);
     }
   );
 }
