@@ -18,7 +18,7 @@ const app = new OpenAPIHono<{
   Variables: Pick<Variables, "user" | "auth">;
 }>();
 
-app.use("/*", async (c, next) => {
+app.use("/*/scim/*", async (c, next) => {
   const user = c.get("user");
   if (!user) {
     return c.json({ error: "Unauthorized" }, 401);
@@ -99,7 +99,11 @@ app.openapi(createConnectionRoute, async (c) => {
   if (!sessionUser) {
     return c.json({ error: "Unauthorized" }, 401);
   }
-  const access = await loadOrgAdmin(c.env, organizationSlug, sessionUser.user.id);
+  const access = await loadOrgAdmin(
+    c.env,
+    organizationSlug,
+    sessionUser.user.id
+  );
   if (!access.ok) {
     return c.json({ error: access.error }, access.status);
   }
@@ -164,7 +168,11 @@ app.openapi(listConnectionsRoute, async (c) => {
   if (!sessionUser) {
     return c.json({ error: "Unauthorized" }, 401);
   }
-  const access = await loadOrgAdmin(c.env, organizationSlug, sessionUser.user.id);
+  const access = await loadOrgAdmin(
+    c.env,
+    organizationSlug,
+    sessionUser.user.id
+  );
   if (!access.ok) {
     return c.json({ error: access.error }, access.status);
   }

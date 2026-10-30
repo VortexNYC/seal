@@ -1467,6 +1467,66 @@ export const webhookDeliveries = sqliteTable(
   ]
 );
 
+// Better Auth device-authorization table (RFC 8628 device flow for `seal login`).
+export const deviceCode = sqliteTable("deviceCode", {
+  id: text("id").primaryKey(),
+  deviceCode: text("device_code").notNull(),
+  userCode: text("user_code").notNull(),
+  userId: text("user_id"),
+  expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+  status: text("status").notNull(),
+  lastPolledAt: integer("last_polled_at", { mode: "timestamp_ms" }),
+  pollingInterval: integer("polling_interval"),
+  clientId: text("client_id"),
+  scope: text("scope"),
+});
+
+// Better Auth @better-auth/api-key table (references: "organization" →
+// referenceId is the organization id). Legacy api_tokens rows are copied here
+// by scripts/migrate-api-tokens.mjs; the old table is dropped in a follow-up.
+export const apikey = sqliteTable(
+  "apikey",
+  {
+    id: text("id").primaryKey(),
+    configId: text("config_id").notNull().default("seal"),
+    name: text("name"),
+    start: text("start"),
+    referenceId: text("reference_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    prefix: text("prefix"),
+    key: text("key").notNull().unique(),
+    refillInterval: integer("refill_interval"),
+    refillAmount: integer("refill_amount"),
+    lastRefillAt: integer("last_refill_at", { mode: "timestamp_ms" }),
+    enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+    rateLimitEnabled: integer("rate_limit_enabled", {
+      mode: "boolean",
+    })
+      .notNull()
+      .default(false),
+    rateLimitTimeWindow: integer("rate_limit_time_window"),
+    rateLimitMax: integer("rate_limit_max"),
+    requestCount: integer("request_count").notNull().default(0),
+    remaining: integer("remaining"),
+    lastRequest: integer("last_request", { mode: "timestamp_ms" }),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
+    permissions: text("permissions"),
+    metadata: text("metadata"),
+  },
+  (table) => [
+    index("apikey_configId_idx").on(table.configId),
+    index("apikey_referenceId_idx").on(table.referenceId),
+  ]
+);
+
 export const apiTokens = sqliteTable(
   "api_tokens",
   {

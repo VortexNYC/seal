@@ -1,19 +1,22 @@
+import type { ApiKey } from "@better-auth/api-key";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 import { createD1 } from "../../global/db.js";
-import { apiTokens } from "../../global/schema.js";
+import { apikey } from "../../global/schema.js";
 import {
   apiTokenAuth,
-  hashToken,
+  apiTokenMetadata,
+  apiTokenScopes,
+  hasApiTokenScope,
   parseApiTokenIpRanges,
-  parseApiTokenScopes,
 } from "../../platform/api-token-auth.js";
 import { getAuditActor, writeAuditLog } from "../../platform/audit-log.js";
 import { organizationMiddleware } from "../../platform/organization-middleware.js";
 import type { Variables } from "../../platform/types.js";
 
 const ALLOWED_SCOPES = ["read", "write", "sign", "admin"] as const;
+const PERMISSIONS_RESOURCE = "seal";
 
 const app = new OpenAPIHono<{
   Bindings: CloudflareBindings;
@@ -23,14 +26,6 @@ const app = new OpenAPIHono<{
 app.use("/*", apiTokenAuth);
 app.use("/*", organizationMiddleware);
 
-function generateSecret(): string {
-  const bytes = new Uint8Array(32);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
 function tokenDisplayId(): string {
   return `tk_${crypto.randomUUID().slice(0, 8)}`;
 }
@@ -39,14 +34,13 @@ function canAdminister(c: {
   get: <K extends keyof Variables>(key: K) => Variables[K];
 }): boolean {
   const membership = c.get("membership");
-  const roleOk =
-    membership?.role === "admin" || membership?.role === "owner";
+  const roleOk = membership?.role === "admin" || membership?.role === "owner";
   if (!roleOk) {
     return false;
   }
   const apiToken = c.get("apiToken");
   if (apiToken) {
-    return parseApiTokenScopes(apiToken.scopes).includes("admin");
+    return hasApiTokenScope(apiToken, "admin");
   }
   return true;
 }
@@ -74,6 +68,36 @@ function parseScopes(input: unknown): string[] {
   );
 }
 
+function toTokenResponse(row: typeof apikey.$inferSelect): {
+  id: string;
+  publicId: string | null;
+  name: string | null;
+  scopes: string[];
+  allowedIpRanges: string[];
+  lastUsedAt: string | null;
+  revokedAt: string | null;
+  createdAt: string;
+} {
+  const metadata = apiTokenMetadata(row as ApiKey);
+  const revokedAt =
+    typeof metadata.revokedAt === "string"
+      ? metadata.revokedAt
+      : !row.enabled
+        ? row.updatedAt.toISOString()
+        : null;
+  return {
+    id: row.id,
+    publicId:
+      typeof metadata.publicId === "string" ? metadata.publicId : row.start,
+    name: row.name,
+    scopes: apiTokenScopes(row as ApiKey),
+    allowedIpRanges: parseApiTokenIpRanges(metadata.allowedIpRanges),
+    lastUsedAt: row.lastRequest?.toISOString() ?? null,
+    revokedAt,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
 app.post("/", async (c) => {
   if (!canAdminister(c)) {
     return c.json({ error: "forbidden" }, 403);
@@ -95,24 +119,21 @@ app.post("/", async (c) => {
 
   const organizationId = organization.id;
   const userId = user.user.id;
-  const id = crypto.randomUUID();
   const publicId = tokenDisplayId();
-  const secret = generateSecret();
-  const token = `seal_${publicId}_${secret}`;
-  const tokenHash = await hashToken(token);
 
-  const db = createD1(c.env.D1);
-  await db.insert(apiTokens).values({
-    id,
-    publicId,
-    organizationId,
-    userId,
-    name,
-    tokenHash,
-    scopes: JSON.stringify(scopes),
-    allowedIpRanges: JSON.stringify(allowedIpRanges),
+  const auth = c.get("auth");
+  const created = await auth.api.createApiKey({
+    body: {
+      configId: "seal",
+      organizationId,
+      userId,
+      name,
+      permissions: { [PERMISSIONS_RESOURCE]: scopes },
+      metadata: { publicId, allowedIpRanges, userId },
+    },
   });
 
+  const db = createD1(c.env.D1);
   const actor = getAuditActor({
     apiToken: c.get("apiToken"),
     mcp: c.get("mcp"),
@@ -124,7 +145,7 @@ app.post("/", async (c) => {
       actor,
       action: "api_token.create",
       resourceType: "api_token",
-      resourceId: id,
+      resourceId: created.id,
       metadata: { publicId, scopes, allowedIpRanges },
       ipAddress:
         c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
@@ -134,15 +155,15 @@ app.post("/", async (c) => {
 
   return c.json(
     {
-      id,
+      id: created.id,
       publicId,
       name,
       scopes,
       allowedIpRanges,
-      token,
+      token: created.key,
       lastUsedAt: null,
       revokedAt: null,
-      createdAt: new Date().toISOString(),
+      createdAt: created.createdAt.toISOString(),
     },
     201
   );
@@ -156,32 +177,14 @@ app.get("/", async (c) => {
   const organizationId = c.get("organization").id;
   const db = createD1(c.env.D1);
   const rows = await db
-    .select({
-      id: apiTokens.id,
-      publicId: apiTokens.publicId,
-      name: apiTokens.name,
-      scopes: apiTokens.scopes,
-      allowedIpRanges: apiTokens.allowedIpRanges,
-      lastUsedAt: apiTokens.lastUsedAt,
-      revokedAt: apiTokens.revokedAt,
-      createdAt: apiTokens.createdAt,
-    })
-    .from(apiTokens)
-    .where(eq(apiTokens.organizationId, organizationId))
-    .orderBy(desc(apiTokens.createdAt));
+    .select()
+    .from(apikey)
+    .where(
+      and(eq(apikey.referenceId, organizationId), eq(apikey.configId, "seal"))
+    )
+    .orderBy(desc(apikey.createdAt));
 
-  return c.json(
-    rows.map((row) => ({
-      id: row.id,
-      publicId: row.publicId,
-      name: row.name,
-      scopes: parseApiTokenScopes(row.scopes),
-      allowedIpRanges: parseApiTokenIpRanges(row.allowedIpRanges),
-      lastUsedAt: row.lastUsedAt?.toISOString() ?? null,
-      revokedAt: row.revokedAt?.toISOString() ?? null,
-      createdAt: row.createdAt.toISOString(),
-    }))
-  );
+  return c.json(rows.map(toTokenResponse));
 });
 
 app.delete("/:tokenId", async (c) => {
@@ -194,13 +197,13 @@ app.delete("/:tokenId", async (c) => {
   const db = createD1(c.env.D1);
 
   const [existing] = await db
-    .select({ id: apiTokens.id })
-    .from(apiTokens)
+    .select({ id: apikey.id, metadata: apikey.metadata })
+    .from(apikey)
     .where(
       and(
-        eq(apiTokens.id, tokenId),
-        eq(apiTokens.organizationId, organizationId),
-        isNull(apiTokens.revokedAt)
+        eq(apikey.id, tokenId),
+        eq(apikey.referenceId, organizationId),
+        eq(apikey.enabled, true)
       )
     )
     .limit(1);
@@ -210,10 +213,17 @@ app.delete("/:tokenId", async (c) => {
   }
 
   const now = new Date();
+  const metadata = apiTokenMetadata(existing as ApiKey);
   await db
-    .update(apiTokens)
-    .set({ revokedAt: now })
-    .where(eq(apiTokens.id, tokenId));
+    .update(apikey)
+    .set({
+      enabled: false,
+      metadata: JSON.stringify({
+        ...metadata,
+        revokedAt: now.toISOString(),
+      }),
+    })
+    .where(eq(apikey.id, tokenId));
 
   const actor = getAuditActor({
     apiToken: c.get("apiToken"),

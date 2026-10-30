@@ -1,7 +1,20 @@
+import { apiKey } from "@better-auth/api-key";
 import { renderPasswordReset } from "@seal/transactional";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { betterAuth } from "better-auth/minimal";
-import { genericOAuth, organization, twoFactor } from "better-auth/plugins";
+import {
+  createAccessControl,
+  deviceAuthorization,
+  genericOAuth,
+  organization,
+  twoFactor,
+} from "better-auth/plugins";
+import {
+  adminAc,
+  defaultStatements,
+  memberAc,
+  ownerAc,
+} from "better-auth/plugins/organization/access";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -14,6 +27,14 @@ import {
   vortexOAuthOrganizationSummarySchema,
   withVortexConnect,
 } from "./vortex-connect.js";
+
+// Org API keys (@better-auth/api-key references:"organization") check
+// hasPermission({ apiKey: [action] }) — extend the default statements so
+// admin/owner can mint, list, update, and revoke org-scoped keys.
+const sealAc = createAccessControl({
+  ...defaultStatements,
+  apiKey: ["create", "read", "update", "delete"],
+});
 
 export async function createAuth(env: CloudflareBindings) {
   // samlify + SCIM graphs are heavy; lazy-import keeps cold-start CPU down.
@@ -162,9 +183,32 @@ export async function createAuth(env: CloudflareBindings) {
     },
     plugins: [
       organization({
+        ac: sealAc,
+        roles: {
+          owner: sealAc.newRole({
+            ...ownerAc.statements,
+            apiKey: ["create", "read", "update", "delete"],
+          }),
+          admin: sealAc.newRole({
+            ...adminAc.statements,
+            apiKey: ["create", "read", "update", "delete"],
+          }),
+          member: sealAc.newRole({
+            ...memberAc.statements,
+            apiKey: [],
+          }),
+        },
         teams: { enabled: false },
         dynamicAccessControl: { enabled: false },
       }),
+      apiKey({
+        configId: "seal",
+        references: "organization",
+        defaultPrefix: "seal_",
+        enableMetadata: true,
+        rateLimit: { enabled: false },
+      }),
+      deviceAuthorization(),
       twoFactor({
         issuer: "Seal",
       }),

@@ -1,9 +1,10 @@
-import { and, eq, isNull } from "drizzle-orm";
+import type { ApiKey } from "@better-auth/api-key";
+import { and, eq, isNull, or } from "drizzle-orm";
 import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 
 import { createD1 } from "../global/db.js";
-import { apiTokens, organization, user } from "../global/schema.js";
+import { member, organization, user } from "../global/schema.js";
 import { writeAuditLog } from "./audit-log.js";
 import { ipMatchesAllowlist, requestClientIp } from "./ip-allowlist.js";
 import type { McpAccessToken } from "./mcp-auth.js";
@@ -11,49 +12,73 @@ import { workspaceApiAccessAllows } from "./org-settings.js";
 import type { Variables } from "./types.js";
 
 const TOKEN_PREFIX = "seal_";
+const PERMISSIONS_RESOURCE = "seal";
 
 export function isApiTokenFormat(value: string): boolean {
   return value.startsWith(TOKEN_PREFIX) && value.length > TOKEN_PREFIX.length;
 }
 
+// Hex SHA-256 — used by signer access-code hashing (signer-auth.ts). API key
+// verification itself is delegated to @better-auth/api-key (base64url digest).
 export async function hashToken(value: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(value);
+  const data = new TextEncoder().encode(value);
   const buffer = await crypto.subtle.digest("SHA-256", data);
-  let hex = "";
-  for (const byte of new Uint8Array(buffer)) {
-    hex += byte.toString(16).padStart(2, "0");
-  }
-  return hex;
+  return Array.from(new Uint8Array(buffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
-function parseJsonStringArray(raw: string | null): string[] {
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    if (Array.isArray(parsed) && parsed.every((s) => typeof s === "string")) {
-      return parsed;
+export function parseApiTokenPermissions(
+  raw: unknown
+): Record<string, string[]> {
+  let parsed: unknown = raw;
+  if (typeof raw === "string") {
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return {};
     }
-  } catch {
-    // fall through
   }
-  return [];
+  if (
+    parsed &&
+    typeof parsed === "object" &&
+    !Array.isArray(parsed) &&
+    Object.values(parsed).every(
+      (v) => Array.isArray(v) && v.every((s) => typeof s === "string")
+    )
+  ) {
+    return parsed as Record<string, string[]>;
+  }
+  return {};
 }
 
-export function parseApiTokenScopes(raw: string | null): string[] {
-  return parseJsonStringArray(raw);
+export function apiTokenScopes(apiKey: ApiKey): string[] {
+  return (
+    parseApiTokenPermissions(apiKey.permissions)[PERMISSIONS_RESOURCE] ?? []
+  );
 }
 
-export function parseApiTokenIpRanges(raw: string | null): string[] {
-  return parseJsonStringArray(raw);
+export function apiTokenMetadata(apiKey: ApiKey): Record<string, unknown> {
+  let raw: unknown = apiKey.metadata;
+  if (typeof raw === "string") {
+    try {
+      raw = JSON.parse(raw);
+    } catch {
+      return {};
+    }
+  }
+  return raw && typeof raw === "object" && !Array.isArray(raw)
+    ? (raw as Record<string, unknown>)
+    : {};
 }
 
-export function hasApiTokenScope(
-  token: typeof apiTokens.$inferSelect,
-  scope: string
-): boolean {
-  const scopes = parseApiTokenScopes(token.scopes);
-  return scopes.includes(scope);
+export function parseApiTokenIpRanges(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((s): s is string => typeof s === "string");
+}
+
+export function hasApiTokenScope(apiKey: ApiKey, scope: string): boolean {
+  return apiTokenScopes(apiKey).includes(scope);
 }
 
 export async function loadApiTokenContext<E extends CloudflareBindings>(
@@ -64,42 +89,74 @@ export async function loadApiTokenContext<E extends CloudflareBindings>(
     return false;
   }
 
-  const hash = await hashToken(raw);
-  const db = createD1(c.env.D1);
-
-  const rows = await db
-    .select()
-    .from(apiTokens)
-    .where(and(eq(apiTokens.tokenHash, hash), isNull(apiTokens.revokedAt)))
-    .limit(1);
-
-  const token = rows[0];
-  if (!token) {
+  const auth = c.get("auth");
+  if (!auth) {
     return false;
   }
 
+  const verification = (await auth.api
+    .verifyApiKey({ body: { key: raw, configId: "seal" } })
+    .catch(() => null)) as {
+    valid: boolean;
+    key: ApiKey | null;
+  } | null;
+  const apiKey = verification?.valid ? verification.key : null;
+  if (!apiKey || apiKey.configId !== "seal" || !apiKey.enabled) {
+    return false;
+  }
+
+  const metadata = apiTokenMetadata(apiKey);
   const clientIp = requestClientIp(c.req.raw.headers);
   if (
     !ipMatchesAllowlist(
       clientIp,
-      parseApiTokenIpRanges(token.allowedIpRanges)
+      parseApiTokenIpRanges(metadata.allowedIpRanges)
     )
   ) {
     return false;
   }
 
-  const [userRow, orgRow] = await Promise.all([
-    db.select().from(user).where(eq(user.id, token.userId)).limit(1),
-    db
+  const db = createD1(c.env.D1);
+  const orgRecord = (
+    await db
       .select()
       .from(organization)
-      .where(eq(organization.id, token.organizationId))
-      .limit(1),
-  ]);
+      .where(eq(organization.id, apiKey.referenceId))
+      .limit(1)
+  )[0];
+  if (!orgRecord) {
+    return false;
+  }
 
-  const userRecord = userRow[0];
-  const orgRecord = orgRow[0];
-  if (!userRecord || !orgRecord) {
+  const ownerId = typeof metadata.userId === "string" ? metadata.userId : null;
+  const userRecord = ownerId
+    ? (
+        await db
+          .select()
+          .from(user)
+          .where(
+            and(
+              eq(user.id, ownerId),
+              or(isNull(user.banned), eq(user.banned, false))
+            )
+          )
+          .limit(1)
+      )[0]
+    : (
+        await db
+          .select({ user })
+          .from(member)
+          .innerJoin(user, eq(member.userId, user.id))
+          .where(
+            and(
+              eq(member.organizationId, orgRecord.id),
+              eq(member.role, "owner"),
+              or(isNull(user.banned), eq(user.banned, false))
+            )
+          )
+          .limit(1)
+      )[0]?.user;
+  if (!userRecord) {
     return false;
   }
 
@@ -107,47 +164,35 @@ export async function loadApiTokenContext<E extends CloudflareBindings>(
     return false;
   }
 
-  const now = new Date();
-  // lastUsedAt is informational; writing it on every request doubles D1
-  // write volume on the hottest auth path. Refresh at most hourly.
-  const STALE_AFTER_MS = 60 * 60 * 1000;
-  if (
-    !token.lastUsedAt ||
-    now.getTime() - token.lastUsedAt.getTime() > STALE_AFTER_MS
-  ) {
-    await db
-      .update(apiTokens)
-      .set({ lastUsedAt: now })
-      .where(eq(apiTokens.id, token.id));
-  }
-
   c.set("user", {
     user: { id: userRecord.id, name: userRecord.name, email: userRecord.email },
   });
-  c.set("apiToken", token);
+  c.set("apiToken", apiKey);
   c.set("organization", orgRecord);
 
   const mcp: McpAccessToken = {
     sub: userRecord.id,
     organizationId: orgRecord.id,
     organizationSlug: orgRecord.slug,
-    scope: parseApiTokenScopes(token.scopes).join(" "),
+    scope: apiTokenScopes(apiKey).join(" "),
     clientId: "seal",
-    jti: token.id,
+    jti: apiKey.id,
     kind: "api",
   };
   c.set("mcp", mcp);
 
+  const metadataPublicId =
+    typeof metadata.publicId === "string" ? metadata.publicId : null;
   await writeAuditLog(db, {
     organizationId: orgRecord.id,
-    actor: { type: "api_token", id: token.id },
+    actor: { type: "api_token", id: apiKey.id },
     action: "api_token.authenticated",
     resourceType: "api_token",
-    resourceId: token.id,
+    resourceId: apiKey.id,
     metadata: {
       method: c.req.method,
       path: c.req.path,
-      publicId: token.publicId,
+      publicId: metadataPublicId ?? apiKey.start,
     },
     ipAddress:
       c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),

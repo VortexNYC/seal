@@ -6,10 +6,13 @@ import { createD1 } from "../../global/db.js";
 import { auditLogs } from "../../global/schema.js";
 import {
   apiTokenAuth,
-  parseApiTokenScopes,
+  hasApiTokenScope,
 } from "../../platform/api-token-auth.js";
 import { verifyAuditChain } from "../../platform/audit-chain.js";
-import { listAuditEntriesForExport, flushAuditSiemStream } from "../../platform/audit-siem.js";
+import {
+  listAuditEntriesForExport,
+  flushAuditSiemStream,
+} from "../../platform/audit-siem.js";
 import { organizationMiddleware } from "../../platform/organization-middleware.js";
 import type { Variables } from "../../platform/types.js";
 
@@ -44,8 +47,7 @@ function canAdminister(c: {
   get: <K extends keyof Variables>(key: K) => Variables[K];
 }): boolean {
   const membership = c.get("membership");
-  const roleOk =
-    membership?.role === "admin" || membership?.role === "owner";
+  const roleOk = membership?.role === "admin" || membership?.role === "owner";
   if (!roleOk) {
     return false;
   }
@@ -53,7 +55,7 @@ function canAdminister(c: {
   if (apiToken) {
     // Token admin scope is necessary but not sufficient — demoted members
     // must not keep audit/SIEM access via a leftover admin-scoped key.
-    return parseApiTokenScopes(apiToken.scopes).includes("admin");
+    return hasApiTokenScope(apiToken, "admin");
   }
   return true;
 }

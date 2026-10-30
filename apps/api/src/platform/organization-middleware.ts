@@ -28,7 +28,7 @@ export const organizationMiddleware = createMiddleware<{
   }
 
   const apiToken = c.get("apiToken");
-  if (apiToken && apiToken.organizationId !== org.id) {
+  if (apiToken && apiToken.referenceId !== org.id) {
     return c.json({ error: "Forbidden" }, 403);
   }
 

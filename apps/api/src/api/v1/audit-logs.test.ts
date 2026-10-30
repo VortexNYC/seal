@@ -1,16 +1,16 @@
+import { defaultKeyHasher } from "@better-auth/api-key";
 import { env } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
 
 import { createD1 } from "../../global/db.js";
 import {
-  apiTokens,
+  apikey,
   auditLogs,
   member,
   organization,
   user,
 } from "../../global/schema.js";
 import app from "../../index.js";
-import { hashToken } from "../../platform/api-token-auth.js";
 import { writeAuditLog } from "../../platform/audit-log.js";
 
 interface AuditLogEntry {
@@ -64,17 +64,17 @@ async function seedTokenContext({
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
   const plaintext = `seal_${publicId}_${secret}`;
-  const tokenHash = await hashToken(plaintext);
 
   const tokenId = crypto.randomUUID();
-  await db.insert(apiTokens).values({
+  await db.insert(apikey).values({
     id: tokenId,
-    publicId,
-    organizationId: orgId,
-    userId,
+    configId: "seal",
+    referenceId: orgId,
     name: "Test token",
-    tokenHash,
-    scopes: JSON.stringify(tokenScopes),
+    prefix: "seal_",
+    key: await defaultKeyHasher(plaintext),
+    permissions: JSON.stringify({ seal: tokenScopes }),
+    metadata: JSON.stringify({ publicId, userId, allowedIpRanges: [] }),
   });
 
   return { orgId, userId, slug, plaintext, tokenId };
@@ -447,8 +447,6 @@ describe("api v1 audit logs", () => {
     expect(first.action).toBe("settings.update");
     expect(first.ipAddress).toBe("198.51.100.20");
     expect(first.sequence).toBeGreaterThan(0);
-    expect(res.headers.get("x-seal-next-sequence")).toBe(
-      String(last.sequence)
-    );
+    expect(res.headers.get("x-seal-next-sequence")).toBe(String(last.sequence));
   });
 });

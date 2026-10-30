@@ -1,11 +1,11 @@
+import { defaultKeyHasher } from "@better-auth/api-key";
 import { env } from "cloudflare:test";
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
 import { createD1 } from "../../global/db.js";
-import { apiTokens, member, organization, user } from "../../global/schema.js";
+import { apikey, member, organization, user } from "../../global/schema.js";
 import app from "../../index.js";
-import { hashToken } from "../../platform/api-token-auth.js";
 
 async function seedTokenContext({
   role = "admin",
@@ -41,17 +41,17 @@ async function seedTokenContext({
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
   const plaintext = `seal_${publicId}_${secret}`;
-  const tokenHash = await hashToken(plaintext);
 
   const tokenId = crypto.randomUUID();
-  await db.insert(apiTokens).values({
+  await db.insert(apikey).values({
     id: tokenId,
-    publicId,
-    organizationId: orgId,
-    userId,
+    configId: "seal",
+    referenceId: orgId,
     name: "Test token",
-    tokenHash,
-    scopes: JSON.stringify(tokenScopes),
+    prefix: "seal_",
+    key: await defaultKeyHasher(plaintext),
+    permissions: JSON.stringify({ seal: tokenScopes }),
+    metadata: JSON.stringify({ publicId, userId, allowedIpRanges: [] }),
   });
 
   return { orgId, userId, slug, plaintext, tokenId };
@@ -272,15 +272,15 @@ describe("api v1 tokens", () => {
     const { slug, plaintext } = await seedTokenContext();
     const db = createD1(env.D1);
     const token = await db
-      .select({ id: apiTokens.id })
-      .from(apiTokens)
-      .where(eq(apiTokens.tokenHash, await hashToken(plaintext)))
+      .select({ id: apikey.id })
+      .from(apikey)
+      .where(eq(apikey.key, await defaultKeyHasher(plaintext)))
       .limit(1);
     if (!token[0]) throw new Error("seeded token not found");
     await db
-      .update(apiTokens)
-      .set({ revokedAt: new Date() })
-      .where(eq(apiTokens.id, token[0].id));
+      .update(apikey)
+      .set({ enabled: false })
+      .where(eq(apikey.id, token[0].id));
 
     const res = await app.fetch(
       new Request(

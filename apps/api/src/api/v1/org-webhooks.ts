@@ -12,7 +12,7 @@ import { createD1 } from "../../global/db.js";
 import { webhooks } from "../../global/schema.js";
 import {
   apiTokenAuth,
-  parseApiTokenScopes,
+  hasApiTokenScope,
 } from "../../platform/api-token-auth.js";
 import { getAuditActor, writeAuditLog } from "../../platform/audit-log.js";
 import { organizationMiddleware } from "../../platform/organization-middleware.js";
@@ -92,14 +92,13 @@ function canAdminister(c: {
   get: <K extends keyof Variables>(key: K) => Variables[K];
 }): boolean {
   const membership = c.get("membership");
-  const roleOk =
-    membership?.role === "admin" || membership?.role === "owner";
+  const roleOk = membership?.role === "admin" || membership?.role === "owner";
   if (!roleOk) {
     return false;
   }
   const apiToken = c.get("apiToken");
   if (apiToken) {
-    return parseApiTokenScopes(apiToken.scopes).includes("admin");
+    return hasApiTokenScope(apiToken, "admin");
   }
   return true;
 }
