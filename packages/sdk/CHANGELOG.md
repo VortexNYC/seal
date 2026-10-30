@@ -1,5 +1,11 @@
 # @vortex-api/seal
 
+## 0.4.0
+
+### Minor Changes
+
+- a2eaf15: Add `seal login`/`seal logout` to the CLI — RFC 8628 device flow that mints a scoped org API key into ~/.seal/config.json, plus stored-key fallback for all commands.
+
 ## 0.3.2
 
 ### Patch Changes
