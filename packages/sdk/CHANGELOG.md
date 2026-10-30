@@ -1,5 +1,11 @@
 # @vortex-api/seal
 
+## 0.3.2
+
+### Patch Changes
+
+- npm `latest` promotion (same artifacts as 0.3.1; staged publish cleanup).
+
 ## 0.3.1
 
 ### Patch Changes
