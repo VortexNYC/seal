@@ -80,7 +80,9 @@ Public npm releases use [Changesets](https://github.com/changesets/changesets)
 1. After a user-facing SDK/CLI change: `pnpm changeset`
 2. Merge to `main`. `.github/workflows/release.yml` opens a version PR or
    publishes when the version PR lands
-3. Requires repo secret `NPM_TOKEN` (npm provenance via OIDC id-token)
+3. Requires repo secret `NPM_TOKEN`. If npm **staged publishing** holds a version,
+   approve it on [npmjs.com](https://www.npmjs.com/) → **Staged Packages** (2FA) or
+   `npm stage approve <stage-id>` so `latest` updates.
 
 Do not hand-bump `packages/sdk/package.json` or publish outside this flow.
 Private workspace packages are ignored by Changesets.

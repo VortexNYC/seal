@@ -1,5 +1,11 @@
 # @vortex-api/seal
 
+## 0.3.1
+
+### Patch Changes
+
+- Republish on npm `latest` after CI provenance staging delayed promotion of `0.3.0`.
+
 ## 0.3.0
 
 ### Minor Changes

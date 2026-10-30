@@ -54,4 +54,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_CONFIG_PROVENANCE: "true"
+          # Provenance staging left 0.3.0 unpublished to `latest`; re-enable when npm package ↔ repo linkage is verified.
+          NPM_CONFIG_PROVENANCE: "false"

@@ -1,6 +1,6 @@
 {
   "name": "@vortex-api/seal",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Seal SDK — typed API client, React signing components, and CLI",
   "license": "MIT",
   "bin": {
