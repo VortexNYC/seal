@@ -174,7 +174,18 @@ export async function createAuth(env: CloudflareBindings) {
                       metadata: orgMetadata,
                       createdAt: now,
                     })
-                    .onConflictDoNothing();
+                    .onConflictDoUpdate({
+                      target: schema.organization.id,
+                      // Name propagates on re-sync. metadata is json_patch'ed:
+                      // this pass's fields (complianceCompleted,
+                      // vortexOrganizationId, vortexConnect when the attach
+                      // retried successfully) merge over the stored object —
+                      // never a blind overwrite.
+                      set: {
+                        name: vortexOrg.name,
+                        metadata: sql`json_patch(${schema.organization.metadata}, excluded.metadata)`,
+                      },
+                    });
                   await db
                     .insert(schema.member)
                     .values({
