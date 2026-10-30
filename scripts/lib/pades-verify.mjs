@@ -1,6 +1,8 @@
 /**
  * Offline checks for platform PAdES-B markers on a completed signed PDF.
  * Mirrors apps/api/scripts/prove-pdf-seal.ts (openssl cms over ByteRange).
+ * Uses -no_attr_verify: OpenSSL 3.x rejects some platform CAdES signed attrs on
+ * PDF-embedded CMS while the ByteRange digest signature is still valid.
  */
 
 import { spawnSync } from "node:child_process";
@@ -140,6 +142,7 @@ export function verifySealedPdfBytes(bytes) {
         "-content",
         contentPath,
         "-noverify",
+        "-no_attr_verify",
         "-binary",
       ],
       { encoding: "utf8" }

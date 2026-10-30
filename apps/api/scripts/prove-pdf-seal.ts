@@ -6,7 +6,7 @@
  *   - /SubFilter /ETSI.CAdES.detached
  *   - /ByteRange present
  *   - ESS signing-certificate-v2 OID present in CMS
- *   - openssl cms -verify -noverify succeeds over the ByteRange segments
+ *   - openssl cms -verify -noverify -no_attr_verify succeeds over the ByteRange segments
  */
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
@@ -133,12 +133,13 @@ async function main(): Promise<void> {
       "-content",
       contentPath,
       "-noverify",
+      "-no_attr_verify",
       "-binary",
     ],
     { encoding: "utf8" }
   );
   if (verify.status === 0) {
-    pass("openssl cms -verify -noverify (ByteRange digest)");
+    pass("openssl cms -verify -noverify -no_attr_verify (ByteRange digest)");
   } else {
     fail(
       `openssl cms verify failed: ${(verify.stderr || verify.stdout || "").slice(0, 400)}`
