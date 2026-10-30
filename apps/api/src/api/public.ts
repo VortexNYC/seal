@@ -1190,6 +1190,32 @@ app.openapi(submitRouteDef, async (c) => {
     }
   }
 
+  if (input.status === "viewed") {
+    await emitSigningWebhook(c.env, {
+      organizationId: doc.organizationId,
+      eventType: "recipient.viewed",
+      payload: {
+        documentId: doc.id,
+        publicId: doc.publicId,
+        recipientId: recipient.id,
+        name: recipient.name,
+        email: recipient.email,
+        viewedAt: nowDate.getTime(),
+      },
+    });
+    await emitSigningWebhook(c.env, {
+      organizationId: doc.organizationId,
+      eventType: "document.viewed",
+      payload: {
+        documentId: doc.id,
+        publicId: doc.publicId,
+        name: doc.name,
+        recipientId: recipient.id,
+        viewedAt: nowDate.getTime(),
+      },
+    });
+  }
+
   if (input.status === "signed" || input.status === "approved") {
     if (input.status === "signed" || input.status === "approved") {
       await emitSigningWebhook(c.env, {

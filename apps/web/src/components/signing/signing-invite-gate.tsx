@@ -31,6 +31,7 @@ export function SigningInviteGate({
   return (
     <main
       data-seal-enter
+      data-testid="signer-invite-gate"
       className="bg-kumo-canvas px-safe mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-center gap-6 py-8"
     >
       <div className="flex flex-col gap-2 text-center">
@@ -63,6 +64,7 @@ export function SigningInviteGate({
           variant="primary"
           size="lg"
           className="w-full"
+          data-testid="signer-invite-start"
           onClick={onStart}
           disabled={isStarting || !email.trim()}
         >

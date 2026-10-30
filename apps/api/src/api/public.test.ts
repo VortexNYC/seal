@@ -513,6 +513,77 @@ describe("public API", () => {
     ]);
   });
 
+  it("enqueues recipient.viewed and document.viewed webhooks on viewed submit", async () => {
+    const db = createD1(env.D1);
+
+    await db.insert(organization).values({
+      id: "org_viewed_hook",
+      name: "Viewed Hook Org",
+      slug: "viewed-hook-org",
+      metadata: ANONYMOUS_SIGN_ORG_METADATA,
+    });
+
+    await db.insert(documents).values({
+      id: "doc_viewed_hook",
+      publicId: "doc_pub_viewed_hook",
+      organizationId: "org_viewed_hook",
+      name: "Viewed Hook Document",
+      status: "sent",
+      documentStatus: "active",
+      sharingMode: "private",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const token = "viewed-hook-token";
+    await db.insert(recipients).values({
+      id: "rec_viewed_hook",
+      publicId: "rec_pub_viewed_hook",
+      documentId: "doc_viewed_hook",
+      email: "viewer@example.com",
+      name: "Viewer",
+      role: "signer",
+      status: "pending",
+      signingToken: token,
+      tokenExpiresAt: new Date(Date.now() + 60_000),
+      ...consentFields,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await db.insert(webhooks).values({
+      id: "hook_viewed",
+      publicId: "hook_pub_viewed",
+      organizationId: "org_viewed_hook",
+      name: "Viewed probe",
+      url: "https://example.com/hooks/viewed",
+      events: JSON.stringify(["recipient.viewed", "document.viewed"]),
+      secret: "test-secret",
+      status: "active",
+    });
+
+    const app = createApp();
+    const viewed = await app.fetch(
+      new Request(`http://localhost:8787/api/public/signing/${token}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "viewed",
+          ipAddress: "203.0.113.10",
+          userAgent: "seal-test/1.0",
+        }),
+      }),
+      env
+    );
+    expect(viewed.status).toBe(200);
+
+    const deliveries = await db.select().from(webhookDeliveries);
+    expect(deliveries.map((d) => d.eventType).sort()).toEqual([
+      "document.viewed",
+      "recipient.viewed",
+    ]);
+  });
+
   it("waits for payment after the last signature instead of completing", async () => {
     const db = createD1(env.D1);
     await db.insert(organization).values({

@@ -65,6 +65,7 @@ export function EsignConsentDialog({
     return (
       <div
         data-seal-enter
+        data-testid="signer-esign-consent-declined"
         className="bg-kumo-canvas flex min-h-dvh flex-col items-center justify-center px-4 py-8"
       >
         <div className="flex w-full max-w-lg flex-col gap-6">
@@ -146,6 +147,7 @@ export function EsignConsentDialog({
     return (
       <div
         data-seal-enter
+        data-testid="signer-esign-consent-accepted"
         className="bg-kumo-canvas flex min-h-dvh flex-col items-center justify-center px-4 py-8"
       >
         <div className="flex w-full max-w-lg flex-col gap-6">
@@ -181,6 +183,7 @@ export function EsignConsentDialog({
   return (
     <div
       data-seal-enter
+      data-testid="signer-esign-consent"
       className="bg-kumo-canvas flex min-h-dvh flex-col items-center justify-center px-4 py-8"
     >
       <div className="flex w-full max-w-lg flex-col gap-6">
@@ -242,6 +245,7 @@ export function EsignConsentDialog({
           role="checkbox"
           aria-checked={isChecked}
           tabIndex={0}
+          data-testid="signer-esign-ack"
           className="border-kumo-line hover:bg-kumo-elevated/40 flex w-full cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors"
           onClick={() => setIsChecked((prev) => !prev)}
           onKeyDown={(event) => {
@@ -264,6 +268,7 @@ export function EsignConsentDialog({
 
         <div className="flex flex-col gap-3">
           <Button
+            data-testid="signer-esign-accept"
             className="w-full"
             size="lg"
             disabled={!isChecked || isSubmitting}

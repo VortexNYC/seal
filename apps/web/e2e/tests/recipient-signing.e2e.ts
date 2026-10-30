@@ -8,6 +8,7 @@ import {
 } from "../factories/document-factory";
 import { loadSamplePdf } from "../fixtures/api-test-client";
 import { sampleDocumentPath } from "../fixtures/paths";
+import { SignerCeremonyPage } from "../pages/signing/signer-ceremony-page";
 
 /**
  * Recipient signing E2E — the public token flow that no other test exercises.
@@ -52,17 +53,10 @@ test.describe("Recipient Signing", () => {
     });
     try {
       const page = await context.newPage();
-      await page.goto(`/sign/${signableDoc.signingToken}`);
+      const ceremony = new SignerCeremonyPage(page);
+      await ceremony.goto(signableDoc.signingToken);
 
-      // First surface for an unauthenticated recipient is the ESIGN consent gate.
-      // If this renders, the public token route resolved and the auth-race fix is
-      // holding — the React error boundary stays cold.
-      await expect(
-        page.getByRole("heading", { name: /electronic signature consent/i })
-      ).toBeVisible({ timeout: 10000 });
-      await expect(page.getByText(/something went wrong/i)).not.toBeVisible({
-        timeout: 1000,
-      });
+      await ceremony.expectPreflightSurfaceVisible();
     } finally {
       await context.close();
     }
@@ -83,19 +77,10 @@ test.describe("Recipient Signing", () => {
     });
     try {
       const page = await context.newPage();
-      await page.goto(`/sign/${signableDoc.signingToken}`);
+      const ceremony = new SignerCeremonyPage(page);
+      await ceremony.goto(signableDoc.signingToken);
 
-      // 1. Pass the ESIGN consent gate.
-      await page
-        .getByRole("checkbox", {
-          name: /consent to use electronic signatures/i,
-        })
-        .check();
-      await page
-        .getByRole("button", { name: /accept electronic signature consent/i })
-        .click();
-
-      // 2. Open the signature field.
+      await ceremony.completePreflightGates();
       const signatureFieldButton = page.getByRole("button", {
         name: /signature required field/i,
       });
