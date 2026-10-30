@@ -107,71 +107,72 @@ export async function createAuth(env: CloudflareBindings) {
         create: {
           after: async (session) => {
             try {
-              const existingMemberships = await db
-                .select({ organizationId: schema.member.organizationId })
-                .from(schema.member)
-                .where(eq(schema.member.userId, session.userId))
-                .limit(1);
-              if (existingMemberships.length > 0) {
-                return;
-              }
               const [userRow] = await db
                 .select({ metadata: schema.user.metadata })
                 .from(schema.user)
                 .where(eq(schema.user.id, session.userId))
                 .limit(1);
               const vortexOrgs = readUserVortexOrganizations(userRow?.metadata);
-              const firstOrg = vortexOrgs[0];
-              if (!firstOrg) {
+              const activeOrg = vortexOrgs[0];
+              if (!activeOrg) {
                 return;
               }
-              const orgId = `vortex_${firstOrg.organizationId}`;
-              const slug = `${firstOrg.slug}-${firstOrg.organizationId.slice(0, 6)}`;
-              let orgMetadata = JSON.stringify({
-                complianceCompleted: true,
-                vortexOrganizationId: firstOrg.organizationId,
-              });
-              const approvedMerchants = firstOrg.merchants.filter(
-                (m) => m.chargesApproved
-              );
-              if (
-                approvedMerchants.length === 1 &&
-                approvedMerchants[0] &&
-                env.VORTEX_API_KEY
-              ) {
-                try {
-                  const verifiedRecord = await attachConnectedAccount(env, {
-                    merchantAccountId: approvedMerchants[0].merchantAccountId,
-                  });
-                  orgMetadata = withVortexConnect(orgMetadata, verifiedRecord);
-                } catch {
-                  // Leave unattached if live verification fails.
-                }
-              }
               const now = new Date();
-              await db
-                .insert(schema.organization)
-                .values({
-                  id: orgId,
-                  name: firstOrg.name,
-                  slug,
-                  metadata: orgMetadata,
-                  createdAt: now,
-                })
-                .onConflictDoNothing();
-              await db
-                .insert(schema.member)
-                .values({
-                  id: `mem_${orgId}_${session.userId}`,
-                  organizationId: orgId,
-                  userId: session.userId,
-                  role: firstOrg.role,
-                  createdAt: now,
-                })
-                .onConflictDoNothing();
+              for (const vortexOrg of vortexOrgs) {
+                // Each Vortex org maps 1:1 to a deterministic Seal org —
+                // org + member ids are stable so re-signing stays idempotent.
+                const orgId = `vortex_${vortexOrg.organizationId}`;
+                const slug = `${vortexOrg.slug}-${vortexOrg.organizationId.slice(0, 6)}`;
+                let orgMetadata = JSON.stringify({
+                  complianceCompleted: true,
+                  vortexOrganizationId: vortexOrg.organizationId,
+                });
+                const approvedMerchants = vortexOrg.merchants.filter(
+                  (m) => m.chargesApproved
+                );
+                if (
+                  approvedMerchants.length === 1 &&
+                  approvedMerchants[0] &&
+                  env.VORTEX_API_KEY
+                ) {
+                  try {
+                    const verifiedRecord = await attachConnectedAccount(env, {
+                      merchantAccountId: approvedMerchants[0].merchantAccountId,
+                    });
+                    orgMetadata = withVortexConnect(
+                      orgMetadata,
+                      verifiedRecord
+                    );
+                  } catch {
+                    // Leave unattached if live verification fails.
+                  }
+                }
+                await db
+                  .insert(schema.organization)
+                  .values({
+                    id: orgId,
+                    name: vortexOrg.name,
+                    slug,
+                    metadata: orgMetadata,
+                    createdAt: now,
+                  })
+                  .onConflictDoNothing();
+                await db
+                  .insert(schema.member)
+                  .values({
+                    id: `mem_${orgId}_${session.userId}`,
+                    organizationId: orgId,
+                    userId: session.userId,
+                    role: vortexOrg.role,
+                    createdAt: now,
+                  })
+                  .onConflictDoNothing();
+              }
               await db
                 .update(schema.session)
-                .set({ activeOrganizationId: orgId })
+                .set({
+                  activeOrganizationId: `vortex_${activeOrg.organizationId}`,
+                })
                 .where(eq(schema.session.id, session.id));
             } catch (err) {
               console.error("[auth] vortex workspace bootstrap failed", {
