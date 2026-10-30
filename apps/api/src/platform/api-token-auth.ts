@@ -129,6 +129,25 @@ export async function loadApiTokenContext<E extends CloudflareBindings>(
   }
 
   const ownerId = typeof metadata.userId === "string" ? metadata.userId : null;
+  if (ownerId) {
+    // Keys minted for a specific user must not outlive their membership —
+    // a user removed from the org (or pruned from Vortex sync) loses key access.
+    const membership = (
+      await db
+        .select({ id: member.id })
+        .from(member)
+        .where(
+          and(
+            eq(member.organizationId, orgRecord.id),
+            eq(member.userId, ownerId)
+          )
+        )
+        .limit(1)
+    )[0];
+    if (!membership) {
+      return false;
+    }
+  }
   const userRecord = ownerId
     ? (
         await db

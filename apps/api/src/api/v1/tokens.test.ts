@@ -1,6 +1,6 @@
 import { defaultKeyHasher } from "@better-auth/api-key";
 import { env } from "cloudflare:test";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
 import { createD1 } from "../../global/db.js";
@@ -402,5 +402,49 @@ describe("api v1 tokens", () => {
       env
     );
     expect(allowed.status).toBe(200);
+  });
+
+  it("rejects a key when the minted user loses org membership (SEA-131)", async () => {
+    const { orgId, userId, slug, plaintext } = await seedTokenContext({
+      tokenScopes: ["admin"],
+    });
+    const db = createD1(env.D1);
+
+    // A live owner must remain — proves rejection comes from the minted
+    // user's membership check, not the "no owner left" fallback.
+    await db.insert(user).values({
+      id: crypto.randomUUID(),
+      name: "Other Owner",
+      email: `owner-${crypto.randomUUID().slice(0, 8)}@example.com`,
+    });
+    const ownerRows = await db
+      .select({ id: user.id })
+      .from(user)
+      .where(eq(user.name, "Other Owner"))
+      .limit(1);
+    await db.insert(member).values({
+      id: crypto.randomUUID(),
+      organizationId: orgId,
+      userId: ownerRows[0]!.id,
+      role: "owner",
+    });
+
+    const folders = () =>
+      app.fetch(
+        new Request(`http://localhost:8787/api/v1/organizations/${slug}/audit`, {
+          headers: { authorization: `Bearer ${plaintext}` },
+        }),
+        env
+      );
+
+    expect((await folders()).status).toBe(200);
+
+    await db
+      .delete(member)
+      .where(
+        and(eq(member.organizationId, orgId), eq(member.userId, userId))
+      );
+
+    expect((await folders()).status).toBe(401);
   });
 });
