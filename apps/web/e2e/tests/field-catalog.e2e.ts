@@ -131,9 +131,9 @@ test.describe("Field catalog (SEA-87)", () => {
         });
       }
 
-      await expect(
-        fieldRows.filter({ hasText: new RegExp(label, "i") }).first()
-      ).toBeVisible({ timeout: 10000 });
+      const row = fieldRows.filter({ hasText: new RegExp(label, "i") }).first();
+      await expect(row).toBeVisible({ timeout: 10000 });
+      await expect(row).toHaveAttribute("data-field-type", type);
     }
   });
 });
