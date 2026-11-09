@@ -25,7 +25,7 @@
     "@react-email/render": "^2.1.0",
     "@seal/tokens": "workspace:*",
     "react": "catalog:",
-    "react-email": "6.11.3"
+    "react-email": "6.11.7"
   },
   "devDependencies": {
     "@types/react": "catalog:",
