@@ -35,7 +35,7 @@
     "pdf-lib": "^1.17.1",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "react-email": "6.11.3",
+    "react-email": "6.11.7",
     "zod": "catalog:"
   },
   "devDependencies": {
