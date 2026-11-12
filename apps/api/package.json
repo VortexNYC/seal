@@ -27,7 +27,7 @@
     "@signpdf/signpdf": "3.3.0",
     "@signpdf/utils": "3.3.0",
     "@vortex-api/better-auth-ui": "0.2.24",
-    "better-auth": "1.7.14",
+    "better-auth": "1.7.22",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.13.8",
     "jose": "^6.2.12",
